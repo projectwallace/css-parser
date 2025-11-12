@@ -6,6 +6,7 @@ import {
 	NODE_STYLE_RULE,
 	NODE_SELECTOR,
 	NODE_DECLARATION,
+	NODE_AT_RULE,
 	FLAG_IMPORTANT,
 } from './arena'
 import type { Token } from './token-types'
@@ -19,6 +20,7 @@ import {
 	TOKEN_SEMICOLON,
 	TOKEN_IDENT,
 	TOKEN_DELIM,
+	TOKEN_AT_KEYWORD,
 } from './token-types'
 
 export class Parser {
@@ -87,7 +89,6 @@ export class Parser {
 	}
 
 	// Parse a rule (style rule or at-rule)
-	// For now, just handle style rules
 	private parseRule(): number | null {
 		if (this.isEOF()) {
 			return null
@@ -98,6 +99,11 @@ export class Parser {
 			// TODO: Create comment nodes
 			this.nextToken()
 			return null
+		}
+
+		// Check for at-rule
+		if (this.peekType() === TOKEN_AT_KEYWORD) {
+			return this.parseAtRule()
 		}
 
 		// Try to parse as style rule
@@ -227,18 +233,15 @@ export class Parser {
 		let lastToken = this.currentToken
 
 		while (!this.isEOF() && this.peekType() !== TOKEN_SEMICOLON && this.peekType() !== TOKEN_RIGHT_BRACE) {
-			// Check for !important
+			// Check for ! followed by any identifier (e.g., !important, !ie, etc.)
 			if (this.peekType() === TOKEN_DELIM && this.currentToken && this.source[this.currentToken.start] === '!') {
-				// Check if next token is "important"
+				// Check if next token is an identifier
 				const nextToken = this.lexer.nextToken()
 				if (nextToken && nextToken.type === TOKEN_IDENT) {
-					const text = this.source.substring(nextToken.start, nextToken.end)
-					if (text === 'important') {
-						hasImportant = true
-						lastToken = nextToken
-						this.currentToken = nextToken
-						break
-					}
+					hasImportant = true
+					lastToken = nextToken
+					this.currentToken = nextToken
+					break
 				}
 			}
 
@@ -263,5 +266,96 @@ export class Parser {
 		}
 
 		return declaration
+	}
+
+	// Parse an at-rule: @media, @import, @font-face, etc.
+	private parseAtRule(): number | null {
+		const startToken = this.currentToken
+		if (!startToken || startToken.type !== TOKEN_AT_KEYWORD) {
+			return null
+		}
+
+		const atRuleStart = startToken.start
+		const atRuleLine = startToken.line
+
+		// Extract at-rule name (skip the '@')
+		const atRuleName = this.source.substring(startToken.start + 1, startToken.end)
+		const nameStart = startToken.start + 1
+		const nameLength = atRuleName.length
+
+		this.nextToken() // consume @keyword
+
+		// Create at-rule node
+		const atRule = this.arena.createNode()
+		this.arena.setType(atRule, NODE_AT_RULE)
+		this.arena.setStartLine(atRule, atRuleLine)
+		this.arena.setStartOffset(atRule, atRuleStart)
+
+		// Store at-rule name in contentStart/contentLength
+		this.arena.setContentStart(atRule, nameStart)
+		this.arena.setContentLength(atRule, nameLength)
+
+		// Parse prelude (everything before '{' or ';')
+		// For now, just consume tokens
+		while (!this.isEOF() && this.peekType() !== TOKEN_LEFT_BRACE && this.peekType() !== TOKEN_SEMICOLON) {
+			this.nextToken()
+		}
+
+		let lastToken = this.currentToken
+
+		// Check if this at-rule has a block or is a statement
+		if (this.peekType() === TOKEN_LEFT_BRACE) {
+			this.nextToken() // consume '{'
+
+			// Determine what to parse inside the block based on the at-rule name
+			const hasDeclarations = this.atRuleHasDeclarations(atRuleName)
+
+			if (hasDeclarations) {
+				// Parse declarations (like @font-face, @page)
+				while (!this.isEOF() && this.peekType() !== TOKEN_RIGHT_BRACE) {
+					const declaration = this.parseDeclaration()
+					if (declaration !== null) {
+						this.arena.appendChild(atRule, declaration)
+					} else {
+						this.nextToken()
+					}
+				}
+			} else {
+				// Parse nested rules (like @media, @supports, @layer)
+				while (!this.isEOF() && this.peekType() !== TOKEN_RIGHT_BRACE) {
+					const rule = this.parseRule()
+					if (rule !== null) {
+						this.arena.appendChild(atRule, rule)
+					} else {
+						this.nextToken()
+					}
+				}
+			}
+
+			// Consume '}'
+			if (this.peekType() === TOKEN_RIGHT_BRACE) {
+				lastToken = this.currentToken!
+				this.nextToken()
+			}
+		} else if (this.peekType() === TOKEN_SEMICOLON) {
+			// Statement at-rule (like @import, @namespace)
+			lastToken = this.currentToken!
+			this.nextToken() // consume ';'
+		}
+
+		// Set at-rule length
+		if (lastToken) {
+			this.arena.setLength(atRule, lastToken.end - atRuleStart)
+		}
+
+		return atRule
+	}
+
+	// Determine if an at-rule contains declarations or nested rules
+	private atRuleHasDeclarations(name: string): boolean {
+		// At-rules with declarations in their blocks
+		const declarationAtRules = ['font-face', 'font-feature-values', 'page', 'property', 'counter-style']
+
+		return declarationAtRules.includes(name)
 	}
 }
