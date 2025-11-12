@@ -1,6 +1,6 @@
 // CSS Data Arena - Single contiguous ArrayBuffer for all AST nodes
 //
-// Each node occupies 32 bytes with the following layout:
+// Each node occupies 36 bytes with the following layout:
 // Offset | Size | Field
 // -------|------|-------------
 //   0    |  1   | type
@@ -13,10 +13,11 @@
 //  16    |  2   | contentLength
 //  18    |  2   | (padding)
 //  20    |  4   | firstChild
-//  24    |  4   | nextSibling
-//  28    |  4   | startLine
+//  24    |  4   | lastChild
+//  28    |  4   | nextSibling
+//  32    |  4   | startLine
 
-let BYTES_PER_NODE = 32
+let BYTES_PER_NODE = 36
 
 // Node type constants
 export const NODE_STYLESHEET = 1
@@ -114,14 +115,19 @@ export class CSSDataArena {
 		return this.view.getUint32(this.node_offset(node_index) + 20, true)
 	}
 
+	// Read last child index (0 = no children)
+	get_last_child(node_index: number): number {
+		return this.view.getUint32(this.node_offset(node_index) + 24, true)
+	}
+
 	// Read next sibling index (0 = no sibling)
 	get_next_sibling(node_index: number): number {
-		return this.view.getUint32(this.node_offset(node_index) + 24, true)
+		return this.view.getUint32(this.node_offset(node_index) + 28, true)
 	}
 
 	// Read start line
 	get_start_line(node_index: number): number {
-		return this.view.getUint32(this.node_offset(node_index) + 28, true)
+		return this.view.getUint32(this.node_offset(node_index) + 32, true)
 	}
 
 	// --- Write Methods ---
@@ -161,14 +167,19 @@ export class CSSDataArena {
 		this.view.setUint32(this.node_offset(node_index) + 20, childIndex, true)
 	}
 
+	// Write last child index
+	set_last_child(node_index: number, childIndex: number): void {
+		this.view.setUint32(this.node_offset(node_index) + 24, childIndex, true)
+	}
+
 	// Write next sibling index
 	set_next_sibling(node_index: number, siblingIndex: number): void {
-		this.view.setUint32(this.node_offset(node_index) + 24, siblingIndex, true)
+		this.view.setUint32(this.node_offset(node_index) + 28, siblingIndex, true)
 	}
 
 	// Write start line
 	set_start_line(node_index: number, line: number): void {
-		this.view.setUint32(this.node_offset(node_index) + 28, line, true)
+		this.view.setUint32(this.node_offset(node_index) + 32, line, true)
 	}
 
 	// --- Node Creation ---
@@ -203,23 +214,19 @@ export class CSSDataArena {
 
 	// Add a child node to a parent node
 	// This appends to the end of the child list using the sibling chain
+	// O(1) operation using lastChild pointer
 	append_child(parentIndex: number, childIndex: number): void {
-		let first_child = this.get_first_child(parentIndex)
+		let last_child = this.get_last_child(parentIndex)
 
-		if (first_child === 0) {
-			// No children yet, make this the first child
+		if (last_child === 0) {
+			// No children yet, make this the first and last child
 			this.set_first_child(parentIndex, childIndex)
+			this.set_last_child(parentIndex, childIndex)
 		} else {
-			// Find the last sibling and append
-			let last_sibling = first_child
-			let next_sibling = this.get_next_sibling(last_sibling)
-
-			while (next_sibling !== 0) {
-				last_sibling = next_sibling
-				next_sibling = this.get_next_sibling(last_sibling)
-			}
-
-			this.set_next_sibling(last_sibling, childIndex)
+			// Append to the current last child's sibling chain
+			this.set_next_sibling(last_child, childIndex)
+			// Update parent's last child pointer
+			this.set_last_child(parentIndex, childIndex)
 		}
 	}
 
