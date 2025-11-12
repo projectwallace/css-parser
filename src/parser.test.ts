@@ -1,13 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import { Parser } from './parser'
-import {
-	NODE_STYLESHEET,
-	NODE_STYLE_RULE,
-	NODE_SELECTOR,
-	NODE_DECLARATION,
-	NODE_AT_RULE,
-	FLAG_IMPORTANT,
-} from './arena'
 
 describe('Parser', () => {
 	describe('basic parsing', () => {
@@ -24,29 +16,26 @@ describe('Parser', () => {
 		it('should parse empty stylesheet', () => {
 			const parser = new Parser('')
 			const root = parser.parse()
-			const arena = parser.getArena()
 
-			expect(arena.getType(root)).toBe(NODE_STYLESHEET)
-			expect(arena.getStartOffset(root)).toBe(0)
-			expect(arena.getLength(root)).toBe(0)
-			expect(arena.hasChildren(root)).toBe(false)
+			expect(root.type).toBe('stylesheet')
+			expect(root.offset).toBe(0)
+			expect(root.length).toBe(0)
+			expect(root.hasChildren).toBe(false)
 		})
 
 		it('should parse stylesheet with only whitespace', () => {
 			const parser = new Parser('   \n\n   ')
 			const root = parser.parse()
-			const arena = parser.getArena()
 
-			expect(arena.getType(root)).toBe(NODE_STYLESHEET)
-			expect(arena.hasChildren(root)).toBe(false)
+			expect(root.type).toBe('stylesheet')
+			expect(root.hasChildren).toBe(false)
 		})
 
 		it('should parse stylesheet with only comments', () => {
 			const parser = new Parser('/* comment */')
 			const root = parser.parse()
-			const arena = parser.getArena()
 
-			expect(arena.getType(root)).toBe(NODE_STYLESHEET)
+			expect(root.type).toBe('stylesheet')
 			// TODO: Once we parse comments, verify they're added as children
 		})
 	})
@@ -55,59 +44,54 @@ describe('Parser', () => {
 		it('should parse simple style rule', () => {
 			const parser = new Parser('body { }')
 			const root = parser.parse()
-			const arena = parser.getArena()
 
-			expect(arena.hasChildren(root)).toBe(true)
+			expect(root.hasChildren).toBe(true)
 
-			const rule = arena.getFirstChild(root)
-			expect(arena.getType(rule)).toBe(NODE_STYLE_RULE)
-			expect(arena.getStartOffset(rule)).toBe(0)
-			expect(arena.getLength(rule)).toBeGreaterThan(0)
+			const rule = root.firstChild!
+			expect(rule.type).toBe('rule')
+			expect(rule.offset).toBe(0)
+			expect(rule.length).toBeGreaterThan(0)
 		})
 
 		it('should parse style rule with selector', () => {
 			const source = 'body { }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const arena = parser.getArena()
 
-			const rule = arena.getFirstChild(root)
-			expect(arena.hasChildren(rule)).toBe(true)
+			const rule = root.firstChild!
+			expect(rule.hasChildren).toBe(true)
 
-			const selector = arena.getFirstChild(rule)
-			expect(arena.getType(selector)).toBe(NODE_SELECTOR)
-			expect(arena.getStartOffset(selector)).toBe(0)
-			expect(arena.getLength(selector)).toBe(4) // "body"
+			const selector = rule.firstChild!
+			expect(selector.type).toBe('selector')
+			expect(selector.offset).toBe(0)
+			expect(selector.length).toBe(4) // "body"
+			expect(selector.text).toBe('body')
 		})
 
 		it('should parse multiple style rules', () => {
 			const parser = new Parser('body { } div { }')
 			const root = parser.parse()
-			const arena = parser.getArena()
 
-			const rule1 = arena.getFirstChild(root)
-			expect(arena.getType(rule1)).toBe(NODE_STYLE_RULE)
-
-			const rule2 = arena.getNextSibling(rule1)
-			expect(arena.getType(rule2)).toBe(NODE_STYLE_RULE)
-
-			expect(arena.hasNextSibling(rule2)).toBe(false)
+			const [rule1, rule2] = root.children
+			expect(rule1.type).toBe('rule')
+			expect(rule2.type).toBe('rule')
+			expect(rule2.nextSibling).toBe(null)
 		})
 
 		it('should parse complex selector', () => {
 			const source = 'div.class > p#id { }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const arena = parser.getArena()
 
-			const rule = arena.getFirstChild(root)
-			const selector = arena.getFirstChild(rule)
+			const rule = root.firstChild!
+			const selector = rule.firstChild!
 
-			expect(arena.getType(selector)).toBe(NODE_SELECTOR)
-			expect(arena.getStartOffset(selector)).toBe(0)
+			expect(selector.type).toBe('selector')
+			expect(selector.offset).toBe(0)
 			// Selector includes tokens up to but not including the '{'
 			// Whitespace is skipped by lexer, so actual length is 16
-			expect(arena.getLength(selector)).toBe(16) // "div.class > p#id"
+			expect(selector.length).toBe(16) // "div.class > p#id"
+			expect(selector.text).toBe('div.class > p#id')
 		})
 	})
 
@@ -116,156 +100,120 @@ describe('Parser', () => {
 			const source = 'body { color: red; }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const arena = parser.getArena()
 
-			const rule = arena.getFirstChild(root)
-			const selector = arena.getFirstChild(rule)
-			const declaration = arena.getNextSibling(selector)
+			const rule = root.firstChild!
+			const [_selector, declaration] = rule.children
 
-			expect(arena.getType(declaration)).toBe(NODE_DECLARATION)
-			expect(arena.hasFlag(declaration, FLAG_IMPORTANT)).toBe(false)
+			expect(declaration.type).toBe('declaration')
+			expect(declaration.isImportant).toBe(false)
 		})
 
 		it('should parse declaration with property name', () => {
 			const source = 'body { color: red; }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const arena = parser.getArena()
 
-			const rule = arena.getFirstChild(root)
-			const selector = arena.getFirstChild(rule)
-			const declaration = arena.getNextSibling(selector)
+			const rule = root.firstChild!
+			const [_selector, declaration] = rule.children
 
-			// Property name stored in contentStart/contentLength
-			const propStart = arena.getContentStart(declaration)
-			const propLength = arena.getContentLength(declaration)
-			const propName = source.substring(propStart, propStart + propLength)
-
-			expect(propName).toBe('color')
+			// Property name stored in the 'name' property
+			expect(declaration.name).toBe('color')
 		})
 
 		it('should parse multiple declarations', () => {
 			const source = 'body { color: red; margin: 0; }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const arena = parser.getArena()
 
-			const rule = arena.getFirstChild(root)
-			const selector = arena.getFirstChild(rule)
-			const decl1 = arena.getNextSibling(selector)
-			const decl2 = arena.getNextSibling(decl1)
+			const rule = root.firstChild!
+			const [_selector, decl1, decl2] = rule.children
 
-			expect(arena.getType(decl1)).toBe(NODE_DECLARATION)
-			expect(arena.getType(decl2)).toBe(NODE_DECLARATION)
-			expect(arena.hasNextSibling(decl2)).toBe(false)
+			expect(decl1.type).toBe('declaration')
+			expect(decl2.type).toBe('declaration')
+			expect(decl2.nextSibling).toBe(null)
 		})
 
 		it('should parse declaration with !important', () => {
 			const source = 'body { color: red !important; }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const arena = parser.getArena()
 
-			const rule = arena.getFirstChild(root)
-			const selector = arena.getFirstChild(rule)
-			const declaration = arena.getNextSibling(selector)
+			const rule = root.firstChild!
+			const [_selector, declaration] = rule.children
 
-			expect(arena.getType(declaration)).toBe(NODE_DECLARATION)
-			expect(arena.hasFlag(declaration, FLAG_IMPORTANT)).toBe(true)
+			expect(declaration.type).toBe('declaration')
+			expect(declaration.isImportant).toBe(true)
 		})
 
 		it('should parse declaration with !ie (historic !important)', () => {
 			const source = 'body { color: red !ie; }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const arena = parser.getArena()
 
-			const rule = arena.getFirstChild(root)
-			const selector = arena.getFirstChild(rule)
-			const declaration = arena.getNextSibling(selector)
+			const rule = root.firstChild!
+			const [_selector, declaration] = rule.children
 
-			expect(arena.getType(declaration)).toBe(NODE_DECLARATION)
-			expect(arena.hasFlag(declaration, FLAG_IMPORTANT)).toBe(true)
+			expect(declaration.type).toBe('declaration')
+			expect(declaration.isImportant).toBe(true)
 		})
 
 		it('should parse declaration with ! followed by any identifier', () => {
 			const source = 'body { color: red !foo; }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const arena = parser.getArena()
 
-			const rule = arena.getFirstChild(root)
-			const selector = arena.getFirstChild(rule)
-			const declaration = arena.getNextSibling(selector)
+			const rule = root.firstChild!
+			const [_selector, declaration] = rule.children
 
-			expect(arena.getType(declaration)).toBe(NODE_DECLARATION)
-			expect(arena.hasFlag(declaration, FLAG_IMPORTANT)).toBe(true)
+			expect(declaration.type).toBe('declaration')
+			expect(declaration.isImportant).toBe(true)
 		})
 
 		it('should parse declaration without semicolon at end of block', () => {
 			const source = 'body { color: red }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const arena = parser.getArena()
 
-			const rule = arena.getFirstChild(root)
-			const selector = arena.getFirstChild(rule)
-			const declaration = arena.getNextSibling(selector)
+			const rule = root.firstChild!
+			const [_selector, declaration] = rule.children
 
-			expect(arena.getType(declaration)).toBe(NODE_DECLARATION)
+			expect(declaration.type).toBe('declaration')
 		})
 
 		it('should parse complex declaration value', () => {
 			const source = 'body { background: url(image.png) no-repeat center; }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const arena = parser.getArena()
 
-			const rule = arena.getFirstChild(root)
-			const selector = arena.getFirstChild(rule)
-			const declaration = arena.getNextSibling(selector)
+			const rule = root.firstChild!
+			const [_selector, declaration] = rule.children
 
-			expect(arena.getType(declaration)).toBe(NODE_DECLARATION)
-
-			const propStart = arena.getContentStart(declaration)
-			const propLength = arena.getContentLength(declaration)
-			const propName = source.substring(propStart, propStart + propLength)
-
-			expect(propName).toBe('background')
+			expect(declaration.type).toBe('declaration')
+			expect(declaration.name).toBe('background')
 		})
 	})
 
 	describe('at-rule parsing', () => {
-		// Helper to extract at-rule name from node
-		const getAtRuleName = (parser: Parser, nodeIndex: number): string => {
-			const arena = parser.getArena()
-			const nameStart = arena.getContentStart(nodeIndex)
-			const nameLength = arena.getContentLength(nodeIndex)
-			return parser['source'].substring(nameStart, nameStart + nameLength)
-		}
-
 		describe('statement at-rules (no block)', () => {
 			it('should parse @import', () => {
 				const source = '@import url("style.css");'
 				const parser = new Parser(source)
 				const root = parser.parse()
-				const arena = parser.getArena()
 
-				const atRule = arena.getFirstChild(root)
-				expect(arena.getType(atRule)).toBe(NODE_AT_RULE)
-				expect(getAtRuleName(parser, atRule)).toBe('import')
-				expect(arena.hasChildren(atRule)).toBe(false)
+				const atRule = root.firstChild!
+				expect(atRule.type).toBe('atrule')
+				expect(atRule.name).toBe('import')
+				expect(atRule.hasChildren).toBe(false)
 			})
 
 			it('should parse @namespace', () => {
 				const source = '@namespace url(http://www.w3.org/1999/xhtml);'
 				const parser = new Parser(source)
 				const root = parser.parse()
-				const arena = parser.getArena()
 
-				const atRule = arena.getFirstChild(root)
-				expect(arena.getType(atRule)).toBe(NODE_AT_RULE)
-				expect(getAtRuleName(parser, atRule)).toBe('namespace')
+				const atRule = root.firstChild!
+				expect(atRule.type).toBe('atrule')
+				expect(atRule.name).toBe('namespace')
 			})
 		})
 
@@ -274,63 +222,58 @@ describe('Parser', () => {
 				const source = '@media (min-width: 768px) { body { color: red; } }'
 				const parser = new Parser(source)
 				const root = parser.parse()
-				const arena = parser.getArena()
 
-				const media = arena.getFirstChild(root)
-				expect(arena.getType(media)).toBe(NODE_AT_RULE)
-				expect(getAtRuleName(parser, media)).toBe('media')
-				expect(arena.hasChildren(media)).toBe(true)
+				const media = root.firstChild!
+				expect(media.type).toBe('atrule')
+				expect(media.name).toBe('media')
+				expect(media.hasChildren).toBe(true)
 
-				const nestedRule = arena.getFirstChild(media)
-				expect(arena.getType(nestedRule)).toBe(NODE_STYLE_RULE)
+				const nestedRule = media.firstChild!
+				expect(nestedRule.type).toBe('rule')
 			})
 
 			it('should parse @layer with name', () => {
 				const source = '@layer utilities { .text-center { text-align: center; } }'
 				const parser = new Parser(source)
 				const root = parser.parse()
-				const arena = parser.getArena()
 
-				const layer = arena.getFirstChild(root)
-				expect(arena.getType(layer)).toBe(NODE_AT_RULE)
-				expect(getAtRuleName(parser, layer)).toBe('layer')
-				expect(arena.hasChildren(layer)).toBe(true)
+				const layer = root.firstChild!
+				expect(layer.type).toBe('atrule')
+				expect(layer.name).toBe('layer')
+				expect(layer.hasChildren).toBe(true)
 			})
 
 			it('should parse anonymous @layer', () => {
 				const source = '@layer { body { margin: 0; } }'
 				const parser = new Parser(source)
 				const root = parser.parse()
-				const arena = parser.getArena()
 
-				const layer = arena.getFirstChild(root)
-				expect(arena.getType(layer)).toBe(NODE_AT_RULE)
-				expect(getAtRuleName(parser, layer)).toBe('layer')
-				expect(arena.hasChildren(layer)).toBe(true)
+				const layer = root.firstChild!
+				expect(layer.type).toBe('atrule')
+				expect(layer.name).toBe('layer')
+				expect(layer.hasChildren).toBe(true)
 			})
 
 			it('should parse @supports', () => {
 				const source = '@supports (display: grid) { .grid { display: grid; } }'
 				const parser = new Parser(source)
 				const root = parser.parse()
-				const arena = parser.getArena()
 
-				const supports = arena.getFirstChild(root)
-				expect(arena.getType(supports)).toBe(NODE_AT_RULE)
-				expect(getAtRuleName(parser, supports)).toBe('supports')
-				expect(arena.hasChildren(supports)).toBe(true)
+				const supports = root.firstChild!
+				expect(supports.type).toBe('atrule')
+				expect(supports.name).toBe('supports')
+				expect(supports.hasChildren).toBe(true)
 			})
 
 			it('should parse @container', () => {
 				const source = '@container (min-width: 400px) { .card { padding: 2rem; } }'
 				const parser = new Parser(source)
 				const root = parser.parse()
-				const arena = parser.getArena()
 
-				const container = arena.getFirstChild(root)
-				expect(arena.getType(container)).toBe(NODE_AT_RULE)
-				expect(getAtRuleName(parser, container)).toBe('container')
-				expect(arena.hasChildren(container)).toBe(true)
+				const container = root.firstChild!
+				expect(container.type).toBe('atrule')
+				expect(container.name).toBe('container')
+				expect(container.hasChildren).toBe(true)
 			})
 		})
 
@@ -339,47 +282,42 @@ describe('Parser', () => {
 				const source = '@font-face { font-family: "Open Sans"; src: url(font.woff2); }'
 				const parser = new Parser(source)
 				const root = parser.parse()
-				const arena = parser.getArena()
 
-				const fontFace = arena.getFirstChild(root)
-				expect(arena.getType(fontFace)).toBe(NODE_AT_RULE)
-				expect(getAtRuleName(parser, fontFace)).toBe('font-face')
-				expect(arena.hasChildren(fontFace)).toBe(true)
+				const fontFace = root.firstChild!
+				expect(fontFace.type).toBe('atrule')
+				expect(fontFace.name).toBe('font-face')
+				expect(fontFace.hasChildren).toBe(true)
 
 				// Should have declarations as children
-				const decl1 = arena.getFirstChild(fontFace)
-				expect(arena.getType(decl1)).toBe(NODE_DECLARATION)
-
-				const decl2 = arena.getNextSibling(decl1)
-				expect(arena.getType(decl2)).toBe(NODE_DECLARATION)
+				const [decl1, decl2] = fontFace.children
+				expect(decl1.type).toBe('declaration')
+				expect(decl2.type).toBe('declaration')
 			})
 
 			it('should parse @page', () => {
 				const source = '@page { margin: 1in; }'
 				const parser = new Parser(source)
 				const root = parser.parse()
-				const arena = parser.getArena()
 
-				const page = arena.getFirstChild(root)
-				expect(arena.getType(page)).toBe(NODE_AT_RULE)
-				expect(getAtRuleName(parser, page)).toBe('page')
+				const page = root.firstChild!
+				expect(page.type).toBe('atrule')
+				expect(page.name).toBe('page')
 
-				const decl = arena.getFirstChild(page)
-				expect(arena.getType(decl)).toBe(NODE_DECLARATION)
+				const decl = page.firstChild!
+				expect(decl.type).toBe('declaration')
 			})
 
 			it('should parse @counter-style', () => {
 				const source = '@counter-style thumbs { system: cyclic; symbols: "👍"; }'
 				const parser = new Parser(source)
 				const root = parser.parse()
-				const arena = parser.getArena()
 
-				const counterStyle = arena.getFirstChild(root)
-				expect(arena.getType(counterStyle)).toBe(NODE_AT_RULE)
-				expect(getAtRuleName(parser, counterStyle)).toBe('counter-style')
+				const counterStyle = root.firstChild!
+				expect(counterStyle.type).toBe('atrule')
+				expect(counterStyle.name).toBe('counter-style')
 
-				const decl = arena.getFirstChild(counterStyle)
-				expect(arena.getType(decl)).toBe(NODE_DECLARATION)
+				const decl = counterStyle.firstChild!
+				expect(decl.type).toBe('declaration')
 			})
 		})
 
@@ -388,17 +326,16 @@ describe('Parser', () => {
 				const source = '@supports (display: grid) { @media (min-width: 768px) { body { color: red; } } }'
 				const parser = new Parser(source)
 				const root = parser.parse()
-				const arena = parser.getArena()
 
-				const supports = arena.getFirstChild(root)
-				expect(getAtRuleName(parser, supports)).toBe('supports')
+				const supports = root.firstChild!
+				expect(supports.name).toBe('supports')
 
-				const media = arena.getFirstChild(supports)
-				expect(arena.getType(media)).toBe(NODE_AT_RULE)
-				expect(getAtRuleName(parser, media)).toBe('media')
+				const media = supports.firstChild!
+				expect(media.type).toBe('atrule')
+				expect(media.name).toBe('media')
 
-				const rule = arena.getFirstChild(media)
-				expect(arena.getType(rule)).toBe(NODE_STYLE_RULE)
+				const rule = media.firstChild!
+				expect(rule.type).toBe('rule')
 			})
 		})
 
@@ -407,16 +344,11 @@ describe('Parser', () => {
 				const source = '@import url("a.css"); @layer base { body { margin: 0; } } @media print { body { color: black; } }'
 				const parser = new Parser(source)
 				const root = parser.parse()
-				const arena = parser.getArena()
 
-				const import1 = arena.getFirstChild(root)
-				expect(getAtRuleName(parser, import1)).toBe('import')
-
-				const layer = arena.getNextSibling(import1)
-				expect(getAtRuleName(parser, layer)).toBe('layer')
-
-				const media = arena.getNextSibling(layer)
-				expect(getAtRuleName(parser, media)).toBe('media')
+				const [import1, layer, media] = root.children
+				expect(import1.name).toBe('import')
+				expect(layer.name).toBe('layer')
+				expect(media.name).toBe('media')
 			})
 		})
 	})

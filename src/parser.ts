@@ -9,6 +9,7 @@ import {
 	NODE_AT_RULE,
 	FLAG_IMPORTANT,
 } from './arena'
+import { CSSNode } from './css-node'
 import type { Token } from './token-types'
 import {
 	TOKEN_EOF,
@@ -38,9 +39,14 @@ export class Parser {
 		this.currentToken = null
 	}
 
-	// Get the arena (for inspection/traversal after parsing)
+	// Get the arena (for internal/advanced use only)
 	getArena(): CSSDataArena {
 		return this.arena
+	}
+
+	// Get the source code
+	getSource(): string {
+		return this.source
 	}
 
 	// Advance to the next token, skipping whitespace
@@ -62,8 +68,8 @@ export class Parser {
 		return this.peekType() === TOKEN_EOF
 	}
 
-	// Parse the entire stylesheet and return the root node index
-	parse(): number {
+	// Parse the entire stylesheet and return the root CSSNode
+	parse(): CSSNode {
 		// Start by getting the first token
 		this.nextToken()
 
@@ -85,7 +91,8 @@ export class Parser {
 			}
 		}
 
-		return stylesheet
+		// Return wrapped node
+		return new CSSNode(this.arena, this.source, stylesheet)
 	}
 
 	// Parse a rule (style rule or at-rule)

@@ -1,5 +1,7 @@
 // Main entry point - exports all public APIs
 export { Lexer } from './lexer'
+export { Parser } from './parser'
+export { CSSNode, type CSSNodeType } from './css-node'
 export {
 	TOKEN_IDENT,
 	TOKEN_FUNCTION,
