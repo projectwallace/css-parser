@@ -272,6 +272,11 @@ describe('CSSDataArena', () => {
 	})
 
 	describe('capacity planning', () => {
+		it('should have minimum capacity for empty files', () => {
+			const capacity = CSSDataArena.capacityForSource(0)
+			expect(capacity).toBe(16)
+		})
+
 		it('should calculate capacity for small CSS files', () => {
 			// 1KB CSS = 60 nodes * 1.15 buffer = 69 nodes
 			const capacity = CSSDataArena.capacityForSource(1024)

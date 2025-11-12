@@ -59,7 +59,9 @@ export class CSSDataArena {
 		const sizeInKB = sourceLength / 1024
 		const estimatedNodes = Math.ceil(sizeInKB * CSSDataArena.NODES_PER_KB)
 		// Add 15% buffer to avoid growth during parsing
-		return Math.ceil(estimatedNodes * CSSDataArena.CAPACITY_BUFFER)
+		const capacity = Math.ceil(estimatedNodes * CSSDataArena.CAPACITY_BUFFER)
+		// Ensure minimum capacity of 16 nodes (even for empty stylesheets)
+		return Math.max(16, capacity)
 	}
 
 	// Get the number of nodes currently in the arena
