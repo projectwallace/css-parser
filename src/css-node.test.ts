@@ -8,7 +8,7 @@ describe('CSSNode', () => {
 			const parser = new Parser(source)
 			const root = parser.parse()
 
-			const rule = root.firstChild!
+			const rule = root.first_child!
 			const types: string[] = []
 
 			for (const child of rule) {
@@ -34,7 +34,7 @@ describe('CSSNode', () => {
 			const parser = new Parser(source)
 			const root = parser.parse()
 
-			const media = root.firstChild!
+			const media = root.first_child!
 			const children = Array.from(media)
 
 			expect(children).toHaveLength(1)
@@ -46,7 +46,7 @@ describe('CSSNode', () => {
 			const parser = new Parser(source)
 			const root = parser.parse()
 
-			const importRule = root.firstChild!
+			const importRule = root.first_child!
 			const children = [...importRule]
 
 			expect(children).toHaveLength(0)

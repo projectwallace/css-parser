@@ -6,7 +6,7 @@ describe('Parser', () => {
 		it('should create parser with arena sized for source', () => {
 			const source = 'body { color: red; }'
 			const parser = new Parser(source)
-			const arena = parser.getArena()
+			const arena = parser.get_arena()
 
 			// Should have capacity based on source size
 			expect(arena.getCapacity()).toBeGreaterThan(0)
@@ -20,7 +20,7 @@ describe('Parser', () => {
 			expect(root.type).toBe('stylesheet')
 			expect(root.offset).toBe(0)
 			expect(root.length).toBe(0)
-			expect(root.hasChildren).toBe(false)
+			expect(root.has_children).toBe(false)
 		})
 
 		it('should parse stylesheet with only whitespace', () => {
@@ -28,7 +28,7 @@ describe('Parser', () => {
 			const root = parser.parse()
 
 			expect(root.type).toBe('stylesheet')
-			expect(root.hasChildren).toBe(false)
+			expect(root.has_children).toBe(false)
 		})
 
 		it('should parse stylesheet with only comments', () => {
@@ -45,9 +45,9 @@ describe('Parser', () => {
 			const parser = new Parser('body { }')
 			const root = parser.parse()
 
-			expect(root.hasChildren).toBe(true)
+			expect(root.has_children).toBe(true)
 
-			const rule = root.firstChild!
+			const rule = root.first_child!
 			expect(rule.type).toBe('rule')
 			expect(rule.offset).toBe(0)
 			expect(rule.length).toBeGreaterThan(0)
@@ -58,10 +58,10 @@ describe('Parser', () => {
 			const parser = new Parser(source)
 			const root = parser.parse()
 
-			const rule = root.firstChild!
-			expect(rule.hasChildren).toBe(true)
+			const rule = root.first_child!
+			expect(rule.has_children).toBe(true)
 
-			const selector = rule.firstChild!
+			const selector = rule.first_child!
 			expect(selector.type).toBe('selector')
 			expect(selector.offset).toBe(0)
 			expect(selector.length).toBe(4) // "body"
@@ -75,7 +75,7 @@ describe('Parser', () => {
 			const [rule1, rule2] = root.children
 			expect(rule1.type).toBe('rule')
 			expect(rule2.type).toBe('rule')
-			expect(rule2.nextSibling).toBe(null)
+			expect(rule2.next_sibling).toBe(null)
 		})
 
 		it('should parse complex selector', () => {
@@ -83,8 +83,8 @@ describe('Parser', () => {
 			const parser = new Parser(source)
 			const root = parser.parse()
 
-			const rule = root.firstChild!
-			const selector = rule.firstChild!
+			const rule = root.first_child!
+			const selector = rule.first_child!
 
 			expect(selector.type).toBe('selector')
 			expect(selector.offset).toBe(0)
@@ -101,11 +101,11 @@ describe('Parser', () => {
 			const parser = new Parser(source)
 			const root = parser.parse()
 
-			const rule = root.firstChild!
+			const rule = root.first_child!
 			const [_selector, declaration] = rule.children
 
 			expect(declaration.type).toBe('declaration')
-			expect(declaration.isImportant).toBe(false)
+			expect(declaration.is_important).toBe(false)
 		})
 
 		it('should parse declaration with property name', () => {
@@ -113,7 +113,7 @@ describe('Parser', () => {
 			const parser = new Parser(source)
 			const root = parser.parse()
 
-			const rule = root.firstChild!
+			const rule = root.first_child!
 			const [_selector, declaration] = rule.children
 
 			// Property name stored in the 'name' property
@@ -125,12 +125,12 @@ describe('Parser', () => {
 			const parser = new Parser(source)
 			const root = parser.parse()
 
-			const rule = root.firstChild!
+			const rule = root.first_child!
 			const [_selector, decl1, decl2] = rule.children
 
 			expect(decl1.type).toBe('declaration')
 			expect(decl2.type).toBe('declaration')
-			expect(decl2.nextSibling).toBe(null)
+			expect(decl2.next_sibling).toBe(null)
 		})
 
 		it('should parse declaration with !important', () => {
@@ -138,11 +138,11 @@ describe('Parser', () => {
 			const parser = new Parser(source)
 			const root = parser.parse()
 
-			const rule = root.firstChild!
+			const rule = root.first_child!
 			const [_selector, declaration] = rule.children
 
 			expect(declaration.type).toBe('declaration')
-			expect(declaration.isImportant).toBe(true)
+			expect(declaration.is_important).toBe(true)
 		})
 
 		it('should parse declaration with !ie (historic !important)', () => {
@@ -150,11 +150,11 @@ describe('Parser', () => {
 			const parser = new Parser(source)
 			const root = parser.parse()
 
-			const rule = root.firstChild!
+			const rule = root.first_child!
 			const [_selector, declaration] = rule.children
 
 			expect(declaration.type).toBe('declaration')
-			expect(declaration.isImportant).toBe(true)
+			expect(declaration.is_important).toBe(true)
 		})
 
 		it('should parse declaration with ! followed by any identifier', () => {
@@ -162,11 +162,11 @@ describe('Parser', () => {
 			const parser = new Parser(source)
 			const root = parser.parse()
 
-			const rule = root.firstChild!
+			const rule = root.first_child!
 			const [_selector, declaration] = rule.children
 
 			expect(declaration.type).toBe('declaration')
-			expect(declaration.isImportant).toBe(true)
+			expect(declaration.is_important).toBe(true)
 		})
 
 		it('should parse declaration without semicolon at end of block', () => {
@@ -174,7 +174,7 @@ describe('Parser', () => {
 			const parser = new Parser(source)
 			const root = parser.parse()
 
-			const rule = root.firstChild!
+			const rule = root.first_child!
 			const [_selector, declaration] = rule.children
 
 			expect(declaration.type).toBe('declaration')
@@ -185,7 +185,7 @@ describe('Parser', () => {
 			const parser = new Parser(source)
 			const root = parser.parse()
 
-			const rule = root.firstChild!
+			const rule = root.first_child!
 			const [_selector, declaration] = rule.children
 
 			expect(declaration.type).toBe('declaration')
@@ -200,10 +200,10 @@ describe('Parser', () => {
 				const parser = new Parser(source)
 				const root = parser.parse()
 
-				const atRule = root.firstChild!
+				const atRule = root.first_child!
 				expect(atRule.type).toBe('atrule')
 				expect(atRule.name).toBe('import')
-				expect(atRule.hasChildren).toBe(false)
+				expect(atRule.has_children).toBe(false)
 			})
 
 			it('should parse @namespace', () => {
@@ -211,7 +211,7 @@ describe('Parser', () => {
 				const parser = new Parser(source)
 				const root = parser.parse()
 
-				const atRule = root.firstChild!
+				const atRule = root.first_child!
 				expect(atRule.type).toBe('atrule')
 				expect(atRule.name).toBe('namespace')
 			})
@@ -223,12 +223,12 @@ describe('Parser', () => {
 				const parser = new Parser(source)
 				const root = parser.parse()
 
-				const media = root.firstChild!
+				const media = root.first_child!
 				expect(media.type).toBe('atrule')
 				expect(media.name).toBe('media')
-				expect(media.hasChildren).toBe(true)
+				expect(media.has_children).toBe(true)
 
-				const nestedRule = media.firstChild!
+				const nestedRule = media.first_child!
 				expect(nestedRule.type).toBe('rule')
 			})
 
@@ -237,10 +237,10 @@ describe('Parser', () => {
 				const parser = new Parser(source)
 				const root = parser.parse()
 
-				const layer = root.firstChild!
+				const layer = root.first_child!
 				expect(layer.type).toBe('atrule')
 				expect(layer.name).toBe('layer')
-				expect(layer.hasChildren).toBe(true)
+				expect(layer.has_children).toBe(true)
 			})
 
 			it('should parse anonymous @layer', () => {
@@ -248,10 +248,10 @@ describe('Parser', () => {
 				const parser = new Parser(source)
 				const root = parser.parse()
 
-				const layer = root.firstChild!
+				const layer = root.first_child!
 				expect(layer.type).toBe('atrule')
 				expect(layer.name).toBe('layer')
-				expect(layer.hasChildren).toBe(true)
+				expect(layer.has_children).toBe(true)
 			})
 
 			it('should parse @supports', () => {
@@ -259,10 +259,10 @@ describe('Parser', () => {
 				const parser = new Parser(source)
 				const root = parser.parse()
 
-				const supports = root.firstChild!
+				const supports = root.first_child!
 				expect(supports.type).toBe('atrule')
 				expect(supports.name).toBe('supports')
-				expect(supports.hasChildren).toBe(true)
+				expect(supports.has_children).toBe(true)
 			})
 
 			it('should parse @container', () => {
@@ -270,10 +270,10 @@ describe('Parser', () => {
 				const parser = new Parser(source)
 				const root = parser.parse()
 
-				const container = root.firstChild!
+				const container = root.first_child!
 				expect(container.type).toBe('atrule')
 				expect(container.name).toBe('container')
-				expect(container.hasChildren).toBe(true)
+				expect(container.has_children).toBe(true)
 			})
 		})
 
@@ -283,10 +283,10 @@ describe('Parser', () => {
 				const parser = new Parser(source)
 				const root = parser.parse()
 
-				const fontFace = root.firstChild!
+				const fontFace = root.first_child!
 				expect(fontFace.type).toBe('atrule')
 				expect(fontFace.name).toBe('font-face')
-				expect(fontFace.hasChildren).toBe(true)
+				expect(fontFace.has_children).toBe(true)
 
 				// Should have declarations as children
 				const [decl1, decl2] = fontFace.children
@@ -299,11 +299,11 @@ describe('Parser', () => {
 				const parser = new Parser(source)
 				const root = parser.parse()
 
-				const page = root.firstChild!
+				const page = root.first_child!
 				expect(page.type).toBe('atrule')
 				expect(page.name).toBe('page')
 
-				const decl = page.firstChild!
+				const decl = page.first_child!
 				expect(decl.type).toBe('declaration')
 			})
 
@@ -312,11 +312,11 @@ describe('Parser', () => {
 				const parser = new Parser(source)
 				const root = parser.parse()
 
-				const counterStyle = root.firstChild!
+				const counterStyle = root.first_child!
 				expect(counterStyle.type).toBe('atrule')
 				expect(counterStyle.name).toBe('counter-style')
 
-				const decl = counterStyle.firstChild!
+				const decl = counterStyle.first_child!
 				expect(decl.type).toBe('declaration')
 			})
 		})
@@ -327,14 +327,14 @@ describe('Parser', () => {
 				const parser = new Parser(source)
 				const root = parser.parse()
 
-				const supports = root.firstChild!
+				const supports = root.first_child!
 				expect(supports.name).toBe('supports')
 
-				const media = supports.firstChild!
+				const media = supports.first_child!
 				expect(media.type).toBe('atrule')
 				expect(media.name).toBe('media')
 
-				const rule = media.firstChild!
+				const rule = media.first_child!
 				expect(rule.type).toBe('rule')
 			})
 		})

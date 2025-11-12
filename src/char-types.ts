@@ -21,14 +21,14 @@
 // - Cache-friendly (128 bytes fits in L1 cache)
 // - Supports overlapping categories (e.g., '5' is both digit and hex)
 
-const CHAR_ALPHA = 1 << 0 // 1
-const CHAR_DIGIT = 1 << 1 // 2
-const CHAR_HEX = 1 << 2 // 4
-const CHAR_WHITESPACE = 1 << 3 // 8
-const CHAR_NEWLINE = 1 << 4 // 16
+let CHAR_ALPHA = 1 << 0 // 1
+let CHAR_DIGIT = 1 << 1 // 2
+let CHAR_HEX = 1 << 2 // 4
+let CHAR_WHITESPACE = 1 << 3 // 8
+let CHAR_NEWLINE = 1 << 4 // 16
 
 // Lookup table for ASCII characters (0-127)
-const char_types = new Uint8Array(128)
+let char_types = new Uint8Array(128)
 
 // Initialize digit characters (0-9)
 for (let i = 0x30; i <= 0x39; i++) {
@@ -63,35 +63,35 @@ char_types[0x0a] = CHAR_NEWLINE // \n
 char_types[0x0d] = CHAR_NEWLINE // \r
 char_types[0x0c] = CHAR_NEWLINE // \f
 
-export function isDigit(ch: number): boolean {
+export function is_digit(ch: number): boolean {
 	return ch < 128 && (char_types[ch] & CHAR_DIGIT) !== 0
 }
 
-export function isHexDigit(ch: number): boolean {
+export function is_hex_digit(ch: number): boolean {
 	return ch < 128 && (char_types[ch] & CHAR_HEX) !== 0
 }
 
-export function isAlpha(ch: number): boolean {
+export function is_alpha(ch: number): boolean {
 	return ch < 128 && (char_types[ch] & CHAR_ALPHA) !== 0
 }
 
-export function isWhitespace(ch: number): boolean {
+export function is_whitespace(ch: number): boolean {
 	return ch < 128 && (char_types[ch] & CHAR_WHITESPACE) !== 0
 }
 
-export function isNewline(ch: number): boolean {
+export function is_newline(ch: number): boolean {
 	return ch < 128 && (char_types[ch] & CHAR_NEWLINE) !== 0
 }
 
 // CSS ident start: letter, underscore, or non-ASCII (>= 0x80)
-export function isIdentStart(ch: number): boolean {
+export function is_ident_start(ch: number): boolean {
 	if (ch >= 0x80) return true // Non-ASCII
 	if (ch === 0x5f) return true // _
-	return isAlpha(ch)
+	return is_alpha(ch)
 }
 
 // CSS ident char: ident start, digit, or hyphen
-export function isIdentChar(ch: number): boolean {
+export function is_ident_char(ch: number): boolean {
 	if (ch === 0x2d) return true // -
-	return isIdentStart(ch) || isDigit(ch)
+	return is_ident_start(ch) || is_digit(ch)
 }

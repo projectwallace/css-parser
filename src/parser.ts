@@ -1,14 +1,6 @@
 // CSS Parser - Builds AST using the arena
 import { Lexer } from './lexer'
-import {
-	CSSDataArena,
-	NODE_STYLESHEET,
-	NODE_STYLE_RULE,
-	NODE_SELECTOR,
-	NODE_DECLARATION,
-	NODE_AT_RULE,
-	FLAG_IMPORTANT,
-} from './arena'
+import { CSSDataArena, NODE_STYLESHEET, NODE_STYLE_RULE, NODE_SELECTOR, NODE_DECLARATION, NODE_AT_RULE, FLAG_IMPORTANT } from './arena'
 import { CSSNode } from './css-node'
 import type { Token } from './token-types'
 import {
@@ -34,60 +26,60 @@ export class Parser {
 		this.source = source
 		this.lexer = new Lexer(source)
 		// Calculate optimal capacity based on source size
-		const capacity = CSSDataArena.capacityForSource(source.length)
+		let capacity = CSSDataArena.capacity_for_source(source.length)
 		this.arena = new CSSDataArena(capacity)
 		this.currentToken = null
 	}
 
 	// Get the arena (for internal/advanced use only)
-	getArena(): CSSDataArena {
+	get_arena(): CSSDataArena {
 		return this.arena
 	}
 
 	// Get the source code
-	getSource(): string {
+	get_source(): string {
 		return this.source
 	}
 
 	// Advance to the next token, skipping whitespace
-	private nextToken(): Token | null {
+	private next_token(): Token | null {
 		do {
-			this.currentToken = this.lexer.nextToken()
+			this.currentToken = this.lexer.next_token()
 		} while (this.currentToken && this.currentToken.type === TOKEN_WHITESPACE)
 
 		return this.currentToken
 	}
 
 	// Peek at current token type
-	private peekType(): number {
+	private peek_type(): number {
 		return this.currentToken?.type ?? TOKEN_EOF
 	}
 
 	// Check if we're at the end of input
-	private isEOF(): boolean {
-		return this.peekType() === TOKEN_EOF
+	private is_eof(): boolean {
+		return this.peek_type() === TOKEN_EOF
 	}
 
 	// Parse the entire stylesheet and return the root CSSNode
 	parse(): CSSNode {
 		// Start by getting the first token
-		this.nextToken()
+		this.next_token()
 
 		// Create the root stylesheet node
-		const stylesheet = this.arena.createNode()
-		this.arena.setType(stylesheet, NODE_STYLESHEET)
-		this.arena.setStartOffset(stylesheet, 0)
-		this.arena.setLength(stylesheet, this.source.length)
-		this.arena.setStartLine(stylesheet, 1)
+		let stylesheet = this.arena.create_node()
+		this.arena.set_type(stylesheet, NODE_STYLESHEET)
+		this.arena.set_start_offset(stylesheet, 0)
+		this.arena.set_length(stylesheet, this.source.length)
+		this.arena.set_start_line(stylesheet, 1)
 
 		// Parse all rules at the top level
-		while (!this.isEOF()) {
-			const rule = this.parseRule()
+		while (!this.is_eof()) {
+			let rule = this.parse_rule()
 			if (rule !== null) {
-				this.arena.appendChild(stylesheet, rule)
+				this.arena.append_child(stylesheet, rule)
 			} else {
 				// Skip unknown tokens
-				this.nextToken()
+				this.next_token()
 			}
 		}
 
@@ -96,273 +88,273 @@ export class Parser {
 	}
 
 	// Parse a rule (style rule or at-rule)
-	private parseRule(): number | null {
-		if (this.isEOF()) {
+	private parse_rule(): number | null {
+		if (this.is_eof()) {
 			return null
 		}
 
 		// Skip comments at rule level
-		if (this.peekType() === TOKEN_COMMENT) {
+		if (this.peek_type() === TOKEN_COMMENT) {
 			// TODO: Create comment nodes
-			this.nextToken()
+			this.next_token()
 			return null
 		}
 
 		// Check for at-rule
-		if (this.peekType() === TOKEN_AT_KEYWORD) {
-			return this.parseAtRule()
+		if (this.peek_type() === TOKEN_AT_KEYWORD) {
+			return this.parse_atrule()
 		}
 
 		// Try to parse as style rule
-		return this.parseStyleRule()
+		return this.parse_style_rule()
 	}
 
 	// Parse a style rule: selector { declarations }
-	private parseStyleRule(): number | null {
-		const startToken = this.currentToken
-		if (!startToken) return null
+	private parse_style_rule(): number | null {
+		let start_token = this.currentToken
+		if (!start_token) return null
 
-		const ruleStart = startToken.start
-		const ruleLine = startToken.line
+		let rule_start = start_token.start
+		let rule_line = start_token.line
 
 		// Create the style rule node
-		const styleRule = this.arena.createNode()
-		this.arena.setType(styleRule, NODE_STYLE_RULE)
-		this.arena.setStartLine(styleRule, ruleLine)
+		let style_rule = this.arena.create_node()
+		this.arena.set_type(style_rule, NODE_STYLE_RULE)
+		this.arena.set_start_line(style_rule, rule_line)
 
 		// Parse selector (everything until '{')
-		const selector = this.parseSelector()
+		let selector = this.parse_selector()
 		if (selector !== null) {
-			this.arena.appendChild(styleRule, selector)
+			this.arena.append_child(style_rule, selector)
 		}
 
 		// Expect '{'
-		if (this.peekType() !== TOKEN_LEFT_BRACE) {
+		if (this.peek_type() !== TOKEN_LEFT_BRACE) {
 			// Error recovery: skip to next rule
 			return null
 		}
-		this.nextToken() // consume '{'
+		this.next_token() // consume '{'
 
 		// Parse declarations block
-		while (!this.isEOF() && this.peekType() !== TOKEN_RIGHT_BRACE) {
-			const declaration = this.parseDeclaration()
+		while (!this.is_eof() && this.peek_type() !== TOKEN_RIGHT_BRACE) {
+			let declaration = this.parse_declaration()
 			if (declaration !== null) {
-				this.arena.appendChild(styleRule, declaration)
+				this.arena.append_child(style_rule, declaration)
 			} else {
 				// Skip unknown tokens
-				this.nextToken()
+				this.next_token()
 			}
 		}
 
 		// Expect '}'
-		if (this.peekType() === TOKEN_RIGHT_BRACE) {
-			this.nextToken() // consume '}'
+		if (this.peek_type() === TOKEN_RIGHT_BRACE) {
+			this.next_token() // consume '}'
 		}
 
 		// Set the rule's offsets
-		const endToken = this.currentToken
-		if (endToken) {
-			this.arena.setStartOffset(styleRule, ruleStart)
-			this.arena.setLength(styleRule, endToken.end - ruleStart)
+		let end_token = this.currentToken
+		if (end_token) {
+			this.arena.set_start_offset(style_rule, rule_start)
+			this.arena.set_length(style_rule, end_token.end - rule_start)
 		}
 
-		return styleRule
+		return style_rule
 	}
 
 	// Parse a selector (everything before '{')
-	private parseSelector(): number | null {
-		const startToken = this.currentToken
-		if (!startToken) return null
+	private parse_selector(): number | null {
+		let start_token = this.currentToken
+		if (!start_token) return null
 
-		const selectorStart = startToken.start
-		const selectorLine = startToken.line
+		let selector_start = start_token.start
+		let selector_line = start_token.line
 
 		// Create selector node
-		const selector = this.arena.createNode()
-		this.arena.setType(selector, NODE_SELECTOR)
-		this.arena.setStartLine(selector, selectorLine)
+		let selector = this.arena.create_node()
+		this.arena.set_type(selector, NODE_SELECTOR)
+		this.arena.set_start_line(selector, selector_line)
 
 		// Consume tokens until we hit '{'
-		let lastToken = startToken
-		while (!this.isEOF() && this.peekType() !== TOKEN_LEFT_BRACE) {
-			lastToken = this.currentToken!
-			this.nextToken()
+		let last_token = start_token
+		while (!this.is_eof() && this.peek_type() !== TOKEN_LEFT_BRACE) {
+			last_token = this.currentToken!
+			this.next_token()
 		}
 
 		// Set selector offsets
-		this.arena.setStartOffset(selector, selectorStart)
-		this.arena.setLength(selector, lastToken.end - selectorStart)
+		this.arena.set_start_offset(selector, selector_start)
+		this.arena.set_length(selector, last_token.end - selector_start)
 
 		return selector
 	}
 
 	// Parse a declaration: property: value;
-	private parseDeclaration(): number | null {
+	private parse_declaration(): number | null {
 		// Skip comments
-		if (this.peekType() === TOKEN_COMMENT) {
+		if (this.peek_type() === TOKEN_COMMENT) {
 			// TODO: Create comment nodes
-			this.nextToken()
+			this.next_token()
 			return null
 		}
 
 		// Expect identifier (property name)
-		if (this.peekType() !== TOKEN_IDENT) {
+		if (this.peek_type() !== TOKEN_IDENT) {
 			return null
 		}
 
-		const startToken = this.currentToken
-		if (!startToken) return null
+		let start_token = this.currentToken
+		if (!start_token) return null
 
-		const propStart = startToken.start
-		const propEnd = startToken.end
-		const declLine = startToken.line
+		let prop_start = start_token.start
+		let prop_end = start_token.end
+		let decl_line = start_token.line
 
-		this.nextToken() // consume property name
+		this.next_token() // consume property name
 
 		// Expect ':'
-		if (this.peekType() !== TOKEN_COLON) {
+		if (this.peek_type() !== TOKEN_COLON) {
 			return null
 		}
-		this.nextToken() // consume ':'
+		this.next_token() // consume ':'
 
 		// Create declaration node
-		const declaration = this.arena.createNode()
-		this.arena.setType(declaration, NODE_DECLARATION)
-		this.arena.setStartLine(declaration, declLine)
-		this.arena.setStartOffset(declaration, propStart)
+		let declaration = this.arena.create_node()
+		this.arena.set_type(declaration, NODE_DECLARATION)
+		this.arena.set_start_line(declaration, decl_line)
+		this.arena.set_start_offset(declaration, prop_start)
 
 		// Store property name position
-		this.arena.setContentStart(declaration, propStart)
-		this.arena.setContentLength(declaration, propEnd - propStart)
+		this.arena.set_content_start(declaration, prop_start)
+		this.arena.set_content_length(declaration, prop_end - prop_start)
 
 		// Parse value (everything until ';' or '}')
-		let hasImportant = false
-		let lastToken = this.currentToken
+		let has_important = false
+		let last_token = this.currentToken
 
-		while (!this.isEOF() && this.peekType() !== TOKEN_SEMICOLON && this.peekType() !== TOKEN_RIGHT_BRACE) {
+		while (!this.is_eof() && this.peek_type() !== TOKEN_SEMICOLON && this.peek_type() !== TOKEN_RIGHT_BRACE) {
 			// Check for ! followed by any identifier (e.g., !important, !ie, etc.)
-			if (this.peekType() === TOKEN_DELIM && this.currentToken && this.source[this.currentToken.start] === '!') {
+			if (this.peek_type() === TOKEN_DELIM && this.currentToken && this.source[this.currentToken.start] === '!') {
 				// Check if next token is an identifier
-				const nextToken = this.lexer.nextToken()
-				if (nextToken && nextToken.type === TOKEN_IDENT) {
-					hasImportant = true
-					lastToken = nextToken
-					this.currentToken = nextToken
+				let next_token = this.lexer.next_token()
+				if (next_token && next_token.type === TOKEN_IDENT) {
+					has_important = true
+					last_token = next_token
+					this.currentToken = next_token
 					break
 				}
 			}
 
-			lastToken = this.currentToken!
-			this.nextToken()
+			last_token = this.currentToken!
+			this.next_token()
 		}
 
 		// Set !important flag if found
-		if (hasImportant) {
-			this.arena.setFlag(declaration, FLAG_IMPORTANT)
+		if (has_important) {
+			this.arena.set_flag(declaration, FLAG_IMPORTANT)
 		}
 
 		// Consume ';' if present
-		if (this.peekType() === TOKEN_SEMICOLON) {
-			lastToken = this.currentToken!
-			this.nextToken()
+		if (this.peek_type() === TOKEN_SEMICOLON) {
+			last_token = this.currentToken!
+			this.next_token()
 		}
 
 		// Set declaration length
-		if (lastToken) {
-			this.arena.setLength(declaration, lastToken.end - propStart)
+		if (last_token) {
+			this.arena.set_length(declaration, last_token.end - prop_start)
 		}
 
 		return declaration
 	}
 
 	// Parse an at-rule: @media, @import, @font-face, etc.
-	private parseAtRule(): number | null {
-		const startToken = this.currentToken
-		if (!startToken || startToken.type !== TOKEN_AT_KEYWORD) {
+	private parse_atrule(): number | null {
+		let start_token = this.currentToken
+		if (!start_token || start_token.type !== TOKEN_AT_KEYWORD) {
 			return null
 		}
 
-		const atRuleStart = startToken.start
-		const atRuleLine = startToken.line
+		let at_rule_start = start_token.start
+		let at_rule_line = start_token.line
 
 		// Extract at-rule name (skip the '@')
-		const atRuleName = this.source.substring(startToken.start + 1, startToken.end)
-		const nameStart = startToken.start + 1
-		const nameLength = atRuleName.length
+		let at_rule_name = this.source.substring(start_token.start + 1, start_token.end)
+		let name_start = start_token.start + 1
+		let name_length = at_rule_name.length
 
-		this.nextToken() // consume @keyword
+		this.next_token() // consume @keyword
 
 		// Create at-rule node
-		const atRule = this.arena.createNode()
-		this.arena.setType(atRule, NODE_AT_RULE)
-		this.arena.setStartLine(atRule, atRuleLine)
-		this.arena.setStartOffset(atRule, atRuleStart)
+		let at_rule = this.arena.create_node()
+		this.arena.set_type(at_rule, NODE_AT_RULE)
+		this.arena.set_start_line(at_rule, at_rule_line)
+		this.arena.set_start_offset(at_rule, at_rule_start)
 
 		// Store at-rule name in contentStart/contentLength
-		this.arena.setContentStart(atRule, nameStart)
-		this.arena.setContentLength(atRule, nameLength)
+		this.arena.set_content_start(at_rule, name_start)
+		this.arena.set_content_length(at_rule, name_length)
 
 		// Parse prelude (everything before '{' or ';')
 		// For now, just consume tokens
-		while (!this.isEOF() && this.peekType() !== TOKEN_LEFT_BRACE && this.peekType() !== TOKEN_SEMICOLON) {
-			this.nextToken()
+		while (!this.is_eof() && this.peek_type() !== TOKEN_LEFT_BRACE && this.peek_type() !== TOKEN_SEMICOLON) {
+			this.next_token()
 		}
 
-		let lastToken = this.currentToken
+		let last_token = this.currentToken
 
 		// Check if this at-rule has a block or is a statement
-		if (this.peekType() === TOKEN_LEFT_BRACE) {
-			this.nextToken() // consume '{'
+		if (this.peek_type() === TOKEN_LEFT_BRACE) {
+			this.next_token() // consume '{'
 
 			// Determine what to parse inside the block based on the at-rule name
-			const hasDeclarations = this.atRuleHasDeclarations(atRuleName)
+			let has_declarations = this.atrule_has_declarations(at_rule_name)
 
-			if (hasDeclarations) {
+			if (has_declarations) {
 				// Parse declarations (like @font-face, @page)
-				while (!this.isEOF() && this.peekType() !== TOKEN_RIGHT_BRACE) {
-					const declaration = this.parseDeclaration()
+				while (!this.is_eof() && this.peek_type() !== TOKEN_RIGHT_BRACE) {
+					let declaration = this.parse_declaration()
 					if (declaration !== null) {
-						this.arena.appendChild(atRule, declaration)
+						this.arena.append_child(at_rule, declaration)
 					} else {
-						this.nextToken()
+						this.next_token()
 					}
 				}
 			} else {
 				// Parse nested rules (like @media, @supports, @layer)
-				while (!this.isEOF() && this.peekType() !== TOKEN_RIGHT_BRACE) {
-					const rule = this.parseRule()
+				while (!this.is_eof() && this.peek_type() !== TOKEN_RIGHT_BRACE) {
+					let rule = this.parse_rule()
 					if (rule !== null) {
-						this.arena.appendChild(atRule, rule)
+						this.arena.append_child(at_rule, rule)
 					} else {
-						this.nextToken()
+						this.next_token()
 					}
 				}
 			}
 
 			// Consume '}'
-			if (this.peekType() === TOKEN_RIGHT_BRACE) {
-				lastToken = this.currentToken!
-				this.nextToken()
+			if (this.peek_type() === TOKEN_RIGHT_BRACE) {
+				last_token = this.currentToken!
+				this.next_token()
 			}
-		} else if (this.peekType() === TOKEN_SEMICOLON) {
+		} else if (this.peek_type() === TOKEN_SEMICOLON) {
 			// Statement at-rule (like @import, @namespace)
-			lastToken = this.currentToken!
-			this.nextToken() // consume ';'
+			last_token = this.currentToken!
+			this.next_token() // consume ';'
 		}
 
 		// Set at-rule length
-		if (lastToken) {
-			this.arena.setLength(atRule, lastToken.end - atRuleStart)
+		if (last_token) {
+			this.arena.set_length(at_rule, last_token.end - at_rule_start)
 		}
 
-		return atRule
+		return at_rule
 	}
 
 	// Determine if an at-rule contains declarations or nested rules
-	private atRuleHasDeclarations(name: string): boolean {
+	private atrule_has_declarations(name: string): boolean {
 		// At-rules with declarations in their blocks
-		const declarationAtRules = ['font-face', 'font-feature-values', 'page', 'property', 'counter-style']
+		let declaration_at_rules = ['font-face', 'font-feature-values', 'page', 'property', 'counter-style']
 
-		return declarationAtRules.includes(name)
+		return declaration_at_rules.includes(name)
 	}
 }

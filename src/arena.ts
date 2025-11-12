@@ -16,7 +16,7 @@
 //  24    |  4   | nextSibling
 //  28    |  4   | startLine
 
-const BYTES_PER_NODE = 32
+let BYTES_PER_NODE = 32
 
 // Node type constants
 export const NODE_STYLESHEET = 1
@@ -47,19 +47,19 @@ export class CSSDataArena {
 	// Buffer to avoid frequent growth (15%)
 	private static readonly CAPACITY_BUFFER = 1.15
 
-	constructor(initialCapacity: number = 1024) {
-		this.capacity = initialCapacity
+	constructor(initial_capacity: number = 1024) {
+		this.capacity = initial_capacity
 		this.count = 0
-		this.buffer = new ArrayBuffer(initialCapacity * BYTES_PER_NODE)
+		this.buffer = new ArrayBuffer(initial_capacity * BYTES_PER_NODE)
 		this.view = new DataView(this.buffer)
 	}
 
 	// Calculate recommended initial capacity based on CSS source size
-	static capacityForSource(sourceLength: number): number {
-		const sizeInKB = sourceLength / 1024
-		const estimatedNodes = Math.ceil(sizeInKB * CSSDataArena.NODES_PER_KB)
+	static capacity_for_source(source_length: number): number {
+		let size_in_kb = source_length / 1024
+		let estimated_nodes = Math.ceil(size_in_kb * CSSDataArena.NODES_PER_KB)
 		// Add 15% buffer to avoid growth during parsing
-		const capacity = Math.ceil(estimatedNodes * CSSDataArena.CAPACITY_BUFFER)
+		let capacity = Math.ceil(estimated_nodes * CSSDataArena.CAPACITY_BUFFER)
 		// Ensure minimum capacity of 16 nodes (even for empty stylesheets)
 		return Math.max(16, capacity)
 	}
@@ -75,180 +75,180 @@ export class CSSDataArena {
 	}
 
 	// Calculate byte offset for a node
-	private nodeOffset(nodeIndex: number): number {
-		return nodeIndex * BYTES_PER_NODE
+	private node_offset(node_index: number): number {
+		return node_index * BYTES_PER_NODE
 	}
 
 	// Read node type
-	getType(nodeIndex: number): number {
-		return this.view.getUint8(this.nodeOffset(nodeIndex))
+	get_type(node_index: number): number {
+		return this.view.getUint8(this.node_offset(node_index))
 	}
 
 	// Read node flags
-	getFlags(nodeIndex: number): number {
-		return this.view.getUint8(this.nodeOffset(nodeIndex) + 1)
+	get_flags(node_index: number): number {
+		return this.view.getUint8(this.node_offset(node_index) + 1)
 	}
 
 	// Read start offset in source
-	getStartOffset(nodeIndex: number): number {
-		return this.view.getUint32(this.nodeOffset(nodeIndex) + 4, true)
+	get_start_offset(node_index: number): number {
+		return this.view.getUint32(this.node_offset(node_index) + 4, true)
 	}
 
 	// Read length in source
-	getLength(nodeIndex: number): number {
-		return this.view.getUint16(this.nodeOffset(nodeIndex) + 8, true)
+	get_length(node_index: number): number {
+		return this.view.getUint16(this.node_offset(node_index) + 8, true)
 	}
 
 	// Read content start offset
-	getContentStart(nodeIndex: number): number {
-		return this.view.getUint32(this.nodeOffset(nodeIndex) + 12, true)
+	get_content_start(node_index: number): number {
+		return this.view.getUint32(this.node_offset(node_index) + 12, true)
 	}
 
 	// Read content length
-	getContentLength(nodeIndex: number): number {
-		return this.view.getUint16(this.nodeOffset(nodeIndex) + 16, true)
+	get_content_length(node_index: number): number {
+		return this.view.getUint16(this.node_offset(node_index) + 16, true)
 	}
 
 	// Read first child index (0 = no children)
-	getFirstChild(nodeIndex: number): number {
-		return this.view.getUint32(this.nodeOffset(nodeIndex) + 20, true)
+	get_first_child(node_index: number): number {
+		return this.view.getUint32(this.node_offset(node_index) + 20, true)
 	}
 
 	// Read next sibling index (0 = no sibling)
-	getNextSibling(nodeIndex: number): number {
-		return this.view.getUint32(this.nodeOffset(nodeIndex) + 24, true)
+	get_next_sibling(node_index: number): number {
+		return this.view.getUint32(this.node_offset(node_index) + 24, true)
 	}
 
 	// Read start line
-	getStartLine(nodeIndex: number): number {
-		return this.view.getUint32(this.nodeOffset(nodeIndex) + 28, true)
+	get_start_line(node_index: number): number {
+		return this.view.getUint32(this.node_offset(node_index) + 28, true)
 	}
 
 	// --- Write Methods ---
 
 	// Write node type
-	setType(nodeIndex: number, type: number): void {
-		this.view.setUint8(this.nodeOffset(nodeIndex), type)
+	set_type(node_index: number, type: number): void {
+		this.view.setUint8(this.node_offset(node_index), type)
 	}
 
 	// Write node flags
-	setFlags(nodeIndex: number, flags: number): void {
-		this.view.setUint8(this.nodeOffset(nodeIndex) + 1, flags)
+	set_flags(node_index: number, flags: number): void {
+		this.view.setUint8(this.node_offset(node_index) + 1, flags)
 	}
 
 	// Write start offset in source
-	setStartOffset(nodeIndex: number, offset: number): void {
-		this.view.setUint32(this.nodeOffset(nodeIndex) + 4, offset, true)
+	set_start_offset(node_index: number, offset: number): void {
+		this.view.setUint32(this.node_offset(node_index) + 4, offset, true)
 	}
 
 	// Write length in source
-	setLength(nodeIndex: number, length: number): void {
-		this.view.setUint16(this.nodeOffset(nodeIndex) + 8, length, true)
+	set_length(node_index: number, length: number): void {
+		this.view.setUint16(this.node_offset(node_index) + 8, length, true)
 	}
 
 	// Write content start offset
-	setContentStart(nodeIndex: number, offset: number): void {
-		this.view.setUint32(this.nodeOffset(nodeIndex) + 12, offset, true)
+	set_content_start(node_index: number, offset: number): void {
+		this.view.setUint32(this.node_offset(node_index) + 12, offset, true)
 	}
 
 	// Write content length
-	setContentLength(nodeIndex: number, length: number): void {
-		this.view.setUint16(this.nodeOffset(nodeIndex) + 16, length, true)
+	set_content_length(node_index: number, length: number): void {
+		this.view.setUint16(this.node_offset(node_index) + 16, length, true)
 	}
 
 	// Write first child index
-	setFirstChild(nodeIndex: number, childIndex: number): void {
-		this.view.setUint32(this.nodeOffset(nodeIndex) + 20, childIndex, true)
+	set_first_child(node_index: number, childIndex: number): void {
+		this.view.setUint32(this.node_offset(node_index) + 20, childIndex, true)
 	}
 
 	// Write next sibling index
-	setNextSibling(nodeIndex: number, siblingIndex: number): void {
-		this.view.setUint32(this.nodeOffset(nodeIndex) + 24, siblingIndex, true)
+	set_next_sibling(node_index: number, siblingIndex: number): void {
+		this.view.setUint32(this.node_offset(node_index) + 24, siblingIndex, true)
 	}
 
 	// Write start line
-	setStartLine(nodeIndex: number, line: number): void {
-		this.view.setUint32(this.nodeOffset(nodeIndex) + 28, line, true)
+	set_start_line(node_index: number, line: number): void {
+		this.view.setUint32(this.node_offset(node_index) + 28, line, true)
 	}
 
 	// --- Node Creation ---
 
 	// Grow the arena by 1.3x when capacity is exceeded
 	private grow(): void {
-		const newCapacity = Math.ceil(this.capacity * CSSDataArena.GROWTH_FACTOR)
-		const newBuffer = new ArrayBuffer(newCapacity * BYTES_PER_NODE)
+		let new_capacity = Math.ceil(this.capacity * CSSDataArena.GROWTH_FACTOR)
+		let new_buffer = new ArrayBuffer(new_capacity * BYTES_PER_NODE)
 
 		// Copy existing data to new buffer
-		new Uint8Array(newBuffer).set(new Uint8Array(this.buffer))
+		new Uint8Array(new_buffer).set(new Uint8Array(this.buffer))
 
 		// Update arena state
-		this.buffer = newBuffer
-		this.view = new DataView(newBuffer)
-		this.capacity = newCapacity
+		this.buffer = new_buffer
+		this.view = new DataView(new_buffer)
+		this.capacity = new_capacity
 	}
 
 	// Allocate a new node and return its index
 	// The node is zero-initialized by default (ArrayBuffer guarantees this)
 	// Automatically grows the arena if capacity is exceeded
-	createNode(): number {
+	create_node(): number {
 		if (this.count >= this.capacity) {
 			this.grow()
 		}
-		const nodeIndex = this.count
+		let node_index = this.count
 		this.count++
-		return nodeIndex
+		return node_index
 	}
 
 	// --- Tree Building Helpers ---
 
 	// Add a child node to a parent node
 	// This appends to the end of the child list using the sibling chain
-	appendChild(parentIndex: number, childIndex: number): void {
-		const firstChild = this.getFirstChild(parentIndex)
+	append_child(parentIndex: number, childIndex: number): void {
+		let first_child = this.get_first_child(parentIndex)
 
-		if (firstChild === 0) {
+		if (first_child === 0) {
 			// No children yet, make this the first child
-			this.setFirstChild(parentIndex, childIndex)
+			this.set_first_child(parentIndex, childIndex)
 		} else {
 			// Find the last sibling and append
-			let lastSibling = firstChild
-			let nextSibling = this.getNextSibling(lastSibling)
+			let last_sibling = first_child
+			let next_sibling = this.get_next_sibling(last_sibling)
 
-			while (nextSibling !== 0) {
-				lastSibling = nextSibling
-				nextSibling = this.getNextSibling(lastSibling)
+			while (next_sibling !== 0) {
+				last_sibling = next_sibling
+				next_sibling = this.get_next_sibling(last_sibling)
 			}
 
-			this.setNextSibling(lastSibling, childIndex)
+			this.set_next_sibling(last_sibling, childIndex)
 		}
 	}
 
 	// Check if a node has any children
-	hasChildren(nodeIndex: number): boolean {
-		return this.getFirstChild(nodeIndex) !== 0
+	has_children(node_index: number): boolean {
+		return this.get_first_child(node_index) !== 0
 	}
 
 	// Check if a node has a next sibling
-	hasNextSibling(nodeIndex: number): boolean {
-		return this.getNextSibling(nodeIndex) !== 0
+	has_next_sibling(node_index: number): boolean {
+		return this.get_next_sibling(node_index) !== 0
 	}
 
 	// --- Flag Management Helpers ---
 
 	// Set a specific flag bit (doesn't clear other flags)
-	setFlag(nodeIndex: number, flag: number): void {
-		const currentFlags = this.getFlags(nodeIndex)
-		this.setFlags(nodeIndex, currentFlags | flag)
+	set_flag(node_index: number, flag: number): void {
+		let current_flags = this.get_flags(node_index)
+		this.set_flags(node_index, current_flags | flag)
 	}
 
 	// Clear a specific flag bit (doesn't affect other flags)
-	clearFlag(nodeIndex: number, flag: number): void {
-		const currentFlags = this.getFlags(nodeIndex)
-		this.setFlags(nodeIndex, currentFlags & ~flag)
+	clear_flag(node_index: number, flag: number): void {
+		let current_flags = this.get_flags(node_index)
+		this.set_flags(node_index, current_flags & ~flag)
 	}
 
 	// Check if a specific flag is set
-	hasFlag(nodeIndex: number, flag: number): boolean {
-		return (this.getFlags(nodeIndex) & flag) !== 0
+	has_flag(node_index: number, flag: number): boolean {
+		return (this.get_flags(node_index) & flag) !== 0
 	}
 }
