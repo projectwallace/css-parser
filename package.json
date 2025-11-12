@@ -1,0 +1,46 @@
+{
+  "name": "css-tools",
+  "version": "1.0.0",
+  "description": "High-performance CSS lexer and parser",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./lexer": {
+      "types": "./dist/lexer.d.ts",
+      "import": "./dist/lexer.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "test": "vitest",
+    "build": "vite build && tsc --project tsconfig.build.json",
+    "lint": "oxlint --config .oxlintrc.json",
+    "lint-package": "publint"
+  },
+  "keywords": [
+    "css",
+    "parser",
+    "lexer",
+    "tokenizer",
+    "ast"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@projectwallace/preset-oxlint": "^0.0.7",
+    "oxlint": "^1.28.0",
+    "prettier": "^3.6.2",
+    "publint": "^0.3.15",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.2",
+    "vitest": "^4.0.8"
+  }
+}
