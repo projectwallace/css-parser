@@ -135,11 +135,30 @@ export class Parser {
 		}
 		this.next_token() // consume '{'
 
-		// Parse declarations block
+		// Parse declarations block (and nested rules for CSS Nesting)
 		while (!this.is_eof() && this.peek_type() !== TOKEN_RIGHT_BRACE) {
+			// Check for nested at-rule
+			if (this.peek_type() === TOKEN_AT_KEYWORD) {
+				let nested_at_rule = this.parse_atrule()
+				if (nested_at_rule !== null) {
+					this.arena.append_child(style_rule, nested_at_rule)
+				} else {
+					this.next_token()
+				}
+				continue
+			}
+
+			// Try to parse as declaration first
 			let declaration = this.parse_declaration()
 			if (declaration !== null) {
 				this.arena.append_child(style_rule, declaration)
+				continue
+			}
+
+			// If not a declaration, try parsing as nested style rule
+			let nested_rule = this.parse_style_rule()
+			if (nested_rule !== null) {
+				this.arena.append_child(style_rule, nested_rule)
 			} else {
 				// Skip unknown tokens
 				this.next_token()
@@ -308,9 +327,10 @@ export class Parser {
 
 			// Determine what to parse inside the block based on the at-rule name
 			let has_declarations = this.atrule_has_declarations(at_rule_name)
+			let is_conditional = this.atrule_is_conditional(at_rule_name)
 
 			if (has_declarations) {
-				// Parse declarations (like @font-face, @page)
+				// Parse declarations only (like @font-face, @page)
 				while (!this.is_eof() && this.peek_type() !== TOKEN_RIGHT_BRACE) {
 					let declaration = this.parse_declaration()
 					if (declaration !== null) {
@@ -319,8 +339,38 @@ export class Parser {
 						this.next_token()
 					}
 				}
+			} else if (is_conditional) {
+				// Conditional at-rules can contain both declarations and rules (CSS Nesting)
+				while (!this.is_eof() && this.peek_type() !== TOKEN_RIGHT_BRACE) {
+					// Check for nested at-rule
+					if (this.peek_type() === TOKEN_AT_KEYWORD) {
+						let nested_at_rule = this.parse_atrule()
+						if (nested_at_rule !== null) {
+							this.arena.append_child(at_rule, nested_at_rule)
+						} else {
+							this.next_token()
+						}
+						continue
+					}
+
+					// Try to parse as declaration first
+					let declaration = this.parse_declaration()
+					if (declaration !== null) {
+						this.arena.append_child(at_rule, declaration)
+						continue
+					}
+
+					// If not a declaration, try parsing as nested style rule
+					let nested_rule = this.parse_style_rule()
+					if (nested_rule !== null) {
+						this.arena.append_child(at_rule, nested_rule)
+					} else {
+						// Skip unknown tokens
+						this.next_token()
+					}
+				}
 			} else {
-				// Parse nested rules (like @media, @supports, @layer)
+				// Parse nested rules only (like @keyframes)
 				while (!this.is_eof() && this.peek_type() !== TOKEN_RIGHT_BRACE) {
 					let rule = this.parse_rule()
 					if (rule !== null) {
@@ -356,5 +406,13 @@ export class Parser {
 		let declaration_at_rules = ['font-face', 'font-feature-values', 'page', 'property', 'counter-style']
 
 		return declaration_at_rules.includes(name)
+	}
+
+	// Determine if an at-rule is conditional (can contain both declarations and rules in CSS Nesting)
+	private atrule_is_conditional(name: string): boolean {
+		// Conditional at-rules that support CSS Nesting
+		let conditional_at_rules = ['media', 'supports', 'container', 'layer', 'nest']
+
+		return conditional_at_rules.includes(name)
 	}
 }

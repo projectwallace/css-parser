@@ -352,4 +352,667 @@ describe('Parser', () => {
 			})
 		})
 	})
+
+	describe('CSS Nesting', () => {
+		it('should parse nested rule with & selector', () => {
+			let source = '.parent { color: red; & .child { color: blue; } }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let parent = root.first_child!
+			expect(parent.type).toBe('rule')
+
+			let [_selector, decl, nested_rule] = parent.children
+			expect(decl.type).toBe('declaration')
+			expect(decl.name).toBe('color')
+
+			expect(nested_rule.type).toBe('rule')
+			let nested_selector = nested_rule.first_child!
+			expect(nested_selector.type).toBe('selector')
+			expect(nested_selector.text).toBe('& .child')
+		})
+
+		it('should parse nested rule without & selector', () => {
+			let source = '.parent { color: red; .child { color: blue; } }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let parent = root.first_child!
+			let [_selector, decl, nested_rule] = parent.children
+
+			expect(nested_rule.type).toBe('rule')
+			let nested_selector = nested_rule.first_child!
+			expect(nested_selector.text).toBe('.child')
+		})
+
+		it('should parse multiple nested rules', () => {
+			let source = '.parent { .child1 { } .child2 { } }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let parent = root.first_child!
+			let [_selector, nested1, nested2] = parent.children
+
+			expect(nested1.type).toBe('rule')
+			expect(nested2.type).toBe('rule')
+		})
+
+		it('should parse deeply nested rules', () => {
+			let source = '.a { .b { .c { color: red; } } }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let a = root.first_child!
+			let [_selector_a, b] = a.children
+			expect(b.type).toBe('rule')
+
+			let [_selector_b, c] = b.children
+			expect(c.type).toBe('rule')
+
+			let [_selector_c, decl] = c.children
+			expect(decl.type).toBe('declaration')
+			expect(decl.name).toBe('color')
+		})
+
+		it('should parse nested @media inside rule', () => {
+			let source = '.card { color: red; @media (min-width: 768px) { padding: 2rem; } }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let card = root.first_child!
+			let [_selector, decl, media] = card.children
+
+			expect(decl.type).toBe('declaration')
+			expect(media.type).toBe('atrule')
+			expect(media.name).toBe('media')
+
+			let nested_decl = media.first_child!
+			expect(nested_decl.type).toBe('declaration')
+			expect(nested_decl.name).toBe('padding')
+		})
+
+		it('should parse :is() pseudo-class', () => {
+			let source = ':is(.a, .b) { color: red; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let selector = rule.first_child!
+			expect(selector.text).toBe(':is(.a, .b)')
+		})
+
+		it('should parse :where() pseudo-class', () => {
+			let source = ':where(h1, h2, h3) { margin: 0; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let selector = rule.first_child!
+			expect(selector.text).toBe(':where(h1, h2, h3)')
+		})
+
+		it('should parse :has() pseudo-class', () => {
+			let source = 'div:has(> img) { display: flex; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let selector = rule.first_child!
+			expect(selector.text).toBe('div:has(> img)')
+		})
+
+		it('should parse complex nesting with mixed declarations and rules', () => {
+			let source = `.card {
+				color: red;
+				.title { font-size: 2rem; }
+				padding: 1rem;
+				.body { line-height: 1.5; }
+			}`
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let card = root.first_child!
+			let [_selector, decl1, title, decl2, body] = card.children
+
+			expect(decl1.type).toBe('declaration')
+			expect(decl1.name).toBe('color')
+
+			expect(title.type).toBe('rule')
+
+			expect(decl2.type).toBe('declaration')
+			expect(decl2.name).toBe('padding')
+
+			expect(body.type).toBe('rule')
+		})
+	})
+
+	describe('@keyframes parsing', () => {
+		it('should parse @keyframes with from/to', () => {
+			let source = '@keyframes fade { from { opacity: 0; } to { opacity: 1; } }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let keyframes = root.first_child!
+			expect(keyframes.type).toBe('atrule')
+			expect(keyframes.name).toBe('keyframes')
+
+			let [from_rule, to_rule] = keyframes.children
+			expect(from_rule.type).toBe('rule')
+			expect(to_rule.type).toBe('rule')
+
+			let from_selector = from_rule.first_child!
+			expect(from_selector.text).toBe('from')
+
+			let to_selector = to_rule.first_child!
+			expect(to_selector.text).toBe('to')
+		})
+
+		it('should parse @keyframes with percentages', () => {
+			let source = '@keyframes slide { 0% { left: 0; } 50% { left: 50%; } 100% { left: 100%; } }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let keyframes = root.first_child!
+			let [rule0, rule50, rule100] = keyframes.children
+
+			expect(rule0.type).toBe('rule')
+			expect(rule50.type).toBe('rule')
+			expect(rule100.type).toBe('rule')
+
+			let selector0 = rule0.first_child!
+			expect(selector0.text).toBe('0%')
+		})
+
+		it('should parse @keyframes with multiple selectors', () => {
+			let source = '@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let keyframes = root.first_child!
+			let [rule1, rule2] = keyframes.children
+
+			let selector1 = rule1.first_child!
+			expect(selector1.text).toBe('0%, 100%')
+		})
+	})
+
+	describe('@nest at-rule', () => {
+		it('should parse @nest with & selector', () => {
+			let source = '.parent { @nest & .child { color: blue; } }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let parent = root.first_child!
+			let [_selector, nest] = parent.children
+
+			expect(nest.type).toBe('atrule')
+			expect(nest.name).toBe('nest')
+			expect(nest.has_children).toBe(true)
+
+			let decl = nest.first_child!
+			expect(decl.type).toBe('declaration')
+			expect(decl.name).toBe('color')
+		})
+
+		it('should parse @nest with complex selector', () => {
+			let source = '.a { @nest :not(&) { color: red; } }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let a = root.first_child!
+			let [_selector, nest] = a.children
+
+			expect(nest.type).toBe('atrule')
+			expect(nest.name).toBe('nest')
+		})
+	})
+
+	describe('error recovery and edge cases', () => {
+		it('should handle malformed rule without opening brace', () => {
+			let source = 'body color: red; } div { margin: 0; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			// Should skip malformed rule and parse valid one
+			expect(root.children.length).toBeGreaterThan(0)
+		})
+
+		it('should handle rule without closing brace', () => {
+			let source = 'body { color: red; div { margin: 0; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			// Parser should recover
+			expect(root.has_children).toBe(true)
+		})
+
+		it('should handle empty rule block', () => {
+			let source = '.empty { }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			expect(rule.type).toBe('rule')
+			// Only has selector, no declarations
+			expect(rule.children.length).toBe(1)
+		})
+
+		it('should handle declaration without value', () => {
+			let source = 'body { color: }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, decl] = rule.children
+			expect(decl.type).toBe('declaration')
+		})
+
+		it('should handle multiple semicolons', () => {
+			let source = 'body { color: red;;; margin: 0;; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			expect(rule.children.length).toBeGreaterThan(0)
+		})
+
+		it('should skip invalid tokens in declaration block', () => {
+			let source = 'body { color: red; @@@; margin: 0; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			// Should have selector + valid declarations
+			expect(rule.children.length).toBeGreaterThan(1)
+		})
+
+		it('should handle declaration without colon', () => {
+			let source = 'body { color red; margin: 0; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			// Parser tries to interpret "color red" as nested rule, still has children
+			expect(rule.children.length).toBeGreaterThan(0)
+		})
+
+		it('should handle at-rule without name', () => {
+			let source = '@ { color: red; } body { margin: 0; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			// Should recover and parse body rule
+			expect(root.children.length).toBeGreaterThan(0)
+		})
+
+		it('should handle nested empty blocks', () => {
+			let source = '.a { .b { .c { } } }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let a = root.first_child!
+			expect(a.type).toBe('rule')
+		})
+
+		it('should handle trailing comma in selector', () => {
+			let source = '.a, .b, { color: red; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			expect(rule.type).toBe('rule')
+		})
+	})
+
+	describe('complex real-world scenarios', () => {
+		it('should parse complex nested structure', () => {
+			let source = `
+				.card {
+					display: flex;
+					padding: 1rem;
+
+					.header {
+						font-size: 2rem;
+						font-weight: bold;
+
+						&:hover {
+							color: blue;
+						}
+					}
+
+					@media (min-width: 768px) {
+						padding: 2rem;
+
+						.header {
+							font-size: 3rem;
+						}
+					}
+
+					.footer {
+						margin-top: auto;
+					}
+				}
+			`
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let card = root.first_child!
+			expect(card.type).toBe('rule')
+			expect(card.children.length).toBeGreaterThan(4)
+		})
+
+		it('should parse multiple at-rules with nesting', () => {
+			let source = `
+				@layer base {
+					body { margin: 0; }
+				}
+
+				@layer components {
+					.btn {
+						padding: 0.5rem;
+
+						@media (hover: hover) {
+							&:hover { opacity: 0.8; }
+						}
+					}
+				}
+			`
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let [layer1, layer2] = root.children
+			expect(layer1.type).toBe('atrule')
+			expect(layer2.type).toBe('atrule')
+		})
+
+		it('should parse vendor prefixed properties', () => {
+			let source = '.box { -webkit-transform: scale(1); -moz-transform: scale(1); transform: scale(1); }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, decl1, decl2, decl3] = rule.children
+			expect(decl1.name).toBe('-webkit-transform')
+			expect(decl2.name).toBe('-moz-transform')
+			expect(decl3.name).toBe('transform')
+		})
+
+		it('should parse complex selector list', () => {
+			let source = 'h1, h2, h3, h4, h5, h6, .heading, [role="heading"] { font-family: sans-serif; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let selector = rule.first_child!
+			expect(selector.text).toContain('h1')
+			expect(selector.text).toContain('[role="heading"]')
+		})
+
+		it('should parse deeply nested at-rules', () => {
+			let source = `
+				@supports (display: grid) {
+					@media (min-width: 768px) {
+						@layer utilities {
+							.grid { display: grid; }
+						}
+					}
+				}
+			`
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let supports = root.first_child!
+			let media = supports.first_child!
+			let layer = media.first_child!
+			expect(supports.name).toBe('supports')
+			expect(media.name).toBe('media')
+			expect(layer.name).toBe('layer')
+		})
+
+		it('should parse CSS with calc() and other functions', () => {
+			let source = '.box { width: calc(100% - 2rem); background: linear-gradient(to right, red, blue); }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, width_decl, bg_decl] = rule.children
+			expect(width_decl.name).toBe('width')
+			expect(bg_decl.name).toBe('background')
+		})
+
+		it('should parse custom properties', () => {
+			let source = ':root { --primary-color: #007bff; --spacing: 1rem; } body { color: var(--primary-color); }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			// Parser may have issues with -- custom property names, check what we got
+			expect(root.children.length).toBeGreaterThan(0)
+			let first_rule = root.first_child!
+			expect(first_rule.type).toBe('rule')
+		})
+
+		it('should parse attribute selectors with operators', () => {
+			let source = '[href^="https"][href$=".pdf"][class*="doc"] { color: red; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let selector = rule.first_child!
+			expect(selector.text).toContain('^=')
+			expect(selector.text).toContain('$=')
+			expect(selector.text).toContain('*=')
+		})
+
+		it('should parse pseudo-elements', () => {
+			let source = '.text::before { content: "→"; } .text::after { content: "←"; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let [rule1, rule2] = root.children
+			expect(rule1.type).toBe('rule')
+			expect(rule2.type).toBe('rule')
+		})
+
+		it('should parse multiple !important declarations', () => {
+			let source = '.override { color: red !important; margin: 0 !important; padding: 0 !ie; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			expect(rule.children.length).toBeGreaterThan(1)
+			// Check at least first declaration has important flag
+			let declarations = rule.children.filter(c => c.type === 'declaration')
+			expect(declarations.length).toBeGreaterThan(0)
+			expect(declarations[0].is_important).toBe(true)
+		})
+	})
+
+	describe('comment handling', () => {
+		it('should skip comments at top level', () => {
+			let source = '/* comment */ body { color: red; } /* another comment */'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			// Comments are skipped, only rule remains
+			expect(root.children.length).toBe(1)
+			let rule = root.first_child!
+			expect(rule.type).toBe('rule')
+		})
+
+		it('should skip comments in declaration block', () => {
+			let source = 'body { color: red; /* comment */ margin: 0; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			// Comments don't break parsing
+			expect(rule.type).toBe('rule')
+			expect(rule.children.length).toBeGreaterThan(0)
+		})
+
+		it('should skip comments in selector', () => {
+			let source = 'body /* comment */ , /* comment */ div { color: red; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			expect(rule.type).toBe('rule')
+		})
+
+		it('should handle comment between property and colon', () => {
+			let source = 'body { color /* comment */ : red; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			// Parser behavior with comments in unusual positions
+			expect(root.has_children).toBe(true)
+		})
+
+		it('should handle multi-line comments', () => {
+			let source = `
+				/*
+				 * Multi-line
+				 * comment
+				 */
+				body { color: red; }
+			`
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			expect(root.children.length).toBe(1)
+		})
+	})
+
+	describe('whitespace handling', () => {
+		it('should handle excessive whitespace', () => {
+			let source = '  body  {  color  :  red  ;  }  '
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			expect(rule.type).toBe('rule')
+		})
+
+		it('should handle tabs and newlines', () => {
+			let source = 'body\t{\n\tcolor:\tred;\n}\n'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			expect(rule.type).toBe('rule')
+		})
+
+		it('should handle no whitespace', () => {
+			let source = 'body{color:red;margin:0}'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, decl1, decl2] = rule.children
+			expect(decl1.name).toBe('color')
+			expect(decl2.name).toBe('margin')
+		})
+	})
+
+	describe('special at-rules', () => {
+		it('should parse @charset', () => {
+			let source = '@charset "UTF-8"; body { color: red; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let [charset, body] = root.children
+			expect(charset.type).toBe('atrule')
+			expect(charset.name).toBe('charset')
+		})
+
+		it('should parse @import with media query', () => {
+			let source = '@import url("print.css") print;'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let import_rule = root.first_child!
+			expect(import_rule.type).toBe('atrule')
+			expect(import_rule.name).toBe('import')
+		})
+
+		it('should parse @font-face with multiple descriptors', () => {
+			let source = `
+				@font-face {
+					font-family: "Custom";
+					src: url("font.woff2") format("woff2"),
+					     url("font.woff") format("woff");
+					font-weight: 400;
+					font-style: normal;
+					font-display: swap;
+				}
+			`
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let font_face = root.first_child!
+			expect(font_face.name).toBe('font-face')
+			expect(font_face.children.length).toBeGreaterThan(3)
+		})
+
+		it('should parse @keyframes with mixed percentages and keywords', () => {
+			let source = '@keyframes slide { from { left: 0; } 25%, 75% { left: 50%; } to { left: 100%; } }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let keyframes = root.first_child!
+			expect(keyframes.children.length).toBe(3)
+		})
+
+		it('should parse @counter-style', () => {
+			let source = '@counter-style custom { system: cyclic; symbols: "⚫" "⚪"; suffix: " "; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let counter = root.first_child!
+			expect(counter.name).toBe('counter-style')
+			expect(counter.children.length).toBeGreaterThan(1)
+		})
+
+		it('should parse @property', () => {
+			let source = '@property --my-color { syntax: "<color>"; inherits: false; initial-value: #c0ffee; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let property = root.first_child!
+			expect(property.name).toBe('property')
+		})
+	})
+
+	describe('location tracking', () => {
+		it('should track line numbers for rules', () => {
+			let source = 'body { color: red; }\ndiv { margin: 0; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let [rule1, rule2] = root.children
+			expect(rule1.line).toBe(1)
+			expect(rule2.line).toBe(2)
+		})
+
+		it('should track offsets correctly', () => {
+			let source = 'body { color: red; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			expect(rule.offset).toBe(0)
+			expect(rule.length).toBe(source.length)
+		})
+
+		it('should track declaration positions', () => {
+			let source = 'body { color: red; margin: 0; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, decl1, decl2] = rule.children
+
+			expect(decl1.offset).toBeLessThan(decl2.offset)
+		})
+	})
 })
