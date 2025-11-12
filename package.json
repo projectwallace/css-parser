@@ -21,6 +21,7 @@
   ],
   "scripts": {
     "test": "vitest",
+    "test-coverage": "vitest --coverage",
     "build": "vite build && tsc --project tsconfig.build.json",
     "lint": "oxlint --config .oxlintrc.json",
     "lint-package": "publint"
@@ -36,6 +37,7 @@
   "license": "ISC",
   "devDependencies": {
     "@projectwallace/preset-oxlint": "^0.0.7",
+    "@vitest/coverage-v8": "^4.0.8",
     "oxlint": "^1.28.0",
     "prettier": "^3.6.2",
     "publint": "^0.3.15",
