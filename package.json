@@ -14,6 +14,10 @@
     "./lexer": {
       "types": "./dist/lexer.d.ts",
       "import": "./dist/lexer.js"
+    },
+    "./parser": {
+      "types": "./dist/parser.d.ts",
+      "import": "./dist/parser.js"
     }
   },
   "files": [
@@ -22,6 +26,7 @@
   "scripts": {
     "test": "vitest",
     "test-coverage": "vitest --coverage",
+    "test-build": "npm run build && vitest run --config vitest.config.build.ts",
     "build": "vite build && tsc --project tsconfig.build.json",
     "lint": "oxlint --config .oxlintrc.json",
     "lint-package": "publint"

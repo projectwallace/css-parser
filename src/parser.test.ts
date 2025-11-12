@@ -378,7 +378,7 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let parent = root.first_child!
-			let [_selector, decl, nested_rule] = parent.children
+			let [_selector, _decl, nested_rule] = parent.children
 
 			expect(nested_rule.type).toBe('rule')
 			let nested_selector = nested_rule.first_child!
@@ -529,7 +529,7 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let keyframes = root.first_child!
-			let [rule1, rule2] = keyframes.children
+			let [rule1, _rule2] = keyframes.children
 
 			let selector1 = rule1.first_child!
 			expect(selector1.text).toBe('0%, 100%')
@@ -920,7 +920,7 @@ describe('Parser', () => {
 			let parser = new Parser(source)
 			let root = parser.parse()
 
-			let [charset, body] = root.children
+			let [charset, _body] = root.children
 			expect(charset.type).toBe('atrule')
 			expect(charset.name).toBe('charset')
 		})

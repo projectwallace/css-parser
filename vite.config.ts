@@ -6,6 +6,7 @@ export default defineConfig({
 			entry: {
 				index: './src/index.ts',
 				lexer: './src/lexer.ts',
+				parser: './src/parser.ts',
 			},
 			formats: ['es'],
 		},
