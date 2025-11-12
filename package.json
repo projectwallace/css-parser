@@ -1,7 +1,7 @@
 {
-  "name": "css-tools",
-  "version": "1.0.0",
-  "description": "High-performance CSS lexer and parser",
+  "name": "@projectwallace/css-parser",
+  "version": "0.0.0",
+  "description": "High-performance CSS lexer and parser, optimized for CSS inspection and analysis",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
