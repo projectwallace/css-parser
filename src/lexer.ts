@@ -149,9 +149,19 @@ export class Lexer {
 		}
 
 		// Identifier or function
-		if (is_ident_start(ch) || (ch === 0x2d && is_ident_start(this.peek()))) {
-			// - followed by ident start (e.g., -webkit-)
+		if (is_ident_start(ch) || (ch === 0x2d && is_ident_start(this.peek())) || (ch === 0x2d && this.peek() === 0x2d)) {
+			// - followed by ident start (e.g., -webkit-) or -- for CSS custom properties
 			return this.consume_ident_or_function(start_line, start_column)
+		}
+
+		// Backslash: escape sequence starting an identifier
+		if (ch === 0x5c) {
+			// \
+			let next = this.peek()
+			// Valid escape if not followed by newline or EOF
+			if (next !== 0 && !is_newline(next)) {
+				return this.consume_ident_or_function(start_line, start_column)
+			}
 		}
 
 		// Hyphen-minus: could be number like -5 or identifier like -webkit-
@@ -328,9 +338,49 @@ export class Lexer {
 	consume_ident_or_function(start_line: number, start_column: number): Token {
 		let start = this.pos
 
-		// Consume identifier
-		while (this.pos < this.source.length && is_ident_char(this.source.charCodeAt(this.pos))) {
-			this.advance()
+		// Consume identifier (with escape sequence support)
+		while (this.pos < this.source.length) {
+			let ch = this.source.charCodeAt(this.pos)
+
+			// Handle escape sequences: \ followed by hex digits or any character
+			if (ch === 0x5c) {
+				// \
+				// Check what follows the backslash before consuming it
+				if (this.pos + 1 >= this.source.length) break
+
+				let next = this.source.charCodeAt(this.pos + 1)
+
+				// If followed by newline, it's invalid, stop without consuming backslash
+				if (is_newline(next)) break
+
+				this.advance() // consume \
+
+				// Consume hex escape: 1-6 hex digits
+				if (is_hex_digit(next)) {
+					this.advance() // consume first hex digit
+					// Consume up to 5 more hex digits (total 6)
+					for (let i = 0; i < 5 && this.pos < this.source.length; i++) {
+						if (!is_hex_digit(this.source.charCodeAt(this.pos))) break
+						this.advance()
+					}
+					// Consume optional whitespace after hex escape
+					if (this.pos < this.source.length) {
+						let ws = this.source.charCodeAt(this.pos)
+						if (is_whitespace(ws) || is_newline(ws)) {
+							this.advance()
+						}
+					}
+				} else {
+					// Escape any other character (except newline, already checked)
+					this.advance()
+				}
+			} else if (is_ident_char(ch)) {
+				// Normal identifier character
+				this.advance()
+			} else {
+				// Not part of identifier
+				break
+			}
 		}
 
 		// Check for function: ident(

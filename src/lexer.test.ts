@@ -292,6 +292,34 @@ describe('Lexer', () => {
 			expect(lexer.source.slice(token!.start, token!.end)).toBe('-webkit-transform')
 		})
 
+		it('should tokenize CSS custom properties (variables)', () => {
+			let lexer = new Lexer('--test')
+			let token = lexer.next_token()
+			expect(token?.type).toBe(TOKEN_IDENT)
+			expect(lexer.source.slice(token!.start, token!.end)).toBe('--test')
+
+			// Test in context: a{--custom-prop:1}
+			lexer = new Lexer('a{--custom-prop:1}')
+			let tokens = []
+			while (true) {
+				let t = lexer.next_token()
+				if (!t || t.type === TOKEN_EOF) break
+				tokens.push(t)
+			}
+
+			// Should be: a { --custom-prop : 1 }
+			expect(tokens.length).toBe(6)
+			expect(tokens[0].type).toBe(TOKEN_IDENT) // a
+			expect(tokens[1].type).toBe(TOKEN_LEFT_BRACE) // {
+			expect(tokens[2].type).toBe(TOKEN_IDENT) // --custom-prop (single token!)
+			expect(tokens[2].start).toBe(2)
+			expect(tokens[2].end).toBe(15)
+			expect(lexer.source.slice(tokens[2].start, tokens[2].end)).toBe('--custom-prop')
+			expect(tokens[3].type).toBe(TOKEN_COLON) // :
+			expect(tokens[4].type).toBe(TOKEN_NUMBER) // 1
+			expect(tokens[5].type).toBe(TOKEN_RIGHT_BRACE) // }
+		})
+
 		it('should tokenize identifiers with underscores', () => {
 			let lexer = new Lexer('_private')
 			let token = lexer.next_token()
@@ -302,6 +330,96 @@ describe('Lexer', () => {
 			let lexer = new Lexer('grid2')
 			let token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_IDENT)
+		})
+
+		describe('escape sequences', () => {
+			it('should handle hex escape sequences', () => {
+				// \32 = character code 0x32 (the digit '2')
+				let lexer = new Lexer('\\32xl')
+				let token = lexer.next_token()
+				expect(token?.type).toBe(TOKEN_IDENT)
+				expect(lexer.source.slice(token!.start, token!.end)).toBe('\\32xl')
+			})
+
+			it('should handle character escape sequences', () => {
+				// \: = escaped colon
+				let lexer = new Lexer('\\:ease-in')
+				let token = lexer.next_token()
+				expect(token?.type).toBe(TOKEN_IDENT)
+				expect(lexer.source.slice(token!.start, token!.end)).toBe('\\:ease-in')
+			})
+
+			it('should handle combined escape sequences (Tailwind CSS)', () => {
+				// This is the exact case from the bug report: .\\32xl\\:ease-in{}
+				// Should tokenize as: DELIM(.) + IDENT(\32xl\:ease-in) + LEFT_BRACE + RIGHT_BRACE
+				let lexer = new Lexer('.\\32xl\\:ease-in{}')
+				let tokens = []
+				while (true) {
+					let t = lexer.next_token()
+					if (!t || t.type === TOKEN_EOF) break
+					tokens.push(t)
+				}
+
+				expect(tokens.length).toBe(4)
+				expect(tokens[0].type).toBe(TOKEN_DELIM) // .
+				expect(tokens[1].type).toBe(TOKEN_IDENT) // \32xl\:ease-in (single token!)
+				expect(lexer.source.slice(tokens[1].start, tokens[1].end)).toBe('\\32xl\\:ease-in')
+				expect(tokens[2].type).toBe(TOKEN_LEFT_BRACE) // {
+				expect(tokens[3].type).toBe(TOKEN_RIGHT_BRACE) // }
+			})
+
+			it('should handle whitespace after hex escapes', () => {
+				// Per CSS spec, hex escapes can be followed by optional whitespace
+				// \32 xl = character 0x32 followed by 'xl'
+				let lexer = new Lexer('\\32 xl')
+				let token = lexer.next_token()
+				expect(token?.type).toBe(TOKEN_IDENT)
+				expect(lexer.source.slice(token!.start, token!.end)).toBe('\\32 xl')
+			})
+
+			it('should handle 6-digit hex escapes', () => {
+				// Maximum 6 hex digits per escape
+				let lexer = new Lexer('\\000032xl')
+				let token = lexer.next_token()
+				expect(token?.type).toBe(TOKEN_IDENT)
+				expect(lexer.source.slice(token!.start, token!.end)).toBe('\\000032xl')
+			})
+
+			it('should handle multiple escapes in sequence', () => {
+				let lexer = new Lexer('\\32\\33\\34')
+				let token = lexer.next_token()
+				expect(token?.type).toBe(TOKEN_IDENT)
+				expect(lexer.source.slice(token!.start, token!.end)).toBe('\\32\\33\\34')
+			})
+
+			it('should handle escape at start of identifier', () => {
+				let lexer = new Lexer('\\:hover')
+				let token = lexer.next_token()
+				expect(token?.type).toBe(TOKEN_IDENT)
+				expect(lexer.source.slice(token!.start, token!.end)).toBe('\\:hover')
+			})
+
+			it('should handle escape at end of identifier', () => {
+				let lexer = new Lexer('ease-in\\:')
+				let token = lexer.next_token()
+				expect(token?.type).toBe(TOKEN_IDENT)
+				expect(lexer.source.slice(token!.start, token!.end)).toBe('ease-in\\:')
+			})
+
+			it('should stop at newline after backslash', () => {
+				// Backslash followed by newline is invalid in identifier
+				let lexer = new Lexer('test\\\nmore')
+				let token = lexer.next_token()
+				expect(token?.type).toBe(TOKEN_IDENT)
+				expect(lexer.source.slice(token!.start, token!.end)).toBe('test')
+			})
+
+			it('should handle escapes in functions', () => {
+				let lexer = new Lexer('\\32xl\\:fn(')
+				let token = lexer.next_token()
+				expect(token?.type).toBe(TOKEN_FUNCTION)
+				expect(lexer.source.slice(token!.start, token!.end)).toBe('\\32xl\\:fn(')
+			})
 		})
 	})
 
