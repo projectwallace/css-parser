@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest'
+import { describe, test, expect } from 'vitest'
 import { Parser } from './parser'
 import { NODE_STYLESHEET, NODE_STYLE_RULE, NODE_AT_RULE, NODE_DECLARATION, NODE_SELECTOR } from './arena'
 
 describe('Parser', () => {
 	describe('basic parsing', () => {
-		it('should create parser with arena sized for source', () => {
+		test('should create parser with arena sized for source', () => {
 			const source = 'body { color: red; }'
 			const parser = new Parser(source)
 			const arena = parser.get_arena()
@@ -14,7 +14,7 @@ describe('Parser', () => {
 			expect(arena.getCount()).toBe(0) // No nodes created yet
 		})
 
-		it('should parse empty stylesheet', () => {
+		test('should parse empty stylesheet', () => {
 			const parser = new Parser('')
 			const root = parser.parse()
 
@@ -24,7 +24,7 @@ describe('Parser', () => {
 			expect(root.has_children).toBe(false)
 		})
 
-		it('should parse stylesheet with only whitespace', () => {
+		test('should parse stylesheet with only whitespace', () => {
 			const parser = new Parser('   \n\n   ')
 			const root = parser.parse()
 
@@ -32,7 +32,7 @@ describe('Parser', () => {
 			expect(root.has_children).toBe(false)
 		})
 
-		it('should parse stylesheet with only comments', () => {
+		test('should parse stylesheet with only comments', () => {
 			const parser = new Parser('/* comment */')
 			const root = parser.parse()
 
@@ -42,7 +42,7 @@ describe('Parser', () => {
 	})
 
 	describe('style rule parsing', () => {
-		it('should parse simple style rule', () => {
+		test('should parse simple style rule', () => {
 			const parser = new Parser('body { }')
 			const root = parser.parse()
 
@@ -54,7 +54,7 @@ describe('Parser', () => {
 			expect(rule.length).toBeGreaterThan(0)
 		})
 
-		it('should parse style rule with selector', () => {
+		test('should parse style rule with selector', () => {
 			const source = 'body { }'
 			const parser = new Parser(source)
 			const root = parser.parse()
@@ -69,7 +69,7 @@ describe('Parser', () => {
 			expect(selector.text).toBe('body')
 		})
 
-		it('should parse multiple style rules', () => {
+		test('should parse multiple style rules', () => {
 			const parser = new Parser('body { } div { }')
 			const root = parser.parse()
 
@@ -79,7 +79,7 @@ describe('Parser', () => {
 			expect(rule2.next_sibling).toBe(null)
 		})
 
-		it('should parse complex selector', () => {
+		test('should parse complex selector', () => {
 			const source = 'div.class > p#id { }'
 			const parser = new Parser(source)
 			const root = parser.parse()
@@ -97,7 +97,7 @@ describe('Parser', () => {
 	})
 
 	describe('declaration parsing', () => {
-		it('should parse simple declaration', () => {
+		test('should parse simple declaration', () => {
 			const source = 'body { color: red; }'
 			const parser = new Parser(source)
 			const root = parser.parse()
@@ -109,7 +109,7 @@ describe('Parser', () => {
 			expect(declaration.is_important).toBe(false)
 		})
 
-		it('should parse declaration with property name', () => {
+		test('should parse declaration with property name', () => {
 			const source = 'body { color: red; }'
 			const parser = new Parser(source)
 			const root = parser.parse()
@@ -121,7 +121,7 @@ describe('Parser', () => {
 			expect(declaration.name).toBe('color')
 		})
 
-		it('should parse multiple declarations', () => {
+		test('should parse multiple declarations', () => {
 			const source = 'body { color: red; margin: 0; }'
 			const parser = new Parser(source)
 			const root = parser.parse()
@@ -134,7 +134,7 @@ describe('Parser', () => {
 			expect(decl2.next_sibling).toBe(null)
 		})
 
-		it('should parse declaration with !important', () => {
+		test('should parse declaration with !important', () => {
 			const source = 'body { color: red !important; }'
 			const parser = new Parser(source)
 			const root = parser.parse()
@@ -146,7 +146,7 @@ describe('Parser', () => {
 			expect(declaration.is_important).toBe(true)
 		})
 
-		it('should parse declaration with !ie (historic !important)', () => {
+		test('should parse declaration with !ie (historic !important)', () => {
 			const source = 'body { color: red !ie; }'
 			const parser = new Parser(source)
 			const root = parser.parse()
@@ -158,7 +158,7 @@ describe('Parser', () => {
 			expect(declaration.is_important).toBe(true)
 		})
 
-		it('should parse declaration with ! followed by any identifier', () => {
+		test('should parse declaration with ! followed by any identifier', () => {
 			const source = 'body { color: red !foo; }'
 			const parser = new Parser(source)
 			const root = parser.parse()
@@ -170,7 +170,7 @@ describe('Parser', () => {
 			expect(declaration.is_important).toBe(true)
 		})
 
-		it('should parse declaration without semicolon at end of block', () => {
+		test('should parse declaration without semicolon at end of block', () => {
 			const source = 'body { color: red }'
 			const parser = new Parser(source)
 			const root = parser.parse()
@@ -181,7 +181,7 @@ describe('Parser', () => {
 			expect(declaration.type).toBe(NODE_DECLARATION)
 		})
 
-		it('should parse complex declaration value', () => {
+		test('should parse complex declaration value', () => {
 			const source = 'body { background: url(image.png) no-repeat center; }'
 			const parser = new Parser(source)
 			const root = parser.parse()
@@ -196,7 +196,7 @@ describe('Parser', () => {
 
 	describe('at-rule parsing', () => {
 		describe('statement at-rules (no block)', () => {
-			it('should parse @import', () => {
+			test('should parse @import', () => {
 				const source = '@import url("style.css");'
 				const parser = new Parser(source)
 				const root = parser.parse()
@@ -207,7 +207,7 @@ describe('Parser', () => {
 				expect(atRule.has_children).toBe(false)
 			})
 
-			it('should parse @namespace', () => {
+			test('should parse @namespace', () => {
 				const source = '@namespace url(http://www.w3.org/1999/xhtml);'
 				const parser = new Parser(source)
 				const root = parser.parse()
@@ -219,7 +219,7 @@ describe('Parser', () => {
 		})
 
 		describe('block at-rules with nested rules', () => {
-			it('should parse @media with nested rule', () => {
+			test('should parse @media with nested rule', () => {
 				const source = '@media (min-width: 768px) { body { color: red; } }'
 				const parser = new Parser(source)
 				const root = parser.parse()
@@ -233,7 +233,7 @@ describe('Parser', () => {
 				expect(nestedRule.type).toBe(NODE_STYLE_RULE)
 			})
 
-			it('should parse @layer with name', () => {
+			test('should parse @layer with name', () => {
 				const source = '@layer utilities { .text-center { text-align: center; } }'
 				const parser = new Parser(source)
 				const root = parser.parse()
@@ -244,7 +244,7 @@ describe('Parser', () => {
 				expect(layer.has_children).toBe(true)
 			})
 
-			it('should parse anonymous @layer', () => {
+			test('should parse anonymous @layer', () => {
 				const source = '@layer { body { margin: 0; } }'
 				const parser = new Parser(source)
 				const root = parser.parse()
@@ -255,7 +255,7 @@ describe('Parser', () => {
 				expect(layer.has_children).toBe(true)
 			})
 
-			it('should parse @supports', () => {
+			test('should parse @supports', () => {
 				const source = '@supports (display: grid) { .grid { display: grid; } }'
 				const parser = new Parser(source)
 				const root = parser.parse()
@@ -266,7 +266,7 @@ describe('Parser', () => {
 				expect(supports.has_children).toBe(true)
 			})
 
-			it('should parse @container', () => {
+			test('should parse @container', () => {
 				const source = '@container (min-width: 400px) { .card { padding: 2rem; } }'
 				const parser = new Parser(source)
 				const root = parser.parse()
@@ -279,7 +279,7 @@ describe('Parser', () => {
 		})
 
 		describe('descriptor at-rules (with declarations)', () => {
-			it('should parse @font-face', () => {
+			test('should parse @font-face', () => {
 				const source = '@font-face { font-family: "Open Sans"; src: url(font.woff2); }'
 				const parser = new Parser(source)
 				const root = parser.parse()
@@ -295,7 +295,7 @@ describe('Parser', () => {
 				expect(decl2.type).toBe(NODE_DECLARATION)
 			})
 
-			it('should parse @page', () => {
+			test('should parse @page', () => {
 				const source = '@page { margin: 1in; }'
 				const parser = new Parser(source)
 				const root = parser.parse()
@@ -308,7 +308,7 @@ describe('Parser', () => {
 				expect(decl.type).toBe(NODE_DECLARATION)
 			})
 
-			it('should parse @counter-style', () => {
+			test('should parse @counter-style', () => {
 				const source = '@counter-style thumbs { system: cyclic; symbols: "👍"; }'
 				const parser = new Parser(source)
 				const root = parser.parse()
@@ -323,7 +323,7 @@ describe('Parser', () => {
 		})
 
 		describe('nested at-rules', () => {
-			it('should parse @media inside @supports', () => {
+			test('should parse @media inside @supports', () => {
 				const source = '@supports (display: grid) { @media (min-width: 768px) { body { color: red; } } }'
 				const parser = new Parser(source)
 				const root = parser.parse()
@@ -341,7 +341,7 @@ describe('Parser', () => {
 		})
 
 		describe('multiple at-rules', () => {
-			it('should parse multiple at-rules at top level', () => {
+			test('should parse multiple at-rules at top level', () => {
 				const source = '@import url("a.css"); @layer base { body { margin: 0; } } @media print { body { color: black; } }'
 				const parser = new Parser(source)
 				const root = parser.parse()
@@ -355,7 +355,7 @@ describe('Parser', () => {
 	})
 
 	describe('CSS Nesting', () => {
-		it('should parse nested rule with & selector', () => {
+		test('should parse nested rule with & selector', () => {
 			let source = '.parent { color: red; & .child { color: blue; } }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -373,7 +373,7 @@ describe('Parser', () => {
 			expect(nested_selector.text).toBe('& .child')
 		})
 
-		it('should parse nested rule without & selector', () => {
+		test('should parse nested rule without & selector', () => {
 			let source = '.parent { color: red; .child { color: blue; } }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -386,7 +386,7 @@ describe('Parser', () => {
 			expect(nested_selector.text).toBe('.child')
 		})
 
-		it('should parse multiple nested rules', () => {
+		test('should parse multiple nested rules', () => {
 			let source = '.parent { .child1 { } .child2 { } }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -398,7 +398,7 @@ describe('Parser', () => {
 			expect(nested2.type).toBe(NODE_STYLE_RULE)
 		})
 
-		it('should parse deeply nested rules', () => {
+		test('should parse deeply nested rules', () => {
 			let source = '.a { .b { .c { color: red; } } }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -415,7 +415,7 @@ describe('Parser', () => {
 			expect(decl.name).toBe('color')
 		})
 
-		it('should parse nested @media inside rule', () => {
+		test('should parse nested @media inside rule', () => {
 			let source = '.card { color: red; @media (min-width: 768px) { padding: 2rem; } }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -432,7 +432,7 @@ describe('Parser', () => {
 			expect(nested_decl.name).toBe('padding')
 		})
 
-		it('should parse :is() pseudo-class', () => {
+		test('should parse :is() pseudo-class', () => {
 			let source = ':is(.a, .b) { color: red; }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -442,7 +442,7 @@ describe('Parser', () => {
 			expect(selector.text).toBe(':is(.a, .b)')
 		})
 
-		it('should parse :where() pseudo-class', () => {
+		test('should parse :where() pseudo-class', () => {
 			let source = ':where(h1, h2, h3) { margin: 0; }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -452,7 +452,7 @@ describe('Parser', () => {
 			expect(selector.text).toBe(':where(h1, h2, h3)')
 		})
 
-		it('should parse :has() pseudo-class', () => {
+		test('should parse :has() pseudo-class', () => {
 			let source = 'div:has(> img) { display: flex; }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -462,7 +462,7 @@ describe('Parser', () => {
 			expect(selector.text).toBe('div:has(> img)')
 		})
 
-		it('should parse complex nesting with mixed declarations and rules', () => {
+		test('should parse complex nesting with mixed declarations and rules', () => {
 			let source = `.card {
 				color: red;
 				.title { font-size: 2rem; }
@@ -488,7 +488,7 @@ describe('Parser', () => {
 	})
 
 	describe('@keyframes parsing', () => {
-		it('should parse @keyframes with from/to', () => {
+		test('should parse @keyframes with from/to', () => {
 			let source = '@keyframes fade { from { opacity: 0; } to { opacity: 1; } }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -508,7 +508,7 @@ describe('Parser', () => {
 			expect(to_selector.text).toBe('to')
 		})
 
-		it('should parse @keyframes with percentages', () => {
+		test('should parse @keyframes with percentages', () => {
 			let source = '@keyframes slide { 0% { left: 0; } 50% { left: 50%; } 100% { left: 100%; } }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -524,7 +524,7 @@ describe('Parser', () => {
 			expect(selector0.text).toBe('0%')
 		})
 
-		it('should parse @keyframes with multiple selectors', () => {
+		test('should parse @keyframes with multiple selectors', () => {
 			let source = '@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -538,7 +538,7 @@ describe('Parser', () => {
 	})
 
 	describe('@nest at-rule', () => {
-		it('should parse @nest with & selector', () => {
+		test('should parse @nest with & selector', () => {
 			let source = '.parent { @nest & .child { color: blue; } }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -555,7 +555,7 @@ describe('Parser', () => {
 			expect(decl.name).toBe('color')
 		})
 
-		it('should parse @nest with complex selector', () => {
+		test('should parse @nest with complex selector', () => {
 			let source = '.a { @nest :not(&) { color: red; } }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -569,7 +569,7 @@ describe('Parser', () => {
 	})
 
 	describe('error recovery and edge cases', () => {
-		it('should handle malformed rule without opening brace', () => {
+		test('should handle malformed rule without opening brace', () => {
 			let source = 'body color: red; } div { margin: 0; }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -578,7 +578,7 @@ describe('Parser', () => {
 			expect(root.children.length).toBeGreaterThan(0)
 		})
 
-		it('should handle rule without closing brace', () => {
+		test('should handle rule without closing brace', () => {
 			let source = 'body { color: red; div { margin: 0; }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -587,7 +587,7 @@ describe('Parser', () => {
 			expect(root.has_children).toBe(true)
 		})
 
-		it('should handle empty rule block', () => {
+		test('should handle empty rule block', () => {
 			let source = '.empty { }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -598,7 +598,7 @@ describe('Parser', () => {
 			expect(rule.children.length).toBe(1)
 		})
 
-		it('should handle declaration without value', () => {
+		test('should handle declaration without value', () => {
 			let source = 'body { color: }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -608,7 +608,7 @@ describe('Parser', () => {
 			expect(decl.type).toBe(NODE_DECLARATION)
 		})
 
-		it('should handle multiple semicolons', () => {
+		test('should handle multiple semicolons', () => {
 			let source = 'body { color: red;;; margin: 0;; }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -617,7 +617,7 @@ describe('Parser', () => {
 			expect(rule.children.length).toBeGreaterThan(0)
 		})
 
-		it('should skip invalid tokens in declaration block', () => {
+		test('should skip invalid tokens in declaration block', () => {
 			let source = 'body { color: red; @@@; margin: 0; }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -627,7 +627,7 @@ describe('Parser', () => {
 			expect(rule.children.length).toBeGreaterThan(1)
 		})
 
-		it('should handle declaration without colon', () => {
+		test('should handle declaration without colon', () => {
 			let source = 'body { color red; margin: 0; }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -637,7 +637,7 @@ describe('Parser', () => {
 			expect(rule.children.length).toBeGreaterThan(0)
 		})
 
-		it('should handle at-rule without name', () => {
+		test('should handle at-rule without name', () => {
 			let source = '@ { color: red; } body { margin: 0; }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -646,7 +646,7 @@ describe('Parser', () => {
 			expect(root.children.length).toBeGreaterThan(0)
 		})
 
-		it('should handle nested empty blocks', () => {
+		test('should handle nested empty blocks', () => {
 			let source = '.a { .b { .c { } } }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -655,7 +655,7 @@ describe('Parser', () => {
 			expect(a.type).toBe(NODE_STYLE_RULE)
 		})
 
-		it('should handle trailing comma in selector', () => {
+		test('should handle trailing comma in selector', () => {
 			let source = '.a, .b, { color: red; }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -666,7 +666,7 @@ describe('Parser', () => {
 	})
 
 	describe('complex real-world scenarios', () => {
-		it('should parse complex nested structure', () => {
+		test('should parse complex nested structure', () => {
 			let source = `
 				.card {
 					display: flex;
@@ -702,7 +702,7 @@ describe('Parser', () => {
 			expect(card.children.length).toBeGreaterThan(4)
 		})
 
-		it('should parse multiple at-rules with nesting', () => {
+		test('should parse multiple at-rules with nesting', () => {
 			let source = `
 				@layer base {
 					body { margin: 0; }
@@ -726,7 +726,7 @@ describe('Parser', () => {
 			expect(layer2.type).toBe(NODE_AT_RULE)
 		})
 
-		it('should parse vendor prefixed properties', () => {
+		test('should parse vendor prefixed properties', () => {
 			let source = '.box { -webkit-transform: scale(1); -moz-transform: scale(1); transform: scale(1); }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -738,7 +738,7 @@ describe('Parser', () => {
 			expect(decl3.name).toBe('transform')
 		})
 
-		it('should parse complex selector list', () => {
+		test('should parse complex selector list', () => {
 			let source = 'h1, h2, h3, h4, h5, h6, .heading, [role="heading"] { font-family: sans-serif; }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -749,7 +749,7 @@ describe('Parser', () => {
 			expect(selector.text).toContain('[role="heading"]')
 		})
 
-		it('should parse deeply nested at-rules', () => {
+		test('should parse deeply nested at-rules', () => {
 			let source = `
 				@supports (display: grid) {
 					@media (min-width: 768px) {
@@ -770,7 +770,7 @@ describe('Parser', () => {
 			expect(layer.name).toBe('layer')
 		})
 
-		it('should parse CSS with calc() and other functions', () => {
+		test('should parse CSS with calc() and other functions', () => {
 			let source = '.box { width: calc(100% - 2rem); background: linear-gradient(to right, red, blue); }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -781,7 +781,7 @@ describe('Parser', () => {
 			expect(bg_decl.name).toBe('background')
 		})
 
-		it('should parse custom properties', () => {
+		test('should parse custom properties', () => {
 			let source = ':root { --primary-color: #007bff; --spacing: 1rem; } body { color: var(--primary-color); }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -792,7 +792,7 @@ describe('Parser', () => {
 			expect(first_rule.type).toBe(NODE_STYLE_RULE)
 		})
 
-		it('should parse attribute selectors with operators', () => {
+		test('should parse attribute selectors with operators', () => {
 			let source = '[href^="https"][href$=".pdf"][class*="doc"] { color: red; }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -804,7 +804,7 @@ describe('Parser', () => {
 			expect(selector.text).toContain('*=')
 		})
 
-		it('should parse pseudo-elements', () => {
+		test('should parse pseudo-elements', () => {
 			let source = '.text::before { content: "→"; } .text::after { content: "←"; }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -814,7 +814,7 @@ describe('Parser', () => {
 			expect(rule2.type).toBe(NODE_STYLE_RULE)
 		})
 
-		it('should parse multiple !important declarations', () => {
+		test('should parse multiple !important declarations', () => {
 			let source = '.override { color: red !important; margin: 0 !important; padding: 0 !ie; }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -829,7 +829,7 @@ describe('Parser', () => {
 	})
 
 	describe('comment handling', () => {
-		it('should skip comments at top level', () => {
+		test('should skip comments at top level', () => {
 			let source = '/* comment */ body { color: red; } /* another comment */'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -840,7 +840,7 @@ describe('Parser', () => {
 			expect(rule.type).toBe(NODE_STYLE_RULE)
 		})
 
-		it('should skip comments in declaration block', () => {
+		test('should skip comments in declaration block', () => {
 			let source = 'body { color: red; /* comment */ margin: 0; }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -851,7 +851,7 @@ describe('Parser', () => {
 			expect(rule.children.length).toBeGreaterThan(0)
 		})
 
-		it('should skip comments in selector', () => {
+		test('should skip comments in selector', () => {
 			let source = 'body /* comment */ , /* comment */ div { color: red; }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -860,7 +860,7 @@ describe('Parser', () => {
 			expect(rule.type).toBe(NODE_STYLE_RULE)
 		})
 
-		it('should handle comment between property and colon', () => {
+		test('should handle comment between property and colon', () => {
 			let source = 'body { color /* comment */ : red; }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -869,7 +869,7 @@ describe('Parser', () => {
 			expect(root.has_children).toBe(true)
 		})
 
-		it('should handle multi-line comments', () => {
+		test('should handle multi-line comments', () => {
 			let source = `
 				/*
 				 * Multi-line
@@ -885,7 +885,7 @@ describe('Parser', () => {
 	})
 
 	describe('whitespace handling', () => {
-		it('should handle excessive whitespace', () => {
+		test('should handle excessive whitespace', () => {
 			let source = '  body  {  color  :  red  ;  }  '
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -894,7 +894,7 @@ describe('Parser', () => {
 			expect(rule.type).toBe(NODE_STYLE_RULE)
 		})
 
-		it('should handle tabs and newlines', () => {
+		test('should handle tabs and newlines', () => {
 			let source = 'body\t{\n\tcolor:\tred;\n}\n'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -903,7 +903,7 @@ describe('Parser', () => {
 			expect(rule.type).toBe(NODE_STYLE_RULE)
 		})
 
-		it('should handle no whitespace', () => {
+		test('should handle no whitespace', () => {
 			let source = 'body{color:red;margin:0}'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -916,7 +916,7 @@ describe('Parser', () => {
 	})
 
 	describe('special at-rules', () => {
-		it('should parse @charset', () => {
+		test('should parse @charset', () => {
 			let source = '@charset "UTF-8"; body { color: red; }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -926,7 +926,7 @@ describe('Parser', () => {
 			expect(charset.name).toBe('charset')
 		})
 
-		it('should parse @import with media query', () => {
+		test('should parse @import with media query', () => {
 			let source = '@import url("print.css") print;'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -936,7 +936,7 @@ describe('Parser', () => {
 			expect(import_rule.name).toBe('import')
 		})
 
-		it('should parse @font-face with multiple descriptors', () => {
+		test('should parse @font-face with multiple descriptors', () => {
 			let source = `
 				@font-face {
 					font-family: "Custom";
@@ -955,7 +955,7 @@ describe('Parser', () => {
 			expect(font_face.children.length).toBeGreaterThan(3)
 		})
 
-		it('should parse @keyframes with mixed percentages and keywords', () => {
+		test('should parse @keyframes with mixed percentages and keywords', () => {
 			let source = '@keyframes slide { from { left: 0; } 25%, 75% { left: 50%; } to { left: 100%; } }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -964,7 +964,7 @@ describe('Parser', () => {
 			expect(keyframes.children.length).toBe(3)
 		})
 
-		it('should parse @counter-style', () => {
+		test('should parse @counter-style', () => {
 			let source = '@counter-style custom { system: cyclic; symbols: "⚫" "⚪"; suffix: " "; }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -974,7 +974,7 @@ describe('Parser', () => {
 			expect(counter.children.length).toBeGreaterThan(1)
 		})
 
-		it('should parse @property', () => {
+		test('should parse @property', () => {
 			let source = '@property --my-color { syntax: "<color>"; inherits: false; initial-value: #c0ffee; }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -985,7 +985,7 @@ describe('Parser', () => {
 	})
 
 	describe('location tracking', () => {
-		it('should track line numbers for rules', () => {
+		test('should track line numbers for rules', () => {
 			let source = 'body { color: red; }\ndiv { margin: 0; }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -995,7 +995,7 @@ describe('Parser', () => {
 			expect(rule2.line).toBe(2)
 		})
 
-		it('should track offsets correctly', () => {
+		test('should track offsets correctly', () => {
 			let source = 'body { color: red; }'
 			let parser = new Parser(source)
 			let root = parser.parse()
@@ -1005,7 +1005,7 @@ describe('Parser', () => {
 			expect(rule.length).toBe(source.length)
 		})
 
-		it('should track declaration positions', () => {
+		test('should track declaration positions', () => {
 			let source = 'body { color: red; margin: 0; }'
 			let parser = new Parser(source)
 			let root = parser.parse()

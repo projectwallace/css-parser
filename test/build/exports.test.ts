@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest'
+import { describe, test, expect } from 'vitest'
 
 describe('Package exports', () => {
-	it('should export Parser and CSSNode from main entry', async () => {
+	test('should export Parser and CSSNode from main entry', async () => {
 		let { Parser, CSSNode } = await import('../../dist/index.js')
 
 		expect(typeof Parser).toBe('function')
@@ -13,7 +13,7 @@ describe('Package exports', () => {
 		expect(ast.type).toBe('stylesheet')
 	})
 
-	it('should export Lexer from lexer entry', async () => {
+	test('should export Lexer from lexer entry', async () => {
 		let { Lexer } = await import('../../dist/lexer.js')
 
 		expect(typeof Lexer).toBe('function')
@@ -28,7 +28,7 @@ describe('Package exports', () => {
 		}
 	})
 
-	it('should export Parser from parser entry', async () => {
+	test('should export Parser from parser entry', async () => {
 		let { Parser } = await import('../../dist/parser.js')
 
 		expect(typeof Parser).toBe('function')
@@ -40,7 +40,7 @@ describe('Package exports', () => {
 		expect(ast.has_children).toBe(true)
 	})
 
-	it('should have working CSSNode API', async () => {
+	test('should have working CSSNode API', async () => {
 		let { Parser } = await import('../../dist/index.js')
 
 		let parser = new Parser('body { color: red; margin: 0; }')
@@ -58,7 +58,7 @@ describe('Package exports', () => {
 		expect(child_count).toBeGreaterThan(0)
 	})
 
-	it('should parse modern CSS with nesting', async () => {
+	test('should parse modern CSS with nesting', async () => {
 		let { Parser } = await import('../../dist/parser.js')
 
 		let parser = new Parser('.parent { color: red; .child { color: blue; } }')
@@ -69,7 +69,7 @@ describe('Package exports', () => {
 		expect(parent.children.length).toBeGreaterThan(1)
 	})
 
-	it('should parse at-rules', async () => {
+	test('should parse at-rules', async () => {
 		let { Parser } = await import('../../dist/parser.js')
 
 		let parser = new Parser('@media (min-width: 768px) { body { margin: 0; } }')

@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest'
+import { describe, test, expect } from 'vitest'
 import { Parser } from './parser'
 import { NODE_DECLARATION, NODE_SELECTOR, NODE_STYLE_RULE } from './arena'
 
 describe('CSSNode', () => {
 	describe('iteration', () => {
-		it('should be iterable with for-of', () => {
+		test('should be iterable with for-of', () => {
 			const source = 'body { color: red; margin: 0; padding: 10px; }'
 			const parser = new Parser(source)
 			const root = parser.parse()
@@ -19,7 +19,7 @@ describe('CSSNode', () => {
 			expect(types).toEqual([NODE_SELECTOR, NODE_DECLARATION, NODE_DECLARATION, NODE_DECLARATION])
 		})
 
-		it('should work with spread operator', () => {
+		test('should work with spread operator', () => {
 			const source = 'body { color: red; } div { margin: 0; }'
 			const parser = new Parser(source)
 			const root = parser.parse()
@@ -30,7 +30,7 @@ describe('CSSNode', () => {
 			expect(rules[1].type).toBe(NODE_STYLE_RULE)
 		})
 
-		it('should work with Array.from', () => {
+		test('should work with Array.from', () => {
 			const source = '@media print { body { color: black; } }'
 			const parser = new Parser(source)
 			const root = parser.parse()
@@ -42,7 +42,7 @@ describe('CSSNode', () => {
 			expect(children[0].type).toBe(NODE_STYLE_RULE)
 		})
 
-		it('should iterate over empty children', () => {
+		test('should iterate over empty children', () => {
 			const source = '@import url("style.css");'
 			const parser = new Parser(source)
 			const root = parser.parse()

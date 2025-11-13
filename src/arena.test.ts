@@ -1,15 +1,15 @@
-import { describe, it, expect } from 'vitest'
+import { describe, test, expect } from 'vitest'
 import { CSSDataArena, NODE_STYLESHEET, NODE_DECLARATION, FLAG_IMPORTANT, FLAG_HAS_ERROR } from './arena'
 
 describe('CSSDataArena', () => {
 	describe('initialization', () => {
-		it('should create arena with default capacity', () => {
+		test('should create arena with default capacity', () => {
 			const arena = new CSSDataArena()
 			expect(arena.getCapacity()).toBe(1024)
 			expect(arena.getCount()).toBe(0)
 		})
 
-		it('should create arena with custom capacity', () => {
+		test('should create arena with custom capacity', () => {
 			const arena = new CSSDataArena(512)
 			expect(arena.getCapacity()).toBe(512)
 			expect(arena.getCount()).toBe(0)
@@ -17,7 +17,7 @@ describe('CSSDataArena', () => {
 	})
 
 	describe('node creation', () => {
-		it('should create nodes and increment count', () => {
+		test('should create nodes and increment count', () => {
 			const arena = new CSSDataArena(10)
 
 			const node1 = arena.create_node()
@@ -29,7 +29,7 @@ describe('CSSDataArena', () => {
 			expect(arena.getCount()).toBe(2)
 		})
 
-		it('should automatically grow when capacity is exceeded', () => {
+		test('should automatically grow when capacity is exceeded', () => {
 			const arena = new CSSDataArena(2)
 
 			const node1 = arena.create_node() // 0
@@ -44,7 +44,7 @@ describe('CSSDataArena', () => {
 			expect(arena.getCapacity()).toBe(3)
 		})
 
-		it('should preserve existing data when growing', () => {
+		test('should preserve existing data when growing', () => {
 			const arena = new CSSDataArena(2)
 
 			const node1 = arena.create_node()
@@ -72,7 +72,7 @@ describe('CSSDataArena', () => {
 	})
 
 	describe('node reading and writing', () => {
-		it('should read default values for uninitialized nodes', () => {
+		test('should read default values for uninitialized nodes', () => {
 			const arena = new CSSDataArena(10)
 			const node = arena.create_node()
 
@@ -82,7 +82,7 @@ describe('CSSDataArena', () => {
 			expect(arena.get_length(node)).toBe(0)
 		})
 
-		it('should write and read node type', () => {
+		test('should write and read node type', () => {
 			const arena = new CSSDataArena(10)
 			const node = arena.create_node()
 
@@ -90,7 +90,7 @@ describe('CSSDataArena', () => {
 			expect(arena.get_type(node)).toBe(NODE_STYLESHEET)
 		})
 
-		it('should write and read node flags', () => {
+		test('should write and read node flags', () => {
 			const arena = new CSSDataArena(10)
 			const node = arena.create_node()
 
@@ -98,7 +98,7 @@ describe('CSSDataArena', () => {
 			expect(arena.get_flags(node)).toBe(FLAG_IMPORTANT)
 		})
 
-		it('should write and read all node properties', () => {
+		test('should write and read all node properties', () => {
 			const arena = new CSSDataArena(10)
 			const node = arena.create_node()
 
@@ -119,7 +119,7 @@ describe('CSSDataArena', () => {
 			expect(arena.get_start_line(node)).toBe(5)
 		})
 
-		it('should handle multiple nodes independently', () => {
+		test('should handle multiple nodes independently', () => {
 			const arena = new CSSDataArena(10)
 			const node1 = arena.create_node()
 			const node2 = arena.create_node()
@@ -138,7 +138,7 @@ describe('CSSDataArena', () => {
 	})
 
 	describe('tree linking', () => {
-		it('should append first child to parent', () => {
+		test('should append first child to parent', () => {
 			const arena = new CSSDataArena(10)
 			const parent = arena.create_node()
 			const child = arena.create_node()
@@ -150,7 +150,7 @@ describe('CSSDataArena', () => {
 			expect(arena.has_next_sibling(child)).toBe(false)
 		})
 
-		it('should append multiple children as siblings', () => {
+		test('should append multiple children as siblings', () => {
 			const arena = new CSSDataArena(10)
 			const parent = arena.create_node()
 			const child1 = arena.create_node()
@@ -167,7 +167,7 @@ describe('CSSDataArena', () => {
 			expect(arena.get_next_sibling(child3)).toBe(0)
 		})
 
-		it('should build complex tree structure', () => {
+		test('should build complex tree structure', () => {
 			const arena = new CSSDataArena(10)
 			const root = arena.create_node()
 			const rule1 = arena.create_node()
@@ -196,7 +196,7 @@ describe('CSSDataArena', () => {
 			expect(arena.has_children(rule2)).toBe(false)
 		})
 
-		it('should handle nodes with no children or siblings', () => {
+		test('should handle nodes with no children or siblings', () => {
 			const arena = new CSSDataArena(10)
 			const node = arena.create_node()
 
@@ -208,7 +208,7 @@ describe('CSSDataArena', () => {
 	})
 
 	describe('flag management', () => {
-		it('should set and check individual flags', () => {
+		test('should set and check individual flags', () => {
 			const arena = new CSSDataArena(10)
 			const node = arena.create_node()
 
@@ -218,7 +218,7 @@ describe('CSSDataArena', () => {
 			expect(arena.has_flag(node, FLAG_IMPORTANT)).toBe(true)
 		})
 
-		it('should set multiple flags independently', () => {
+		test('should set multiple flags independently', () => {
 			const arena = new CSSDataArena(10)
 			const node = arena.create_node()
 
@@ -228,7 +228,7 @@ describe('CSSDataArena', () => {
 			expect(arena.has_flag(node, FLAG_HAS_ERROR)).toBe(false)
 		})
 
-		it('should clear individual flags without affecting others', () => {
+		test('should clear individual flags without affecting others', () => {
 			const arena = new CSSDataArena(10)
 			const node = arena.create_node()
 
@@ -239,7 +239,7 @@ describe('CSSDataArena', () => {
 			expect(arena.has_flag(node, FLAG_HAS_ERROR)).toBe(true)
 		})
 
-		it('should handle all flag combinations', () => {
+		test('should handle all flag combinations', () => {
 			const arena = new CSSDataArena(10)
 			const node = arena.create_node()
 
@@ -258,30 +258,30 @@ describe('CSSDataArena', () => {
 	})
 
 	describe('capacity planning', () => {
-		it('should have minimum capacity for empty files', () => {
+		test('should have minimum capacity for empty files', () => {
 			const capacity = CSSDataArena.capacity_for_source(0)
 			expect(capacity).toBe(16)
 		})
 
-		it('should calculate capacity for small CSS files', () => {
+		test('should calculate capacity for small CSS files', () => {
 			// 1KB CSS = 60 nodes * 1.15 buffer = 69 nodes
 			const capacity = CSSDataArena.capacity_for_source(1024)
 			expect(capacity).toBe(69)
 		})
 
-		it('should calculate capacity for medium CSS files', () => {
+		test('should calculate capacity for medium CSS files', () => {
 			// 100KB CSS = 6000 nodes * 1.15 buffer = 6900 nodes
 			const capacity = CSSDataArena.capacity_for_source(100 * 1024)
 			expect(capacity).toBe(6900)
 		})
 
-		it('should calculate capacity for large CSS files', () => {
+		test('should calculate capacity for large CSS files', () => {
 			// 10MB = 10240 KB CSS = 614400 nodes * 1.15 buffer = 706560 nodes
 			const capacity = CSSDataArena.capacity_for_source(10 * 1024 * 1024)
 			expect(capacity).toBe(706560)
 		})
 
-		it('should round up for partial KBs', () => {
+		test('should round up for partial KBs', () => {
 			// 1.5KB = ceil(1.5 * 60) * 1.15 = 90 * 1.15 = 104 (rounded up)
 			const capacity = CSSDataArena.capacity_for_source(1536)
 			expect(capacity).toBe(104)
