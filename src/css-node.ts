@@ -12,8 +12,14 @@ import {
 	FLAG_HAS_ERROR,
 } from './arena'
 
-// Node type strings for ergonomic API
-export type CSSNodeType = 'stylesheet' | 'rule' | 'atrule' | 'declaration' | 'selector' | 'comment'
+// Node type constants (numeric for performance)
+export type CSSNodeType =
+	| typeof NODE_STYLESHEET
+	| typeof NODE_STYLE_RULE
+	| typeof NODE_AT_RULE
+	| typeof NODE_DECLARATION
+	| typeof NODE_SELECTOR
+	| typeof NODE_COMMENT
 
 export class CSSNode {
 	private arena: CSSDataArena
@@ -31,25 +37,9 @@ export class CSSNode {
 		return this.index
 	}
 
-	// Get node type as string
+	// Get node type as number (for performance)
 	get type(): CSSNodeType {
-		let type_num = this.arena.get_type(this.index)
-		switch (type_num) {
-			case NODE_STYLESHEET:
-				return 'stylesheet'
-			case NODE_STYLE_RULE:
-				return 'rule'
-			case NODE_AT_RULE:
-				return 'atrule'
-			case NODE_DECLARATION:
-				return 'declaration'
-			case NODE_SELECTOR:
-				return 'selector'
-			case NODE_COMMENT:
-				return 'comment'
-			default:
-				return 'stylesheet' // fallback
-		}
+		return this.arena.get_type(this.index) as CSSNodeType
 	}
 
 	// Get the full text of this node from source

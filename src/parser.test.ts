@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { Parser } from './parser'
+import { NODE_STYLESHEET, NODE_STYLE_RULE, NODE_AT_RULE, NODE_DECLARATION, NODE_SELECTOR } from './arena'
 
 describe('Parser', () => {
 	describe('basic parsing', () => {
@@ -17,7 +18,7 @@ describe('Parser', () => {
 			const parser = new Parser('')
 			const root = parser.parse()
 
-			expect(root.type).toBe('stylesheet')
+			expect(root.type).toBe(NODE_STYLESHEET)
 			expect(root.offset).toBe(0)
 			expect(root.length).toBe(0)
 			expect(root.has_children).toBe(false)
@@ -27,7 +28,7 @@ describe('Parser', () => {
 			const parser = new Parser('   \n\n   ')
 			const root = parser.parse()
 
-			expect(root.type).toBe('stylesheet')
+			expect(root.type).toBe(NODE_STYLESHEET)
 			expect(root.has_children).toBe(false)
 		})
 
@@ -35,7 +36,7 @@ describe('Parser', () => {
 			const parser = new Parser('/* comment */')
 			const root = parser.parse()
 
-			expect(root.type).toBe('stylesheet')
+			expect(root.type).toBe(NODE_STYLESHEET)
 			// TODO: Once we parse comments, verify they're added as children
 		})
 	})
@@ -48,7 +49,7 @@ describe('Parser', () => {
 			expect(root.has_children).toBe(true)
 
 			const rule = root.first_child!
-			expect(rule.type).toBe('rule')
+			expect(rule.type).toBe(NODE_STYLE_RULE)
 			expect(rule.offset).toBe(0)
 			expect(rule.length).toBeGreaterThan(0)
 		})
@@ -62,7 +63,7 @@ describe('Parser', () => {
 			expect(rule.has_children).toBe(true)
 
 			const selector = rule.first_child!
-			expect(selector.type).toBe('selector')
+			expect(selector.type).toBe(NODE_SELECTOR)
 			expect(selector.offset).toBe(0)
 			expect(selector.length).toBe(4) // "body"
 			expect(selector.text).toBe('body')
@@ -73,8 +74,8 @@ describe('Parser', () => {
 			const root = parser.parse()
 
 			const [rule1, rule2] = root.children
-			expect(rule1.type).toBe('rule')
-			expect(rule2.type).toBe('rule')
+			expect(rule1.type).toBe(NODE_STYLE_RULE)
+			expect(rule2.type).toBe(NODE_STYLE_RULE)
 			expect(rule2.next_sibling).toBe(null)
 		})
 
@@ -86,11 +87,11 @@ describe('Parser', () => {
 			const rule = root.first_child!
 			const selector = rule.first_child!
 
-			expect(selector.type).toBe('selector')
+			expect(selector.type).toBe(NODE_SELECTOR)
 			expect(selector.offset).toBe(0)
 			// Selector includes tokens up to but not including the '{'
 			// Whitespace is skipped by lexer, so actual length is 16
-			expect(selector.length).toBe(16) // "div.class > p#id"
+			expect(selector.length).toBe(16) // "div.class > p#id".length
 			expect(selector.text).toBe('div.class > p#id')
 		})
 	})
@@ -104,7 +105,7 @@ describe('Parser', () => {
 			const rule = root.first_child!
 			const [_selector, declaration] = rule.children
 
-			expect(declaration.type).toBe('declaration')
+			expect(declaration.type).toBe(NODE_DECLARATION)
 			expect(declaration.is_important).toBe(false)
 		})
 
@@ -128,8 +129,8 @@ describe('Parser', () => {
 			const rule = root.first_child!
 			const [_selector, decl1, decl2] = rule.children
 
-			expect(decl1.type).toBe('declaration')
-			expect(decl2.type).toBe('declaration')
+			expect(decl1.type).toBe(NODE_DECLARATION)
+			expect(decl2.type).toBe(NODE_DECLARATION)
 			expect(decl2.next_sibling).toBe(null)
 		})
 
@@ -141,7 +142,7 @@ describe('Parser', () => {
 			const rule = root.first_child!
 			const [_selector, declaration] = rule.children
 
-			expect(declaration.type).toBe('declaration')
+			expect(declaration.type).toBe(NODE_DECLARATION)
 			expect(declaration.is_important).toBe(true)
 		})
 
@@ -153,7 +154,7 @@ describe('Parser', () => {
 			const rule = root.first_child!
 			const [_selector, declaration] = rule.children
 
-			expect(declaration.type).toBe('declaration')
+			expect(declaration.type).toBe(NODE_DECLARATION)
 			expect(declaration.is_important).toBe(true)
 		})
 
@@ -165,7 +166,7 @@ describe('Parser', () => {
 			const rule = root.first_child!
 			const [_selector, declaration] = rule.children
 
-			expect(declaration.type).toBe('declaration')
+			expect(declaration.type).toBe(NODE_DECLARATION)
 			expect(declaration.is_important).toBe(true)
 		})
 
@@ -177,7 +178,7 @@ describe('Parser', () => {
 			const rule = root.first_child!
 			const [_selector, declaration] = rule.children
 
-			expect(declaration.type).toBe('declaration')
+			expect(declaration.type).toBe(NODE_DECLARATION)
 		})
 
 		it('should parse complex declaration value', () => {
@@ -188,7 +189,7 @@ describe('Parser', () => {
 			const rule = root.first_child!
 			const [_selector, declaration] = rule.children
 
-			expect(declaration.type).toBe('declaration')
+			expect(declaration.type).toBe(NODE_DECLARATION)
 			expect(declaration.name).toBe('background')
 		})
 	})
@@ -201,7 +202,7 @@ describe('Parser', () => {
 				const root = parser.parse()
 
 				const atRule = root.first_child!
-				expect(atRule.type).toBe('atrule')
+				expect(atRule.type).toBe(NODE_AT_RULE)
 				expect(atRule.name).toBe('import')
 				expect(atRule.has_children).toBe(false)
 			})
@@ -212,7 +213,7 @@ describe('Parser', () => {
 				const root = parser.parse()
 
 				const atRule = root.first_child!
-				expect(atRule.type).toBe('atrule')
+				expect(atRule.type).toBe(NODE_AT_RULE)
 				expect(atRule.name).toBe('namespace')
 			})
 		})
@@ -224,12 +225,12 @@ describe('Parser', () => {
 				const root = parser.parse()
 
 				const media = root.first_child!
-				expect(media.type).toBe('atrule')
+				expect(media.type).toBe(NODE_AT_RULE)
 				expect(media.name).toBe('media')
 				expect(media.has_children).toBe(true)
 
 				const nestedRule = media.first_child!
-				expect(nestedRule.type).toBe('rule')
+				expect(nestedRule.type).toBe(NODE_STYLE_RULE)
 			})
 
 			it('should parse @layer with name', () => {
@@ -238,7 +239,7 @@ describe('Parser', () => {
 				const root = parser.parse()
 
 				const layer = root.first_child!
-				expect(layer.type).toBe('atrule')
+				expect(layer.type).toBe(NODE_AT_RULE)
 				expect(layer.name).toBe('layer')
 				expect(layer.has_children).toBe(true)
 			})
@@ -249,7 +250,7 @@ describe('Parser', () => {
 				const root = parser.parse()
 
 				const layer = root.first_child!
-				expect(layer.type).toBe('atrule')
+				expect(layer.type).toBe(NODE_AT_RULE)
 				expect(layer.name).toBe('layer')
 				expect(layer.has_children).toBe(true)
 			})
@@ -260,7 +261,7 @@ describe('Parser', () => {
 				const root = parser.parse()
 
 				const supports = root.first_child!
-				expect(supports.type).toBe('atrule')
+				expect(supports.type).toBe(NODE_AT_RULE)
 				expect(supports.name).toBe('supports')
 				expect(supports.has_children).toBe(true)
 			})
@@ -271,7 +272,7 @@ describe('Parser', () => {
 				const root = parser.parse()
 
 				const container = root.first_child!
-				expect(container.type).toBe('atrule')
+				expect(container.type).toBe(NODE_AT_RULE)
 				expect(container.name).toBe('container')
 				expect(container.has_children).toBe(true)
 			})
@@ -284,14 +285,14 @@ describe('Parser', () => {
 				const root = parser.parse()
 
 				const fontFace = root.first_child!
-				expect(fontFace.type).toBe('atrule')
+				expect(fontFace.type).toBe(NODE_AT_RULE)
 				expect(fontFace.name).toBe('font-face')
 				expect(fontFace.has_children).toBe(true)
 
 				// Should have declarations as children
 				const [decl1, decl2] = fontFace.children
-				expect(decl1.type).toBe('declaration')
-				expect(decl2.type).toBe('declaration')
+				expect(decl1.type).toBe(NODE_DECLARATION)
+				expect(decl2.type).toBe(NODE_DECLARATION)
 			})
 
 			it('should parse @page', () => {
@@ -300,11 +301,11 @@ describe('Parser', () => {
 				const root = parser.parse()
 
 				const page = root.first_child!
-				expect(page.type).toBe('atrule')
+				expect(page.type).toBe(NODE_AT_RULE)
 				expect(page.name).toBe('page')
 
 				const decl = page.first_child!
-				expect(decl.type).toBe('declaration')
+				expect(decl.type).toBe(NODE_DECLARATION)
 			})
 
 			it('should parse @counter-style', () => {
@@ -313,11 +314,11 @@ describe('Parser', () => {
 				const root = parser.parse()
 
 				const counterStyle = root.first_child!
-				expect(counterStyle.type).toBe('atrule')
+				expect(counterStyle.type).toBe(NODE_AT_RULE)
 				expect(counterStyle.name).toBe('counter-style')
 
 				const decl = counterStyle.first_child!
-				expect(decl.type).toBe('declaration')
+				expect(decl.type).toBe(NODE_DECLARATION)
 			})
 		})
 
@@ -331,11 +332,11 @@ describe('Parser', () => {
 				expect(supports.name).toBe('supports')
 
 				const media = supports.first_child!
-				expect(media.type).toBe('atrule')
+				expect(media.type).toBe(NODE_AT_RULE)
 				expect(media.name).toBe('media')
 
 				const rule = media.first_child!
-				expect(rule.type).toBe('rule')
+				expect(rule.type).toBe(NODE_STYLE_RULE)
 			})
 		})
 
@@ -360,15 +361,15 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let parent = root.first_child!
-			expect(parent.type).toBe('rule')
+			expect(parent.type).toBe(NODE_STYLE_RULE)
 
 			let [_selector, decl, nested_rule] = parent.children
-			expect(decl.type).toBe('declaration')
+			expect(decl.type).toBe(NODE_DECLARATION)
 			expect(decl.name).toBe('color')
 
-			expect(nested_rule.type).toBe('rule')
+			expect(nested_rule.type).toBe(NODE_STYLE_RULE)
 			let nested_selector = nested_rule.first_child!
-			expect(nested_selector.type).toBe('selector')
+			expect(nested_selector.type).toBe(NODE_SELECTOR)
 			expect(nested_selector.text).toBe('& .child')
 		})
 
@@ -380,7 +381,7 @@ describe('Parser', () => {
 			let parent = root.first_child!
 			let [_selector, _decl, nested_rule] = parent.children
 
-			expect(nested_rule.type).toBe('rule')
+			expect(nested_rule.type).toBe(NODE_STYLE_RULE)
 			let nested_selector = nested_rule.first_child!
 			expect(nested_selector.text).toBe('.child')
 		})
@@ -393,8 +394,8 @@ describe('Parser', () => {
 			let parent = root.first_child!
 			let [_selector, nested1, nested2] = parent.children
 
-			expect(nested1.type).toBe('rule')
-			expect(nested2.type).toBe('rule')
+			expect(nested1.type).toBe(NODE_STYLE_RULE)
+			expect(nested2.type).toBe(NODE_STYLE_RULE)
 		})
 
 		it('should parse deeply nested rules', () => {
@@ -404,13 +405,13 @@ describe('Parser', () => {
 
 			let a = root.first_child!
 			let [_selector_a, b] = a.children
-			expect(b.type).toBe('rule')
+			expect(b.type).toBe(NODE_STYLE_RULE)
 
 			let [_selector_b, c] = b.children
-			expect(c.type).toBe('rule')
+			expect(c.type).toBe(NODE_STYLE_RULE)
 
 			let [_selector_c, decl] = c.children
-			expect(decl.type).toBe('declaration')
+			expect(decl.type).toBe(NODE_DECLARATION)
 			expect(decl.name).toBe('color')
 		})
 
@@ -422,12 +423,12 @@ describe('Parser', () => {
 			let card = root.first_child!
 			let [_selector, decl, media] = card.children
 
-			expect(decl.type).toBe('declaration')
-			expect(media.type).toBe('atrule')
+			expect(decl.type).toBe(NODE_DECLARATION)
+			expect(media.type).toBe(NODE_AT_RULE)
 			expect(media.name).toBe('media')
 
 			let nested_decl = media.first_child!
-			expect(nested_decl.type).toBe('declaration')
+			expect(nested_decl.type).toBe(NODE_DECLARATION)
 			expect(nested_decl.name).toBe('padding')
 		})
 
@@ -474,15 +475,15 @@ describe('Parser', () => {
 			let card = root.first_child!
 			let [_selector, decl1, title, decl2, body] = card.children
 
-			expect(decl1.type).toBe('declaration')
+			expect(decl1.type).toBe(NODE_DECLARATION)
 			expect(decl1.name).toBe('color')
 
-			expect(title.type).toBe('rule')
+			expect(title.type).toBe(NODE_STYLE_RULE)
 
-			expect(decl2.type).toBe('declaration')
+			expect(decl2.type).toBe(NODE_DECLARATION)
 			expect(decl2.name).toBe('padding')
 
-			expect(body.type).toBe('rule')
+			expect(body.type).toBe(NODE_STYLE_RULE)
 		})
 	})
 
@@ -493,12 +494,12 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let keyframes = root.first_child!
-			expect(keyframes.type).toBe('atrule')
+			expect(keyframes.type).toBe(NODE_AT_RULE)
 			expect(keyframes.name).toBe('keyframes')
 
 			let [from_rule, to_rule] = keyframes.children
-			expect(from_rule.type).toBe('rule')
-			expect(to_rule.type).toBe('rule')
+			expect(from_rule.type).toBe(NODE_STYLE_RULE)
+			expect(to_rule.type).toBe(NODE_STYLE_RULE)
 
 			let from_selector = from_rule.first_child!
 			expect(from_selector.text).toBe('from')
@@ -515,9 +516,9 @@ describe('Parser', () => {
 			let keyframes = root.first_child!
 			let [rule0, rule50, rule100] = keyframes.children
 
-			expect(rule0.type).toBe('rule')
-			expect(rule50.type).toBe('rule')
-			expect(rule100.type).toBe('rule')
+			expect(rule0.type).toBe(NODE_STYLE_RULE)
+			expect(rule50.type).toBe(NODE_STYLE_RULE)
+			expect(rule100.type).toBe(NODE_STYLE_RULE)
 
 			let selector0 = rule0.first_child!
 			expect(selector0.text).toBe('0%')
@@ -545,12 +546,12 @@ describe('Parser', () => {
 			let parent = root.first_child!
 			let [_selector, nest] = parent.children
 
-			expect(nest.type).toBe('atrule')
+			expect(nest.type).toBe(NODE_AT_RULE)
 			expect(nest.name).toBe('nest')
 			expect(nest.has_children).toBe(true)
 
 			let decl = nest.first_child!
-			expect(decl.type).toBe('declaration')
+			expect(decl.type).toBe(NODE_DECLARATION)
 			expect(decl.name).toBe('color')
 		})
 
@@ -562,7 +563,7 @@ describe('Parser', () => {
 			let a = root.first_child!
 			let [_selector, nest] = a.children
 
-			expect(nest.type).toBe('atrule')
+			expect(nest.type).toBe(NODE_AT_RULE)
 			expect(nest.name).toBe('nest')
 		})
 	})
@@ -592,7 +593,7 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let rule = root.first_child!
-			expect(rule.type).toBe('rule')
+			expect(rule.type).toBe(NODE_STYLE_RULE)
 			// Only has selector, no declarations
 			expect(rule.children.length).toBe(1)
 		})
@@ -604,7 +605,7 @@ describe('Parser', () => {
 
 			let rule = root.first_child!
 			let [_selector, decl] = rule.children
-			expect(decl.type).toBe('declaration')
+			expect(decl.type).toBe(NODE_DECLARATION)
 		})
 
 		it('should handle multiple semicolons', () => {
@@ -651,7 +652,7 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let a = root.first_child!
-			expect(a.type).toBe('rule')
+			expect(a.type).toBe(NODE_STYLE_RULE)
 		})
 
 		it('should handle trailing comma in selector', () => {
@@ -660,7 +661,7 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let rule = root.first_child!
-			expect(rule.type).toBe('rule')
+			expect(rule.type).toBe(NODE_STYLE_RULE)
 		})
 	})
 
@@ -697,7 +698,7 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let card = root.first_child!
-			expect(card.type).toBe('rule')
+			expect(card.type).toBe(NODE_STYLE_RULE)
 			expect(card.children.length).toBeGreaterThan(4)
 		})
 
@@ -721,8 +722,8 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let [layer1, layer2] = root.children
-			expect(layer1.type).toBe('atrule')
-			expect(layer2.type).toBe('atrule')
+			expect(layer1.type).toBe(NODE_AT_RULE)
+			expect(layer2.type).toBe(NODE_AT_RULE)
 		})
 
 		it('should parse vendor prefixed properties', () => {
@@ -788,7 +789,7 @@ describe('Parser', () => {
 			// Parser may have issues with -- custom property names, check what we got
 			expect(root.children.length).toBeGreaterThan(0)
 			let first_rule = root.first_child!
-			expect(first_rule.type).toBe('rule')
+			expect(first_rule.type).toBe(NODE_STYLE_RULE)
 		})
 
 		it('should parse attribute selectors with operators', () => {
@@ -809,8 +810,8 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let [rule1, rule2] = root.children
-			expect(rule1.type).toBe('rule')
-			expect(rule2.type).toBe('rule')
+			expect(rule1.type).toBe(NODE_STYLE_RULE)
+			expect(rule2.type).toBe(NODE_STYLE_RULE)
 		})
 
 		it('should parse multiple !important declarations', () => {
@@ -821,7 +822,7 @@ describe('Parser', () => {
 			let rule = root.first_child!
 			expect(rule.children.length).toBeGreaterThan(1)
 			// Check at least first declaration has important flag
-			let declarations = rule.children.filter(c => c.type === 'declaration')
+			let declarations = rule.children.filter((c) => c.type === NODE_DECLARATION)
 			expect(declarations.length).toBeGreaterThan(0)
 			expect(declarations[0].is_important).toBe(true)
 		})
@@ -836,7 +837,7 @@ describe('Parser', () => {
 			// Comments are skipped, only rule remains
 			expect(root.children.length).toBe(1)
 			let rule = root.first_child!
-			expect(rule.type).toBe('rule')
+			expect(rule.type).toBe(NODE_STYLE_RULE)
 		})
 
 		it('should skip comments in declaration block', () => {
@@ -846,7 +847,7 @@ describe('Parser', () => {
 
 			let rule = root.first_child!
 			// Comments don't break parsing
-			expect(rule.type).toBe('rule')
+			expect(rule.type).toBe(NODE_STYLE_RULE)
 			expect(rule.children.length).toBeGreaterThan(0)
 		})
 
@@ -856,7 +857,7 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let rule = root.first_child!
-			expect(rule.type).toBe('rule')
+			expect(rule.type).toBe(NODE_STYLE_RULE)
 		})
 
 		it('should handle comment between property and colon', () => {
@@ -890,7 +891,7 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let rule = root.first_child!
-			expect(rule.type).toBe('rule')
+			expect(rule.type).toBe(NODE_STYLE_RULE)
 		})
 
 		it('should handle tabs and newlines', () => {
@@ -899,7 +900,7 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let rule = root.first_child!
-			expect(rule.type).toBe('rule')
+			expect(rule.type).toBe(NODE_STYLE_RULE)
 		})
 
 		it('should handle no whitespace', () => {
@@ -921,7 +922,7 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let [charset, _body] = root.children
-			expect(charset.type).toBe('atrule')
+			expect(charset.type).toBe(NODE_AT_RULE)
 			expect(charset.name).toBe('charset')
 		})
 
@@ -931,7 +932,7 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let import_rule = root.first_child!
-			expect(import_rule.type).toBe('atrule')
+			expect(import_rule.type).toBe(NODE_AT_RULE)
 			expect(import_rule.name).toBe('import')
 		})
 

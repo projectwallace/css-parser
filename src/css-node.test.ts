@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { Parser } from './parser'
+import { NODE_DECLARATION, NODE_SELECTOR, NODE_STYLE_RULE } from './arena'
 
 describe('CSSNode', () => {
 	describe('iteration', () => {
@@ -9,13 +10,13 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 
 			const rule = root.first_child!
-			const types: string[] = []
+			const types: number[] = []
 
 			for (const child of rule) {
 				types.push(child.type)
 			}
 
-			expect(types).toEqual(['selector', 'declaration', 'declaration', 'declaration'])
+			expect(types).toEqual([NODE_SELECTOR, NODE_DECLARATION, NODE_DECLARATION, NODE_DECLARATION])
 		})
 
 		it('should work with spread operator', () => {
@@ -25,8 +26,8 @@ describe('CSSNode', () => {
 
 			const rules = [...root]
 			expect(rules).toHaveLength(2)
-			expect(rules[0].type).toBe('rule')
-			expect(rules[1].type).toBe('rule')
+			expect(rules[0].type).toBe(NODE_STYLE_RULE)
+			expect(rules[1].type).toBe(NODE_STYLE_RULE)
 		})
 
 		it('should work with Array.from', () => {
@@ -38,7 +39,7 @@ describe('CSSNode', () => {
 			const children = Array.from(media)
 
 			expect(children).toHaveLength(1)
-			expect(children[0].type).toBe('rule')
+			expect(children[0].type).toBe(NODE_STYLE_RULE)
 		})
 
 		it('should iterate over empty children', () => {
