@@ -2,6 +2,8 @@
 export { Lexer } from './lexer'
 export { Parser } from './parser'
 export { CSSNode, type CSSNodeType } from './css-node'
+export { walk } from './walk'
+export { NODE_STYLE_RULE, NODE_AT_RULE, NODE_COMMENT, NODE_DECLARATION, NODE_SELECTOR, NODE_STYLESHEET } from './arena'
 export {
 	TOKEN_IDENT,
 	TOKEN_FUNCTION,

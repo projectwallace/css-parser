@@ -1,8 +1,9 @@
 import { describe, test, expect } from 'vitest'
+import { NODE_AT_RULE, NODE_STYLE_RULE, NODE_STYLESHEET } from '../../dist/index.js'
 
 describe('Package exports', () => {
-	test('should export Parser and CSSNode from main entry', async () => {
-		let { Parser, CSSNode } = await import('../../dist/index.js')
+	test('should export Parser and CSSNode and walk from main entry', async () => {
+		let { Parser, CSSNode, walk } = await import('../../dist/index.js')
 
 		expect(typeof Parser).toBe('function')
 		expect(typeof CSSNode).toBe('function')
@@ -10,7 +11,9 @@ describe('Package exports', () => {
 		// Test that Parser works
 		let parser = new Parser('body { color: red; }')
 		let ast = parser.parse()
-		expect(ast.type).toBe('stylesheet')
+		expect(ast.type).toBe(NODE_STYLESHEET)
+
+		walk(ast, (node) => {})
 	})
 
 	test('should export Lexer from lexer entry', async () => {
@@ -36,7 +39,7 @@ describe('Package exports', () => {
 		// Test that Parser works
 		let parser = new Parser('.test { margin: 0; }')
 		let ast = parser.parse()
-		expect(ast.type).toBe('stylesheet')
+		expect(ast.type).toBe(NODE_STYLESHEET)
 		expect(ast.has_children).toBe(true)
 	})
 
@@ -47,7 +50,7 @@ describe('Package exports', () => {
 		let ast = parser.parse()
 
 		let rule = ast.first_child!
-		expect(rule.type).toBe('rule')
+		expect(rule.type).toBe(NODE_STYLE_RULE)
 		expect(rule.children.length).toBeGreaterThan(0)
 
 		// Test iteration
@@ -65,7 +68,7 @@ describe('Package exports', () => {
 		let ast = parser.parse()
 
 		let parent = ast.first_child!
-		expect(parent.type).toBe('rule')
+		expect(parent.type).toBe(NODE_STYLE_RULE)
 		expect(parent.children.length).toBeGreaterThan(1)
 	})
 
@@ -76,7 +79,7 @@ describe('Package exports', () => {
 		let ast = parser.parse()
 
 		let media = ast.first_child!
-		expect(media.type).toBe('atrule')
+		expect(media.type).toBe(NODE_AT_RULE)
 		expect(media.name).toBe('media')
 	})
 })
