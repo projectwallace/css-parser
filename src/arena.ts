@@ -29,9 +29,8 @@ export const NODE_COMMENT = 6
 
 // Flag constants (bit-packed in 1 byte)
 export const FLAG_IMPORTANT = 1 << 0 // Has !important
-export const FLAG_VENDOR_PREFIXED = 1 << 1 // -webkit-, -moz-, etc
-export const FLAG_HAS_ERROR = 1 << 2 // Syntax error
-export const FLAG_LENGTH_OVERFLOW = 1 << 3 // Node > 65k chars
+export const FLAG_HAS_ERROR = 1 << 1 // Syntax error
+export const FLAG_LENGTH_OVERFLOW = 1 << 2 // Node > 65k chars
 
 export class CSSDataArena {
 	private buffer: ArrayBuffer

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { CSSDataArena, NODE_STYLESHEET, NODE_DECLARATION, FLAG_IMPORTANT, FLAG_VENDOR_PREFIXED, FLAG_HAS_ERROR } from './arena'
+import { CSSDataArena, NODE_STYLESHEET, NODE_DECLARATION, FLAG_IMPORTANT, FLAG_HAS_ERROR } from './arena'
 
 describe('CSSDataArena', () => {
 	describe('initialization', () => {
@@ -223,10 +223,8 @@ describe('CSSDataArena', () => {
 			const node = arena.create_node()
 
 			arena.set_flag(node, FLAG_IMPORTANT)
-			arena.set_flag(node, FLAG_VENDOR_PREFIXED)
 
 			expect(arena.has_flag(node, FLAG_IMPORTANT)).toBe(true)
-			expect(arena.has_flag(node, FLAG_VENDOR_PREFIXED)).toBe(true)
 			expect(arena.has_flag(node, FLAG_HAS_ERROR)).toBe(false)
 		})
 
@@ -235,13 +233,9 @@ describe('CSSDataArena', () => {
 			const node = arena.create_node()
 
 			arena.set_flag(node, FLAG_IMPORTANT)
-			arena.set_flag(node, FLAG_VENDOR_PREFIXED)
 			arena.set_flag(node, FLAG_HAS_ERROR)
 
-			arena.clear_flag(node, FLAG_VENDOR_PREFIXED)
-
 			expect(arena.has_flag(node, FLAG_IMPORTANT)).toBe(true)
-			expect(arena.has_flag(node, FLAG_VENDOR_PREFIXED)).toBe(false)
 			expect(arena.has_flag(node, FLAG_HAS_ERROR)).toBe(true)
 		})
 
@@ -250,12 +244,11 @@ describe('CSSDataArena', () => {
 			const node = arena.create_node()
 
 			// Set all flags at once using setFlags
-			const allFlags = FLAG_IMPORTANT | FLAG_VENDOR_PREFIXED | FLAG_HAS_ERROR
+			const allFlags = FLAG_IMPORTANT | FLAG_HAS_ERROR
 			arena.set_flags(node, allFlags)
 
 			expect(arena.get_flags(node)).toBe(allFlags)
 			expect(arena.has_flag(node, FLAG_IMPORTANT)).toBe(true)
-			expect(arena.has_flag(node, FLAG_VENDOR_PREFIXED)).toBe(true)
 			expect(arena.has_flag(node, FLAG_HAS_ERROR)).toBe(true)
 
 			// Clear all flags
