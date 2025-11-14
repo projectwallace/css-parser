@@ -41,12 +41,30 @@ export class Parser {
 		return this.source
 	}
 
+	// Fast manual trim to find actual content boundaries
+	// Returns [trimmed_start, trimmed_end] or null if all whitespace
+	private find_trim_boundaries(start: number, end: number): [number, number] | null {
+		// Trim start
+		while (start < end) {
+			let ch = this.source.charCodeAt(start)
+			if (ch !== 0x20 && ch !== 0x09 && ch !== 0x0a && ch !== 0x0d && ch !== 0x0c) break
+			start++
+		}
+
+		// Trim end
+		while (end > start) {
+			let ch = this.source.charCodeAt(end - 1)
+			if (ch !== 0x20 && ch !== 0x09 && ch !== 0x0a && ch !== 0x0d && ch !== 0x0c) break
+			end--
+		}
+
+		if (start >= end) return null
+		return [start, end]
+	}
+
 	// Advance to the next token, skipping whitespace
 	private next_token(): Token | null {
-		do {
-			this.currentToken = this.lexer.next_token()
-		} while (this.currentToken && this.currentToken.type === TOKEN_WHITESPACE)
-
+		this.currentToken = this.lexer.next_token(true)
 		return this.currentToken
 	}
 
@@ -275,12 +293,10 @@ export class Parser {
 		}
 
 		// Store value position (trimmed)
-		let value_text = this.source.substring(value_start, value_end).trim()
-		if (value_text.length > 0) {
-			// Find actual trimmed boundaries
-			let trim_start = this.source.indexOf(value_text, value_start)
-			this.arena.set_value_start(declaration, trim_start)
-			this.arena.set_value_length(declaration, value_text.length)
+		let trimmed = this.find_trim_boundaries(value_start, value_end)
+		if (trimmed) {
+			this.arena.set_value_start(declaration, trimmed[0])
+			this.arena.set_value_length(declaration, trimmed[1] - trimmed[0])
 		}
 
 		// Set !important flag if found
@@ -340,12 +356,10 @@ export class Parser {
 		}
 
 		// Store prelude position (trimmed)
-		let prelude_text = this.source.substring(prelude_start, prelude_end).trim()
-		if (prelude_text.length > 0) {
-			// Find actual trimmed boundaries
-			let trim_start = this.source.indexOf(prelude_text, prelude_start)
-			this.arena.set_value_start(at_rule, trim_start)
-			this.arena.set_value_length(at_rule, prelude_text.length)
+		let trimmed = this.find_trim_boundaries(prelude_start, prelude_end)
+		if (trimmed) {
+			this.arena.set_value_start(at_rule, trimmed[0])
+			this.arena.set_value_length(at_rule, trimmed[1] - trimmed[0])
 		}
 
 		let last_token = this.currentToken

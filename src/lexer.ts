@@ -39,7 +39,16 @@ export class Lexer {
 		this.line = 1
 	}
 
-	next_token(): Token | null {
+	next_token(skip_whitespace: boolean = false): Token | null {
+		// Fast path: skip whitespace if requested
+		if (skip_whitespace) {
+			while (this.pos < this.source.length) {
+				let ch = this.source.charCodeAt(this.pos)
+				if (!is_whitespace(ch) && !is_newline(ch)) break
+				this.advance()
+			}
+		}
+
 		if (this.pos >= this.source.length) {
 			return this.make_token(TOKEN_EOF, this.pos, this.pos)
 		}
@@ -415,6 +424,24 @@ export class Lexer {
 	}
 
 	advance(count: number = 1): void {
+		// Fast path for advance(1) - most common case
+		if (count === 1) {
+			if (this.pos >= this.source.length) return
+
+			let ch = this.source.charCodeAt(this.pos)
+			this.pos++
+
+			if (is_newline(ch)) {
+				// Handle \r\n as single newline
+				if (ch === 0x0d && this.pos < this.source.length && this.source.charCodeAt(this.pos) === 0x0a) {
+					this.pos++
+				}
+				this.line++
+			}
+			return
+		}
+
+		// General case for count > 1
 		for (let i = 0; i < count; i++) {
 			if (this.pos >= this.source.length) break
 
