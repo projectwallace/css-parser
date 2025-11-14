@@ -1016,4 +1016,274 @@ describe('Parser', () => {
 			expect(decl1.offset).toBeLessThan(decl2.offset)
 		})
 	})
+
+	describe('declaration values', () => {
+		test('should extract simple value', () => {
+			let source = 'a { color: blue; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, decl] = rule.children
+
+			expect(decl.name).toBe('color')
+			expect(decl.value).toBe('blue')
+		})
+
+		test('should extract value with spaces', () => {
+			let source = 'a { padding: 1rem 2rem 3rem 4rem; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, decl] = rule.children
+
+			expect(decl.name).toBe('padding')
+			expect(decl.value).toBe('1rem 2rem 3rem 4rem')
+		})
+
+		test('should extract function value', () => {
+			let source = 'a { background: linear-gradient(to bottom, red, blue); }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, decl] = rule.children
+
+			expect(decl.name).toBe('background')
+			expect(decl.value).toBe('linear-gradient(to bottom, red, blue)')
+		})
+
+		test('should extract calc value', () => {
+			let source = 'a { width: calc(100% - 2rem); }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, decl] = rule.children
+
+			expect(decl.name).toBe('width')
+			expect(decl.value).toBe('calc(100% - 2rem)')
+		})
+
+		test('should exclude !important from value', () => {
+			let source = 'a { color: blue !important; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, decl] = rule.children
+
+			expect(decl.name).toBe('color')
+			expect(decl.value).toBe('blue')
+			expect(decl.is_important).toBe(true)
+		})
+
+		test('should handle value with extra whitespace', () => {
+			let source = 'a { color:    blue   ; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, decl] = rule.children
+
+			expect(decl.name).toBe('color')
+			expect(decl.value).toBe('blue')
+		})
+
+		test('should extract CSS custom property value', () => {
+			let source = ':root { --brand-color: rgb(0% 10% 50% / 0.5); }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, decl] = rule.children
+
+			expect(decl.name).toBe('--brand-color')
+			expect(decl.value).toBe('rgb(0% 10% 50% / 0.5)')
+		})
+
+		test('should extract var() reference value', () => {
+			let source = 'a { color: var(--primary-color); }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, decl] = rule.children
+
+			expect(decl.name).toBe('color')
+			expect(decl.value).toBe('var(--primary-color)')
+		})
+
+		test('should extract nested function value', () => {
+			let source = 'a { transform: translate(calc(50% - 1rem), 0); }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, decl] = rule.children
+
+			expect(decl.name).toBe('transform')
+			expect(decl.value).toBe('translate(calc(50% - 1rem), 0)')
+		})
+
+		test('should handle value without semicolon', () => {
+			let source = 'a { color: blue }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, decl] = rule.children
+
+			expect(decl.name).toBe('color')
+			expect(decl.value).toBe('blue')
+		})
+
+		test('should handle empty value', () => {
+			let source = 'a { color: ; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, decl] = rule.children
+
+			expect(decl.name).toBe('color')
+			expect(decl.value).toBe(null)
+		})
+
+		test('should extract URL value', () => {
+			let source = 'a { background: url("image.png"); }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, decl] = rule.children
+
+			expect(decl.name).toBe('background')
+			expect(decl.value).toBe('url("image.png")')
+		})
+	})
+
+	describe('at-rule preludes', () => {
+		test('should extract media query prelude', () => {
+			let source = '@media (min-width: 768px) { }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let atrule = root.first_child!
+			expect(atrule.type).toBe(NODE_AT_RULE)
+			expect(atrule.name).toBe('media')
+			expect(atrule.prelude).toBe('(min-width: 768px)')
+		})
+
+		test('should extract complex media query prelude', () => {
+			let source = '@media screen and (min-width: 768px) and (max-width: 1024px) { }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let atrule = root.first_child!
+			expect(atrule.name).toBe('media')
+			expect(atrule.prelude).toBe('screen and (min-width: 768px) and (max-width: 1024px)')
+		})
+
+		test('should extract container query prelude', () => {
+			let source = '@container (width >= 200px) { }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let atrule = root.first_child!
+			expect(atrule.name).toBe('container')
+			expect(atrule.prelude).toBe('(width >= 200px)')
+		})
+
+		test('should extract supports query prelude', () => {
+			let source = '@supports (display: grid) { }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let atrule = root.first_child!
+			expect(atrule.name).toBe('supports')
+			expect(atrule.prelude).toBe('(display: grid)')
+		})
+
+		test('should extract import prelude', () => {
+			let source = '@import url("styles.css");'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let atrule = root.first_child!
+			expect(atrule.name).toBe('import')
+			expect(atrule.prelude).toBe('url("styles.css")')
+		})
+
+		test('should handle at-rule without prelude', () => {
+			let source = '@font-face { font-family: MyFont; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let atrule = root.first_child!
+			expect(atrule.name).toBe('font-face')
+			expect(atrule.prelude).toBe(null)
+		})
+
+		test('should extract layer prelude', () => {
+			let source = '@layer utilities { }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let atrule = root.first_child!
+			expect(atrule.name).toBe('layer')
+			expect(atrule.prelude).toBe('utilities')
+		})
+
+		test('should extract keyframes prelude', () => {
+			let source = '@keyframes slide-in { }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let atrule = root.first_child!
+			expect(atrule.name).toBe('keyframes')
+			expect(atrule.prelude).toBe('slide-in')
+		})
+
+		test('should handle prelude with extra whitespace', () => {
+			let source = '@media   (min-width: 768px)   { }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let atrule = root.first_child!
+			expect(atrule.name).toBe('media')
+			expect(atrule.prelude).toBe('(min-width: 768px)')
+		})
+
+		test('should extract charset prelude', () => {
+			let source = '@charset "UTF-8";'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let atrule = root.first_child!
+			expect(atrule.name).toBe('charset')
+			expect(atrule.prelude).toBe('"UTF-8"')
+		})
+
+		test('should extract namespace prelude', () => {
+			let source = '@namespace svg url(http://www.w3.org/2000/svg);'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let atrule = root.first_child!
+			expect(atrule.name).toBe('namespace')
+			expect(atrule.prelude).toBe('svg url(http://www.w3.org/2000/svg)')
+		})
+
+		test('should value and prelude be aliases for at-rules', () => {
+			let source = '@media (min-width: 768px) { }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let atrule = root.first_child!
+			expect(atrule.value).toBe(atrule.prelude)
+			expect(atrule.value).toBe('(min-width: 768px)')
+		})
+	})
 })

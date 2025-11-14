@@ -56,6 +56,20 @@ export class CSSNode {
 		return this.source.substring(start, start + length)
 	}
 
+	// Get the value text (for declarations: "blue" in "color: blue")
+	get value(): string | null {
+		let start = this.arena.get_value_start(this.index)
+		let length = this.arena.get_value_length(this.index)
+		if (length === 0) return null
+		return this.source.substring(start, start + length)
+	}
+
+	// Get the prelude text (for at-rules: "(min-width: 768px)" in "@media (min-width: 768px)")
+	// This is an alias for `value` to make at-rule usage more semantic
+	get prelude(): string | null {
+		return this.value
+	}
+
 	// Check if this declaration has !important
 	get is_important(): boolean {
 		return this.arena.has_flag(this.index, FLAG_IMPORTANT)
@@ -65,12 +79,7 @@ export class CSSNode {
 	get is_vendor_prefixed(): boolean {
 		const name = this.name
 		if (!name) return false
-		return (
-			name.startsWith('-webkit-') ||
-			name.startsWith('-moz-') ||
-			name.startsWith('-ms-') ||
-			name.startsWith('-o-')
-		)
+		return name.startsWith('-webkit-') || name.startsWith('-moz-') || name.startsWith('-ms-') || name.startsWith('-o-')
 	}
 
 	// Check if this node has an error
@@ -131,6 +140,14 @@ export class CSSNode {
 		while (child) {
 			yield child
 			child = child.next_sibling
+		}
+	}
+
+	toJSON() {
+		return {
+			type: this.type,
+			line: this.line,
+			text: this.text,
 		}
 	}
 }

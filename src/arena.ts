@@ -1,6 +1,6 @@
 // CSS Data Arena - Single contiguous ArrayBuffer for all AST nodes
 //
-// Each node occupies 36 bytes with the following layout:
+// Each node occupies 44 bytes with the following layout:
 // Offset | Size | Field
 // -------|------|-------------
 //   0    |  1   | type
@@ -9,15 +9,18 @@
 //   4    |  4   | startOffset
 //   8    |  2   | length
 //  10    |  2   | (padding)
-//  12    |  4   | contentStart
+//  12    |  4   | contentStart (property name / at-rule name)
 //  16    |  2   | contentLength
 //  18    |  2   | (padding)
 //  20    |  4   | firstChild
 //  24    |  4   | lastChild
 //  28    |  4   | nextSibling
 //  32    |  4   | startLine
+//  36    |  4   | valueStart (declaration value / at-rule prelude)
+//  40    |  2   | valueLength
+//  42    |  2   | (padding)
 
-let BYTES_PER_NODE = 36
+let BYTES_PER_NODE = 44
 
 // Node type constants
 export const NODE_STYLESHEET = 1
@@ -129,6 +132,16 @@ export class CSSDataArena {
 		return this.view.getUint32(this.node_offset(node_index) + 32, true)
 	}
 
+	// Read value start offset (declaration value / at-rule prelude)
+	get_value_start(node_index: number): number {
+		return this.view.getUint32(this.node_offset(node_index) + 36, true)
+	}
+
+	// Read value length
+	get_value_length(node_index: number): number {
+		return this.view.getUint16(this.node_offset(node_index) + 40, true)
+	}
+
 	// --- Write Methods ---
 
 	// Write node type
@@ -179,6 +192,16 @@ export class CSSDataArena {
 	// Write start line
 	set_start_line(node_index: number, line: number): void {
 		this.view.setUint32(this.node_offset(node_index) + 32, line, true)
+	}
+
+	// Write value start offset (declaration value / at-rule prelude)
+	set_value_start(node_index: number, offset: number): void {
+		this.view.setUint32(this.node_offset(node_index) + 36, offset, true)
+	}
+
+	// Write value length
+	set_value_length(node_index: number, length: number): void {
+		this.view.setUint16(this.node_offset(node_index) + 40, length, true)
 	}
 
 	// --- Node Creation ---

@@ -246,6 +246,10 @@ export class Parser {
 		this.arena.set_content_start(declaration, prop_start)
 		this.arena.set_content_length(declaration, prop_end - prop_start)
 
+		// Track value start (after colon, skipping whitespace)
+		let value_start = this.currentToken?.start ?? prop_end
+		let value_end = value_start
+
 		// Parse value (everything until ';' or '}')
 		let has_important = false
 		let last_token = this.currentToken
@@ -253,6 +257,8 @@ export class Parser {
 		while (!this.is_eof() && this.peek_type() !== TOKEN_SEMICOLON && this.peek_type() !== TOKEN_RIGHT_BRACE) {
 			// Check for ! followed by any identifier (e.g., !important, !ie, etc.)
 			if (this.peek_type() === TOKEN_DELIM && this.currentToken && this.source[this.currentToken.start] === '!') {
+				// Mark end of value before !important
+				value_end = this.currentToken.start
 				// Check if next token is an identifier
 				let next_token = this.lexer.next_token()
 				if (next_token && next_token.type === TOKEN_IDENT) {
@@ -264,7 +270,17 @@ export class Parser {
 			}
 
 			last_token = this.currentToken!
+			value_end = last_token.end
 			this.next_token()
+		}
+
+		// Store value position (trimmed)
+		let value_text = this.source.substring(value_start, value_end).trim()
+		if (value_text.length > 0) {
+			// Find actual trimmed boundaries
+			let trim_start = this.source.indexOf(value_text, value_start)
+			this.arena.set_value_start(declaration, trim_start)
+			this.arena.set_value_length(declaration, value_text.length)
 		}
 
 		// Set !important flag if found
@@ -313,10 +329,23 @@ export class Parser {
 		this.arena.set_content_start(at_rule, name_start)
 		this.arena.set_content_length(at_rule, name_length)
 
+		// Track prelude start and end
+		let prelude_start = this.currentToken?.start ?? start_token.end
+		let prelude_end = prelude_start
+
 		// Parse prelude (everything before '{' or ';')
-		// For now, just consume tokens
 		while (!this.is_eof() && this.peek_type() !== TOKEN_LEFT_BRACE && this.peek_type() !== TOKEN_SEMICOLON) {
+			prelude_end = this.currentToken!.end
 			this.next_token()
+		}
+
+		// Store prelude position (trimmed)
+		let prelude_text = this.source.substring(prelude_start, prelude_end).trim()
+		if (prelude_text.length > 0) {
+			// Find actual trimmed boundaries
+			let trim_start = this.source.indexOf(prelude_text, prelude_start)
+			this.arena.set_value_start(at_rule, trim_start)
+			this.arena.set_value_length(at_rule, prelude_text.length)
 		}
 
 		let last_token = this.currentToken

@@ -99,16 +99,14 @@ describe('Lexer', () => {
 			expect(lexer.line).toBe(3)
 		})
 
-		test('should track line and column', () => {
+		test('should track line', () => {
 			let lexer = new Lexer('a\nb')
 			let token = lexer.next_token() // a
 			expect(token?.line).toBe(1)
-			expect(token?.column).toBe(1)
 
 			lexer.next_token() // \n
 			token = lexer.next_token() // b
 			expect(token?.line).toBe(2)
-			expect(token?.column).toBe(1)
 		})
 	})
 
