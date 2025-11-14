@@ -2,11 +2,8 @@
 import { Lexer } from './lexer'
 import { CSSDataArena, NODE_STYLESHEET, NODE_STYLE_RULE, NODE_SELECTOR, NODE_DECLARATION, NODE_AT_RULE, FLAG_IMPORTANT } from './arena'
 import { CSSNode } from './css-node'
-import type { Token } from './token-types'
 import {
 	TOKEN_EOF,
-	TOKEN_WHITESPACE,
-	TOKEN_COMMENT,
 	TOKEN_LEFT_BRACE,
 	TOKEN_RIGHT_BRACE,
 	TOKEN_COLON,
@@ -46,16 +43,18 @@ export class Parser {
 	// Fast manual trim to find actual content boundaries
 	// Returns [trimmed_start, trimmed_end] or null if all whitespace
 	private find_trim_boundaries(start: number, end: number): [number, number] | null {
-		// Trim start
+		// Trim start: skip whitespace characters
+		// 0x20 = space, 0x09 = tab, 0x0a = \n, 0x0d = \r, 0x0c = \f
 		while (start < end) {
 			let ch = this.source.charCodeAt(start)
 			if (ch !== 0x20 && ch !== 0x09 && ch !== 0x0a && ch !== 0x0d && ch !== 0x0c) break
 			start++
 		}
 
-		// Trim end
+		// Trim end: skip whitespace characters from the end
 		while (end > start) {
 			let ch = this.source.charCodeAt(end - 1)
+			// 0x20 = space, 0x09 = tab, 0x0a = \n, 0x0d = \r, 0x0c = \f
 			if (ch !== 0x20 && ch !== 0x09 && ch !== 0x0a && ch !== 0x0d && ch !== 0x0c) break
 			end--
 		}
