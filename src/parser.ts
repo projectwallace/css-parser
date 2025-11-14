@@ -17,6 +17,13 @@ import {
 const DECLARATION_AT_RULES = new Set(['font-face', 'font-feature-values', 'page', 'property', 'counter-style'])
 const CONDITIONAL_AT_RULES = new Set(['media', 'supports', 'container', 'layer', 'nest'])
 
+// Whitespace character codes for manual trimming (avoiding allocation-heavy string methods)
+const SPACE = 0x20
+const TAB = 0x09
+const LINE_FEED = 0x0a
+const CARRIAGE_RETURN = 0x0d
+const FORM_FEED = 0x0c
+
 export class Parser {
 	private source: string
 	private lexer: Lexer
@@ -44,18 +51,16 @@ export class Parser {
 	// Returns [trimmed_start, trimmed_end] or null if all whitespace
 	private find_trim_boundaries(start: number, end: number): [number, number] | null {
 		// Trim start: skip whitespace characters
-		// 0x20 = space, 0x09 = tab, 0x0a = \n, 0x0d = \r, 0x0c = \f
 		while (start < end) {
 			let ch = this.source.charCodeAt(start)
-			if (ch !== 0x20 && ch !== 0x09 && ch !== 0x0a && ch !== 0x0d && ch !== 0x0c) break
+			if (ch !== SPACE && ch !== TAB && ch !== LINE_FEED && ch !== CARRIAGE_RETURN && ch !== FORM_FEED) break
 			start++
 		}
 
 		// Trim end: skip whitespace characters from the end
 		while (end > start) {
 			let ch = this.source.charCodeAt(end - 1)
-			// 0x20 = space, 0x09 = tab, 0x0a = \n, 0x0d = \r, 0x0c = \f
-			if (ch !== 0x20 && ch !== 0x09 && ch !== 0x0a && ch !== 0x0d && ch !== 0x0c) break
+			if (ch !== SPACE && ch !== TAB && ch !== LINE_FEED && ch !== CARRIAGE_RETURN && ch !== FORM_FEED) break
 			end--
 		}
 

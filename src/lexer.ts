@@ -28,6 +28,35 @@ import {
 	type TokenType,
 } from './token-types'
 
+// Character code constants for lexer
+const CHAR_LEFT_BRACE = 0x7b // {
+const CHAR_RIGHT_BRACE = 0x7d // }
+const CHAR_COLON = 0x3a // :
+const CHAR_SEMICOLON = 0x3b // ;
+const CHAR_COMMA = 0x2c // ,
+const CHAR_LEFT_BRACKET = 0x5b // [
+const CHAR_RIGHT_BRACKET = 0x5d // ]
+const CHAR_LEFT_PAREN = 0x28 // (
+const CHAR_RIGHT_PAREN = 0x29 // )
+const CHAR_FORWARD_SLASH = 0x2f // /
+const CHAR_ASTERISK = 0x2a // *
+const CHAR_DOUBLE_QUOTE = 0x22 // "
+const CHAR_SINGLE_QUOTE = 0x27 // '
+const CHAR_DOT = 0x2e // .
+const CHAR_LESS_THAN = 0x3c // <
+const CHAR_EXCLAMATION = 0x21 // !
+const CHAR_HYPHEN = 0x2d // -
+const CHAR_GREATER_THAN = 0x3e // >
+const CHAR_AT_SIGN = 0x40 // @
+const CHAR_HASH = 0x23 // #
+const CHAR_BACKSLASH = 0x5c // \
+const CHAR_PLUS = 0x2b // +
+const CHAR_PERCENT = 0x25 // %
+const CHAR_LOWERCASE_E = 0x65 // e
+const CHAR_UPPERCASE_E = 0x45 // E
+const CHAR_CARRIAGE_RETURN = 0x0d // \r
+const CHAR_LINE_FEED = 0x0a // \n
+
 export class Lexer {
 	source: string
 	pos: number
@@ -70,48 +99,39 @@ export class Lexer {
 		let start_line = this.line
 
 		// Fast path for single-character tokens
-		if (ch === 0x7b) {
-			// {
+		if (ch === CHAR_LEFT_BRACE) {
 			this.advance()
 			return this.make_token(TOKEN_LEFT_BRACE, start, this.pos, start_line)
 		}
-		if (ch === 0x7d) {
-			// }
+		if (ch === CHAR_RIGHT_BRACE) {
 			this.advance()
 			return this.make_token(TOKEN_RIGHT_BRACE, start, this.pos, start_line)
 		}
-		if (ch === 0x3a) {
-			// :
+		if (ch === CHAR_COLON) {
 			this.advance()
 			return this.make_token(TOKEN_COLON, start, this.pos, start_line)
 		}
-		if (ch === 0x3b) {
-			// ;
+		if (ch === CHAR_SEMICOLON) {
 			this.advance()
 			return this.make_token(TOKEN_SEMICOLON, start, this.pos, start_line)
 		}
-		if (ch === 0x2c) {
-			// ,
+		if (ch === CHAR_COMMA) {
 			this.advance()
 			return this.make_token(TOKEN_COMMA, start, this.pos, start_line)
 		}
-		if (ch === 0x5b) {
-			// [
+		if (ch === CHAR_LEFT_BRACKET) {
 			this.advance()
 			return this.make_token(TOKEN_LEFT_BRACKET, start, this.pos, start_line)
 		}
-		if (ch === 0x5d) {
-			// ]
+		if (ch === CHAR_RIGHT_BRACKET) {
 			this.advance()
 			return this.make_token(TOKEN_RIGHT_BRACKET, start, this.pos, start_line)
 		}
-		if (ch === 0x28) {
-			// (
+		if (ch === CHAR_LEFT_PAREN) {
 			this.advance()
 			return this.make_token(TOKEN_LEFT_PAREN, start, this.pos, start_line)
 		}
-		if (ch === 0x29) {
-			// )
+		if (ch === CHAR_RIGHT_PAREN) {
 			this.advance()
 			return this.make_token(TOKEN_RIGHT_PAREN, start, this.pos, start_line)
 		}
@@ -122,14 +142,12 @@ export class Lexer {
 		}
 
 		// Comments: /* */
-		if (ch === 0x2f && this.peek() === 0x2a) {
-			// /*
+		if (ch === CHAR_FORWARD_SLASH && this.peek() === CHAR_ASTERISK) {
 			if (this.skip_comments) {
 				// Skip comment without creating token
 				this.advance(2) // Skip /*
 				while (this.pos < this.source.length - 1) {
-					if (this.source.charCodeAt(this.pos) === 0x2a && this.source.charCodeAt(this.pos + 1) === 0x2f) {
-						// */
+					if (this.source.charCodeAt(this.pos) === CHAR_ASTERISK && this.source.charCodeAt(this.pos + 1) === CHAR_FORWARD_SLASH) {
 						this.advance(2)
 						break
 					}
@@ -142,8 +160,7 @@ export class Lexer {
 		}
 
 		// Strings: " or '
-		if (ch === 0x22 || ch === 0x27) {
-			// " or '
+		if (ch === CHAR_DOUBLE_QUOTE || ch === CHAR_SINGLE_QUOTE) {
 			return this.consume_string(ch, start_line)
 		}
 
@@ -151,44 +168,40 @@ export class Lexer {
 		if (is_digit(ch)) {
 			return this.consume_number(start_line)
 		}
-		if (ch === 0x2e && is_digit(this.peek())) {
-			// .
+		if (ch === CHAR_DOT && is_digit(this.peek())) {
 			return this.consume_number(start_line)
 		}
 
 		// CDO: <!--
-		if (ch === 0x3c && this.peek() === 0x21 && this.peek(2) === 0x2d && this.peek(3) === 0x2d) {
+		if (ch === CHAR_LESS_THAN && this.peek() === CHAR_EXCLAMATION && this.peek(2) === CHAR_HYPHEN && this.peek(3) === CHAR_HYPHEN) {
 			this.advance(4)
 			return this.make_token(TOKEN_CDO, start, this.pos, start_line)
 		}
 
 		// CDC: -->
-		if (ch === 0x2d && this.peek() === 0x2d && this.peek(2) === 0x3e) {
+		if (ch === CHAR_HYPHEN && this.peek() === CHAR_HYPHEN && this.peek(2) === CHAR_GREATER_THAN) {
 			this.advance(3)
 			return this.make_token(TOKEN_CDC, start, this.pos, start_line)
 		}
 
 		// At-keyword: @media, @keyframes, etc
-		if (ch === 0x40) {
-			// @
+		if (ch === CHAR_AT_SIGN) {
 			return this.consume_at_keyword(start_line)
 		}
 
 		// Hash: #id or #fff
-		if (ch === 0x23) {
-			// #
+		if (ch === CHAR_HASH) {
 			return this.consume_hash(start_line)
 		}
 
 		// Identifier or function
-		if (is_ident_start(ch) || (ch === 0x2d && is_ident_start(this.peek())) || (ch === 0x2d && this.peek() === 0x2d)) {
+		if (is_ident_start(ch) || (ch === CHAR_HYPHEN && is_ident_start(this.peek())) || (ch === CHAR_HYPHEN && this.peek() === CHAR_HYPHEN)) {
 			// - followed by ident start (e.g., -webkit-) or -- for CSS custom properties
 			return this.consume_ident_or_function(start_line)
 		}
 
 		// Backslash: escape sequence starting an identifier
-		if (ch === 0x5c) {
-			// \
+		if (ch === CHAR_BACKSLASH) {
 			let next = this.peek()
 			// Valid escape if not followed by newline or EOF
 			if (next !== 0 && !is_newline(next)) {
@@ -197,19 +210,17 @@ export class Lexer {
 		}
 
 		// Hyphen-minus: could be number like -5 or identifier like -webkit-
-		if (ch === 0x2d) {
-			// -
+		if (ch === CHAR_HYPHEN) {
 			const next = this.peek()
-			if (is_digit(next) || (next === 0x2e && is_digit(this.peek(2)))) {
+			if (is_digit(next) || (next === CHAR_DOT && is_digit(this.peek(2)))) {
 				return this.consume_number(start_line)
 			}
 		}
 
 		// Plus: could be number like +5
-		if (ch === 0x2b) {
-			// +
+		if (ch === CHAR_PLUS) {
 			const next = this.peek()
-			if (is_digit(next) || (next === 0x2e && is_digit(this.peek(2)))) {
+			if (is_digit(next) || (next === CHAR_DOT && is_digit(this.peek(2)))) {
 				return this.consume_number(start_line)
 			}
 		}
@@ -234,8 +245,7 @@ export class Lexer {
 		this.advance(2) // Skip /*
 
 		while (this.pos < this.source.length - 1) {
-			if (this.source.charCodeAt(this.pos) === 0x2a && this.source.charCodeAt(this.pos + 1) === 0x2f) {
-				// */
+			if (this.source.charCodeAt(this.pos) === CHAR_ASTERISK && this.source.charCodeAt(this.pos + 1) === CHAR_FORWARD_SLASH) {
 				this.advance(2)
 				break
 			}
@@ -264,8 +274,7 @@ export class Lexer {
 			}
 
 			// Escape sequence
-			if (ch === 0x5c) {
-				// \
+			if (ch === CHAR_BACKSLASH) {
 				this.advance()
 				if (this.pos < this.source.length) {
 					let next = this.source.charCodeAt(this.pos)
@@ -310,8 +319,7 @@ export class Lexer {
 
 		// Optional sign
 		let ch = this.source.charCodeAt(this.pos)
-		if (ch === 0x2b || ch === 0x2d) {
-			// + or -
+		if (ch === CHAR_PLUS || ch === CHAR_HYPHEN) {
 			this.advance()
 		}
 
@@ -323,7 +331,7 @@ export class Lexer {
 		// Decimal part
 		if (
 			this.pos < this.source.length &&
-			this.source.charCodeAt(this.pos) === 0x2e &&
+			this.source.charCodeAt(this.pos) === CHAR_DOT &&
 			this.pos + 1 < this.source.length &&
 			is_digit(this.source.charCodeAt(this.pos + 1))
 		) {
@@ -334,11 +342,11 @@ export class Lexer {
 		}
 
 		// Exponent: e or E
-		if (this.pos < this.source.length && (this.source.charCodeAt(this.pos) === 0x65 || this.source.charCodeAt(this.pos) === 0x45)) {
+		if (this.pos < this.source.length && (this.source.charCodeAt(this.pos) === CHAR_LOWERCASE_E || this.source.charCodeAt(this.pos) === CHAR_UPPERCASE_E)) {
 			let next = this.peek()
-			if (is_digit(next) || ((next === 0x2b || next === 0x2d) && is_digit(this.peek(2)))) {
+			if (is_digit(next) || ((next === CHAR_PLUS || next === CHAR_HYPHEN) && is_digit(this.peek(2)))) {
 				this.advance() // e or E
-				if (this.source.charCodeAt(this.pos) === 0x2b || this.source.charCodeAt(this.pos) === 0x2d) {
+				if (this.source.charCodeAt(this.pos) === CHAR_PLUS || this.source.charCodeAt(this.pos) === CHAR_HYPHEN) {
 					this.advance() // + or -
 				}
 				while (this.pos < this.source.length && is_digit(this.source.charCodeAt(this.pos))) {
@@ -350,12 +358,11 @@ export class Lexer {
 		// Check for unit (dimension) or percentage
 		if (this.pos < this.source.length) {
 			let ch = this.source.charCodeAt(this.pos)
-			if (ch === 0x25) {
-				// %
+			if (ch === CHAR_PERCENT) {
 				this.advance()
 				return this.make_token(TOKEN_PERCENTAGE, start, this.pos, start_line)
 			}
-			if (is_ident_start(ch) || (ch === 0x2d && is_ident_start(this.peek()))) {
+			if (is_ident_start(ch) || (ch === CHAR_HYPHEN && is_ident_start(this.peek()))) {
 				// Unit: px, em, rem, etc
 				while (this.pos < this.source.length && is_ident_char(this.source.charCodeAt(this.pos))) {
 					this.advance()
@@ -375,8 +382,7 @@ export class Lexer {
 			let ch = this.source.charCodeAt(this.pos)
 
 			// Handle escape sequences: \ followed by hex digits or any character
-			if (ch === 0x5c) {
-				// \
+			if (ch === CHAR_BACKSLASH) {
 				// Check what follows the backslash before consuming it
 				if (this.pos + 1 >= this.source.length) break
 
@@ -416,8 +422,7 @@ export class Lexer {
 		}
 
 		// Check for function: ident(
-		if (this.pos < this.source.length && this.source.charCodeAt(this.pos) === 0x28) {
-			// (
+		if (this.pos < this.source.length && this.source.charCodeAt(this.pos) === CHAR_LEFT_PAREN) {
 			this.advance()
 			return this.make_token(TOKEN_FUNCTION, start, this.pos, start_line)
 		}
@@ -459,7 +464,7 @@ export class Lexer {
 
 			if (is_newline(ch)) {
 				// Handle \r\n as single newline
-				if (ch === 0x0d && this.pos < this.source.length && this.source.charCodeAt(this.pos) === 0x0a) {
+				if (ch === CHAR_CARRIAGE_RETURN && this.pos < this.source.length && this.source.charCodeAt(this.pos) === CHAR_LINE_FEED) {
 					this.pos++
 				}
 				this.line++
@@ -476,7 +481,7 @@ export class Lexer {
 
 			if (is_newline(ch)) {
 				// Handle \r\n as single newline
-				if (ch === 0x0d && this.pos < this.source.length && this.source.charCodeAt(this.pos) === 0x0a) {
+				if (ch === CHAR_CARRIAGE_RETURN && this.pos < this.source.length && this.source.charCodeAt(this.pos) === CHAR_LINE_FEED) {
 					this.pos++
 					i++ // Count \r\n as 2 characters for advance(count)
 				}
