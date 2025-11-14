@@ -32,14 +32,26 @@ export class Lexer {
 	source: string
 	pos: number
 	line: number
+	skip_comments: boolean
+	// Current token properties (avoiding object allocation)
+	token_type: TokenType
+	token_start: number
+	token_end: number
+	token_line: number
 
-	constructor(source: string) {
+	constructor(source: string, skip_comments: boolean = false) {
 		this.source = source
 		this.pos = 0
 		this.line = 1
+		this.skip_comments = skip_comments
+		this.token_type = TOKEN_EOF
+		this.token_start = 0
+		this.token_end = 0
+		this.token_line = 1
 	}
 
-	next_token(skip_whitespace: boolean = false): Token | null {
+	// Fast token advancing without object allocation (for internal parser use)
+	next_token_fast(skip_whitespace: boolean = false): TokenType {
 		// Fast path: skip whitespace if requested
 		if (skip_whitespace) {
 			while (this.pos < this.source.length) {
@@ -112,6 +124,20 @@ export class Lexer {
 		// Comments: /* */
 		if (ch === 0x2f && this.peek() === 0x2a) {
 			// /*
+			if (this.skip_comments) {
+				// Skip comment without creating token
+				this.advance(2) // Skip /*
+				while (this.pos < this.source.length - 1) {
+					if (this.source.charCodeAt(this.pos) === 0x2a && this.source.charCodeAt(this.pos + 1) === 0x2f) {
+						// */
+						this.advance(2)
+						break
+					}
+					this.advance()
+				}
+				// Recursively get next token
+				return this.next_token_fast(skip_whitespace)
+			}
 			return this.consume_comment(start_line)
 		}
 
@@ -193,7 +219,7 @@ export class Lexer {
 		return this.make_token(TOKEN_DELIM, start, this.pos, start_line)
 	}
 
-	consume_whitespace(start_line: number): Token {
+	consume_whitespace(start_line: number): TokenType {
 		let start = this.pos
 		while (this.pos < this.source.length) {
 			let ch = this.source.charCodeAt(this.pos)
@@ -203,7 +229,7 @@ export class Lexer {
 		return this.make_token(TOKEN_WHITESPACE, start, this.pos, start_line)
 	}
 
-	consume_comment(start_line: number): Token {
+	consume_comment(start_line: number): TokenType {
 		let start = this.pos
 		this.advance(2) // Skip /*
 
@@ -219,7 +245,7 @@ export class Lexer {
 		return this.make_token(TOKEN_COMMENT, start, this.pos, start_line)
 	}
 
-	consume_string(quote: number, start_line: number): Token {
+	consume_string(quote: number, start_line: number): TokenType {
 		let start = this.pos
 		this.advance() // Skip opening quote
 
@@ -279,7 +305,7 @@ export class Lexer {
 		}
 	}
 
-	consume_number(start_line: number): Token {
+	consume_number(start_line: number): TokenType {
 		let start = this.pos
 
 		// Optional sign
@@ -341,7 +367,7 @@ export class Lexer {
 		return this.make_token(TOKEN_NUMBER, start, this.pos, start_line)
 	}
 
-	consume_ident_or_function(start_line: number): Token {
+	consume_ident_or_function(start_line: number): TokenType {
 		let start = this.pos
 
 		// Consume identifier (with escape sequence support)
@@ -399,7 +425,7 @@ export class Lexer {
 		return this.make_token(TOKEN_IDENT, start, this.pos, start_line)
 	}
 
-	consume_at_keyword(start_line: number): Token {
+	consume_at_keyword(start_line: number): TokenType {
 		let start = this.pos
 		this.advance() // Skip @
 
@@ -411,7 +437,7 @@ export class Lexer {
 		return this.make_token(TOKEN_AT_KEYWORD, start, this.pos, start_line)
 	}
 
-	consume_hash(start_line: number): Token {
+	consume_hash(start_line: number): TokenType {
 		let start = this.pos
 		this.advance() // Skip #
 
@@ -465,7 +491,22 @@ export class Lexer {
 		return this.source.charCodeAt(index)
 	}
 
-	make_token(type: TokenType, start: number, end: number, line: number = this.line): Token {
-		return { type, start, end, line }
+	make_token(type: TokenType, start: number, end: number, line: number = this.line): TokenType {
+		this.token_type = type
+		this.token_start = start
+		this.token_end = end
+		this.token_line = line
+		return type
+	}
+
+	// Public API: returns Token object for backwards compatibility
+	next_token(skip_whitespace: boolean = false): Token | null {
+		this.next_token_fast(skip_whitespace)
+		return {
+			type: this.token_type,
+			start: this.token_start,
+			end: this.token_end,
+			line: this.token_line,
+		}
 	}
 }

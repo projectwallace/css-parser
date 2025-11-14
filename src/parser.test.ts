@@ -64,6 +64,7 @@ describe('Parser', () => {
 
 			const selector = rule.first_child!
 			expect(selector.type).toBe(NODE_SELECTOR)
+			expect(selector.line).toBe(1)
 			expect(selector.offset).toBe(0)
 			expect(selector.length).toBe(4) // "body"
 			expect(selector.text).toBe('body')
