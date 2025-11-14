@@ -1,53 +1,58 @@
 {
-  "name": "@projectwallace/css-parser",
-  "version": "0.0.0",
-  "description": "High-performance CSS lexer and parser, optimized for CSS inspection and analysis",
-  "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./lexer": {
-      "types": "./dist/lexer.d.ts",
-      "import": "./dist/lexer.js"
-    },
-    "./parser": {
-      "types": "./dist/parser.d.ts",
-      "import": "./dist/parser.js"
-    }
-  },
-  "files": [
-    "dist"
-  ],
-  "scripts": {
-    "test": "vitest",
-    "test-coverage": "vitest --coverage",
-    "test-build": "npm run build && vitest run --config vitest.config.build.ts",
-    "build": "vite build && tsc --project tsconfig.build.json",
-    "lint": "oxlint --config .oxlintrc.json",
-    "lint-package": "publint"
-  },
-  "keywords": [
-    "css",
-    "parser",
-    "lexer",
-    "tokenizer",
-    "ast"
-  ],
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "@projectwallace/preset-oxlint": "^0.0.7",
-    "@vitest/coverage-v8": "^4.0.8",
-    "oxlint": "^1.28.0",
-    "prettier": "^3.6.2",
-    "publint": "^0.3.15",
-    "typescript": "^5.9.3",
-    "vite": "^7.2.2",
-    "vitest": "^4.0.8"
-  }
+	"name": "@projectwallace/css-parser",
+	"version": "0.0.0",
+	"description": "High-performance CSS lexer and parser, optimized for CSS inspection and analysis",
+	"type": "module",
+	"main": "./dist/index.js",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./lexer": {
+			"types": "./dist/lexer.d.ts",
+			"import": "./dist/lexer.js"
+		},
+		"./parser": {
+			"types": "./dist/parser.d.ts",
+			"import": "./dist/parser.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"test": "vitest",
+		"test-coverage": "vitest --coverage",
+		"test-build": "npm run build && vitest run --config vitest.config.build.ts",
+		"build": "vite build && tsc --project tsconfig.build.json",
+		"benchmark": "npm run build && node benchmark/index.ts",
+		"lint": "oxlint --config .oxlintrc.json",
+		"lint-package": "publint"
+	},
+	"keywords": [
+		"css",
+		"parser",
+		"lexer",
+		"tokenizer",
+		"ast"
+	],
+	"author": "",
+	"license": "ISC",
+	"devDependencies": {
+		"@projectwallace/preset-oxlint": "^0.0.7",
+		"@types/node": "^24.10.1",
+		"@vitest/coverage-v8": "^4.0.8",
+		"bootstrap": "^5.3.8",
+		"oxlint": "^1.28.0",
+		"prettier": "^3.6.2",
+		"publint": "^0.3.15",
+		"tinybench": "^2.9.0",
+		"tsx": "^4.19.2",
+		"typescript": "^5.9.3",
+		"vite": "^7.2.2",
+		"vitest": "^4.0.8"
+	}
 }
