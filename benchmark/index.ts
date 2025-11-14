@@ -234,6 +234,7 @@ body {
 `
 
 const bootstrapCSS = fs.readFileSync(path.resolve('node_modules/bootstrap/dist/css/bootstrap.css'), 'utf-8')
+const tailwindCSS = fs.readFileSync(path.resolve('node_modules/tailwindcss/dist/tailwind.css'), 'utf-8')
 
 const bench = new Bench({ time: 1000 })
 
@@ -260,6 +261,13 @@ bench
 			token = lexer.next_token()
 		}
 	})
+	.add('Lexer - Tailwind CSS', () => {
+		const lexer = new Lexer(tailwindCSS)
+		let token = lexer.next_token()
+		while (token && token.type !== 26 /* TOKEN_EOF */) {
+			token = lexer.next_token()
+		}
+	})
 
 // Parser benchmarks
 bench
@@ -275,11 +283,16 @@ bench
 		const parser = new Parser(bootstrapCSS)
 		parser.parse()
 	})
+	.add('Parser - Tailwind CSS', () => {
+		const parser = new Parser(tailwindCSS)
+		parser.parse()
+	})
 
 // Walker benchmarks
 const smallAST = new Parser(smallCSS).parse()
 const largeAST = new Parser(largeCSS).parse()
 const bootstrapAST = new Parser(bootstrapCSS).parse()
+const tailwindAST = new Parser(tailwindCSS).parse()
 
 bench
 	.add('Walker - Small CSS', () => {
@@ -300,6 +313,12 @@ bench
 			count++
 		})
 	})
+	.add('Walker - Tailwind CSS', () => {
+		let count = 0
+		walk(tailwindAST, () => {
+			count++
+		})
+	})
 
 // Run benchmarks
 await bench.warmup()
@@ -310,6 +329,7 @@ const fileSizes = {
 	small: smallCSS.length,
 	large: largeCSS.length,
 	bootstrap: bootstrapCSS.length,
+	tailwind: tailwindCSS.length,
 }
 
 function getFileSize(taskName: string): string {
@@ -320,6 +340,8 @@ function getFileSize(taskName: string): string {
 		return `${(fileSizes.large / 1024).toFixed(2)} KB`
 	} else if (name.includes('small')) {
 		return `${(fileSizes.small / 1024).toFixed(2)} KB`
+	} else if (name.includes('tailwind')) {
+		return `${(fileSizes.tailwind / 1024).toFixed(2)} KB`
 	}
 	return 'N/A'
 }
