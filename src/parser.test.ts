@@ -219,6 +219,47 @@ describe('Parser', () => {
 			})
 		})
 
+		describe('case-insensitive at-rule names', () => {
+			test('should parse @MEDIA (uppercase conditional at-rule)', () => {
+				const source = '@MEDIA (min-width: 768px) { body { color: red; } }'
+				const parser = new Parser(source)
+				const root = parser.parse()
+
+				const media = root.first_child!
+				expect(media.type).toBe(NODE_AT_RULE)
+				expect(media.name).toBe('MEDIA')
+				expect(media.has_children).toBe(true)
+				// Should parse as conditional (containing rules)
+				const nestedRule = media.first_child!
+				expect(nestedRule.type).toBe(NODE_STYLE_RULE)
+			})
+
+			test('should parse @Font-Face (mixed case declaration at-rule)', () => {
+				const source = '@Font-Face { font-family: "MyFont"; src: url("font.woff"); }'
+				const parser = new Parser(source)
+				const root = parser.parse()
+
+				const fontFace = root.first_child!
+				expect(fontFace.type).toBe(NODE_AT_RULE)
+				expect(fontFace.name).toBe('Font-Face')
+				expect(fontFace.has_children).toBe(true)
+				// Should parse as declaration at-rule (containing declarations)
+				const decl = fontFace.first_child!
+				expect(decl.type).toBe(NODE_DECLARATION)
+			})
+
+			test('should parse @SUPPORTS (uppercase conditional at-rule)', () => {
+				const source = '@SUPPORTS (display: grid) { .grid { display: grid; } }'
+				const parser = new Parser(source)
+				const root = parser.parse()
+
+				const supports = root.first_child!
+				expect(supports.type).toBe(NODE_AT_RULE)
+				expect(supports.name).toBe('SUPPORTS')
+				expect(supports.has_children).toBe(true)
+			})
+		})
+
 		describe('block at-rules with nested rules', () => {
 			test('should parse @media with nested rule', () => {
 				const source = '@media (min-width: 768px) { body { color: red; } }'

@@ -422,11 +422,11 @@ export class Parser {
 
 	// Determine if an at-rule contains declarations or nested rules
 	private atrule_has_declarations(name: string): boolean {
-		return DECLARATION_AT_RULES.has(name)
+		return DECLARATION_AT_RULES.has(name.toLowerCase())
 	}
 
 	// Determine if an at-rule is conditional (can contain both declarations and rules in CSS Nesting)
 	private atrule_is_conditional(name: string): boolean {
-		return CONDITIONAL_AT_RULES.has(name)
+		return CONDITIONAL_AT_RULES.has(name.toLowerCase())
 	}
 }
