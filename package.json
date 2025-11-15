@@ -37,6 +37,7 @@
 		"test-build": "npm run build && vitest run --config vitest.config.build.ts",
 		"build": "vite build && tsc --project tsconfig.build.json",
 		"benchmark": "npm run build && node benchmark/index.ts",
+		"benchmark:memory": "npm run build && node --expose-gc benchmark/memory.ts",
 		"lint": "oxlint --config .oxlintrc.json",
 		"lint-package": "publint"
 	},
@@ -54,7 +55,9 @@
 		"@types/node": "^24.10.1",
 		"@vitest/coverage-v8": "^4.0.8",
 		"bootstrap": "^5.3.8",
+		"css-tree": "^3.1.0",
 		"oxlint": "^1.28.0",
+		"postcss": "^8.5.6",
 		"prettier": "^3.6.2",
 		"publint": "^0.3.15",
 		"tailwindcss": "^2.2.8",

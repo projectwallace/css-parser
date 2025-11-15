@@ -6,7 +6,9 @@
       "Bash(npm test:*)",
       "Bash(npm run test-coverage:*)",
       "Bash(npm run test-build:*)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(node --expose-gc:*)",
+      "Bash(npm run benchmark:memory:*)"
     ],
     "deny": [],
     "ask": []

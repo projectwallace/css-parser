@@ -1,7 +1,19 @@
 // Main entry point - exports all public APIs
+
+// Function-based API (recommended)
+export { parse } from './parse'
+export { tokenize } from './tokenize'
+export { walk } from './walk'
+
+// Advanced/class-based API
 export { Lexer } from './lexer'
+export { Parser, type ParserOptions } from './parser'
+
+// Types
+export { CSSNode, type CSSNodeType } from './css-node'
+
+// Constants
 export {
-	Parser,
 	NODE_STYLE_RULE,
 	NODE_AT_RULE,
 	NODE_COMMENT,
@@ -27,8 +39,6 @@ export {
 	NODE_SELECTOR_NESTING,
 	FLAG_IMPORTANT,
 } from './parser'
-export { CSSNode, type CSSNodeType } from './css-node'
-export { walk } from './walk'
 export {
 	TOKEN_IDENT,
 	TOKEN_FUNCTION,
