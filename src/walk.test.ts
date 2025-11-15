@@ -1,7 +1,16 @@
 import { describe, it, expect } from 'vitest'
 import { Parser } from './parser'
 import { walk } from './walk'
-import { NODE_STYLESHEET, NODE_STYLE_RULE, NODE_SELECTOR, NODE_DECLARATION, NODE_AT_RULE } from './arena'
+import {
+	NODE_STYLESHEET,
+	NODE_STYLE_RULE,
+	NODE_SELECTOR,
+	NODE_DECLARATION,
+	NODE_AT_RULE,
+	NODE_VALUE_KEYWORD,
+	NODE_VALUE_NUMBER,
+	NODE_VALUE_DIMENSION,
+} from './arena'
 
 describe('walk', () => {
 	it('should visit single node', () => {
@@ -30,6 +39,7 @@ describe('walk', () => {
 			NODE_STYLE_RULE,
 			NODE_SELECTOR,
 			NODE_DECLARATION,
+			NODE_VALUE_KEYWORD, // red
 		])
 	})
 
@@ -47,10 +57,13 @@ describe('walk', () => {
 			NODE_STYLE_RULE, // body rule
 			NODE_SELECTOR, // body selector
 			NODE_DECLARATION, // color: red
+			NODE_VALUE_KEYWORD, // red
 			NODE_DECLARATION, // margin: 0
+			NODE_VALUE_NUMBER, // 0
 			NODE_STYLE_RULE, // div rule
 			NODE_SELECTOR, // div selector
 			NODE_DECLARATION, // padding: 1rem
+			NODE_VALUE_DIMENSION, // 1rem
 		])
 	})
 
@@ -68,9 +81,11 @@ describe('walk', () => {
 			NODE_STYLE_RULE, // .parent
 			NODE_SELECTOR, // .parent selector
 			NODE_DECLARATION, // color: red
+			NODE_VALUE_KEYWORD, // red
 			NODE_STYLE_RULE, // .child
 			NODE_SELECTOR, // .child selector
 			NODE_DECLARATION, // color: blue
+			NODE_VALUE_KEYWORD, // blue
 		])
 	})
 
@@ -89,6 +104,7 @@ describe('walk', () => {
 			NODE_STYLE_RULE, // body
 			NODE_SELECTOR, // body selector
 			NODE_DECLARATION, // color: red
+			NODE_VALUE_KEYWORD, // red
 		])
 	})
 

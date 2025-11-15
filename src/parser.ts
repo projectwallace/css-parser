@@ -2,6 +2,7 @@
 import { Lexer } from './lexer'
 import { CSSDataArena, NODE_STYLESHEET, NODE_STYLE_RULE, NODE_SELECTOR, NODE_DECLARATION, NODE_AT_RULE, FLAG_IMPORTANT } from './arena'
 import { CSSNode } from './css-node'
+import { ValueParser } from './value-parser'
 import {
 	TOKEN_EOF,
 	TOKEN_LEFT_BRACE,
@@ -28,6 +29,7 @@ export class Parser {
 	private source: string
 	private lexer: Lexer
 	private arena: CSSDataArena
+	private valueParser: ValueParser
 
 	constructor(source: string, skip_comments: boolean = true) {
 		this.source = source
@@ -35,6 +37,7 @@ export class Parser {
 		// Calculate optimal capacity based on source size
 		let capacity = CSSDataArena.capacity_for_source(source.length)
 		this.arena = new CSSDataArena(capacity)
+		this.valueParser = new ValueParser(this.arena, source)
 	}
 
 	// Get the arena (for internal/advanced use only)
@@ -274,11 +277,26 @@ export class Parser {
 			this.next_token()
 		}
 
-		// Store value position (trimmed)
+		// Store value position (trimmed) and parse value nodes
 		let trimmed = this.find_trim_boundaries(value_start, value_end)
 		if (trimmed) {
+			// Store raw value string offsets (for fast string access)
 			this.arena.set_value_start(declaration, trimmed[0])
 			this.arena.set_value_length(declaration, trimmed[1] - trimmed[0])
+
+			// Parse value into structured nodes
+			let valueNodes = this.valueParser.parse_value(trimmed[0], trimmed[1])
+
+			// Link value nodes as children of the declaration
+			if (valueNodes.length > 0) {
+				this.arena.set_first_child(declaration, valueNodes[0])
+				this.arena.set_last_child(declaration, valueNodes[valueNodes.length - 1])
+
+				// Chain value nodes as siblings
+				for (let i = 0; i < valueNodes.length - 1; i++) {
+					this.arena.set_next_sibling(valueNodes[i], valueNodes[i + 1])
+				}
+			}
 		}
 
 		// Set !important flag if found

@@ -7,6 +7,13 @@ import {
 	NODE_DECLARATION,
 	NODE_SELECTOR,
 	NODE_COMMENT,
+	NODE_VALUE_KEYWORD,
+	NODE_VALUE_NUMBER,
+	NODE_VALUE_DIMENSION,
+	NODE_VALUE_STRING,
+	NODE_VALUE_COLOR,
+	NODE_VALUE_FUNCTION,
+	NODE_VALUE_OPERATOR,
 	FLAG_IMPORTANT,
 	FLAG_HAS_ERROR,
 } from './arena'
@@ -19,6 +26,13 @@ export type CSSNodeType =
 	| typeof NODE_DECLARATION
 	| typeof NODE_SELECTOR
 	| typeof NODE_COMMENT
+	| typeof NODE_VALUE_KEYWORD
+	| typeof NODE_VALUE_NUMBER
+	| typeof NODE_VALUE_DIMENSION
+	| typeof NODE_VALUE_STRING
+	| typeof NODE_VALUE_COLOR
+	| typeof NODE_VALUE_FUNCTION
+	| typeof NODE_VALUE_OPERATOR
 
 export class CSSNode {
 	private arena: CSSDataArena
@@ -85,6 +99,30 @@ export class CSSNode {
 	// Check if this node has an error
 	get has_error(): boolean {
 		return this.arena.has_flag(this.index, FLAG_HAS_ERROR)
+	}
+
+	// --- Value Node Access (for declarations) ---
+
+	// Get array of parsed value nodes (for declarations only)
+	get values(): CSSNode[] {
+		let result: CSSNode[] = []
+		let child = this.first_child
+		while (child) {
+			result.push(child)
+			child = child.next_sibling
+		}
+		return result
+	}
+
+	// Get count of value nodes
+	get value_count(): number {
+		let count = 0
+		let child = this.first_child
+		while (child) {
+			count++
+			child = child.next_sibling
+		}
+		return count
 	}
 
 	// Get start line number

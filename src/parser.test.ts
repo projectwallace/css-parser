@@ -1,5 +1,7 @@
 import { describe, test, expect } from 'vitest'
 import { Parser } from './parser'
+// TODO: the node types should be re-exported from parser
+// TODO: arena should be private + test
 import { NODE_STYLESHEET, NODE_STYLE_RULE, NODE_AT_RULE, NODE_DECLARATION, NODE_SELECTOR } from './arena'
 
 describe('Parser', () => {

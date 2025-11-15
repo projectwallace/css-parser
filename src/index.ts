@@ -3,7 +3,21 @@ export { Lexer } from './lexer'
 export { Parser } from './parser'
 export { CSSNode, type CSSNodeType } from './css-node'
 export { walk } from './walk'
-export { NODE_STYLE_RULE, NODE_AT_RULE, NODE_COMMENT, NODE_DECLARATION, NODE_SELECTOR, NODE_STYLESHEET } from './arena'
+export {
+	NODE_STYLE_RULE,
+	NODE_AT_RULE,
+	NODE_COMMENT,
+	NODE_DECLARATION,
+	NODE_SELECTOR,
+	NODE_STYLESHEET,
+	NODE_VALUE_KEYWORD,
+	NODE_VALUE_NUMBER,
+	NODE_VALUE_DIMENSION,
+	NODE_VALUE_STRING,
+	NODE_VALUE_COLOR,
+	NODE_VALUE_FUNCTION,
+	NODE_VALUE_OPERATOR,
+} from './arena'
 export {
 	TOKEN_IDENT,
 	TOKEN_FUNCTION,

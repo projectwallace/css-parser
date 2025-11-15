@@ -5,7 +5,8 @@
       "Bash(npm run build:*)",
       "Bash(npm test:*)",
       "Bash(npm run test-coverage:*)",
-      "Bash(npm run test-build:*)"
+      "Bash(npm run test-build:*)",
+      "mcp__ide__getDiagnostics"
     ],
     "deny": [],
     "ask": []

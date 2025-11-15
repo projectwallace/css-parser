@@ -30,6 +30,15 @@ export const NODE_DECLARATION = 4
 export const NODE_SELECTOR = 5
 export const NODE_COMMENT = 6
 
+// Value node type constants (for declaration values)
+export const NODE_VALUE_KEYWORD = 10      // identifier: red, auto, inherit
+export const NODE_VALUE_NUMBER = 11        // number: 42, 3.14, -5
+export const NODE_VALUE_DIMENSION = 12     // number with unit: 10px, 2em, 50%
+export const NODE_VALUE_STRING = 13        // quoted string: "hello", 'world'
+export const NODE_VALUE_COLOR = 14         // hex color: #fff, #ff0000
+export const NODE_VALUE_FUNCTION = 15      // function: calc(), var(), url()
+export const NODE_VALUE_OPERATOR = 16      // operator: +, -, *, /, comma
+
 // Flag constants (bit-packed in 1 byte)
 export const FLAG_IMPORTANT = 1 << 0 // Has !important
 export const FLAG_HAS_ERROR = 1 << 1 // Syntax error
