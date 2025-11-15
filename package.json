@@ -18,6 +18,10 @@
 		"./parser": {
 			"types": "./dist/parser.d.ts",
 			"import": "./dist/parser.js"
+		},
+		"./value-parser": {
+			"types": "./dist/value-parser.d.ts",
+			"import": "./dist/value-parser.js"
 		}
 	},
 	"files": [
