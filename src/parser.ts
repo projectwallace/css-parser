@@ -4,6 +4,7 @@ import { CSSDataArena, NODE_STYLESHEET, NODE_STYLE_RULE, NODE_SELECTOR, NODE_DEC
 import { CSSNode } from './css-node'
 import { ValueParser } from './value-parser'
 import { SelectorParser } from './selector-parser'
+import { AtRulePreludeParser } from './at-rule-prelude-parser'
 import {
 	TOKEN_EOF,
 	TOKEN_LEFT_BRACE,
@@ -19,6 +20,7 @@ export interface ParserOptions {
 	skip_comments?: boolean
 	parseValues?: boolean
 	parseSelectors?: boolean
+	parse_atrule_preludes?: boolean
 }
 
 // Static at-rule lookup sets for fast classification
@@ -38,8 +40,10 @@ export class Parser {
 	private arena: CSSDataArena
 	private value_parser: ValueParser | null
 	private selector_parser: SelectorParser | null
+	private prelude_parser: AtRulePreludeParser | null
 	private parse_values_enabled: boolean
 	private parse_selectors_enabled: boolean
+	private parse_atrule_preludes_enabled: boolean
 
 	constructor(source: string, options?: ParserOptions | boolean) {
 		this.source = source
@@ -55,6 +59,7 @@ export class Parser {
 		let skip_comments = opts.skip_comments ?? true
 		this.parse_values_enabled = opts.parseValues ?? true
 		this.parse_selectors_enabled = opts.parseSelectors ?? true
+		this.parse_atrule_preludes_enabled = opts.parse_atrule_preludes ?? true
 
 		this.lexer = new Lexer(source, skip_comments)
 		// Calculate optimal capacity based on source size
@@ -64,6 +69,7 @@ export class Parser {
 		// Only create parsers if needed
 		this.value_parser = this.parse_values_enabled ? new ValueParser(this.arena, source) : null
 		this.selector_parser = this.parse_selectors_enabled ? new SelectorParser(this.arena, source) : null
+		this.prelude_parser = this.parse_atrule_preludes_enabled ? new AtRulePreludeParser(this.arena, source) : null
 	}
 
 	// Get the arena (for internal/advanced use only)
@@ -391,6 +397,14 @@ export class Parser {
 		if (trimmed) {
 			this.arena.set_value_start(at_rule, trimmed[0])
 			this.arena.set_value_length(at_rule, trimmed[1] - trimmed[0])
+
+			// Parse prelude if enabled
+			if (this.prelude_parser) {
+				let prelude_nodes = this.prelude_parser.parse_prelude(at_rule_name, trimmed[0], trimmed[1])
+				for (let prelude_node of prelude_nodes) {
+					this.arena.append_child(at_rule, prelude_node)
+				}
+			}
 		}
 
 		let last_end = this.lexer.token_end
@@ -508,5 +522,13 @@ export {
 	NODE_SELECTOR_COMBINATOR,
 	NODE_SELECTOR_UNIVERSAL,
 	NODE_SELECTOR_NESTING,
+	NODE_PRELUDE_MEDIA_QUERY,
+	NODE_PRELUDE_MEDIA_FEATURE,
+	NODE_PRELUDE_MEDIA_TYPE,
+	NODE_PRELUDE_CONTAINER_QUERY,
+	NODE_PRELUDE_SUPPORTS_QUERY,
+	NODE_PRELUDE_LAYER_NAME,
+	NODE_PRELUDE_IDENTIFIER,
+	NODE_PRELUDE_OPERATOR,
 	FLAG_IMPORTANT,
 } from './arena'

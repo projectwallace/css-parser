@@ -89,7 +89,7 @@ describe('walk', () => {
 	})
 
 	it('should visit at-rule nodes', () => {
-		const parser = new Parser('@media (min-width: 768px) { body { color: red; } }', { parseSelectors: false, parseValues: false })
+		const parser = new Parser('@media (min-width: 768px) { body { color: red; } }', { parseSelectors: false, parseValues: false, parse_atrule_preludes: false })
 		const root = parser.parse()
 		const visited: number[] = []
 

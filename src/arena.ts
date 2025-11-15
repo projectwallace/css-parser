@@ -51,6 +51,16 @@ export const NODE_SELECTOR_COMBINATOR = 27 // combinator: >, +, ~, space
 export const NODE_SELECTOR_UNIVERSAL = 28 // universal selector: *
 export const NODE_SELECTOR_NESTING = 29 // nesting selector: &
 
+// At-rule prelude node type constants (for at-rule prelude parsing)
+export const NODE_PRELUDE_MEDIA_QUERY = 30 // media query: screen, (min-width: 768px)
+export const NODE_PRELUDE_MEDIA_FEATURE = 31 // media feature: (min-width: 768px)
+export const NODE_PRELUDE_MEDIA_TYPE = 32 // media type: screen, print, all
+export const NODE_PRELUDE_CONTAINER_QUERY = 33 // container query: sidebar (min-width: 400px)
+export const NODE_PRELUDE_SUPPORTS_QUERY = 34 // supports query: (display: flex)
+export const NODE_PRELUDE_LAYER_NAME = 35 // layer name: base, components
+export const NODE_PRELUDE_IDENTIFIER = 36 // generic identifier: keyframe name, property name
+export const NODE_PRELUDE_OPERATOR = 37 // logical operator: and, or, not
+
 // Flag constants (bit-packed in 1 byte)
 export const FLAG_IMPORTANT = 1 << 0 // Has !important
 export const FLAG_HAS_ERROR = 1 << 1 // Syntax error

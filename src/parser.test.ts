@@ -264,7 +264,7 @@ describe('Parser', () => {
 		describe('block at-rules with nested rules', () => {
 			test('should parse @media with nested rule', () => {
 				const source = '@media (min-width: 768px) { body { color: red; } }'
-				const parser = new Parser(source)
+				const parser = new Parser(source, { parse_atrule_preludes: false })
 				const root = parser.parse()
 
 				const media = root.first_child!
