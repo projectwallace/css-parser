@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { Parser } from './parser'
-import { walk } from './walk'
 import {
+	Parser,
 	NODE_STYLESHEET,
 	NODE_STYLE_RULE,
 	NODE_SELECTOR,
@@ -10,7 +9,9 @@ import {
 	NODE_VALUE_KEYWORD,
 	NODE_VALUE_NUMBER,
 	NODE_VALUE_DIMENSION,
-} from './arena'
+	NODE_SELECTOR_CLASS,
+} from './parser'
+import { walk } from './walk'
 
 describe('walk', () => {
 	it('should visit single node', () => {
@@ -179,5 +180,15 @@ describe('walk', () => {
 		})
 
 		expect(rules.length).toBe(3) // .a, .b, .c
+	})
+
+	test('export types', () => {
+		let ast = new Parser('a{}').parse()
+		walk(ast, (node) => {
+			expectTypeOf(node.type).toBeNumber()
+			if (node.type === NODE_SELECTOR) {
+				expect(node.text).toEqual('a')
+			}
+		})
 	})
 })
