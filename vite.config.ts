@@ -8,6 +8,7 @@ export default defineConfig({
 				lexer: './src/lexer.ts',
 				parser: './src/parser.ts',
 				'value-parser': './src/value-parser.ts',
+				'selector-parser': './src/selector-parser.ts',
 			},
 			formats: ['es'],
 		},

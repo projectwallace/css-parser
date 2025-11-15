@@ -39,6 +39,19 @@ export const NODE_VALUE_COLOR = 14         // hex color: #fff, #ff0000
 export const NODE_VALUE_FUNCTION = 15      // function: calc(), var(), url()
 export const NODE_VALUE_OPERATOR = 16      // operator: +, -, *, /, comma
 
+// Selector node type constants (for detailed selector parsing)
+export const NODE_SELECTOR_LIST = 20       // comma-separated selectors
+export const NODE_SELECTOR_COMPOUND = 21   // compound selector (e.g., div.class#id)
+export const NODE_SELECTOR_TYPE = 22       // type selector: div, span, p
+export const NODE_SELECTOR_CLASS = 23      // class selector: .classname
+export const NODE_SELECTOR_ID = 24         // ID selector: #identifier
+export const NODE_SELECTOR_ATTRIBUTE = 25  // attribute selector: [attr], [attr=value]
+export const NODE_SELECTOR_PSEUDO_CLASS = 26   // pseudo-class: :hover, :nth-child()
+export const NODE_SELECTOR_PSEUDO_ELEMENT = 27 // pseudo-element: ::before, ::after
+export const NODE_SELECTOR_COMBINATOR = 28     // combinator: >, +, ~, space
+export const NODE_SELECTOR_UNIVERSAL = 29      // universal selector: *
+export const NODE_SELECTOR_NESTING = 30        // nesting selector: &
+
 // Flag constants (bit-packed in 1 byte)
 export const FLAG_IMPORTANT = 1 << 0 // Has !important
 export const FLAG_HAS_ERROR = 1 << 1 // Syntax error
@@ -61,7 +74,8 @@ export class CSSDataArena {
 
 	constructor(initial_capacity: number = 1024) {
 		this.capacity = initial_capacity
-		this.count = 0
+		// Start count at 1 since 0 is reserved for "no node"
+		this.count = 1
 		this.buffer = new ArrayBuffer(initial_capacity * BYTES_PER_NODE)
 		this.view = new DataView(this.buffer)
 	}

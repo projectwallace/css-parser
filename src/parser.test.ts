@@ -13,7 +13,7 @@ describe('Parser', () => {
 
 			// Should have capacity based on source size
 			expect(arena.getCapacity()).toBeGreaterThan(0)
-			expect(arena.getCount()).toBe(0) // No nodes created yet
+			expect(arena.getCount()).toBe(1) // Count starts at 1 (0 is reserved for "no node")
 		})
 
 		test('should parse empty stylesheet', () => {

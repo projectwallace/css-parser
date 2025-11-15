@@ -22,6 +22,10 @@
 		"./value-parser": {
 			"types": "./dist/value-parser.d.ts",
 			"import": "./dist/value-parser.js"
+		},
+		"./selector-parser": {
+			"types": "./dist/selector-parser.d.ts",
+			"import": "./dist/selector-parser.js"
 		}
 	},
 	"files": [
