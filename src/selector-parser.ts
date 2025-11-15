@@ -3,7 +3,7 @@ import { Lexer } from './lexer'
 import type { CSSDataArena } from './arena'
 import {
 	NODE_SELECTOR_LIST,
-	NODE_SELECTOR_COMPOUND,
+	NODE_SELECTOR_SEQUENCE,
 	NODE_SELECTOR_TYPE,
 	NODE_SELECTOR_CLASS,
 	NODE_SELECTOR_ID,
@@ -52,12 +52,12 @@ export class SelectorParser {
 
 	// Parse a selector range into selector nodes
 	// Returns the root selector list node (or compound selector if no commas)
-	parse_selector(start: number, end: number): number | null {
+	parse_selector(start: number, end: number, line: number = 1): number | null {
 		this.selector_end = end
 
 		// Position lexer at selector start
 		this.lexer.pos = start
-		this.lexer.line = 1
+		this.lexer.line = line
 
 		// Parse selector list (comma-separated selectors)
 		return this.parse_selector_list()
@@ -99,6 +99,7 @@ export class SelectorParser {
 			this.arena.set_type(list_node, NODE_SELECTOR_LIST)
 			this.arena.set_start_offset(list_node, list_start)
 			this.arena.set_length(list_node, this.lexer.pos - list_start)
+			this.arena.set_start_line(list_node, this.lexer.line)
 
 			// Link selectors as children
 			this.arena.set_first_child(list_node, selectors[0])
@@ -165,12 +166,13 @@ export class SelectorParser {
 			return components[0]
 		}
 
-		// If multiple components, wrap in compound node
+		// If multiple components, wrap in sequence node
 		if (components.length > 1) {
 			let complex_node = this.arena.create_node()
-			this.arena.set_type(complex_node, NODE_SELECTOR_COMPOUND)
+			this.arena.set_type(complex_node, NODE_SELECTOR_SEQUENCE)
 			this.arena.set_start_offset(complex_node, complex_start)
 			this.arena.set_length(complex_node, this.lexer.pos - complex_start)
+			this.arena.set_start_line(complex_node, this.lexer.line)
 
 			// Link components as children
 			this.arena.set_first_child(complex_node, components[0])
@@ -218,11 +220,17 @@ export class SelectorParser {
 
 		if (parts.length === 0) return null
 
-		// Create compound selector node
+		// If only one part, return it directly
+		if (parts.length === 1) {
+			return parts[0]
+		}
+
+		// If multiple parts, create a sequence node
 		let compound_node = this.arena.create_node()
-		this.arena.set_type(compound_node, NODE_SELECTOR_COMPOUND)
+		this.arena.set_type(compound_node, NODE_SELECTOR_SEQUENCE)
 		this.arena.set_start_offset(compound_node, compound_start)
 		this.arena.set_length(compound_node, last_end - compound_start)
+		this.arena.set_start_line(compound_node, this.lexer.line)
 
 		// Link parts as children
 		this.arena.set_first_child(compound_node, parts[0])
@@ -350,6 +358,7 @@ export class SelectorParser {
 		this.arena.set_type(node, NODE_SELECTOR_CLASS)
 		this.arena.set_start_offset(node, dot_pos)
 		this.arena.set_length(node, this.lexer.token_end - dot_pos)
+		this.arena.set_start_line(node, this.lexer.line)
 		// Content is the class name (without the dot)
 		this.arena.set_content_start(node, this.lexer.token_start)
 		this.arena.set_content_length(node, this.lexer.token_end - this.lexer.token_start)
@@ -379,6 +388,7 @@ export class SelectorParser {
 		this.arena.set_type(node, NODE_SELECTOR_ATTRIBUTE)
 		this.arena.set_start_offset(node, start)
 		this.arena.set_length(node, end - start)
+		this.arena.set_start_line(node, this.lexer.line)
 		// Content is everything inside the brackets
 		this.arena.set_content_start(node, start + 1)
 		this.arena.set_content_length(node, end - start - 2)
@@ -402,6 +412,7 @@ export class SelectorParser {
 			this.arena.set_type(node, is_pseudo_element ? NODE_SELECTOR_PSEUDO_ELEMENT : NODE_SELECTOR_PSEUDO_CLASS)
 			this.arena.set_start_offset(node, start)
 			this.arena.set_length(node, this.lexer.token_end - start)
+			this.arena.set_start_line(node, this.lexer.line)
 			// Content is the pseudo name (without colons)
 			this.arena.set_content_start(node, this.lexer.token_start)
 			this.arena.set_content_length(node, this.lexer.token_end - this.lexer.token_start)
@@ -446,6 +457,7 @@ export class SelectorParser {
 		this.arena.set_type(node, is_pseudo_element ? NODE_SELECTOR_PSEUDO_ELEMENT : NODE_SELECTOR_PSEUDO_CLASS)
 		this.arena.set_start_offset(node, start)
 		this.arena.set_length(node, end - start)
+		this.arena.set_start_line(node, this.lexer.line)
 		// Content is the function name (without colons and parentheses)
 		this.arena.set_content_start(node, func_name_start)
 		this.arena.set_content_length(node, func_name_end - func_name_start)
@@ -458,6 +470,7 @@ export class SelectorParser {
 		this.arena.set_type(node, NODE_SELECTOR_TYPE)
 		this.arena.set_start_offset(node, start)
 		this.arena.set_length(node, end - start)
+		this.arena.set_start_line(node, this.lexer.line)
 		this.arena.set_content_start(node, start)
 		this.arena.set_content_length(node, end - start)
 		return node
@@ -468,6 +481,7 @@ export class SelectorParser {
 		this.arena.set_type(node, NODE_SELECTOR_ID)
 		this.arena.set_start_offset(node, start)
 		this.arena.set_length(node, end - start)
+		this.arena.set_start_line(node, this.lexer.line)
 		// Content is the ID name (without the #)
 		this.arena.set_content_start(node, start + 1)
 		this.arena.set_content_length(node, end - start - 1)
@@ -479,6 +493,7 @@ export class SelectorParser {
 		this.arena.set_type(node, NODE_SELECTOR_UNIVERSAL)
 		this.arena.set_start_offset(node, start)
 		this.arena.set_length(node, end - start)
+		this.arena.set_start_line(node, this.lexer.line)
 		this.arena.set_content_start(node, start)
 		this.arena.set_content_length(node, end - start)
 		return node
@@ -489,6 +504,7 @@ export class SelectorParser {
 		this.arena.set_type(node, NODE_SELECTOR_NESTING)
 		this.arena.set_start_offset(node, start)
 		this.arena.set_length(node, end - start)
+		this.arena.set_start_line(node, this.lexer.line)
 		this.arena.set_content_start(node, start)
 		this.arena.set_content_length(node, end - start)
 		return node
@@ -499,6 +515,7 @@ export class SelectorParser {
 		this.arena.set_type(node, NODE_SELECTOR_COMBINATOR)
 		this.arena.set_start_offset(node, start)
 		this.arena.set_length(node, end - start)
+		this.arena.set_start_line(node, this.lexer.line)
 		this.arena.set_content_start(node, start)
 		this.arena.set_content_length(node, end - start)
 		return node

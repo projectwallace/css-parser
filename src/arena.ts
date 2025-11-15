@@ -41,7 +41,7 @@ export const NODE_VALUE_OPERATOR = 16      // operator: +, -, *, /, comma
 
 // Selector node type constants (for detailed selector parsing)
 export const NODE_SELECTOR_LIST = 20       // comma-separated selectors
-export const NODE_SELECTOR_COMPOUND = 21   // compound selector (e.g., div.class#id)
+export const NODE_SELECTOR_SEQUENCE = 21   // sequence of selector parts (e.g., div.class, div > p)
 export const NODE_SELECTOR_TYPE = 22       // type selector: div, span, p
 export const NODE_SELECTOR_CLASS = 23      // class selector: .classname
 export const NODE_SELECTOR_ID = 24         // ID selector: #identifier

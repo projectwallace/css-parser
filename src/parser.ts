@@ -237,7 +237,7 @@ export class Parser {
 
 		// If detailed selector parsing is enabled, use SelectorParser
 		if (this.parseSelectorsEnabled && this.selectorParser) {
-			let selectorNode = this.selectorParser.parse_selector(selector_start, last_end)
+			let selectorNode = this.selectorParser.parse_selector(selector_start, last_end, selector_line)
 			if (selectorNode !== null) {
 				return selectorNode
 			}

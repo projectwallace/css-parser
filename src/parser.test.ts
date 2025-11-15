@@ -67,7 +67,7 @@ describe('Parser', () => {
 			const selector = rule.first_child!
 			// With parseSelectors enabled by default, we get detailed selector nodes
 			expect(selector.text).toBe('body')
-			expect(selector.line).toBe(0) // TODO: shouldn't this be line 1?
+			expect(selector.line).toBe(1) // Line numbers start at 1
 			expect(selector.offset).toBe(0)
 			expect(selector.length).toBe(4) // "body"
 		})
