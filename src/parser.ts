@@ -3,6 +3,7 @@ import { Lexer } from './lexer'
 import { CSSDataArena, NODE_STYLESHEET, NODE_STYLE_RULE, NODE_SELECTOR, NODE_DECLARATION, NODE_AT_RULE, FLAG_IMPORTANT } from './arena'
 import { CSSNode } from './css-node'
 import { ValueParser } from './value-parser'
+import { SelectorParser } from './selector-parser'
 import {
 	TOKEN_EOF,
 	TOKEN_LEFT_BRACE,
@@ -13,6 +14,12 @@ import {
 	TOKEN_DELIM,
 	TOKEN_AT_KEYWORD,
 } from './token-types'
+
+export interface ParserOptions {
+	skip_comments?: boolean
+	parseValues?: boolean
+	parseSelectors?: boolean
+}
 
 // Static at-rule lookup sets for fast classification
 const DECLARATION_AT_RULES = new Set(['font-face', 'font-feature-values', 'page', 'property', 'counter-style'])
@@ -29,15 +36,34 @@ export class Parser {
 	private source: string
 	private lexer: Lexer
 	private arena: CSSDataArena
-	private valueParser: ValueParser
+	private valueParser: ValueParser | null
+	private selectorParser: SelectorParser | null
+	private parseValuesEnabled: boolean
+	private parseSelectorsEnabled: boolean
 
-	constructor(source: string, skip_comments: boolean = true) {
+	constructor(source: string, options?: ParserOptions | boolean) {
 		this.source = source
+
+		// Support legacy boolean parameter for backwards compatibility
+		let opts: ParserOptions
+		if (typeof options === 'boolean') {
+			opts = { skip_comments: options }
+		} else {
+			opts = options || {}
+		}
+
+		const skip_comments = opts.skip_comments ?? true
+		this.parseValuesEnabled = opts.parseValues ?? true
+		this.parseSelectorsEnabled = opts.parseSelectors ?? true
+
 		this.lexer = new Lexer(source, skip_comments)
 		// Calculate optimal capacity based on source size
 		let capacity = CSSDataArena.capacity_for_source(source.length)
 		this.arena = new CSSDataArena(capacity)
-		this.valueParser = new ValueParser(this.arena, source)
+
+		// Only create parsers if needed
+		this.valueParser = this.parseValuesEnabled ? new ValueParser(this.arena, source) : null
+		this.selectorParser = this.parseSelectorsEnabled ? new SelectorParser(this.arena, source) : null
 	}
 
 	// Get the arena (for internal/advanced use only)
@@ -202,11 +228,6 @@ export class Parser {
 		let selector_start = this.lexer.token_start
 		let selector_line = this.lexer.token_line
 
-		// Create selector node
-		let selector = this.arena.create_node()
-		this.arena.set_type(selector, NODE_SELECTOR)
-		this.arena.set_start_line(selector, selector_line)
-
 		// Consume tokens until we hit '{'
 		let last_end = this.lexer.token_end
 		while (!this.is_eof() && this.peek_type() !== TOKEN_LEFT_BRACE) {
@@ -214,7 +235,18 @@ export class Parser {
 			this.next_token()
 		}
 
-		// Set selector offsets
+		// If detailed selector parsing is enabled, use SelectorParser
+		if (this.parseSelectorsEnabled && this.selectorParser) {
+			let selectorNode = this.selectorParser.parse_selector(selector_start, last_end)
+			if (selectorNode !== null) {
+				return selectorNode
+			}
+		}
+
+		// Otherwise create a simple selector node with just text offsets
+		let selector = this.arena.create_node()
+		this.arena.set_type(selector, NODE_SELECTOR)
+		this.arena.set_start_line(selector, selector_line)
 		this.arena.set_start_offset(selector, selector_start)
 		this.arena.set_length(selector, last_end - selector_start)
 
@@ -284,17 +316,19 @@ export class Parser {
 			this.arena.set_value_start(declaration, trimmed[0])
 			this.arena.set_value_length(declaration, trimmed[1] - trimmed[0])
 
-			// Parse value into structured nodes
-			let valueNodes = this.valueParser.parse_value(trimmed[0], trimmed[1])
+			// Parse value into structured nodes (only if enabled)
+			if (this.parseValuesEnabled && this.valueParser) {
+				let valueNodes = this.valueParser.parse_value(trimmed[0], trimmed[1])
 
-			// Link value nodes as children of the declaration
-			if (valueNodes.length > 0) {
-				this.arena.set_first_child(declaration, valueNodes[0])
-				this.arena.set_last_child(declaration, valueNodes[valueNodes.length - 1])
+				// Link value nodes as children of the declaration
+				if (valueNodes.length > 0) {
+					this.arena.set_first_child(declaration, valueNodes[0])
+					this.arena.set_last_child(declaration, valueNodes[valueNodes.length - 1])
 
-				// Chain value nodes as siblings
-				for (let i = 0; i < valueNodes.length - 1; i++) {
-					this.arena.set_next_sibling(valueNodes[i], valueNodes[i + 1])
+					// Chain value nodes as siblings
+					for (let i = 0; i < valueNodes.length - 1; i++) {
+						this.arena.set_next_sibling(valueNodes[i], valueNodes[i + 1])
+					}
 				}
 			}
 		}

@@ -14,7 +14,7 @@ import {
 
 describe('walk', () => {
 	it('should visit single node', () => {
-		const parser = new Parser('')
+		const parser = new Parser('', { parseSelectors: false, parseValues: false })
 		const root = parser.parse()
 		const visited: number[] = []
 
@@ -26,7 +26,7 @@ describe('walk', () => {
 	})
 
 	it('should visit all nodes in simple rule', () => {
-		const parser = new Parser('body { color: red; }')
+		const parser = new Parser('body { color: red; }', { parseSelectors: false, parseValues: true })
 		const root = parser.parse()
 		const visited: number[] = []
 
@@ -44,7 +44,7 @@ describe('walk', () => {
 	})
 
 	it('should visit nodes in depth-first order', () => {
-		const parser = new Parser('body { color: red; margin: 0; } div { padding: 1rem; }')
+		const parser = new Parser('body { color: red; margin: 0; } div { padding: 1rem; }', { parseSelectors: false, parseValues: true })
 		const root = parser.parse()
 		const visited: number[] = []
 
@@ -68,7 +68,7 @@ describe('walk', () => {
 	})
 
 	it('should visit nested rules', () => {
-		const parser = new Parser('.parent { color: red; .child { color: blue; } }')
+		const parser = new Parser('.parent { color: red; .child { color: blue; } }', { parseSelectors: false, parseValues: false })
 		const root = parser.parse()
 		const visited: number[] = []
 
@@ -81,16 +81,14 @@ describe('walk', () => {
 			NODE_STYLE_RULE, // .parent
 			NODE_SELECTOR, // .parent selector
 			NODE_DECLARATION, // color: red
-			NODE_VALUE_KEYWORD, // red
 			NODE_STYLE_RULE, // .child
 			NODE_SELECTOR, // .child selector
 			NODE_DECLARATION, // color: blue
-			NODE_VALUE_KEYWORD, // blue
 		])
 	})
 
 	it('should visit at-rule nodes', () => {
-		const parser = new Parser('@media (min-width: 768px) { body { color: red; } }')
+		const parser = new Parser('@media (min-width: 768px) { body { color: red; } }', { parseSelectors: false, parseValues: false })
 		const root = parser.parse()
 		const visited: number[] = []
 
@@ -104,12 +102,11 @@ describe('walk', () => {
 			NODE_STYLE_RULE, // body
 			NODE_SELECTOR, // body selector
 			NODE_DECLARATION, // color: red
-			NODE_VALUE_KEYWORD, // red
 		])
 	})
 
 	it('should allow collecting node data', () => {
-		const parser = new Parser('body { color: red; } .btn { margin: 0; }')
+		const parser = new Parser('body { color: red; } .btn { margin: 0; }', { parseSelectors: false, parseValues: false })
 		const root = parser.parse()
 		const selectors: string[] = []
 
@@ -123,7 +120,7 @@ describe('walk', () => {
 	})
 
 	it('should allow collecting property names', () => {
-		const parser = new Parser('body { color: red; margin: 0; padding: 1rem; }')
+		const parser = new Parser('body { color: red; margin: 0; padding: 1rem; }', { parseSelectors: false, parseValues: false })
 		const root = parser.parse()
 		const properties: string[] = []
 
@@ -138,11 +135,14 @@ describe('walk', () => {
 	})
 
 	it('should allow counting nodes by type', () => {
-		const parser = new Parser(`
+		const parser = new Parser(
+			`
 			body { color: red; }
 			.card { padding: 1rem; }
 			@media screen { div { margin: 0; } }
-		`)
+		`,
+			{ parseSelectors: false, parseValues: false },
+		)
 		const root = parser.parse()
 		const counts: Record<number, number> = {}
 
@@ -158,7 +158,7 @@ describe('walk', () => {
 	})
 
 	it('should work with deeply nested structures', () => {
-		const parser = new Parser('.a { .b { .c { color: red; } } }')
+		const parser = new Parser('.a { .b { .c { color: red; } } }', { parseSelectors: false, parseValues: false })
 		const root = parser.parse()
 		let depth = 0
 		let maxDepth = 0

@@ -70,6 +70,12 @@ export class CSSNode {
 		return this.source.substring(start, start + length)
 	}
 
+	// Alias for name (for declarations: "color" in "color: blue")
+	// More semantic than `name` for declaration nodes
+	get property(): string | null {
+		return this.name
+	}
+
 	// Get the value text (for declarations: "blue" in "color: blue")
 	get value(): string | null {
 		let start = this.arena.get_value_start(this.index)

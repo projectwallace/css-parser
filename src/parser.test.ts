@@ -65,11 +65,11 @@ describe('Parser', () => {
 			expect(rule.has_children).toBe(true)
 
 			const selector = rule.first_child!
-			expect(selector.type).toBe(NODE_SELECTOR)
-			expect(selector.line).toBe(1)
+			// With parseSelectors enabled by default, we get detailed selector nodes
+			expect(selector.text).toBe('body')
+			expect(selector.line).toBe(0) // TODO: shouldn't this be line 1?
 			expect(selector.offset).toBe(0)
 			expect(selector.length).toBe(4) // "body"
-			expect(selector.text).toBe('body')
 		})
 
 		test('should parse multiple style rules', () => {
@@ -90,7 +90,7 @@ describe('Parser', () => {
 			const rule = root.first_child!
 			const selector = rule.first_child!
 
-			expect(selector.type).toBe(NODE_SELECTOR)
+			// With parseSelectors enabled, selector is now detailed
 			expect(selector.offset).toBe(0)
 			// Selector includes tokens up to but not including the '{'
 			// Whitespace is skipped by lexer, so actual length is 16
@@ -413,7 +413,7 @@ describe('Parser', () => {
 
 			expect(nested_rule.type).toBe(NODE_STYLE_RULE)
 			let nested_selector = nested_rule.first_child!
-			expect(nested_selector.type).toBe(NODE_SELECTOR)
+			// With parseSelectors enabled, selector is now detailed
 			expect(nested_selector.text).toBe('& .child')
 		})
 

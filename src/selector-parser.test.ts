@@ -455,7 +455,7 @@ describe('SelectorParser', () => {
 
 	describe('Complex selectors', () => {
 		it('should parse navigation selector', () => {
-			const { arena, rootNode, source } = parseSelector('nav > ul > li > a')
+			const { arena, rootNode } = parseSelector('nav > ul > li > a')
 
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
@@ -464,7 +464,7 @@ describe('SelectorParser', () => {
 		})
 
 		it('should parse form selector', () => {
-			const { arena, rootNode, source } = parseSelector('form input[type="text"]:focus')
+			const { arena, rootNode } = parseSelector('form input[type="text"]:focus')
 
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
@@ -474,7 +474,7 @@ describe('SelectorParser', () => {
 		})
 
 		it('should parse complex nesting selector', () => {
-			const { arena, rootNode, source } = parseSelector('.parent .child:hover::before')
+			const { arena, rootNode } = parseSelector('.parent .child:hover::before')
 
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
@@ -617,7 +617,7 @@ describe('SelectorParser', () => {
 		})
 
 		it('should parse table selector', () => {
-			const { arena, rootNode, source } = parseSelector('table tbody tr:nth-child(odd) td')
+			const { arena, rootNode } = parseSelector('table tbody tr:nth-child(odd) td')
 
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
