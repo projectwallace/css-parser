@@ -31,25 +31,25 @@ export const NODE_SELECTOR = 5
 export const NODE_COMMENT = 6
 
 // Value node type constants (for declaration values)
-export const NODE_VALUE_KEYWORD = 10      // identifier: red, auto, inherit
-export const NODE_VALUE_NUMBER = 11        // number: 42, 3.14, -5
-export const NODE_VALUE_DIMENSION = 12     // number with unit: 10px, 2em, 50%
-export const NODE_VALUE_STRING = 13        // quoted string: "hello", 'world'
-export const NODE_VALUE_COLOR = 14         // hex color: #fff, #ff0000
-export const NODE_VALUE_FUNCTION = 15      // function: calc(), var(), url()
-export const NODE_VALUE_OPERATOR = 16      // operator: +, -, *, /, comma
+export const NODE_VALUE_KEYWORD = 10 // identifier: red, auto, inherit
+export const NODE_VALUE_NUMBER = 11 // number: 42, 3.14, -5
+export const NODE_VALUE_DIMENSION = 12 // number with unit: 10px, 2em, 50%
+export const NODE_VALUE_STRING = 13 // quoted string: "hello", 'world'
+export const NODE_VALUE_COLOR = 14 // hex color: #fff, #ff0000
+export const NODE_VALUE_FUNCTION = 15 // function: calc(), var(), url()
+export const NODE_VALUE_OPERATOR = 16 // operator: +, -, *, /, comma
 
 // Selector node type constants (for detailed selector parsing)
-export const NODE_SELECTOR_LIST = 20       // comma-separated selectors
-export const NODE_SELECTOR_TYPE = 21       // type selector: div, span, p
-export const NODE_SELECTOR_CLASS = 22      // class selector: .classname
-export const NODE_SELECTOR_ID = 23         // ID selector: #identifier
-export const NODE_SELECTOR_ATTRIBUTE = 24  // attribute selector: [attr], [attr=value]
-export const NODE_SELECTOR_PSEUDO_CLASS = 25   // pseudo-class: :hover, :nth-child()
+export const NODE_SELECTOR_LIST = 20 // comma-separated selectors
+export const NODE_SELECTOR_TYPE = 21 // type selector: div, span, p
+export const NODE_SELECTOR_CLASS = 22 // class selector: .classname
+export const NODE_SELECTOR_ID = 23 // ID selector: #identifier
+export const NODE_SELECTOR_ATTRIBUTE = 24 // attribute selector: [attr], [attr=value]
+export const NODE_SELECTOR_PSEUDO_CLASS = 25 // pseudo-class: :hover, :nth-child()
 export const NODE_SELECTOR_PSEUDO_ELEMENT = 26 // pseudo-element: ::before, ::after
-export const NODE_SELECTOR_COMBINATOR = 27     // combinator: >, +, ~, space
-export const NODE_SELECTOR_UNIVERSAL = 28      // universal selector: *
-export const NODE_SELECTOR_NESTING = 29        // nesting selector: &
+export const NODE_SELECTOR_COMBINATOR = 27 // combinator: >, +, ~, space
+export const NODE_SELECTOR_UNIVERSAL = 28 // universal selector: *
+export const NODE_SELECTOR_NESTING = 29 // nesting selector: &
 
 // Flag constants (bit-packed in 1 byte)
 export const FLAG_IMPORTANT = 1 << 0 // Has !important
@@ -90,12 +90,12 @@ export class CSSDataArena {
 	}
 
 	// Get the number of nodes currently in the arena
-	getCount(): number {
+	get_count(): number {
 		return this.count
 	}
 
 	// Get the capacity (max nodes without reallocation)
-	getCapacity(): number {
+	get_capacity(): number {
 		return this.capacity
 	}
 

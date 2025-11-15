@@ -206,12 +206,4 @@ export class CSSNode {
 			child = child.next_sibling
 		}
 	}
-
-	toJSON() {
-		return {
-			type: this.type,
-			line: this.line,
-			text: this.text,
-		}
-	}
 }

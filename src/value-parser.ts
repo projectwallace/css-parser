@@ -25,6 +25,19 @@ import {
 	TOKEN_RIGHT_PAREN,
 } from './token-types'
 
+// Whitespace character codes
+const CH_SPACE = 0x20
+const CH_TAB = 0x09
+const CH_LINE_FEED = 0x0a
+const CH_CARRIAGE_RETURN = 0x0d
+const CH_FORM_FEED = 0x0c
+
+// Operator character codes
+const CH_PLUS = 0x2b
+const CH_MINUS = 0x2d
+const CH_ASTERISK = 0x2a
+const CH_SLASH = 0x2f
+
 export class ValueParser {
 	private lexer: Lexer
 	private arena: CSSDataArena
@@ -83,7 +96,7 @@ export class ValueParser {
 		// Check if all characters are whitespace
 		for (let i = start; i < end; i++) {
 			let ch = this.source.charCodeAt(i)
-			if (ch !== 0x20 && ch !== 0x09 && ch !== 0x0a && ch !== 0x0d && ch !== 0x0c) {
+			if (ch !== CH_SPACE && ch !== CH_TAB && ch !== CH_LINE_FEED && ch !== CH_CARRIAGE_RETURN && ch !== CH_FORM_FEED) {
 				return false
 			}
 		}
@@ -190,8 +203,7 @@ export class ValueParser {
 	private parse_operator_node(start: number, end: number): number | null {
 		// Only create operator nodes for specific delimiters: + - * /
 		let ch = this.source.charCodeAt(start)
-		if (ch === 0x2b || ch === 0x2d || ch === 0x2a || ch === 0x2f) {
-			// + - * /
+		if (ch === CH_PLUS || ch === CH_MINUS || ch === CH_ASTERISK || ch === CH_SLASH) {
 			return this.create_operator_node(start, end)
 		}
 		// Other delimiters are ignored for now

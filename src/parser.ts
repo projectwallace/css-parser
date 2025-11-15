@@ -22,24 +22,24 @@ export interface ParserOptions {
 }
 
 // Static at-rule lookup sets for fast classification
-const DECLARATION_AT_RULES = new Set(['font-face', 'font-feature-values', 'page', 'property', 'counter-style'])
-const CONDITIONAL_AT_RULES = new Set(['media', 'supports', 'container', 'layer', 'nest'])
+let DECLARATION_AT_RULES = new Set(['font-face', 'font-feature-values', 'page', 'property', 'counter-style'])
+let CONDITIONAL_AT_RULES = new Set(['media', 'supports', 'container', 'layer', 'nest'])
 
 // Whitespace character codes for manual trimming (avoiding allocation-heavy string methods)
-const SPACE = 0x20
-const TAB = 0x09
-const LINE_FEED = 0x0a
-const CARRIAGE_RETURN = 0x0d
-const FORM_FEED = 0x0c
+let SPACE = 0x20
+let TAB = 0x09
+let LINE_FEED = 0x0a
+let CARRIAGE_RETURN = 0x0d
+let FORM_FEED = 0x0c
 
 export class Parser {
 	private source: string
 	private lexer: Lexer
 	private arena: CSSDataArena
-	private valueParser: ValueParser | null
-	private selectorParser: SelectorParser | null
-	private parseValuesEnabled: boolean
-	private parseSelectorsEnabled: boolean
+	private value_parser: ValueParser | null
+	private selector_parser: SelectorParser | null
+	private parse_values_enabled: boolean
+	private parse_selectors_enabled: boolean
 
 	constructor(source: string, options?: ParserOptions | boolean) {
 		this.source = source
@@ -52,9 +52,9 @@ export class Parser {
 			opts = options || {}
 		}
 
-		const skip_comments = opts.skip_comments ?? true
-		this.parseValuesEnabled = opts.parseValues ?? true
-		this.parseSelectorsEnabled = opts.parseSelectors ?? true
+		let skip_comments = opts.skip_comments ?? true
+		this.parse_values_enabled = opts.parseValues ?? true
+		this.parse_selectors_enabled = opts.parseSelectors ?? true
 
 		this.lexer = new Lexer(source, skip_comments)
 		// Calculate optimal capacity based on source size
@@ -62,8 +62,8 @@ export class Parser {
 		this.arena = new CSSDataArena(capacity)
 
 		// Only create parsers if needed
-		this.valueParser = this.parseValuesEnabled ? new ValueParser(this.arena, source) : null
-		this.selectorParser = this.parseSelectorsEnabled ? new SelectorParser(this.arena, source) : null
+		this.value_parser = this.parse_values_enabled ? new ValueParser(this.arena, source) : null
+		this.selector_parser = this.parse_selectors_enabled ? new SelectorParser(this.arena, source) : null
 	}
 
 	// Get the arena (for internal/advanced use only)
@@ -236,8 +236,8 @@ export class Parser {
 		}
 
 		// If detailed selector parsing is enabled, use SelectorParser
-		if (this.parseSelectorsEnabled && this.selectorParser) {
-			let selectorNode = this.selectorParser.parse_selector(selector_start, last_end, selector_line)
+		if (this.parse_selectors_enabled && this.selector_parser) {
+			let selectorNode = this.selector_parser.parse_selector(selector_start, last_end, selector_line)
 			if (selectorNode !== null) {
 				return selectorNode
 			}
@@ -317,8 +317,8 @@ export class Parser {
 			this.arena.set_value_length(declaration, trimmed[1] - trimmed[0])
 
 			// Parse value into structured nodes (only if enabled)
-			if (this.parseValuesEnabled && this.valueParser) {
-				let valueNodes = this.valueParser.parse_value(trimmed[0], trimmed[1])
+			if (this.parse_values_enabled && this.value_parser) {
+				let valueNodes = this.value_parser.parse_value(trimmed[0], trimmed[1])
 
 				// Link value nodes as children of the declaration
 				if (valueNodes.length > 0) {

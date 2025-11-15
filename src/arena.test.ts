@@ -5,14 +5,14 @@ describe('CSSDataArena', () => {
 	describe('initialization', () => {
 		test('should create arena with default capacity', () => {
 			const arena = new CSSDataArena()
-			expect(arena.getCapacity()).toBe(1024)
-			expect(arena.getCount()).toBe(1) // Count starts at 1 (0 is reserved for "no node")
+			expect(arena.get_capacity()).toBe(1024)
+			expect(arena.get_count()).toBe(1) // Count starts at 1 (0 is reserved for "no node")
 		})
 
 		test('should create arena with custom capacity', () => {
 			const arena = new CSSDataArena(512)
-			expect(arena.getCapacity()).toBe(512)
-			expect(arena.getCount()).toBe(1) // Count starts at 1 (0 is reserved for "no node")
+			expect(arena.get_capacity()).toBe(512)
+			expect(arena.get_count()).toBe(1) // Count starts at 1 (0 is reserved for "no node")
 		})
 	})
 
@@ -22,11 +22,11 @@ describe('CSSDataArena', () => {
 
 			const node1 = arena.create_node()
 			expect(node1).toBe(1) // First node index is 1 (0 is reserved for "no node")
-			expect(arena.getCount()).toBe(2)
+			expect(arena.get_count()).toBe(2)
 
 			const node2 = arena.create_node()
 			expect(node2).toBe(2)
-			expect(arena.getCount()).toBe(3)
+			expect(arena.get_count()).toBe(3)
 		})
 
 		test('should automatically grow when capacity is exceeded', () => {
@@ -34,14 +34,14 @@ describe('CSSDataArena', () => {
 
 			arena.create_node() // 1
 			arena.create_node() // 2
-			expect(arena.getCapacity()).toBe(3)
+			expect(arena.get_capacity()).toBe(3)
 
 			// This should trigger growth (count is now 3, capacity is 3)
 			const node3 = arena.create_node() // 3
 			expect(node3).toBe(3)
-			expect(arena.getCount()).toBe(4)
+			expect(arena.get_count()).toBe(4)
 			// Capacity should be ceil(3 * 1.3) = 4
-			expect(arena.getCapacity()).toBe(4)
+			expect(arena.get_capacity()).toBe(4)
 		})
 
 		test('should preserve existing data when growing', () => {
