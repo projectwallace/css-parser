@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { SelectorParser } from './selector-parser'
 import { CSSDataArena } from './arena'
 import {
+	NODE_SELECTOR,
 	NODE_SELECTOR_LIST,
-	NODE_SELECTOR_SEQUENCE,
 	NODE_SELECTOR_TYPE,
 	NODE_SELECTOR_CLASS,
 	NODE_SELECTOR_ID,
@@ -57,9 +57,14 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// Simple selector returns type directly (no wrapper)
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_TYPE)
+			// All selectors wrapped in NODE_SELECTOR
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
 			expect(getNodeText(arena, source, rootNode)).toBe('div')
+
+			// First child is the actual type
+			const child = arena.get_first_child(rootNode)
+			expect(arena.get_type(child)).toBe(NODE_SELECTOR_TYPE)
+			expect(getNodeText(arena, source, child)).toBe('div')
 		})
 
 		it('should parse class selector', () => {
@@ -68,10 +73,13 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// Simple selector returns class directly (no wrapper)
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_CLASS)
-			expect(getNodeText(arena, source, rootNode)).toBe('.my-class')
-			expect(getNodeContent(arena, source, rootNode)).toBe('my-class')
+			// All selectors wrapped in NODE_SELECTOR
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+
+			const child = arena.get_first_child(rootNode)
+			expect(arena.get_type(child)).toBe(NODE_SELECTOR_CLASS)
+			expect(getNodeText(arena, source, child)).toBe('.my-class')
+			expect(getNodeContent(arena, source, child)).toBe('my-class')
 		})
 
 		it('should parse ID selector', () => {
@@ -80,10 +88,13 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// Simple selector returns ID directly (no wrapper)
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_ID)
-			expect(getNodeText(arena, source, rootNode)).toBe('#my-id')
-			expect(getNodeContent(arena, source, rootNode)).toBe('my-id')
+			// All selectors wrapped in NODE_SELECTOR
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+
+			const child = arena.get_first_child(rootNode)
+			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ID)
+			expect(getNodeText(arena, source, child)).toBe('#my-id')
+			expect(getNodeContent(arena, source, child)).toBe('my-id')
 		})
 
 		it('should parse universal selector', () => {
@@ -92,9 +103,12 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// Simple selector returns universal directly (no wrapper)
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_UNIVERSAL)
-			expect(getNodeText(arena, source, rootNode)).toBe('*')
+			// All selectors wrapped in NODE_SELECTOR
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+
+			const child = arena.get_first_child(rootNode)
+			expect(arena.get_type(child)).toBe(NODE_SELECTOR_UNIVERSAL)
+			expect(getNodeText(arena, source, child)).toBe('*')
 		})
 
 		it('should parse nesting selector', () => {
@@ -103,9 +117,12 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// Simple selector returns nesting directly (no wrapper)
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_NESTING)
-			expect(getNodeText(arena, source, rootNode)).toBe('&')
+			// All selectors wrapped in NODE_SELECTOR
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+
+			const child = arena.get_first_child(rootNode)
+			expect(arena.get_type(child)).toBe(NODE_SELECTOR_NESTING)
+			expect(getNodeText(arena, source, child)).toBe('&')
 		})
 	})
 
@@ -116,8 +133,10 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_SEQUENCE)
+			// All selectors wrapped in NODE_SELECTOR
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
 
+			// Compound selector has multiple children
 			const children = getChildren(arena, source, rootNode)
 			expect(children).toHaveLength(2)
 			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_TYPE)
@@ -131,6 +150,9 @@ describe('SelectorParser', () => {
 
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
+
+			// All selectors wrapped in NODE_SELECTOR
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
 
 			const children = getChildren(arena, source, rootNode)
 			expect(children).toHaveLength(2)
@@ -288,10 +310,13 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// Simple selector returns attribute directly (no wrapper)
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_ATTRIBUTE)
-			expect(getNodeText(arena, source, rootNode)).toBe('[disabled]')
-			expect(getNodeContent(arena, source, rootNode)).toBe('disabled')
+			// All selectors wrapped in NODE_SELECTOR
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+
+			const child = arena.get_first_child(rootNode)
+			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(getNodeText(arena, source, child)).toBe('[disabled]')
+			expect(getNodeContent(arena, source, child)).toBe('disabled')
 		})
 
 		it('should parse attribute with value', () => {
@@ -300,10 +325,13 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// Simple selector returns attribute directly (no wrapper)
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_ATTRIBUTE)
-			expect(getNodeText(arena, source, rootNode)).toBe('[type="text"]')
-			expect(getNodeContent(arena, source, rootNode)).toBe('type="text"')
+			// All selectors wrapped in NODE_SELECTOR
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+
+			const child = arena.get_first_child(rootNode)
+			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(getNodeText(arena, source, child)).toBe('[type="text"]')
+			expect(getNodeContent(arena, source, child)).toBe('type="text"')
 		})
 
 		it('should parse attribute with operator', () => {
@@ -312,9 +340,12 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// Simple selector returns attribute directly (no wrapper)
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_ATTRIBUTE)
-			expect(getNodeText(arena, source, rootNode)).toBe('[class^="btn-"]')
+			// All selectors wrapped in NODE_SELECTOR
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+
+			const child = arena.get_first_child(rootNode)
+			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(getNodeText(arena, source, child)).toBe('[class^="btn-"]')
 		})
 
 		it('should parse element with attribute', () => {
@@ -337,7 +368,8 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_SEQUENCE)
+			// All selectors wrapped in NODE_SELECTOR
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
 
 			const children = getChildren(arena, source, rootNode)
 			expect(children.length).toBeGreaterThanOrEqual(2)
@@ -412,9 +444,14 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
+			// All selectors wrapped in NODE_SELECTOR
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
 
-			const children = getChildren(arena, source, rootNode)
+			// First child is the list
+			const list = arena.get_first_child(rootNode)
+			expect(arena.get_type(list)).toBe(NODE_SELECTOR_LIST)
+
+			const children = getChildren(arena, source, list)
 			expect(children).toHaveLength(2)
 		})
 
@@ -424,9 +461,14 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
+			// All selectors wrapped in NODE_SELECTOR
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
 
-			const children = getChildren(arena, source, rootNode)
+			// First child is the list
+			const list = arena.get_first_child(rootNode)
+			expect(arena.get_type(list)).toBe(NODE_SELECTOR_LIST)
+
+			const children = getChildren(arena, source, list)
 			expect(children).toHaveLength(3)
 		})
 
@@ -436,9 +478,14 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
+			// All selectors wrapped in NODE_SELECTOR
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
 
-			const children = getChildren(arena, source, rootNode)
+			// First child is the list
+			const list = arena.get_first_child(rootNode)
+			expect(arena.get_type(list)).toBe(NODE_SELECTOR_LIST)
+
+			const children = getChildren(arena, source, list)
 			expect(children).toHaveLength(3)
 		})
 	})
@@ -450,7 +497,8 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_SEQUENCE)
+			// All selectors wrapped in NODE_SELECTOR
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
 		})
 
 		it('should parse form selector', () => {
@@ -495,9 +543,12 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// Simple selector returns pseudo-class directly (no wrapper)
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_PSEUDO_CLASS)
-			expect(getNodeContent(arena, source, rootNode)).toBe('where')
+			// All selectors wrapped in NODE_SELECTOR
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+
+			const child = arena.get_first_child(rootNode)
+			expect(arena.get_type(child)).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(getNodeContent(arena, source, child)).toBe('where')
 		})
 
 		it('should parse :has() pseudo-class', () => {
@@ -560,9 +611,12 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// Simple selector returns class directly (no wrapper)
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_CLASS)
-			expect(getNodeContent(arena, source, rootNode)).toBe('my-class-123')
+			// All selectors wrapped in NODE_SELECTOR
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+
+			const child = arena.get_first_child(rootNode)
+			expect(arena.get_type(child)).toBe(NODE_SELECTOR_CLASS)
+			expect(getNodeContent(arena, source, child)).toBe('my-class-123')
 		})
 
 		it('should parse hyphenated element names', () => {
@@ -571,9 +625,12 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// Simple selector returns type directly (no wrapper)
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_TYPE)
-			expect(getNodeText(arena, source, rootNode)).toBe('custom-element')
+			// All selectors wrapped in NODE_SELECTOR
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+
+			const child = arena.get_first_child(rootNode)
+			expect(arena.get_type(child)).toBe(NODE_SELECTOR_TYPE)
+			expect(getNodeText(arena, source, child)).toBe('custom-element')
 		})
 	})
 
@@ -584,9 +641,12 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// Simple selector returns class directly (no wrapper)
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_CLASS)
-			expect(getNodeContent(arena, source, rootNode)).toBe('block__element--modifier')
+			// All selectors wrapped in NODE_SELECTOR
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+
+			const child = arena.get_first_child(rootNode)
+			expect(arena.get_type(child)).toBe(NODE_SELECTOR_CLASS)
+			expect(getNodeContent(arena, source, child)).toBe('block__element--modifier')
 		})
 
 		it('should parse Bootstrap-style selector', () => {

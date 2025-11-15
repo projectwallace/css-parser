@@ -2,8 +2,8 @@
 import { Lexer } from './lexer'
 import type { CSSDataArena } from './arena'
 import {
+	NODE_SELECTOR,
 	NODE_SELECTOR_LIST,
-	NODE_SELECTOR_SEQUENCE,
 	NODE_SELECTOR_TYPE,
 	NODE_SELECTOR_CLASS,
 	NODE_SELECTOR_ID,
@@ -51,7 +51,7 @@ export class SelectorParser {
 	}
 
 	// Parse a selector range into selector nodes
-	// Returns the root selector list node (or compound selector if no commas)
+	// Always returns a NODE_SELECTOR wrapper with detailed selector nodes as children
 	parse_selector(start: number, end: number, line: number = 1): number | null {
 		this.selector_end = end
 
@@ -60,7 +60,23 @@ export class SelectorParser {
 		this.lexer.line = line
 
 		// Parse selector list (comma-separated selectors)
-		return this.parse_selector_list()
+		let innerSelector = this.parse_selector_list()
+		if (innerSelector === null) {
+			return null
+		}
+
+		// Always wrap in NODE_SELECTOR
+		let selectorWrapper = this.arena.create_node()
+		this.arena.set_type(selectorWrapper, NODE_SELECTOR)
+		this.arena.set_start_offset(selectorWrapper, start)
+		this.arena.set_length(selectorWrapper, end - start)
+		this.arena.set_start_line(selectorWrapper, line)
+
+		// Set the parsed selector as the only child
+		this.arena.set_first_child(selectorWrapper, innerSelector)
+		this.arena.set_last_child(selectorWrapper, innerSelector)
+
+		return selectorWrapper
 	}
 
 	// Parse comma-separated selectors
@@ -161,32 +177,15 @@ export class SelectorParser {
 			break
 		}
 
-		// If only one component, return it directly
-		if (components.length === 1) {
-			return components[0]
+		if (components.length === 0) return null
+
+		// Chain components as siblings
+		for (let i = 0; i < components.length - 1; i++) {
+			this.arena.set_next_sibling(components[i], components[i + 1])
 		}
 
-		// If multiple components, wrap in sequence node
-		if (components.length > 1) {
-			let complex_node = this.arena.create_node()
-			this.arena.set_type(complex_node, NODE_SELECTOR_SEQUENCE)
-			this.arena.set_start_offset(complex_node, complex_start)
-			this.arena.set_length(complex_node, this.lexer.pos - complex_start)
-			this.arena.set_start_line(complex_node, this.lexer.line)
-
-			// Link components as children
-			this.arena.set_first_child(complex_node, components[0])
-			this.arena.set_last_child(complex_node, components[components.length - 1])
-
-			// Chain components as siblings
-			for (let i = 0; i < components.length - 1; i++) {
-				this.arena.set_next_sibling(components[i], components[i + 1])
-			}
-
-			return complex_node
-		}
-
-		return null
+		// Return first component (others are chained as siblings)
+		return components[0]
 	}
 
 	// Parse a compound selector (no combinators)
@@ -220,28 +219,13 @@ export class SelectorParser {
 
 		if (parts.length === 0) return null
 
-		// If only one part, return it directly
-		if (parts.length === 1) {
-			return parts[0]
-		}
-
-		// If multiple parts, create a sequence node
-		let compound_node = this.arena.create_node()
-		this.arena.set_type(compound_node, NODE_SELECTOR_SEQUENCE)
-		this.arena.set_start_offset(compound_node, compound_start)
-		this.arena.set_length(compound_node, last_end - compound_start)
-		this.arena.set_start_line(compound_node, this.lexer.line)
-
-		// Link parts as children
-		this.arena.set_first_child(compound_node, parts[0])
-		this.arena.set_last_child(compound_node, parts[parts.length - 1])
-
 		// Chain parts as siblings
 		for (let i = 0; i < parts.length - 1; i++) {
 			this.arena.set_next_sibling(parts[i], parts[i + 1])
 		}
 
-		return compound_node
+		// Return first part (others are chained as siblings)
+		return parts[0]
 	}
 
 	// Parse a simple selector (single component)

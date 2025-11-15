@@ -41,16 +41,15 @@ export const NODE_VALUE_OPERATOR = 16      // operator: +, -, *, /, comma
 
 // Selector node type constants (for detailed selector parsing)
 export const NODE_SELECTOR_LIST = 20       // comma-separated selectors
-export const NODE_SELECTOR_SEQUENCE = 21   // sequence of selector parts (e.g., div.class, div > p)
-export const NODE_SELECTOR_TYPE = 22       // type selector: div, span, p
-export const NODE_SELECTOR_CLASS = 23      // class selector: .classname
-export const NODE_SELECTOR_ID = 24         // ID selector: #identifier
-export const NODE_SELECTOR_ATTRIBUTE = 25  // attribute selector: [attr], [attr=value]
-export const NODE_SELECTOR_PSEUDO_CLASS = 26   // pseudo-class: :hover, :nth-child()
-export const NODE_SELECTOR_PSEUDO_ELEMENT = 27 // pseudo-element: ::before, ::after
-export const NODE_SELECTOR_COMBINATOR = 28     // combinator: >, +, ~, space
-export const NODE_SELECTOR_UNIVERSAL = 29      // universal selector: *
-export const NODE_SELECTOR_NESTING = 30        // nesting selector: &
+export const NODE_SELECTOR_TYPE = 21       // type selector: div, span, p
+export const NODE_SELECTOR_CLASS = 22      // class selector: .classname
+export const NODE_SELECTOR_ID = 23         // ID selector: #identifier
+export const NODE_SELECTOR_ATTRIBUTE = 24  // attribute selector: [attr], [attr=value]
+export const NODE_SELECTOR_PSEUDO_CLASS = 25   // pseudo-class: :hover, :nth-child()
+export const NODE_SELECTOR_PSEUDO_ELEMENT = 26 // pseudo-element: ::before, ::after
+export const NODE_SELECTOR_COMBINATOR = 27     // combinator: >, +, ~, space
+export const NODE_SELECTOR_UNIVERSAL = 28      // universal selector: *
+export const NODE_SELECTOR_NESTING = 29        // nesting selector: &
 
 // Flag constants (bit-packed in 1 byte)
 export const FLAG_IMPORTANT = 1 << 0 // Has !important

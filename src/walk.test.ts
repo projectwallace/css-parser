@@ -141,7 +141,6 @@ describe('walk', () => {
 			.card { padding: 1rem; }
 			@media screen { div { margin: 0; } }
 		`,
-			{ parseSelectors: false, parseValues: false },
 		)
 		const root = parser.parse()
 		const counts: Record<number, number> = {}
@@ -150,15 +149,15 @@ describe('walk', () => {
 			counts[node.type] = (counts[node.type] || 0) + 1
 		})
 
-		expect(counts[NODE_STYLESHEET]).toBe(1)
-		expect(counts[NODE_STYLE_RULE]).toBe(3)
-		expect(counts[NODE_SELECTOR]).toBe(3)
-		expect(counts[NODE_DECLARATION]).toBe(3)
-		expect(counts[NODE_AT_RULE]).toBe(1)
+		expect.soft(counts[NODE_STYLESHEET]).toBe(1)
+		expect.soft(counts[NODE_STYLE_RULE]).toBe(3)
+		expect.soft(counts[NODE_SELECTOR]).toBe(3)
+		expect.soft(counts[NODE_DECLARATION]).toBe(3)
+		expect.soft(counts[NODE_AT_RULE]).toBe(1)
 	})
 
 	it('should work with deeply nested structures', () => {
-		const parser = new Parser('.a { .b { .c { color: red; } } }', { parseSelectors: false, parseValues: false })
+		const parser = new Parser('.a { .b { .c { color: red; } } }')
 		const root = parser.parse()
 		let depth = 0
 		let maxDepth = 0

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { Parser } from './parser'
 import {
 	NODE_SELECTOR,
-	NODE_SELECTOR_TYPE,
+	NODE_SELECTOR,
 	NODE_SELECTOR_SEQUENCE,
 	NODE_DECLARATION,
 	NODE_VALUE_KEYWORD,
@@ -18,10 +18,10 @@ describe('Parser Options', () => {
 			const rule = root.first_child
 
 			// Check selector is parsed with detailed structure
-			// Simple selector (just "body") returns NODE_SELECTOR_TYPE directly
+			// All selectors wrapped in NODE_SELECTOR
 			const selector = rule?.first_child
 			expect(selector).not.toBeNull()
-			expect(selector?.type).toBe(NODE_SELECTOR_TYPE)
+			expect(selector?.type).toBe(NODE_SELECTOR)
 
 			// Check value is parsed with detailed structure
 			const declaration = selector?.next_sibling
@@ -37,9 +37,9 @@ describe('Parser Options', () => {
 			const rule = root.first_child
 
 			// Check selector is parsed
-			// Simple selector (just "body") returns NODE_SELECTOR_TYPE directly
+			// Simple selector (just "body") returns NODE_SELECTOR directly
 			const selector = rule?.first_child
-			expect(selector?.type).toBe(NODE_SELECTOR_TYPE)
+			expect(selector?.type).toBe(NODE_SELECTOR)
 
 			// Check value is parsed
 			const declaration = selector?.next_sibling
@@ -55,10 +55,10 @@ describe('Parser Options', () => {
 			const rule = root.first_child
 
 			// Selector should still be parsed
-			// Simple selector (just "body") returns NODE_SELECTOR_TYPE directly
+			// Simple selector (just "body") returns NODE_SELECTOR directly
 			const selector = rule?.first_child
 			expect(selector).not.toBeNull()
-			expect(selector?.type).toBe(NODE_SELECTOR_TYPE)
+			expect(selector?.type).toBe(NODE_SELECTOR)
 
 			// Declaration should exist but have no value children
 			const declaration = selector?.next_sibling
@@ -212,8 +212,8 @@ describe('Parser Options', () => {
 			const declaration = selector?.next_sibling
 
 			// Both should be parsed by default
-			// Simple selector returns NODE_SELECTOR_TYPE directly
-			expect(selector?.type).toBe(NODE_SELECTOR_TYPE)
+			// Simple selector returns NODE_SELECTOR directly
+			expect(selector?.type).toBe(NODE_SELECTOR)
 			expect(declaration?.has_children).toBe(true)
 		})
 	})
@@ -275,7 +275,7 @@ describe('Parser Options', () => {
 			const declaration = selector?.next_sibling
 
 			// Should use defaults (both enabled)
-			expect(selector?.type).toBe(NODE_SELECTOR_TYPE)
+			expect(selector?.type).toBe(NODE_SELECTOR)
 			expect(declaration?.has_children).toBe(true)
 		})
 
@@ -287,7 +287,7 @@ describe('Parser Options', () => {
 			const declaration = selector?.next_sibling
 
 			// Selector should still be parsed (default true)
-			expect(selector?.type).toBe(NODE_SELECTOR_TYPE)
+			expect(selector?.type).toBe(NODE_SELECTOR)
 			// Values should not be parsed (explicitly false)
 			expect(declaration?.has_children).toBe(false)
 		})
