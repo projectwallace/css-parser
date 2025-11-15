@@ -1,12 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { Parser } from './parser'
-import {
-	NODE_SELECTOR,
-	NODE_SELECTOR,
-	NODE_SELECTOR_SEQUENCE,
-	NODE_DECLARATION,
-	NODE_VALUE_KEYWORD,
-} from './arena'
+import { NODE_SELECTOR, NODE_DECLARATION, NODE_VALUE_KEYWORD } from './arena'
 
 describe('Parser Options', () => {
 	const css = 'body { color: red; }'

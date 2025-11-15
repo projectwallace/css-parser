@@ -13,7 +13,7 @@ describe('Package exports', () => {
 		let ast = parser.parse()
 		expect(ast.type).toBe(NODE_STYLESHEET)
 
-		walk(ast, (node) => {})
+		walk(ast, () => {})
 	})
 
 	test('should export Lexer from lexer entry', async () => {

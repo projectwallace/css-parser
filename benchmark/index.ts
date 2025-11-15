@@ -1,3 +1,4 @@
+// oxlint-disable no-unused-vars
 import { Bench } from 'tinybench'
 import { Lexer, Parser, walk } from '../dist/index.js'
 import * as fs from 'node:fs'

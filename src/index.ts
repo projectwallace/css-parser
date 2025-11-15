@@ -1,9 +1,7 @@
 // Main entry point - exports all public APIs
 export { Lexer } from './lexer'
-export { Parser } from './parser'
-export { CSSNode, type CSSNodeType } from './css-node'
-export { walk } from './walk'
 export {
+	Parser,
 	NODE_STYLE_RULE,
 	NODE_AT_RULE,
 	NODE_COMMENT,
@@ -17,7 +15,20 @@ export {
 	NODE_VALUE_COLOR,
 	NODE_VALUE_FUNCTION,
 	NODE_VALUE_OPERATOR,
-} from './arena'
+	NODE_SELECTOR_LIST,
+	NODE_SELECTOR_TYPE,
+	NODE_SELECTOR_CLASS,
+	NODE_SELECTOR_ID,
+	NODE_SELECTOR_ATTRIBUTE,
+	NODE_SELECTOR_PSEUDO_CLASS,
+	NODE_SELECTOR_PSEUDO_ELEMENT,
+	NODE_SELECTOR_COMBINATOR,
+	NODE_SELECTOR_UNIVERSAL,
+	NODE_SELECTOR_NESTING,
+	FLAG_IMPORTANT,
+} from './parser'
+export { CSSNode, type CSSNodeType } from './css-node'
+export { walk } from './walk'
 export {
 	TOKEN_IDENT,
 	TOKEN_FUNCTION,

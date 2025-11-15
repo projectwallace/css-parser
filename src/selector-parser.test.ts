@@ -375,7 +375,7 @@ describe('SelectorParser', () => {
 			expect(children.length).toBeGreaterThanOrEqual(2)
 
 			// Should have: compound(div), combinator(space), compound(p)
-			const hasDescendantCombinator = children.some(child => {
+			const hasDescendantCombinator = children.some((child) => {
 				const type = arena.get_type(child)
 				return type === NODE_SELECTOR_COMBINATOR
 			})
@@ -390,7 +390,7 @@ describe('SelectorParser', () => {
 
 			const children = getChildren(arena, source, rootNode)
 
-			const hasCombinator = children.some(child => {
+			const hasCombinator = children.some((child) => {
 				const type = arena.get_type(child)
 				if (type === NODE_SELECTOR_COMBINATOR) {
 					return getNodeText(arena, source, child).includes('>')
@@ -408,7 +408,7 @@ describe('SelectorParser', () => {
 
 			const children = getChildren(arena, source, rootNode)
 
-			const hasCombinator = children.some(child => {
+			const hasCombinator = children.some((child) => {
 				const type = arena.get_type(child)
 				if (type === NODE_SELECTOR_COMBINATOR) {
 					return getNodeText(arena, source, child).includes('+')
@@ -426,7 +426,7 @@ describe('SelectorParser', () => {
 
 			const children = getChildren(arena, source, rootNode)
 
-			const hasCombinator = children.some(child => {
+			const hasCombinator = children.some((child) => {
 				const type = arena.get_type(child)
 				if (type === NODE_SELECTOR_COMBINATOR) {
 					return getNodeText(arena, source, child).includes('~')
@@ -528,7 +528,7 @@ describe('SelectorParser', () => {
 
 			const children = getChildren(arena, source, rootNode)
 
-			const combinators = children.filter(child => {
+			const combinators = children.filter((child) => {
 				return arena.get_type(child) === NODE_SELECTOR_COMBINATOR
 			})
 
@@ -599,7 +599,7 @@ describe('SelectorParser', () => {
 		})
 
 		it('should handle empty selector gracefully', () => {
-			const { arena, rootNode } = parseSelector('')
+			const { rootNode } = parseSelector('')
 
 			// Empty selector returns null
 			expect(rootNode).toBeNull()

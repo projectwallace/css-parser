@@ -32,8 +32,8 @@ describe('CSSDataArena', () => {
 		test('should automatically grow when capacity is exceeded', () => {
 			const arena = new CSSDataArena(3)
 
-			const node1 = arena.create_node() // 1
-			const node2 = arena.create_node() // 2
+			arena.create_node() // 1
+			arena.create_node() // 2
 			expect(arena.getCapacity()).toBe(3)
 
 			// This should trigger growth (count is now 3, capacity is 3)

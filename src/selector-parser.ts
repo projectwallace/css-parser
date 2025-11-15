@@ -136,7 +136,6 @@ export class SelectorParser {
 	// e.g., "div.class > p + span"
 	private parse_complex_selector(): number | null {
 		let components: number[] = []
-		let complex_start = this.lexer.pos
 
 		// Skip leading whitespace
 		this.skip_whitespace()
@@ -192,8 +191,6 @@ export class SelectorParser {
 	// e.g., "div.class#id[attr]:hover"
 	private parse_compound_selector(): number | null {
 		let parts: number[] = []
-		let compound_start = this.lexer.pos
-		let last_end = compound_start
 
 		while (this.lexer.pos < this.selector_end) {
 			// Save position before getting token
@@ -206,10 +203,6 @@ export class SelectorParser {
 			let part = this.parse_simple_selector()
 			if (part !== null) {
 				parts.push(part)
-				// Get the actual end position from the node
-				let node_start = this.arena.get_start_offset(part)
-				let node_length = this.arena.get_length(part)
-				last_end = node_start + node_length
 			} else {
 				// Not a simple selector part, reset position and break
 				this.lexer.pos = pos_before
