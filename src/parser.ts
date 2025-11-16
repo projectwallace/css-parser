@@ -15,6 +15,7 @@ import {
 	TOKEN_DELIM,
 	TOKEN_AT_KEYWORD,
 } from './token-types'
+import { trim_boundaries } from './string-utils'
 
 export interface ParserOptions {
 	skip_comments?: boolean
@@ -80,27 +81,6 @@ export class Parser {
 	// Get the source code
 	get_source(): string {
 		return this.source
-	}
-
-	// Fast manual trim to find actual content boundaries
-	// Returns [trimmed_start, trimmed_end] or null if all whitespace
-	private find_trim_boundaries(start: number, end: number): [number, number] | null {
-		// Trim start: skip whitespace characters
-		while (start < end) {
-			let ch = this.source.charCodeAt(start)
-			if (ch !== SPACE && ch !== TAB && ch !== LINE_FEED && ch !== CARRIAGE_RETURN && ch !== FORM_FEED) break
-			start++
-		}
-
-		// Trim end: skip whitespace characters from the end
-		while (end > start) {
-			let ch = this.source.charCodeAt(end - 1)
-			if (ch !== SPACE && ch !== TAB && ch !== LINE_FEED && ch !== CARRIAGE_RETURN && ch !== FORM_FEED) break
-			end--
-		}
-
-		if (start >= end) return null
-		return [start, end]
 	}
 
 	// Advance to the next token, skipping whitespace
@@ -316,7 +296,7 @@ export class Parser {
 		}
 
 		// Store value position (trimmed) and parse value nodes
-		let trimmed = this.find_trim_boundaries(value_start, value_end)
+		let trimmed = trim_boundaries(this.source, value_start, value_end)
 		if (trimmed) {
 			// Store raw value string offsets (for fast string access)
 			this.arena.set_value_start(declaration, trimmed[0])
@@ -393,7 +373,7 @@ export class Parser {
 		}
 
 		// Store prelude position (trimmed)
-		let trimmed = this.find_trim_boundaries(prelude_start, prelude_end)
+		let trimmed = trim_boundaries(this.source, prelude_start, prelude_end)
 		if (trimmed) {
 			this.arena.set_value_start(at_rule, trimmed[0])
 			this.arena.set_value_length(at_rule, trimmed[1] - trimmed[0])

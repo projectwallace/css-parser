@@ -28,6 +28,7 @@ import {
 	TOKEN_EOF,
 	TOKEN_WHITESPACE,
 } from './token-types'
+import { trim_boundaries } from './string-utils'
 
 // Whitespace character codes
 const CH_SPACE = 0x20
@@ -50,81 +51,6 @@ export class SelectorParser {
 		// Create a lexer instance for selector parsing
 		this.lexer = new Lexer(source, false)
 		this.selector_end = 0
-	}
-
-	// Trim whitespace and comments from both ends of a range
-	// Returns [trimmed_start, trimmed_end] or null if all whitespace/comments
-	private trim_boundaries(start: number, end: number): [number, number] | null {
-		// Helper to check if char is whitespace
-		const is_whitespace = (ch: number): boolean => {
-			return ch === CH_SPACE || ch === CH_TAB || ch === CH_LINE_FEED ||
-			       ch === CH_CARRIAGE_RETURN || ch === CH_FORM_FEED
-		}
-
-		// Trim from start
-		while (start < end) {
-			let ch = this.source.charCodeAt(start)
-
-			// Skip whitespace
-			if (is_whitespace(ch)) {
-				start++
-				continue
-			}
-
-			// Skip comments
-			if (ch === CH_FORWARD_SLASH && start + 1 < end &&
-			    this.source.charCodeAt(start + 1) === CH_ASTERISK) {
-				// Find end of comment
-				start += 2 // Skip /*
-				while (start < end) {
-					if (this.source.charCodeAt(start) === CH_ASTERISK &&
-					    start + 1 < end &&
-					    this.source.charCodeAt(start + 1) === CH_FORWARD_SLASH) {
-						start += 2 // Skip */
-						break
-					}
-					start++
-				}
-				continue
-			}
-
-			// Found non-whitespace, non-comment
-			break
-		}
-
-		// Trim from end
-		while (end > start) {
-			let ch = this.source.charCodeAt(end - 1)
-
-			// Skip whitespace
-			if (is_whitespace(ch)) {
-				end--
-				continue
-			}
-
-			// Skip comments (work backwards)
-			if (end >= 2 && ch === CH_FORWARD_SLASH &&
-			    this.source.charCodeAt(end - 2) === CH_ASTERISK) {
-				// Find start of comment
-				end -= 2 // Skip */
-				while (end > start) {
-					if (end >= 2 &&
-					    this.source.charCodeAt(end - 2) === CH_FORWARD_SLASH &&
-					    this.source.charCodeAt(end - 1) === CH_ASTERISK) {
-						end -= 2 // Skip /*
-						break
-					}
-					end--
-				}
-				continue
-			}
-
-			// Found non-whitespace, non-comment
-			break
-		}
-
-		if (start >= end) return null
-		return [start, end]
 	}
 
 	// Parse a selector range into selector nodes
@@ -444,7 +370,7 @@ export class SelectorParser {
 		this.arena.set_length(node, end - start)
 		this.arena.set_start_line(node, this.lexer.line)
 		// Content is everything inside the brackets, trimmed
-		let trimmed = this.trim_boundaries(start + 1, end - 1)
+		let trimmed = trim_boundaries(this.source, start + 1, end - 1)
 		if (trimmed) {
 			this.arena.set_content_start(node, trimmed[0])
 			this.arena.set_content_length(node, trimmed[1] - trimmed[0])
