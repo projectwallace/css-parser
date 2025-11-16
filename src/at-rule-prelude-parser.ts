@@ -11,15 +11,14 @@ import {
 	NODE_PRELUDE_IDENTIFIER,
 	NODE_PRELUDE_OPERATOR,
 } from './arena'
-import {
-	TOKEN_IDENT,
-	TOKEN_LEFT_PAREN,
-	TOKEN_RIGHT_PAREN,
-	TOKEN_COMMA,
-	TOKEN_COLON,
-	TOKEN_EOF,
-	TOKEN_WHITESPACE,
-} from './token-types'
+import { TOKEN_IDENT, TOKEN_LEFT_PAREN, TOKEN_RIGHT_PAREN, TOKEN_COMMA, TOKEN_EOF, TOKEN_WHITESPACE } from './token-types'
+
+// Character codes for whitespace
+const CHAR_SPACE = 0x20 // ' '
+const CHAR_TAB = 0x09 // '\t'
+const CHAR_NEWLINE = 0x0a // '\n'
+const CHAR_CARRIAGE_RETURN = 0x0d // '\r'
+const CHAR_FORM_FEED = 0x0c // '\f'
 
 export class AtRulePreludeParser {
 	private lexer: Lexer
@@ -43,7 +42,7 @@ export class AtRulePreludeParser {
 		this.lexer.pos = start
 		this.lexer.line = 1
 
-		const name = at_rule_name.toLowerCase()
+		let name = at_rule_name.toLowerCase()
 
 		// Dispatch to appropriate parser based on at-rule type
 		if (name === 'media') {
@@ -67,13 +66,13 @@ export class AtRulePreludeParser {
 
 	// Parse media query list: screen, (min-width: 768px), ...
 	private parse_media_query_list(): number[] {
-		const nodes: number[] = []
+		let nodes: number[] = []
 
 		while (this.lexer.pos < this.prelude_end) {
 			this.skip_whitespace()
 			if (this.lexer.pos >= this.prelude_end) break
 
-			const query = this.parse_single_media_query()
+			let query = this.parse_single_media_query()
 			if (query !== null) {
 				nodes.push(query)
 			}
@@ -90,7 +89,7 @@ export class AtRulePreludeParser {
 
 	// Parse a single media query: screen and (min-width: 768px)
 	private parse_single_media_query(): number | null {
-		const query_start = this.lexer.pos
+		let query_start = this.lexer.pos
 		let query_line = this.lexer.line
 
 		// Skip whitespace
@@ -98,15 +97,13 @@ export class AtRulePreludeParser {
 		if (this.lexer.pos >= this.prelude_end) return null
 
 		// Check for modifier (only, not)
-		let has_modifier = false
-		const token_start = this.lexer.pos
+		// let has_modifier = false
+		let token_start = this.lexer.pos
 		this.next_token()
 
 		if (this.lexer.token_type === TOKEN_IDENT) {
-			const text = this.source.substring(this.lexer.token_start, this.lexer.token_end).toLowerCase()
-			if (text === 'only' || text === 'not') {
-				has_modifier = true
-			} else {
+			let text = this.source.substring(this.lexer.token_start, this.lexer.token_end).toLowerCase()
+			if (text !== 'only' && text !== 'not') {
 				// Reset - this is a media type
 				this.lexer.pos = token_start
 			}
@@ -115,7 +112,7 @@ export class AtRulePreludeParser {
 		}
 
 		// Parse components (media type, features, operators)
-		const components: number[] = []
+		let components: number[] = []
 
 		while (this.lexer.pos < this.prelude_end) {
 			this.skip_whitespace()
@@ -124,23 +121,22 @@ export class AtRulePreludeParser {
 			// Check for comma (end of this query)
 			if (this.peek_token_type() === TOKEN_COMMA) break
 
-			const component_start = this.lexer.pos
 			this.next_token()
 
 			// Media feature: (min-width: 768px)
 			if (this.lexer.token_type === TOKEN_LEFT_PAREN) {
-				const feature = this.parse_media_feature()
+				let feature = this.parse_media_feature()
 				if (feature !== null) {
 					components.push(feature)
 				}
 			}
 			// Identifier: media type or operator (and, or, not)
 			else if (this.lexer.token_type === TOKEN_IDENT) {
-				const text = this.source.substring(this.lexer.token_start, this.lexer.token_end).toLowerCase()
+				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end).toLowerCase()
 
 				if (text === 'and' || text === 'or' || text === 'not') {
 					// Logical operator
-					const op = this.arena.create_node()
+					let op = this.arena.create_node()
 					this.arena.set_type(op, NODE_PRELUDE_OPERATOR)
 					this.arena.set_start_offset(op, this.lexer.token_start)
 					this.arena.set_length(op, this.lexer.token_end - this.lexer.token_start)
@@ -148,7 +144,7 @@ export class AtRulePreludeParser {
 					components.push(op)
 				} else {
 					// Media type: screen, print, all
-					const media_type = this.arena.create_node()
+					let media_type = this.arena.create_node()
 					this.arena.set_type(media_type, NODE_PRELUDE_MEDIA_TYPE)
 					this.arena.set_start_offset(media_type, this.lexer.token_start)
 					this.arena.set_length(media_type, this.lexer.token_end - this.lexer.token_start)
@@ -164,14 +160,14 @@ export class AtRulePreludeParser {
 		if (components.length === 0) return null
 
 		// Create media query node
-		const query_node = this.arena.create_node()
+		let query_node = this.arena.create_node()
 		this.arena.set_type(query_node, NODE_PRELUDE_MEDIA_QUERY)
 		this.arena.set_start_offset(query_node, query_start)
 		this.arena.set_length(query_node, this.lexer.pos - query_start)
 		this.arena.set_start_line(query_node, query_line)
 
 		// Append components as children
-		for (const component of components) {
+		for (let component of components) {
 			this.arena.append_child(query_node, component)
 		}
 
@@ -180,12 +176,12 @@ export class AtRulePreludeParser {
 
 	// Parse media feature: (min-width: 768px)
 	private parse_media_feature(): number | null {
-		const feature_start = this.lexer.token_start // '(' position
-		const feature_line = this.lexer.token_line
+		let feature_start = this.lexer.token_start // '(' position
+		let feature_line = this.lexer.token_line
 
 		// Find matching right paren
 		let depth = 1
-		const content_start = this.lexer.pos
+		let content_start = this.lexer.pos
 
 		while (this.lexer.pos < this.prelude_end && depth > 0) {
 			this.next_token()
@@ -198,11 +194,11 @@ export class AtRulePreludeParser {
 
 		if (depth !== 0) return null // Unmatched parentheses
 
-		const content_end = this.lexer.token_start // Before ')'
-		const feature_end = this.lexer.token_end // After ')'
+		let content_end = this.lexer.token_start // Before ')'
+		let feature_end = this.lexer.token_end // After ')'
 
 		// Create media feature node
-		const feature = this.arena.create_node()
+		let feature = this.arena.create_node()
 		this.arena.set_type(feature, NODE_PRELUDE_MEDIA_FEATURE)
 		this.arena.set_start_offset(feature, feature_start)
 		this.arena.set_length(feature, feature_end - feature_start)
@@ -217,12 +213,12 @@ export class AtRulePreludeParser {
 
 	// Parse container query: [name] and (min-width: 400px)
 	private parse_container_query(): number[] {
-		const nodes: number[] = []
-		const query_start = this.lexer.pos
-		const query_line = this.lexer.line
+		let nodes: number[] = []
+		let query_start = this.lexer.pos
+		let query_line = this.lexer.line
 
 		// Parse components (identifiers, operators, features)
-		const components: number[] = []
+		let components: number[] = []
 
 		while (this.lexer.pos < this.prelude_end) {
 			this.skip_whitespace()
@@ -232,18 +228,18 @@ export class AtRulePreludeParser {
 
 			// Container feature: (min-width: 400px)
 			if (this.lexer.token_type === TOKEN_LEFT_PAREN) {
-				const feature = this.parse_media_feature() // Reuse media feature parser
+				let feature = this.parse_media_feature() // Reuse media feature parser
 				if (feature !== null) {
 					components.push(feature)
 				}
 			}
 			// Identifier: operator (and, or, not) or container name
 			else if (this.lexer.token_type === TOKEN_IDENT) {
-				const text = this.source.substring(this.lexer.token_start, this.lexer.token_end).toLowerCase()
+				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end).toLowerCase()
 
 				if (text === 'and' || text === 'or' || text === 'not') {
 					// Logical operator
-					const op = this.arena.create_node()
+					let op = this.arena.create_node()
 					this.arena.set_type(op, NODE_PRELUDE_OPERATOR)
 					this.arena.set_start_offset(op, this.lexer.token_start)
 					this.arena.set_length(op, this.lexer.token_end - this.lexer.token_start)
@@ -251,7 +247,7 @@ export class AtRulePreludeParser {
 					components.push(op)
 				} else {
 					// Container name or other identifier
-					const name = this.arena.create_node()
+					let name = this.arena.create_node()
 					this.arena.set_type(name, NODE_PRELUDE_IDENTIFIER)
 					this.arena.set_start_offset(name, this.lexer.token_start)
 					this.arena.set_length(name, this.lexer.token_end - this.lexer.token_start)
@@ -264,14 +260,14 @@ export class AtRulePreludeParser {
 		if (components.length === 0) return []
 
 		// Create container query node
-		const query_node = this.arena.create_node()
+		let query_node = this.arena.create_node()
 		this.arena.set_type(query_node, NODE_PRELUDE_CONTAINER_QUERY)
 		this.arena.set_start_offset(query_node, query_start)
 		this.arena.set_length(query_node, this.lexer.pos - query_start)
 		this.arena.set_start_line(query_node, query_line)
 
 		// Append components as children
-		for (const component of components) {
+		for (let component of components) {
 			this.arena.append_child(query_node, component)
 		}
 
@@ -281,25 +277,22 @@ export class AtRulePreludeParser {
 
 	// Parse supports query: (display: flex) and (gap: 1rem)
 	private parse_supports_query(): number[] {
-		const nodes: number[] = []
+		let nodes: number[] = []
 
 		while (this.lexer.pos < this.prelude_end) {
 			this.skip_whitespace()
 			if (this.lexer.pos >= this.prelude_end) break
 
-			const query_start = this.lexer.pos
-			const query_line = this.lexer.line
-
 			this.next_token()
 
 			// Feature query: (property: value)
 			if (this.lexer.token_type === TOKEN_LEFT_PAREN) {
-				const feature_start = this.lexer.token_start
-				const feature_line = this.lexer.token_line
+				let feature_start = this.lexer.token_start
+				let feature_line = this.lexer.token_line
 
 				// Find matching right paren
 				let depth = 1
-				const content_start = this.lexer.pos
+				let content_start = this.lexer.pos
 
 				while (this.lexer.pos < this.prelude_end && depth > 0) {
 					this.next_token()
@@ -311,11 +304,11 @@ export class AtRulePreludeParser {
 				}
 
 				if (depth === 0) {
-					const content_end = this.lexer.token_start
-					const feature_end = this.lexer.token_end
+					let content_end = this.lexer.token_start
+					let feature_end = this.lexer.token_end
 
 					// Create supports query node
-					const query = this.arena.create_node()
+					let query = this.arena.create_node()
 					this.arena.set_type(query, NODE_PRELUDE_SUPPORTS_QUERY)
 					this.arena.set_start_offset(query, feature_start)
 					this.arena.set_length(query, feature_end - feature_start)
@@ -330,10 +323,10 @@ export class AtRulePreludeParser {
 			}
 			// Identifier: operator (and, or, not)
 			else if (this.lexer.token_type === TOKEN_IDENT) {
-				const text = this.source.substring(this.lexer.token_start, this.lexer.token_end).toLowerCase()
+				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end).toLowerCase()
 
 				if (text === 'and' || text === 'or' || text === 'not') {
-					const op = this.arena.create_node()
+					let op = this.arena.create_node()
 					this.arena.set_type(op, NODE_PRELUDE_OPERATOR)
 					this.arena.set_start_offset(op, this.lexer.token_start)
 					this.arena.set_length(op, this.lexer.token_end - this.lexer.token_start)
@@ -348,7 +341,7 @@ export class AtRulePreludeParser {
 
 	// Parse layer names: base, components, utilities
 	private parse_layer_names(): number[] {
-		const nodes: number[] = []
+		let nodes: number[] = []
 
 		while (this.lexer.pos < this.prelude_end) {
 			this.skip_whitespace()
@@ -358,7 +351,7 @@ export class AtRulePreludeParser {
 
 			if (this.lexer.token_type === TOKEN_IDENT) {
 				// Layer name
-				const layer = this.arena.create_node()
+				let layer = this.arena.create_node()
 				this.arena.set_type(layer, NODE_PRELUDE_LAYER_NAME)
 				this.arena.set_start_offset(layer, this.lexer.token_start)
 				this.arena.set_length(layer, this.lexer.token_end - this.lexer.token_start)
@@ -386,7 +379,7 @@ export class AtRulePreludeParser {
 		if (this.lexer.token_type !== TOKEN_IDENT) return []
 
 		// Create identifier node
-		const ident = this.arena.create_node()
+		let ident = this.arena.create_node()
 		this.arena.set_type(ident, NODE_PRELUDE_IDENTIFIER)
 		this.arena.set_start_offset(ident, this.lexer.token_start)
 		this.arena.set_length(ident, this.lexer.token_end - this.lexer.token_start)
@@ -398,8 +391,8 @@ export class AtRulePreludeParser {
 	// Helper: Skip whitespace
 	private skip_whitespace(): void {
 		while (this.lexer.pos < this.prelude_end) {
-			const ch = this.source.charCodeAt(this.lexer.pos)
-			if (ch !== 0x20 && ch !== 0x09 && ch !== 0x0a && ch !== 0x0d && ch !== 0x0c) {
+			let ch = this.source.charCodeAt(this.lexer.pos)
+			if (ch !== CHAR_SPACE && ch !== CHAR_TAB && ch !== CHAR_NEWLINE && ch !== CHAR_CARRIAGE_RETURN && ch !== CHAR_FORM_FEED) {
 				break
 			}
 			this.lexer.pos++
@@ -408,11 +401,11 @@ export class AtRulePreludeParser {
 
 	// Helper: Peek at next token type without consuming
 	private peek_token_type(): number {
-		const saved_pos = this.lexer.pos
-		const saved_line = this.lexer.line
+		let saved_pos = this.lexer.pos
+		let saved_line = this.lexer.line
 
 		this.next_token()
-		const type = this.lexer.token_type
+		let type = this.lexer.token_type
 
 		this.lexer.pos = saved_pos
 		this.lexer.line = saved_line
