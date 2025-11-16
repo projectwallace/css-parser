@@ -301,6 +301,7 @@ describe('At-Rule Prelude Parser', () => {
 			expect(children[0].type).toBe(NODE_PRELUDE_IMPORT_URL)
 			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_LAYER)
 			expect(children[1].text).toBe('layer')
+			expect(children[1].name).toBe('')
 		})
 
 		it('should parse with named layer', () => {
@@ -313,6 +314,7 @@ describe('At-Rule Prelude Parser', () => {
 			expect(children[0].type).toBe(NODE_PRELUDE_IMPORT_URL)
 			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_LAYER)
 			expect(children[1].text).toBe('layer(utilities)')
+			expect(children[1].name).toBe('utilities')
 		})
 
 		it('should parse with supports query', () => {

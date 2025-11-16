@@ -98,17 +98,17 @@ export class CSSNode {
 		return this.source.substring(start, start + length)
 	}
 
-	// Get the "content" text (property name for declarations, at-rule name for at-rules)
-	get name(): string | null {
+	// Get the "content" text (property name for declarations, at-rule name for at-rules, layer name for import layers)
+	get name(): string {
 		let start = this.arena.get_content_start(this.index)
 		let length = this.arena.get_content_length(this.index)
-		if (length === 0) return null
+		if (length === 0) return ''
 		return this.source.substring(start, start + length)
 	}
 
 	// Alias for name (for declarations: "color" in "color: blue")
 	// More semantic than `name` for declaration nodes
-	get property(): string | null {
+	get property(): string {
 		return this.name
 	}
 

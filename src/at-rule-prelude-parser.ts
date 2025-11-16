@@ -514,9 +514,13 @@ export class AtRulePreludeParser {
 				let layer_start = this.lexer.token_start
 				let layer_end = this.lexer.token_end
 				let layer_line = this.lexer.token_line
+				let content_start = 0
+				let content_length = 0
 
 				// If it's a function token, parse the contents until closing paren
 				if (this.lexer.token_type === TOKEN_FUNCTION) {
+					// Track the content inside the parentheses
+					content_start = this.lexer.pos
 					let paren_depth = 1
 					while (this.lexer.pos < this.prelude_end && paren_depth > 0) {
 						let tokenType = this.next_token()
@@ -525,6 +529,7 @@ export class AtRulePreludeParser {
 						} else if (tokenType === TOKEN_RIGHT_PAREN) {
 							paren_depth--
 							if (paren_depth === 0) {
+								content_length = this.lexer.token_start - content_start
 								layer_end = this.lexer.token_end
 							}
 						} else if (tokenType === TOKEN_EOF) {
@@ -539,6 +544,12 @@ export class AtRulePreludeParser {
 				this.arena.set_start_offset(layer_node, layer_start)
 				this.arena.set_length(layer_node, layer_end - layer_start)
 				this.arena.set_start_line(layer_node, layer_line)
+
+				// Store the layer name (content inside parentheses)
+				if (content_length > 0) {
+					this.arena.set_content_start(layer_node, content_start)
+					this.arena.set_content_length(layer_node, content_length)
+				}
 
 				return layer_node
 			}
