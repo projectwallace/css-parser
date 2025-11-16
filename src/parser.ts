@@ -28,13 +28,6 @@ export interface ParserOptions {
 let DECLARATION_AT_RULES = new Set(['font-face', 'font-feature-values', 'page', 'property', 'counter-style'])
 let CONDITIONAL_AT_RULES = new Set(['media', 'supports', 'container', 'layer', 'nest'])
 
-// Whitespace character codes for manual trimming (avoiding allocation-heavy string methods)
-let SPACE = 0x20
-let TAB = 0x09
-let LINE_FEED = 0x0a
-let CARRIAGE_RETURN = 0x0d
-let FORM_FEED = 0x0c
-
 export class Parser {
 	private source: string
 	private lexer: Lexer

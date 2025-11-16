@@ -36,8 +36,6 @@ const CH_TAB = 0x09
 const CH_LINE_FEED = 0x0a
 const CH_CARRIAGE_RETURN = 0x0d
 const CH_FORM_FEED = 0x0c
-const CH_FORWARD_SLASH = 0x2f // '/'
-const CH_ASTERISK = 0x2a // '*'
 
 export class SelectorParser {
 	private lexer: Lexer

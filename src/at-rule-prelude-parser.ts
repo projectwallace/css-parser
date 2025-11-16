@@ -26,7 +26,7 @@ import {
 	TOKEN_FUNCTION,
 	type TokenType,
 } from './token-types'
-import { trim_boundaries } from './string-utils'
+import { trim_boundaries, str_equals } from './string-utils'
 
 // Character codes for whitespace
 const CHAR_SPACE = 0x20 // ' '
@@ -57,22 +57,20 @@ export class AtRulePreludeParser {
 		this.lexer.pos = start
 		this.lexer.line = line
 
-		let name = at_rule_name.toLowerCase()
-
 		// Dispatch to appropriate parser based on at-rule type
-		if (name === 'media') {
+		if (str_equals('media', at_rule_name)) {
 			return this.parse_media_query_list()
-		} else if (name === 'container') {
+		} else if (str_equals('container', at_rule_name)) {
 			return this.parse_container_query()
-		} else if (name === 'supports') {
+		} else if (str_equals('supports', at_rule_name)) {
 			return this.parse_supports_query()
-		} else if (name === 'layer') {
+		} else if (str_equals('layer', at_rule_name)) {
 			return this.parse_layer_names()
-		} else if (name === 'keyframes') {
+		} else if (str_equals('keyframes', at_rule_name)) {
 			return this.parse_identifier()
-		} else if (name === 'property') {
+		} else if (str_equals('property', at_rule_name)) {
 			return this.parse_identifier()
-		} else if (name === 'import') {
+		} else if (str_equals('import', at_rule_name)) {
 			return this.parse_import_prelude()
 		}
 		// For now, @namespace and other at-rules are not parsed
@@ -103,6 +101,10 @@ export class AtRulePreludeParser {
 		return nodes
 	}
 
+	private is_and_or_not(str: string): boolean {
+		return str_equals('and', str) || str_equals('or', str) || str_equals('not', str)
+	}
+
 	// Parse a single media query: screen and (min-width: 768px)
 	private parse_single_media_query(): number | null {
 		let query_start = this.lexer.pos
@@ -118,8 +120,8 @@ export class AtRulePreludeParser {
 		this.next_token()
 
 		if (this.lexer.token_type === TOKEN_IDENT) {
-			let text = this.source.substring(this.lexer.token_start, this.lexer.token_end).toLowerCase()
-			if (text !== 'only' && text !== 'not') {
+			let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
+			if (!str_equals('only', text) && !str_equals('not', text)) {
 				// Reset - this is a media type
 				this.lexer.pos = token_start
 			}
@@ -148,9 +150,9 @@ export class AtRulePreludeParser {
 			}
 			// Identifier: media type or operator (and, or, not)
 			else if (this.lexer.token_type === TOKEN_IDENT) {
-				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end).toLowerCase()
+				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
 
-				if (text === 'and' || text === 'or' || text === 'not') {
+				if (this.is_and_or_not(text)) {
 					// Logical operator
 					let op = this.arena.create_node()
 					this.arena.set_type(op, NODE_PRELUDE_OPERATOR)
@@ -254,9 +256,9 @@ export class AtRulePreludeParser {
 			}
 			// Identifier: operator (and, or, not) or container name
 			else if (this.lexer.token_type === TOKEN_IDENT) {
-				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end).toLowerCase()
+				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
 
-				if (text === 'and' || text === 'or' || text === 'not') {
+				if (this.is_and_or_not(text)) {
 					// Logical operator
 					let op = this.arena.create_node()
 					this.arena.set_type(op, NODE_PRELUDE_OPERATOR)
@@ -345,9 +347,9 @@ export class AtRulePreludeParser {
 			}
 			// Identifier: operator (and, or, not)
 			else if (this.lexer.token_type === TOKEN_IDENT) {
-				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end).toLowerCase()
+				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
 
-				if (text === 'and' || text === 'or' || text === 'not') {
+				if (this.is_and_or_not(text)) {
 					let op = this.arena.create_node()
 					this.arena.set_type(op, NODE_PRELUDE_OPERATOR)
 					this.arena.set_start_offset(op, this.lexer.token_start)
@@ -507,13 +509,13 @@ export class AtRulePreludeParser {
 
 		// Check for 'layer' keyword or 'layer(' function
 		if (this.lexer.token_type === TOKEN_IDENT || this.lexer.token_type === TOKEN_FUNCTION) {
-			let text = this.source.substring(this.lexer.token_start, this.lexer.token_end).toLowerCase()
+			let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
 			// For function tokens, remove the trailing '('
 			if (this.lexer.token_type === TOKEN_FUNCTION && text.endsWith('(')) {
 				text = text.slice(0, -1)
 			}
 
-			if (text === 'layer') {
+			if (str_equals('layer', text)) {
 				let layer_start = this.lexer.token_start
 				let layer_end = this.lexer.token_end
 				let layer_line = this.lexer.token_line
@@ -577,8 +579,8 @@ export class AtRulePreludeParser {
 
 		// Check for 'supports(' function
 		if (this.lexer.token_type === TOKEN_FUNCTION) {
-			let text = this.source.substring(this.lexer.token_start, this.lexer.token_end - 1).toLowerCase() // -1 to exclude '('
-			if (text === 'supports') {
+			let text = this.source.substring(this.lexer.token_start, this.lexer.token_end - 1) // -1 to exclude '('
+			if (str_equals('supports', text)) {
 				let supports_start = this.lexer.token_start
 				let supports_line = this.lexer.token_line
 

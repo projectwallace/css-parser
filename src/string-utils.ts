@@ -13,13 +13,7 @@ const CHAR_ASTERISK = 0x2a // '*'
  * Check if a character code is whitespace (space, tab, newline, CR, or FF)
  */
 function is_whitespace(ch: number): boolean {
-	return (
-		ch === CHAR_SPACE ||
-		ch === CHAR_TAB ||
-		ch === CHAR_NEWLINE ||
-		ch === CHAR_CARRIAGE_RETURN ||
-		ch === CHAR_FORM_FEED
-	)
+	return ch === CHAR_SPACE || ch === CHAR_TAB || ch === CHAR_NEWLINE || ch === CHAR_CARRIAGE_RETURN || ch === CHAR_FORM_FEED
 }
 
 /**
@@ -46,19 +40,11 @@ export function trim_boundaries(source: string, start: number, end: number): [nu
 		}
 
 		// Skip comments
-		if (
-			ch === CHAR_FORWARD_SLASH &&
-			start + 1 < end &&
-			source.charCodeAt(start + 1) === CHAR_ASTERISK
-		) {
+		if (ch === CHAR_FORWARD_SLASH && start + 1 < end && source.charCodeAt(start + 1) === CHAR_ASTERISK) {
 			// Find end of comment
 			start += 2 // Skip /*
 			while (start < end) {
-				if (
-					source.charCodeAt(start) === CHAR_ASTERISK &&
-					start + 1 < end &&
-					source.charCodeAt(start + 1) === CHAR_FORWARD_SLASH
-				) {
+				if (source.charCodeAt(start) === CHAR_ASTERISK && start + 1 < end && source.charCodeAt(start + 1) === CHAR_FORWARD_SLASH) {
 					start += 2 // Skip */
 					break
 				}
@@ -86,11 +72,7 @@ export function trim_boundaries(source: string, start: number, end: number): [nu
 			// Find start of comment
 			end -= 2 // Skip */
 			while (end > start) {
-				if (
-					end >= 2 &&
-					source.charCodeAt(end - 2) === CHAR_FORWARD_SLASH &&
-					source.charCodeAt(end - 1) === CHAR_ASTERISK
-				) {
+				if (end >= 2 && source.charCodeAt(end - 2) === CHAR_FORWARD_SLASH && source.charCodeAt(end - 1) === CHAR_ASTERISK) {
 					end -= 2 // Skip /*
 					break
 				}
@@ -105,4 +87,28 @@ export function trim_boundaries(source: string, start: number, end: number): [nu
 
 	if (start >= end) return null
 	return [start, end]
+}
+
+/**
+ * @param a Base string, MUST be lowercase!
+ * @param b Compare string
+ */
+export function str_equals(a: string, b: string): boolean {
+	if (a.length !== b.length) {
+		return false
+	}
+
+	for (let i = 0; i < a.length; i++) {
+		let ca = a.charCodeAt(i)
+		let cb = b.charCodeAt(i)
+
+		// normalize ASCII uppercase A-Z → a-z
+		if (cb >= 65 && cb <= 90) cb |= 32
+
+		if (ca !== cb) {
+			return false
+		}
+	}
+
+	return true
 }
