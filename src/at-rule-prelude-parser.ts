@@ -504,7 +504,7 @@ export class AtRulePreludeParser {
 
 		// Check for 'layer' keyword or 'layer(' function
 		if (this.lexer.token_type === TOKEN_IDENT || this.lexer.token_type === TOKEN_FUNCTION) {
-			let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
+			let text = this.source.substring(this.lexer.token_start, this.lexer.token_end).toLowerCase()
 			// For function tokens, remove the trailing '('
 			if (this.lexer.token_type === TOKEN_FUNCTION && text.endsWith('(')) {
 				text = text.slice(0, -1)
@@ -571,7 +571,7 @@ export class AtRulePreludeParser {
 
 		// Check for 'supports(' function
 		if (this.lexer.token_type === TOKEN_FUNCTION) {
-			let text = this.source.substring(this.lexer.token_start, this.lexer.token_end - 1) // -1 to exclude '('
+			let text = this.source.substring(this.lexer.token_start, this.lexer.token_end - 1).toLowerCase() // -1 to exclude '('
 			if (text === 'supports') {
 				let supports_start = this.lexer.token_start
 				let supports_line = this.lexer.token_line

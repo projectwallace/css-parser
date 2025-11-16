@@ -18,7 +18,7 @@ describe('walk', () => {
 		const root = parser.parse()
 		const visited: number[] = []
 
-		walk(root, (node, depth) => {
+		walk(root, (node) => {
 			visited.push(node.type)
 		})
 
@@ -30,7 +30,7 @@ describe('walk', () => {
 		const root = parser.parse()
 		const visited: number[] = []
 
-		walk(root, (node, depth) => {
+		walk(root, (node) => {
 			visited.push(node.type)
 		})
 
@@ -48,7 +48,7 @@ describe('walk', () => {
 		const root = parser.parse()
 		const visited: number[] = []
 
-		walk(root, (node, depth) => {
+		walk(root, (node) => {
 			visited.push(node.type)
 		})
 
@@ -72,7 +72,7 @@ describe('walk', () => {
 		const root = parser.parse()
 		const visited: number[] = []
 
-		walk(root, (node, depth) => {
+		walk(root, (node) => {
 			visited.push(node.type)
 		})
 
@@ -96,7 +96,7 @@ describe('walk', () => {
 		const root = parser.parse()
 		const visited: number[] = []
 
-		walk(root, (node, depth) => {
+		walk(root, (node) => {
 			visited.push(node.type)
 		})
 
@@ -114,7 +114,7 @@ describe('walk', () => {
 		const root = parser.parse()
 		const selectors: string[] = []
 
-		walk(root, (node, depth) => {
+		walk(root, (node) => {
 			if (node.type === NODE_SELECTOR) {
 				selectors.push(node.text)
 			}
@@ -128,7 +128,7 @@ describe('walk', () => {
 		const root = parser.parse()
 		const properties: string[] = []
 
-		walk(root, (node, depth) => {
+		walk(root, (node) => {
 			if (node.type === NODE_DECLARATION) {
 				const name = node.name
 				if (name) properties.push(name)
@@ -149,7 +149,7 @@ describe('walk', () => {
 		const root = parser.parse()
 		const counts: Record<number, number> = {}
 
-		walk(root, (node, depth) => {
+		walk(root, (node) => {
 			counts[node.type] = (counts[node.type] || 0) + 1
 		})
 
@@ -165,7 +165,7 @@ describe('walk', () => {
 		const root = parser.parse()
 		const rules: number[] = []
 
-		walk(root, (node, depth) => {
+		walk(root, (node) => {
 			if (node.type === NODE_STYLE_RULE) {
 				rules.push(node.type)
 			}
@@ -179,7 +179,7 @@ describe('walk', () => {
 		const root = parser.parse()
 		const depths: number[] = []
 
-		walk(root, (node, depth) => {
+		walk(root, (_node, depth) => {
 			depths.push(depth)
 		})
 
@@ -251,7 +251,7 @@ describe('walk', () => {
 
 	test('export types', () => {
 		let ast = new Parser('a{}').parse()
-		walk(ast, (node, depth) => {
+		walk(ast, (node, _depth) => {
 			expectTypeOf(node.type).toBeNumber()
 			if (node.type === NODE_SELECTOR) {
 				expect(node.text).toEqual('a')

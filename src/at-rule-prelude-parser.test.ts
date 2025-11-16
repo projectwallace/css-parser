@@ -304,6 +304,19 @@ describe('At-Rule Prelude Parser', () => {
 			expect(children[1].name).toBe('')
 		})
 
+		it('should parse with anonymous LAYER', () => {
+			const css = '@import url("styles.css") LAYER;'
+			const ast = parse(css, { parse_atrule_preludes: true })
+			const atRule = ast.first_child
+			const children = atRule?.children || []
+
+			expect(children.length).toBe(2)
+			expect(children[0].type).toBe(NODE_PRELUDE_IMPORT_URL)
+			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_LAYER)
+			expect(children[1].text).toBe('LAYER')
+			expect(children[1].name).toBe('')
+		})
+
 		it('should parse with named layer', () => {
 			const css = '@import url("styles.css") layer(utilities);'
 			const ast = parse(css, { parse_atrule_preludes: true })
