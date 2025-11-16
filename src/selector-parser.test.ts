@@ -359,6 +359,39 @@ describe('SelectorParser', () => {
 			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_TYPE)
 			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_ATTRIBUTE)
 		})
+
+		it('should trim whitespace from attribute selectors', () => {
+			const { arena, rootNode, source } = parseSelector('[   data-test="value"   ]')
+
+			expect(rootNode).not.toBeNull()
+			if (!rootNode) return
+
+			const child = arena.get_first_child(rootNode)
+			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(getNodeContent(arena, source, child)).toBe('data-test="value"')
+		})
+
+		it('should trim comments from attribute selectors', () => {
+			const { arena, rootNode, source } = parseSelector('[/* comment */data-test="value"/* test */]')
+
+			expect(rootNode).not.toBeNull()
+			if (!rootNode) return
+
+			const child = arena.get_first_child(rootNode)
+			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(getNodeContent(arena, source, child)).toBe('data-test="value"')
+		})
+
+		it('should trim whitespace and comments from attribute selectors', () => {
+			const { arena, rootNode, source } = parseSelector('[/* comment */   data-test="value"   /* test */]')
+
+			expect(rootNode).not.toBeNull()
+			if (!rootNode) return
+
+			const child = arena.get_first_child(rootNode)
+			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(getNodeContent(arena, source, child)).toBe('data-test="value"')
+		})
 	})
 
 	describe('Combinators', () => {

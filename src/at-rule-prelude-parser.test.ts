@@ -54,6 +54,17 @@ describe('At-Rule Prelude Parser', () => {
 			expect(feature?.value).toContain('min-width')
 		})
 
+		it('should trim whitespace and comments from media features', () => {
+			const css = '@media (/* comment */   min-width: 768px   /* test */) { }'
+			const ast = parse(css)
+			const atRule = ast.first_child
+			const children = atRule?.children || []
+			const queryChildren = children[0].children
+			const feature = queryChildren.find((c) => c.type === NODE_PRELUDE_MEDIA_FEATURE)
+
+			expect(feature?.value).toBe('min-width: 768px')
+		})
+
 		it('should parse complex media query with and operator', () => {
 			const css = '@media screen and (min-width: 768px) { }'
 			const ast = parse(css)
@@ -136,6 +147,16 @@ describe('At-Rule Prelude Parser', () => {
 			const query = children.find((c) => c.type === NODE_PRELUDE_SUPPORTS_QUERY)
 			expect(query?.value).toContain('display')
 			expect(query?.value).toContain('flex')
+		})
+
+		it('should trim whitespace and comments from supports queries', () => {
+			const css = '@supports (/* comment */   display: flex   /* test */) { }'
+			const ast = parse(css)
+			const atRule = ast.first_child
+			const children = atRule?.children || []
+			const query = children.find((c) => c.type === NODE_PRELUDE_SUPPORTS_QUERY)
+
+			expect(query?.value).toBe('display: flex')
 		})
 
 		it('should parse complex supports query with operators', () => {
@@ -328,6 +349,36 @@ describe('At-Rule Prelude Parser', () => {
 			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_LAYER)
 			expect(children[1].text).toBe('layer(utilities)')
 			expect(children[1].name).toBe('utilities')
+		})
+
+		it('should trim whitespace from layer names', () => {
+			const css = '@import url("styles.css") layer(   utilities   );'
+			const ast = parse(css, { parse_atrule_preludes: true })
+			const atRule = ast.first_child
+			const children = atRule?.children || []
+
+			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_LAYER)
+			expect(children[1].name).toBe('utilities')
+		})
+
+		it('should trim comments from layer names', () => {
+			const css = '@import url("styles.css") layer(/* comment */utilities/* test */);'
+			const ast = parse(css, { parse_atrule_preludes: true })
+			const atRule = ast.first_child
+			const children = atRule?.children || []
+
+			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_LAYER)
+			expect(children[1].name).toBe('utilities')
+		})
+
+		it('should trim whitespace and comments from dotted layer names', () => {
+			const css = '@import url("foo.css") layer(/* test */named.nested     );'
+			const ast = parse(css, { parse_atrule_preludes: true })
+			const atRule = ast.first_child
+			const children = atRule?.children || []
+
+			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_LAYER)
+			expect(children[1].name).toBe('named.nested')
 		})
 
 		it('should parse with supports query', () => {

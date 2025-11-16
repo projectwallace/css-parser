@@ -33,6 +33,8 @@ const CHAR_TAB = 0x09 // '\t'
 const CHAR_NEWLINE = 0x0a // '\n'
 const CHAR_CARRIAGE_RETURN = 0x0d // '\r'
 const CHAR_FORM_FEED = 0x0c // '\f'
+const CHAR_FORWARD_SLASH = 0x2f // '/'
+const CHAR_ASTERISK = 0x2a // '*'
 
 export class AtRulePreludeParser {
 	private lexer: Lexer
@@ -46,6 +48,81 @@ export class AtRulePreludeParser {
 		// Create a lexer instance for prelude parsing (don't skip comments)
 		this.lexer = new Lexer(source, false)
 		this.prelude_end = 0
+	}
+
+	// Trim whitespace and comments from both ends of a range
+	// Returns [trimmed_start, trimmed_end] or null if all whitespace/comments
+	private trim_boundaries(start: number, end: number): [number, number] | null {
+		// Helper to check if char is whitespace
+		const is_whitespace = (ch: number): boolean => {
+			return ch === CHAR_SPACE || ch === CHAR_TAB || ch === CHAR_NEWLINE ||
+			       ch === CHAR_CARRIAGE_RETURN || ch === CHAR_FORM_FEED
+		}
+
+		// Trim from start
+		while (start < end) {
+			let ch = this.source.charCodeAt(start)
+
+			// Skip whitespace
+			if (is_whitespace(ch)) {
+				start++
+				continue
+			}
+
+			// Skip comments
+			if (ch === CHAR_FORWARD_SLASH && start + 1 < end &&
+			    this.source.charCodeAt(start + 1) === CHAR_ASTERISK) {
+				// Find end of comment
+				start += 2 // Skip /*
+				while (start < end) {
+					if (this.source.charCodeAt(start) === CHAR_ASTERISK &&
+					    start + 1 < end &&
+					    this.source.charCodeAt(start + 1) === CHAR_FORWARD_SLASH) {
+						start += 2 // Skip */
+						break
+					}
+					start++
+				}
+				continue
+			}
+
+			// Found non-whitespace, non-comment
+			break
+		}
+
+		// Trim from end
+		while (end > start) {
+			let ch = this.source.charCodeAt(end - 1)
+
+			// Skip whitespace
+			if (is_whitespace(ch)) {
+				end--
+				continue
+			}
+
+			// Skip comments (work backwards)
+			if (end >= 2 && ch === CHAR_FORWARD_SLASH &&
+			    this.source.charCodeAt(end - 2) === CHAR_ASTERISK) {
+				// Find start of comment
+				end -= 2 // Skip */
+				while (end > start) {
+					if (end >= 2 &&
+					    this.source.charCodeAt(end - 2) === CHAR_FORWARD_SLASH &&
+					    this.source.charCodeAt(end - 1) === CHAR_ASTERISK) {
+						end -= 2 // Skip /*
+						break
+					}
+					end--
+				}
+				continue
+			}
+
+			// Found non-whitespace, non-comment
+			break
+		}
+
+		if (start >= end) return null
+		return [start, end]
 	}
 
 	// Parse an at-rule prelude into nodes based on the at-rule type
@@ -219,9 +296,12 @@ export class AtRulePreludeParser {
 		this.arena.set_length(feature, feature_end - feature_start)
 		this.arena.set_start_line(feature, feature_line)
 
-		// Store feature content (without parentheses) in value fields
-		this.arena.set_value_start(feature, content_start)
-		this.arena.set_value_length(feature, content_end - content_start)
+		// Store feature content (without parentheses) in value fields, trimmed
+		let trimmed = this.trim_boundaries(content_start, content_end)
+		if (trimmed) {
+			this.arena.set_value_start(feature, trimmed[0])
+			this.arena.set_value_length(feature, trimmed[1] - trimmed[0])
+		}
 
 		return feature
 	}
@@ -329,9 +409,12 @@ export class AtRulePreludeParser {
 					this.arena.set_length(query, feature_end - feature_start)
 					this.arena.set_start_line(query, feature_line)
 
-					// Store query content in value fields
-					this.arena.set_value_start(query, content_start)
-					this.arena.set_value_length(query, content_end - content_start)
+					// Store query content in value fields, trimmed
+					let trimmed = this.trim_boundaries(content_start, content_end)
+					if (trimmed) {
+						this.arena.set_value_start(query, trimmed[0])
+						this.arena.set_value_length(query, trimmed[1] - trimmed[0])
+					}
 
 					nodes.push(query)
 				}
@@ -545,10 +628,13 @@ export class AtRulePreludeParser {
 				this.arena.set_length(layer_node, layer_end - layer_start)
 				this.arena.set_start_line(layer_node, layer_line)
 
-				// Store the layer name (content inside parentheses)
+				// Store the layer name (content inside parentheses), trimmed
 				if (content_length > 0) {
-					this.arena.set_content_start(layer_node, content_start)
-					this.arena.set_content_length(layer_node, content_length)
+					let trimmed = this.trim_boundaries(content_start, content_start + content_length)
+					if (trimmed) {
+						this.arena.set_content_start(layer_node, trimmed[0])
+						this.arena.set_content_length(layer_node, trimmed[1] - trimmed[0])
+					}
 				}
 
 				return layer_node
