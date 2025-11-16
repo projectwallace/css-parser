@@ -470,8 +470,7 @@ export class AtRulePreludeParser {
 			// It's url( ... we need to find the matching )
 			let paren_depth = 1
 			while (this.lexer.pos < this.prelude_end && paren_depth > 0) {
-				this.next_token()
-				let tokenType: TokenType = this.lexer.token_type
+				let tokenType = this.next_token()
 				if (tokenType === TOKEN_LEFT_PAREN) {
 					paren_depth++
 				} else if (tokenType === TOKEN_RIGHT_PAREN) {
@@ -520,8 +519,7 @@ export class AtRulePreludeParser {
 				if (this.lexer.token_type === TOKEN_FUNCTION) {
 					let paren_depth = 1
 					while (this.lexer.pos < this.prelude_end && paren_depth > 0) {
-						this.next_token()
-						let tokenType: TokenType = this.lexer.token_type
+						let tokenType = this.next_token()
 						if (tokenType === TOKEN_LEFT_PAREN) {
 							paren_depth++
 						} else if (tokenType === TOKEN_RIGHT_PAREN) {
@@ -572,8 +570,7 @@ export class AtRulePreludeParser {
 				let supports_end = this.lexer.token_end
 
 				while (this.lexer.pos < this.prelude_end && paren_depth > 0) {
-					this.next_token()
-					let tokenType: TokenType = this.lexer.token_type
+					let tokenType = this.next_token()
 					if (tokenType === TOKEN_LEFT_PAREN) {
 						paren_depth++
 					} else if (tokenType === TOKEN_RIGHT_PAREN) {
@@ -629,11 +626,11 @@ export class AtRulePreludeParser {
 	}
 
 	// Helper: Get next token
-	private next_token(): void {
+	private next_token(): TokenType {
 		if (this.lexer.pos >= this.prelude_end) {
 			this.lexer.token_type = TOKEN_EOF
-			return
+			return TOKEN_EOF
 		}
-		this.lexer.next_token_fast(false)
+		return this.lexer.next_token_fast(false)
 	}
 }

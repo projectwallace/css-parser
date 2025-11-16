@@ -51,7 +51,8 @@
 		"benchmark": "npm run build && node benchmark/index.ts",
 		"benchmark:memory": "npm run build && node --expose-gc benchmark/memory.ts",
 		"lint": "oxlint --config .oxlintrc.json",
-		"lint-package": "publint"
+		"lint-package": "publint",
+		"check": "tsc --noEmit"
 	},
 	"keywords": [
 		"css",
