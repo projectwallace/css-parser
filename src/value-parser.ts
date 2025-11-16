@@ -24,13 +24,7 @@ import {
 	TOKEN_LEFT_PAREN,
 	TOKEN_RIGHT_PAREN,
 } from './token-types'
-
-// Whitespace character codes
-const CH_SPACE = 0x20
-const CH_TAB = 0x09
-const CH_LINE_FEED = 0x0a
-const CH_CARRIAGE_RETURN = 0x0d
-const CH_FORM_FEED = 0x0c
+import { is_whitespace } from './string-utils'
 
 // Operator character codes
 const CH_PLUS = 0x2b
@@ -96,7 +90,7 @@ export class ValueParser {
 		// Check if all characters are whitespace
 		for (let i = start; i < end; i++) {
 			let ch = this.source.charCodeAt(i)
-			if (ch !== CH_SPACE && ch !== CH_TAB && ch !== CH_LINE_FEED && ch !== CH_CARRIAGE_RETURN && ch !== CH_FORM_FEED) {
+			if (!is_whitespace(ch)) {
 				return false
 			}
 		}

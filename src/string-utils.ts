@@ -12,7 +12,7 @@ const CHAR_ASTERISK = 0x2a // '*'
 /**
  * Check if a character code is whitespace (space, tab, newline, CR, or FF)
  */
-function is_whitespace(ch: number): boolean {
+export function is_whitespace(ch: number): boolean {
 	return ch === CHAR_SPACE || ch === CHAR_TAB || ch === CHAR_NEWLINE || ch === CHAR_CARRIAGE_RETURN || ch === CHAR_FORM_FEED
 }
 
