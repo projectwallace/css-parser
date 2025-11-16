@@ -223,7 +223,7 @@ describe('Parser', () => {
 		describe('case-insensitive at-rule names', () => {
 			test('should parse @MEDIA (uppercase conditional at-rule)', () => {
 				const source = '@MEDIA (min-width: 768px) { body { color: red; } }'
-				const parser = new Parser(source)
+				const parser = new Parser(source, { parse_atrule_preludes: false })
 				const root = parser.parse()
 
 				const media = root.first_child!
@@ -251,7 +251,7 @@ describe('Parser', () => {
 
 			test('should parse @SUPPORTS (uppercase conditional at-rule)', () => {
 				const source = '@SUPPORTS (display: grid) { .grid { display: grid; } }'
-				const parser = new Parser(source)
+				const parser = new Parser(source, { parse_atrule_preludes: false })
 				const root = parser.parse()
 
 				const supports = root.first_child!
@@ -368,7 +368,7 @@ describe('Parser', () => {
 		describe('nested at-rules', () => {
 			test('should parse @media inside @supports', () => {
 				const source = '@supports (display: grid) { @media (min-width: 768px) { body { color: red; } } }'
-				const parser = new Parser(source)
+				const parser = new Parser(source, { parse_atrule_preludes: false })
 				const root = parser.parse()
 
 				const supports = root.first_child!
@@ -460,7 +460,7 @@ describe('Parser', () => {
 
 		test('should parse nested @media inside rule', () => {
 			let source = '.card { color: red; @media (min-width: 768px) { padding: 2rem; } }'
-			let parser = new Parser(source)
+			let parser = new Parser(source, { parse_atrule_preludes: false })
 			let root = parser.parse()
 
 			let card = root.first_child!
@@ -533,7 +533,7 @@ describe('Parser', () => {
 	describe('@keyframes parsing', () => {
 		test('should parse @keyframes with from/to', () => {
 			let source = '@keyframes fade { from { opacity: 0; } to { opacity: 1; } }'
-			let parser = new Parser(source)
+			let parser = new Parser(source, { parse_atrule_preludes: false })
 			let root = parser.parse()
 
 			let keyframes = root.first_child!
@@ -553,7 +553,7 @@ describe('Parser', () => {
 
 		test('should parse @keyframes with percentages', () => {
 			let source = '@keyframes slide { 0% { left: 0; } 50% { left: 50%; } 100% { left: 100%; } }'
-			let parser = new Parser(source)
+			let parser = new Parser(source, { parse_atrule_preludes: false })
 			let root = parser.parse()
 
 			let keyframes = root.first_child!
@@ -569,7 +569,7 @@ describe('Parser', () => {
 
 		test('should parse @keyframes with multiple selectors', () => {
 			let source = '@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }'
-			let parser = new Parser(source)
+			let parser = new Parser(source, { parse_atrule_preludes: false })
 			let root = parser.parse()
 
 			let keyframes = root.first_child!
@@ -802,7 +802,7 @@ describe('Parser', () => {
 					}
 				}
 			`
-			let parser = new Parser(source)
+			let parser = new Parser(source, { parse_atrule_preludes: false })
 			let root = parser.parse()
 
 			let supports = root.first_child!
@@ -1000,7 +1000,7 @@ describe('Parser', () => {
 
 		test('should parse @keyframes with mixed percentages and keywords', () => {
 			let source = '@keyframes slide { from { left: 0; } 25%, 75% { left: 50%; } to { left: 100%; } }'
-			let parser = new Parser(source)
+			let parser = new Parser(source, { parse_atrule_preludes: false })
 			let root = parser.parse()
 
 			let keyframes = root.first_child!

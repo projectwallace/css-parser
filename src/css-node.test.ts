@@ -32,7 +32,7 @@ describe('CSSNode', () => {
 
 		test('should work with Array.from', () => {
 			const source = '@media print { body { color: black; } }'
-			const parser = new Parser(source, { parseSelectors: false, parseValues: false })
+			const parser = new Parser(source, { parseSelectors: false, parseValues: false, parse_atrule_preludes: false })
 			const root = parser.parse()
 
 			const media = root.first_child!
