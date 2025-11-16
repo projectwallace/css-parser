@@ -10,6 +10,9 @@ import {
 	NODE_PRELUDE_LAYER_NAME,
 	NODE_PRELUDE_IDENTIFIER,
 	NODE_PRELUDE_OPERATOR,
+	NODE_PRELUDE_IMPORT_URL,
+	NODE_PRELUDE_IMPORT_LAYER,
+	NODE_PRELUDE_IMPORT_SUPPORTS,
 } from './arena'
 
 describe('At-Rule Prelude Parser', () => {
@@ -262,6 +265,168 @@ describe('At-Rule Prelude Parser', () => {
 
 			// The prelude text should still be accessible
 			expect(atRule?.prelude).toBe('screen and (min-width: 768px)')
+		})
+	})
+
+	describe('@import', () => {
+		it('should parse URL with url() function', () => {
+			const css = '@import url("styles.css");'
+			const ast = parse(css, { parse_atrule_preludes: true })
+			const atRule = ast.first_child
+			const children = atRule?.children || []
+
+			expect(children.length).toBeGreaterThan(0)
+			expect(children[0].type).toBe(NODE_PRELUDE_IMPORT_URL)
+			expect(children[0].text).toBe('url("styles.css")')
+		})
+
+		it('should parse URL with string', () => {
+			const css = '@import "styles.css";'
+			const ast = parse(css, { parse_atrule_preludes: true })
+			const atRule = ast.first_child
+			const children = atRule?.children || []
+
+			expect(children.length).toBeGreaterThan(0)
+			expect(children[0].type).toBe(NODE_PRELUDE_IMPORT_URL)
+			expect(children[0].text).toBe('"styles.css"')
+		})
+
+		it('should parse with anonymous layer', () => {
+			const css = '@import url("styles.css") layer;'
+			const ast = parse(css, { parse_atrule_preludes: true })
+			const atRule = ast.first_child
+			const children = atRule?.children || []
+
+			expect(children.length).toBe(2)
+			expect(children[0].type).toBe(NODE_PRELUDE_IMPORT_URL)
+			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_LAYER)
+			expect(children[1].text).toBe('layer')
+		})
+
+		it('should parse with named layer', () => {
+			const css = '@import url("styles.css") layer(utilities);'
+			const ast = parse(css, { parse_atrule_preludes: true })
+			const atRule = ast.first_child
+			const children = atRule?.children || []
+
+			expect(children.length).toBe(2)
+			expect(children[0].type).toBe(NODE_PRELUDE_IMPORT_URL)
+			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_LAYER)
+			expect(children[1].text).toBe('layer(utilities)')
+		})
+
+		it('should parse with supports query', () => {
+			const css = '@import url("styles.css") supports(display: grid);'
+			const ast = parse(css, { parse_atrule_preludes: true })
+			const atRule = ast.first_child
+			const children = atRule?.children || []
+
+			expect(children.length).toBe(2)
+			expect(children[0].type).toBe(NODE_PRELUDE_IMPORT_URL)
+			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_SUPPORTS)
+			expect(children[1].text).toBe('supports(display: grid)')
+		})
+
+		it('should parse with media query', () => {
+			const css = '@import url("styles.css") screen;'
+			const ast = parse(css, { parse_atrule_preludes: true })
+			const atRule = ast.first_child
+			const children = atRule?.children || []
+
+			expect(children.length).toBe(2)
+			expect(children[0].type).toBe(NODE_PRELUDE_IMPORT_URL)
+			expect(children[1].type).toBe(NODE_PRELUDE_MEDIA_QUERY)
+		})
+
+		it('should parse with media feature', () => {
+			const css = '@import url("styles.css") (min-width: 768px);'
+			const ast = parse(css, { parse_atrule_preludes: true })
+			const atRule = ast.first_child
+			const children = atRule?.children || []
+
+			expect(children.length).toBe(2)
+			expect(children[0].type).toBe(NODE_PRELUDE_IMPORT_URL)
+			expect(children[1].type).toBe(NODE_PRELUDE_MEDIA_QUERY)
+		})
+
+		it('should parse with combined media query', () => {
+			const css = '@import url("styles.css") screen and (min-width: 768px);'
+			const ast = parse(css, { parse_atrule_preludes: true })
+			const atRule = ast.first_child
+			const children = atRule?.children || []
+
+			expect(children.length).toBe(2)
+			expect(children[0].type).toBe(NODE_PRELUDE_IMPORT_URL)
+			expect(children[1].type).toBe(NODE_PRELUDE_MEDIA_QUERY)
+		})
+
+		it('should parse with layer and media query', () => {
+			const css = '@import url("styles.css") layer(base) screen;'
+			const ast = parse(css, { parse_atrule_preludes: true })
+			const atRule = ast.first_child
+			const children = atRule?.children || []
+
+			expect(children.length).toBe(3)
+			expect(children[0].type).toBe(NODE_PRELUDE_IMPORT_URL)
+			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_LAYER)
+			expect(children[2].type).toBe(NODE_PRELUDE_MEDIA_QUERY)
+		})
+
+		it('should parse with layer and supports', () => {
+			const css = '@import url("styles.css") layer(base) supports(display: grid);'
+			const ast = parse(css, { parse_atrule_preludes: true })
+			const atRule = ast.first_child
+			const children = atRule?.children || []
+
+			expect(children.length).toBe(3)
+			expect(children[0].type).toBe(NODE_PRELUDE_IMPORT_URL)
+			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_LAYER)
+			expect(children[2].type).toBe(NODE_PRELUDE_IMPORT_SUPPORTS)
+		})
+
+		it('should parse with supports and media query', () => {
+			const css = '@import url("styles.css") supports(display: grid) screen;'
+			const ast = parse(css, { parse_atrule_preludes: true })
+			const atRule = ast.first_child
+			const children = atRule?.children || []
+
+			expect(children.length).toBe(3)
+			expect(children[0].type).toBe(NODE_PRELUDE_IMPORT_URL)
+			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_SUPPORTS)
+			expect(children[2].type).toBe(NODE_PRELUDE_MEDIA_QUERY)
+		})
+
+		it('should parse with all features combined', () => {
+			const css = '@import url("styles.css") layer(base) supports(display: grid) screen and (min-width: 768px);'
+			const ast = parse(css, { parse_atrule_preludes: true })
+			const atRule = ast.first_child
+			const children = atRule?.children || []
+
+			expect(children.length).toBe(4)
+			expect(children[0].type).toBe(NODE_PRELUDE_IMPORT_URL)
+			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_LAYER)
+			expect(children[2].type).toBe(NODE_PRELUDE_IMPORT_SUPPORTS)
+			expect(children[3].type).toBe(NODE_PRELUDE_MEDIA_QUERY)
+		})
+
+		it('should parse with complex supports condition', () => {
+			const css = '@import url("styles.css") supports((display: grid) and (gap: 1rem));'
+			const ast = parse(css, { parse_atrule_preludes: true })
+			const atRule = ast.first_child
+			const children = atRule?.children || []
+
+			expect(children.length).toBe(2)
+			expect(children[0].type).toBe(NODE_PRELUDE_IMPORT_URL)
+			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_SUPPORTS)
+			expect(children[1].text).toContain('supports(')
+		})
+
+		it('should preserve prelude text', () => {
+			const css = '@import url("styles.css") layer(base) screen;'
+			const ast = parse(css)
+			const atRule = ast.first_child
+
+			expect(atRule?.prelude).toBe('url("styles.css") layer(base) screen')
 		})
 	})
 })

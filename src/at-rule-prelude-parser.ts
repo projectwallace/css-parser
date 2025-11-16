@@ -10,8 +10,22 @@ import {
 	NODE_PRELUDE_LAYER_NAME,
 	NODE_PRELUDE_IDENTIFIER,
 	NODE_PRELUDE_OPERATOR,
+	NODE_PRELUDE_IMPORT_URL,
+	NODE_PRELUDE_IMPORT_LAYER,
+	NODE_PRELUDE_IMPORT_SUPPORTS,
 } from './arena'
-import { TOKEN_IDENT, TOKEN_LEFT_PAREN, TOKEN_RIGHT_PAREN, TOKEN_COMMA, TOKEN_EOF, TOKEN_WHITESPACE } from './token-types'
+import {
+	TOKEN_IDENT,
+	TOKEN_LEFT_PAREN,
+	TOKEN_RIGHT_PAREN,
+	TOKEN_COMMA,
+	TOKEN_EOF,
+	TOKEN_WHITESPACE,
+	TOKEN_STRING,
+	TOKEN_URL,
+	TOKEN_FUNCTION,
+	type TokenType,
+} from './token-types'
 
 // Character codes for whitespace
 const CHAR_SPACE = 0x20 // ' '
@@ -57,9 +71,10 @@ export class AtRulePreludeParser {
 			return this.parse_identifier()
 		} else if (name === 'property') {
 			return this.parse_identifier()
+		} else if (name === 'import') {
+			return this.parse_import_prelude()
 		}
-		// TODO: Add support for @import with url(), layer(), and media queries
-		// For now, @import, @namespace, and other at-rules are not parsed
+		// For now, @namespace and other at-rules are not parsed
 
 		return []
 	}
@@ -386,6 +401,206 @@ export class AtRulePreludeParser {
 		this.arena.set_start_line(ident, this.lexer.token_line)
 
 		return [ident]
+	}
+
+	// Parse @import prelude: url() [layer] [supports()] [media-query-list]
+	// @import url("styles.css") layer(base) supports(display: grid) screen and (min-width: 768px);
+	private parse_import_prelude(): number[] {
+		let nodes: number[] = []
+
+		// 1. Parse URL (required) - url("...") or "..."
+		this.skip_whitespace()
+		if (this.lexer.pos >= this.prelude_end) return []
+
+		let url_node = this.parse_import_url()
+		if (url_node !== null) {
+			nodes.push(url_node)
+		} else {
+			return [] // URL is required, fail if not found
+		}
+
+		// 2. Parse optional layer
+		this.skip_whitespace()
+		if (this.lexer.pos >= this.prelude_end) return nodes
+
+		let layer_node = this.parse_import_layer()
+		if (layer_node !== null) {
+			nodes.push(layer_node)
+		}
+
+		// 3. Parse optional supports()
+		this.skip_whitespace()
+		if (this.lexer.pos >= this.prelude_end) return nodes
+
+		let supports_node = this.parse_import_supports()
+		if (supports_node !== null) {
+			nodes.push(supports_node)
+		}
+
+		// 4. Parse optional media query list (remaining tokens)
+		this.skip_whitespace()
+		if (this.lexer.pos >= this.prelude_end) return nodes
+
+		// Parse media queries (reuse existing parser)
+		let media_nodes = this.parse_media_query_list()
+		nodes.push(...media_nodes)
+
+		return nodes
+	}
+
+	// Parse import URL: url("file.css") or "file.css"
+	private parse_import_url(): number | null {
+		this.next_token()
+
+		// Accept TOKEN_URL, TOKEN_FUNCTION (url(...)), or TOKEN_STRING
+		if (
+			this.lexer.token_type !== TOKEN_URL &&
+			this.lexer.token_type !== TOKEN_FUNCTION &&
+			this.lexer.token_type !== TOKEN_STRING
+		) {
+			return null
+		}
+
+		// For url() function, we need to consume all tokens until the closing paren
+		let url_start = this.lexer.token_start
+		let url_end = this.lexer.token_end
+		let url_line = this.lexer.token_line
+
+		if (this.lexer.token_type === TOKEN_FUNCTION) {
+			// It's url( ... we need to find the matching )
+			let paren_depth = 1
+			while (this.lexer.pos < this.prelude_end && paren_depth > 0) {
+				this.next_token()
+				let tokenType: TokenType = this.lexer.token_type
+				if (tokenType === TOKEN_LEFT_PAREN) {
+					paren_depth++
+				} else if (tokenType === TOKEN_RIGHT_PAREN) {
+					paren_depth--
+					if (paren_depth === 0) {
+						url_end = this.lexer.token_end
+					}
+				} else if (tokenType === TOKEN_EOF) {
+					break
+				}
+			}
+		}
+
+		// Create URL node
+		let url_node = this.arena.create_node()
+		this.arena.set_type(url_node, NODE_PRELUDE_IMPORT_URL)
+		this.arena.set_start_offset(url_node, url_start)
+		this.arena.set_length(url_node, url_end - url_start)
+		this.arena.set_start_line(url_node, url_line)
+
+		return url_node
+	}
+
+	// Parse import layer: layer or layer(name)
+	private parse_import_layer(): number | null {
+		// Peek at next token
+		let saved_pos = this.lexer.pos
+		let saved_line = this.lexer.line
+
+		this.next_token()
+
+		// Check for 'layer' keyword or 'layer(' function
+		if (this.lexer.token_type === TOKEN_IDENT || this.lexer.token_type === TOKEN_FUNCTION) {
+			let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
+			// For function tokens, remove the trailing '('
+			if (this.lexer.token_type === TOKEN_FUNCTION && text.endsWith('(')) {
+				text = text.slice(0, -1)
+			}
+
+			if (text === 'layer') {
+				let layer_start = this.lexer.token_start
+				let layer_end = this.lexer.token_end
+				let layer_line = this.lexer.token_line
+
+				// If it's a function token, parse the contents until closing paren
+				if (this.lexer.token_type === TOKEN_FUNCTION) {
+					let paren_depth = 1
+					while (this.lexer.pos < this.prelude_end && paren_depth > 0) {
+						this.next_token()
+						let tokenType: TokenType = this.lexer.token_type
+						if (tokenType === TOKEN_LEFT_PAREN) {
+							paren_depth++
+						} else if (tokenType === TOKEN_RIGHT_PAREN) {
+							paren_depth--
+							if (paren_depth === 0) {
+								layer_end = this.lexer.token_end
+							}
+						} else if (tokenType === TOKEN_EOF) {
+							break
+						}
+					}
+				}
+
+				// Create layer node
+				let layer_node = this.arena.create_node()
+				this.arena.set_type(layer_node, NODE_PRELUDE_IMPORT_LAYER)
+				this.arena.set_start_offset(layer_node, layer_start)
+				this.arena.set_length(layer_node, layer_end - layer_start)
+				this.arena.set_start_line(layer_node, layer_line)
+
+				return layer_node
+			}
+		}
+
+		// Not a layer, restore position
+		this.lexer.pos = saved_pos
+		this.lexer.line = saved_line
+		return null
+	}
+
+	// Parse import supports: supports(condition)
+	private parse_import_supports(): number | null {
+		// Peek at next token
+		let saved_pos = this.lexer.pos
+		let saved_line = this.lexer.line
+
+		this.next_token()
+
+		// Check for 'supports(' function
+		if (this.lexer.token_type === TOKEN_FUNCTION) {
+			let text = this.source.substring(this.lexer.token_start, this.lexer.token_end - 1) // -1 to exclude '('
+			if (text === 'supports') {
+				let supports_start = this.lexer.token_start
+				let supports_line = this.lexer.token_line
+
+				// Find matching closing parenthesis
+				let paren_depth = 1
+				let supports_end = this.lexer.token_end
+
+				while (this.lexer.pos < this.prelude_end && paren_depth > 0) {
+					this.next_token()
+					let tokenType: TokenType = this.lexer.token_type
+					if (tokenType === TOKEN_LEFT_PAREN) {
+						paren_depth++
+					} else if (tokenType === TOKEN_RIGHT_PAREN) {
+						paren_depth--
+						if (paren_depth === 0) {
+							supports_end = this.lexer.token_end
+						}
+					} else if (tokenType === TOKEN_EOF) {
+						break
+					}
+				}
+
+				// Create supports node
+				let supports_node = this.arena.create_node()
+				this.arena.set_type(supports_node, NODE_PRELUDE_IMPORT_SUPPORTS)
+				this.arena.set_start_offset(supports_node, supports_start)
+				this.arena.set_length(supports_node, supports_end - supports_start)
+				this.arena.set_start_line(supports_node, supports_line)
+
+				return supports_node
+			}
+		}
+
+		// Not supports(), restore position
+		this.lexer.pos = saved_pos
+		this.lexer.line = saved_line
+		return null
 	}
 
 	// Helper: Skip whitespace

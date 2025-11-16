@@ -60,6 +60,9 @@ export const NODE_PRELUDE_SUPPORTS_QUERY = 34 // supports query: (display: flex)
 export const NODE_PRELUDE_LAYER_NAME = 35 // layer name: base, components
 export const NODE_PRELUDE_IDENTIFIER = 36 // generic identifier: keyframe name, property name
 export const NODE_PRELUDE_OPERATOR = 37 // logical operator: and, or, not
+export const NODE_PRELUDE_IMPORT_URL = 38 // import URL: url("file.css") or "file.css"
+export const NODE_PRELUDE_IMPORT_LAYER = 39 // import layer: layer or layer(name)
+export const NODE_PRELUDE_IMPORT_SUPPORTS = 40 // import supports: supports(condition)
 
 // Flag constants (bit-packed in 1 byte)
 export const FLAG_IMPORTANT = 1 << 0 // Has !important

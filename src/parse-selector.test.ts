@@ -1,15 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { parse_selector } from './parse-selector'
-import {
-	NODE_SELECTOR,
-	NODE_SELECTOR_LIST,
-	NODE_SELECTOR_TYPE,
-	NODE_SELECTOR_CLASS,
-	NODE_SELECTOR_ID,
-	NODE_SELECTOR_PSEUDO_CLASS,
-	NODE_SELECTOR_COMBINATOR,
-	NODE_SELECTOR_UNIVERSAL,
-} from './arena'
+import { NODE_SELECTOR } from './arena'
 
 describe('parse_selector()', () => {
 	test('should parse simple type selector', () => {
@@ -167,7 +158,7 @@ describe('parse_selector()', () => {
 		const result = parse_selector('div.class')
 
 		let childCount = 0
-		for (const child of result) {
+		for (const _child of result) {
 			childCount++
 		}
 

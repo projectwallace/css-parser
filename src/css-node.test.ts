@@ -43,8 +43,12 @@ describe('CSSNode', () => {
 		})
 
 		test('should iterate over empty children', () => {
-			const source = '@import url("style.css");'
-			const parser = new Parser(source, { parseSelectors: false, parseValues: false })
+		const source = '@import url("style.css");'
+		const parser = new Parser(source, {
+			parseSelectors: false,
+			parseValues: false,
+			parse_atrule_preludes: false,
+		})
 			const root = parser.parse()
 
 			const importRule = root.first_child!

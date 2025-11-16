@@ -200,13 +200,13 @@ describe('Parser', () => {
 		describe('statement at-rules (no block)', () => {
 			test('should parse @import', () => {
 				const source = '@import url("style.css");'
-				const parser = new Parser(source)
-				const root = parser.parse()
+				const parser = new Parser(source, { parse_atrule_preludes: false })
+			const root = parser.parse()
 
-				const atRule = root.first_child!
-				expect(atRule.type).toBe(NODE_AT_RULE)
-				expect(atRule.name).toBe('import')
-				expect(atRule.has_children).toBe(false)
+			const atRule = root.first_child!
+			expect(atRule.type).toBe(NODE_AT_RULE)
+			expect(atRule.name).toBe('import')
+			expect(atRule.has_children).toBe(false)
 			})
 
 			test('should parse @namespace', () => {

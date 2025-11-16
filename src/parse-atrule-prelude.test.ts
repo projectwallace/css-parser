@@ -1,11 +1,11 @@
 import { describe, test, expect } from 'vitest'
 import { parse_atrule_prelude } from './parse-atrule-prelude'
 import {
-	NODE_PRELUDE_MEDIA_QUERY,
-	NODE_PRELUDE_MEDIA_FEATURE,
 	NODE_PRELUDE_IDENTIFIER,
-	NODE_PRELUDE_SUPPORTS_QUERY,
 	NODE_PRELUDE_LAYER_NAME,
+	NODE_PRELUDE_IMPORT_URL,
+	NODE_PRELUDE_IMPORT_LAYER,
+	NODE_PRELUDE_IMPORT_SUPPORTS,
 } from './arena'
 
 describe('parse_atrule_prelude()', () => {
@@ -124,17 +124,44 @@ describe('parse_atrule_prelude()', () => {
 		})
 	})
 
+	describe('@import', () => {
+		test('should parse import with URL string', () => {
+			const result = parse_atrule_prelude('import', 'url("styles.css")')
+
+			expect(result.length).toBeGreaterThan(0)
+			expect(result[0].type).toBe(NODE_PRELUDE_IMPORT_URL)
+			expect(result[0].text).toBe('url("styles.css")')
+		})
+
+		test('should parse import with string', () => {
+			const result = parse_atrule_prelude('import', '"styles.css"')
+
+			expect(result.length).toBeGreaterThan(0)
+			expect(result[0].type).toBe(NODE_PRELUDE_IMPORT_URL)
+			expect(result[0].text).toBe('"styles.css"')
+		})
+
+		test('should parse import with layer', () => {
+			const result = parse_atrule_prelude('import', 'url("base.css") layer(framework)')
+
+			expect(result.length).toBeGreaterThanOrEqual(2)
+			expect(result[0].type).toBe(NODE_PRELUDE_IMPORT_URL)
+			expect(result[1].type).toBe(NODE_PRELUDE_IMPORT_LAYER)
+		})
+
+		test('should parse import with supports', () => {
+			const result = parse_atrule_prelude('import', 'url("modern.css") supports(display: grid)')
+
+			expect(result.length).toBeGreaterThanOrEqual(2)
+			expect(result[0].type).toBe(NODE_PRELUDE_IMPORT_URL)
+			expect(result[1].type).toBe(NODE_PRELUDE_IMPORT_SUPPORTS)
+		})
+	})
+
 	describe('empty and unsupported', () => {
 		test('should handle empty prelude', () => {
 			const result = parse_atrule_prelude('media', '')
 
-			expect(result).toEqual([])
-		})
-
-		test('should handle unsupported at-rule', () => {
-			const result = parse_atrule_prelude('import', 'url("styles.css")')
-
-			// Currently not parsed, should return empty array
 			expect(result).toEqual([])
 		})
 
