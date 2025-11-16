@@ -81,7 +81,7 @@ function measureMemory(fileName: string, cssContent: string, parser: 'wallace' |
 	// Walk
 	let count = 0
 	if (parser === 'wallace') {
-		walk(ast, (node) => {
+		walk(ast, (node, _depth) => {
 			const type = node.type
 			const line = node.line
 			count++

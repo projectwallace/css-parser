@@ -49,12 +49,12 @@ export class AtRulePreludeParser {
 	}
 
 	// Parse an at-rule prelude into nodes based on the at-rule type
-	parse_prelude(at_rule_name: string, start: number, end: number): number[] {
+	parse_prelude(at_rule_name: string, start: number, end: number, line: number = 1): number[] {
 		this.prelude_end = end
 
 		// Position lexer at prelude start
 		this.lexer.pos = start
-		this.lexer.line = 1
+		this.lexer.line = line
 
 		let name = at_rule_name.toLowerCase()
 

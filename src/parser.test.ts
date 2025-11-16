@@ -1038,6 +1038,20 @@ describe('Parser', () => {
 			expect(rule2.line).toBe(2)
 		})
 
+		test('should track line numbers for at-rule preludes', () => {
+			let source = 'body { color: red; }\n\n@media screen { }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let [_rule1, atRule] = root.children
+			expect(atRule.line).toBe(3)
+
+			// Check that prelude nodes inherit the correct line
+			let preludeNode = atRule.first_child
+			expect(preludeNode).toBeTruthy()
+			expect(preludeNode!.line).toBe(3) // Should be line 3, not line 1
+		})
+
 		test('should track offsets correctly', () => {
 			let source = 'body { color: red; }'
 			let parser = new Parser(source)

@@ -13,7 +13,7 @@ describe('Package exports', () => {
 		let ast = parser.parse()
 		expect(ast.type).toBe(NODE_STYLESHEET)
 
-		walk(ast, () => {})
+		walk(ast, (_node, _depth) => {})
 	})
 
 	test('should export Lexer from lexer entry', async () => {
@@ -176,10 +176,15 @@ describe('Package exports', () => {
 		test('parse_atrule_prelude() should handle unsupported at-rules', async () => {
 			let { parse_atrule_prelude } = await import('../../dist/parse-atrule-prelude.js')
 
-			// @import is not currently parsed
+			// @import is now supported, expect 1 node (the URL node)
 			let nodes = parse_atrule_prelude('import', 'url("styles.css")')
 			expect(Array.isArray(nodes)).toBe(true)
-			expect(nodes.length).toBe(0)
+			expect(nodes.length).toBe(1)
+
+			// @namespace is not currently parsed
+			let namespaceNodes = parse_atrule_prelude('namespace', 'url("http://example.com")')
+			expect(Array.isArray(namespaceNodes)).toBe(true)
+			expect(namespaceNodes.length).toBe(0)
 		})
 
 		test('standalone functions should be iterable', async () => {

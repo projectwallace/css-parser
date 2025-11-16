@@ -18,7 +18,7 @@ describe('walk', () => {
 		const root = parser.parse()
 		const visited: number[] = []
 
-		walk(root, (node) => {
+		walk(root, (node, depth) => {
 			visited.push(node.type)
 		})
 
@@ -30,7 +30,7 @@ describe('walk', () => {
 		const root = parser.parse()
 		const visited: number[] = []
 
-		walk(root, (node) => {
+		walk(root, (node, depth) => {
 			visited.push(node.type)
 		})
 
@@ -48,7 +48,7 @@ describe('walk', () => {
 		const root = parser.parse()
 		const visited: number[] = []
 
-		walk(root, (node) => {
+		walk(root, (node, depth) => {
 			visited.push(node.type)
 		})
 
@@ -72,7 +72,7 @@ describe('walk', () => {
 		const root = parser.parse()
 		const visited: number[] = []
 
-		walk(root, (node) => {
+		walk(root, (node, depth) => {
 			visited.push(node.type)
 		})
 
@@ -96,7 +96,7 @@ describe('walk', () => {
 		const root = parser.parse()
 		const visited: number[] = []
 
-		walk(root, (node) => {
+		walk(root, (node, depth) => {
 			visited.push(node.type)
 		})
 
@@ -114,7 +114,7 @@ describe('walk', () => {
 		const root = parser.parse()
 		const selectors: string[] = []
 
-		walk(root, (node) => {
+		walk(root, (node, depth) => {
 			if (node.type === NODE_SELECTOR) {
 				selectors.push(node.text)
 			}
@@ -128,7 +128,7 @@ describe('walk', () => {
 		const root = parser.parse()
 		const properties: string[] = []
 
-		walk(root, (node) => {
+		walk(root, (node, depth) => {
 			if (node.type === NODE_DECLARATION) {
 				const name = node.name
 				if (name) properties.push(name)
@@ -149,7 +149,7 @@ describe('walk', () => {
 		const root = parser.parse()
 		const counts: Record<number, number> = {}
 
-		walk(root, (node) => {
+		walk(root, (node, depth) => {
 			counts[node.type] = (counts[node.type] || 0) + 1
 		})
 
@@ -163,20 +163,9 @@ describe('walk', () => {
 	it('should work with deeply nested structures', () => {
 		const parser = new Parser('.a { .b { .c { color: red; } } }')
 		const root = parser.parse()
-		let depth = 0
-		let maxDepth = 0
-
-		walk(root, (node) => {
-			if (node.type === NODE_STYLE_RULE) {
-				depth++
-				maxDepth = Math.max(maxDepth, depth)
-			}
-		})
-
-		// Reset depth tracking - need to actually track during traversal
-		// Let's just count rules instead
 		const rules: number[] = []
-		walk(root, (node) => {
+
+		walk(root, (node, depth) => {
 			if (node.type === NODE_STYLE_RULE) {
 				rules.push(node.type)
 			}
@@ -185,9 +174,84 @@ describe('walk', () => {
 		expect(rules.length).toBe(3) // .a, .b, .c
 	})
 
+	it('should track depth correctly', () => {
+		const parser = new Parser('body { color: red; }', { parseSelectors: false, parseValues: true })
+		const root = parser.parse()
+		const depths: number[] = []
+
+		walk(root, (node, depth) => {
+			depths.push(depth)
+		})
+
+		// NODE_STYLESHEET (0), NODE_STYLE_RULE (1), NODE_SELECTOR (2), NODE_DECLARATION (2), NODE_VALUE_KEYWORD (3)
+		expect(depths).toEqual([0, 1, 2, 2, 3])
+	})
+
+	it('should track depth in nested structures', () => {
+		const parser = new Parser('.a { .b { .c { color: red; } } }', { parseSelectors: false, parseValues: true })
+		const root = parser.parse()
+		const ruleDepths: number[] = []
+
+		walk(root, (node, depth) => {
+			if (node.type === NODE_STYLE_RULE) {
+				ruleDepths.push(depth)
+			}
+		})
+
+		expect(ruleDepths).toEqual([1, 2, 3]) // .a at depth 1, .b at depth 2, .c at depth 3
+	})
+
+	it('should track depth with at-rules', () => {
+		const parser = new Parser('@media screen { body { color: red; } }', {
+			parseSelectors: false,
+			parseValues: false,
+			parse_atrule_preludes: false,
+		})
+		const root = parser.parse()
+		const typeAndDepth: Array<{ type: number; depth: number }> = []
+
+		walk(root, (node, depth) => {
+			typeAndDepth.push({ type: node.type, depth })
+		})
+
+		expect(typeAndDepth).toEqual([
+			{ type: NODE_STYLESHEET, depth: 0 },
+			{ type: NODE_AT_RULE, depth: 1 }, // @media
+			{ type: NODE_STYLE_RULE, depth: 2 }, // body
+			{ type: NODE_SELECTOR, depth: 3 }, // body selector
+			{ type: NODE_DECLARATION, depth: 3 }, // color: red
+		])
+	})
+
+	it('should track depth with consecutive at-rules', () => {
+		const parser = new Parser('@media screen { body { color: red; } } @layer { a { color: red; } }', {
+			parseSelectors: false,
+			parseValues: false,
+			parse_atrule_preludes: false,
+		})
+		const root = parser.parse()
+		const typeAndDepth: Array<{ type: number; depth: number }> = []
+
+		walk(root, (node, depth) => {
+			typeAndDepth.push({ type: node.type, depth })
+		})
+
+		expect(typeAndDepth).toEqual([
+			{ type: NODE_STYLESHEET, depth: 0 },
+			{ type: NODE_AT_RULE, depth: 1 }, // @media
+			{ type: NODE_STYLE_RULE, depth: 2 }, // body
+			{ type: NODE_SELECTOR, depth: 3 }, // body selector
+			{ type: NODE_DECLARATION, depth: 3 }, // color: red
+			{ type: NODE_AT_RULE, depth: 1 }, // @layer
+			{ type: NODE_STYLE_RULE, depth: 2 },
+			{ type: NODE_SELECTOR, depth: 3 },
+			{ type: NODE_DECLARATION, depth: 3 },
+		])
+	})
+
 	test('export types', () => {
 		let ast = new Parser('a{}').parse()
-		walk(ast, (node) => {
+		walk(ast, (node, depth) => {
 			expectTypeOf(node.type).toBeNumber()
 			if (node.type === NODE_SELECTOR) {
 				expect(node.text).toEqual('a')

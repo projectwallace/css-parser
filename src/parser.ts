@@ -400,7 +400,7 @@ export class Parser {
 
 			// Parse prelude if enabled
 			if (this.prelude_parser) {
-				let prelude_nodes = this.prelude_parser.parse_prelude(at_rule_name, trimmed[0], trimmed[1])
+				let prelude_nodes = this.prelude_parser.parse_prelude(at_rule_name, trimmed[0], trimmed[1], at_rule_line)
 				for (let prelude_node of prelude_nodes) {
 					this.arena.append_child(at_rule, prelude_node)
 				}

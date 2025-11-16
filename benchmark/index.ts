@@ -64,28 +64,28 @@ const counter = { value: 0 }
 bench
 	.add('Walker - Small CSS', () => {
 		let count = 0
-		walk(smallAST, () => {
+		walk(smallAST, (_node, _depth) => {
 			count++
 		})
 		counter.value = count
 	})
 	.add('Walker - Large CSS', () => {
 		let count = 0
-		walk(largeAST, () => {
+		walk(largeAST, (_node, _depth) => {
 			count++
 		})
 		counter.value = count
 	})
 	.add('Walker - Bootstrap CSS', () => {
 		let count = 0
-		walk(bootstrapAST, () => {
+		walk(bootstrapAST, (_node, _depth) => {
 			count++
 		})
 		counter.value = count
 	})
 	.add('Walker - Tailwind CSS', () => {
 		let count = 0
-		walk(tailwindAST, () => {
+		walk(tailwindAST, (_node, _depth) => {
 			count++
 		})
 		counter.value = count
@@ -95,7 +95,7 @@ bench
 	.add('Parse/walk - Wallace - Bootstrap CSS', () => {
 		let ast = parse(bootstrapCSS)
 		let count = 0
-		walk(ast, (node) => {
+		walk(ast, (node, _depth) => {
 			let type = node.type
 			let line = node.line
 			count++
@@ -128,7 +128,7 @@ bench
 	.add('Parse/walk - Wallace - Tailwind CSS', () => {
 		let ast = parse(tailwindCSS)
 		let count = 0
-		walk(ast, (node) => {
+		walk(ast, (node, _depth) => {
 			let type = node.type
 			let line = node.line
 			count++
