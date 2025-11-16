@@ -2,6 +2,8 @@
 
 // Function-based API (recommended)
 export { parse } from './parse'
+export { parse_selector } from './parse-selector'
+export { parse_atrule_prelude } from './parse-atrule-prelude'
 export { tokenize } from './tokenize'
 export { walk } from './walk'
 
