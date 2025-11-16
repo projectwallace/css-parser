@@ -9,7 +9,6 @@ import {
 	NODE_VALUE_KEYWORD,
 	NODE_VALUE_NUMBER,
 	NODE_VALUE_DIMENSION,
-	NODE_SELECTOR_CLASS,
 } from './parser'
 import { walk } from './walk'
 
@@ -89,7 +88,11 @@ describe('walk', () => {
 	})
 
 	it('should visit at-rule nodes', () => {
-		const parser = new Parser('@media (min-width: 768px) { body { color: red; } }', { parseSelectors: false, parseValues: false, parse_atrule_preludes: false })
+		const parser = new Parser('@media (min-width: 768px) { body { color: red; } }', {
+			parseSelectors: false,
+			parseValues: false,
+			parse_atrule_preludes: false,
+		})
 		const root = parser.parse()
 		const visited: number[] = []
 

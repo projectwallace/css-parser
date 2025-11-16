@@ -1,3 +1,4 @@
+// oxlint-disable no-unused-vars
 // Memory benchmark for CSS parsers
 // Run with: node --expose-gc benchmark/memory.js
 
@@ -18,14 +19,8 @@ if (typeof global.gc !== 'function') {
 // Load CSS files
 const smallCSS = fs.readFileSync(path.resolve('benchmark/small.css'), 'utf-8')
 const mediumCSS = fs.readFileSync(path.resolve('benchmark/medium.css'), 'utf-8')
-const bootstrapCSS = fs.readFileSync(
-	path.resolve('node_modules/bootstrap/dist/css/bootstrap.css'),
-	'utf-8',
-)
-const tailwindCSS = fs.readFileSync(
-	path.resolve('node_modules/tailwindcss/dist/tailwind.css'),
-	'utf-8',
-)
+const bootstrapCSS = fs.readFileSync(path.resolve('node_modules/bootstrap/dist/css/bootstrap.css'), 'utf-8')
+const tailwindCSS = fs.readFileSync(path.resolve('node_modules/tailwindcss/dist/tailwind.css'), 'utf-8')
 
 interface MemorySnapshot {
 	heapUsed: number
@@ -65,11 +60,7 @@ function forceGC(rounds = 5): void {
 	}
 }
 
-function measureMemory(
-	fileName: string,
-	cssContent: string,
-	parser: 'wallace' | 'csstree' | 'postcss',
-): MemoryResult {
+function measureMemory(fileName: string, cssContent: string, parser: 'wallace' | 'csstree' | 'postcss'): MemoryResult {
 	// Force GC and get baseline
 	forceGC()
 	const baseline = getMemorySnapshot()
@@ -135,12 +126,7 @@ function measureMemory(
 	}
 }
 
-function runBenchmark(
-	name: string,
-	css: string,
-	parser: 'wallace' | 'csstree' | 'postcss',
-	iterations = 3,
-): MemoryResult {
+function runBenchmark(name: string, css: string, parser: 'wallace' | 'csstree' | 'postcss', iterations = 3): MemoryResult {
 	const results: MemoryResult[] = []
 
 	for (let i = 0; i < iterations; i++) {
@@ -273,7 +259,7 @@ console.log('  Lower is better (e.g., 47.3% = Wallace uses less than half the me
 
 console.log('-'.repeat(80))
 console.log('\n✅ Key Takeaways:')
-console.log('  • Wallace\'s arena-based design minimizes allocations during parsing')
+console.log("  • Wallace's arena-based design minimizes allocations during parsing")
 console.log('  • Lower "Total" memory means faster parsing (better cache locality)')
 console.log('  • Lower "Retained" memory means safer for long-running applications')
 console.log('  • All parsers can be garbage collected when done (references cleared)')
