@@ -1,4 +1,5 @@
 *.md
+!API.md
 !README.md
 dist
 coverage
