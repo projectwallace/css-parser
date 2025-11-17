@@ -15,6 +15,7 @@ Built for speed and efficiency, this parser handles large CSS files with minimal
 
 ## Performance
 
+- **Tiny install size** -
 - **Zero allocations during parsing** - all memory allocated upfront, which also helps prevent garbage collection running often
 - **Cache-friendly data layout** - contiguous memory for sequential access
 - **First-class comment and location support** - while still being performant because analysis requires constant access to lines and columns

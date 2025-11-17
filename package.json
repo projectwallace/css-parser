@@ -11,13 +11,9 @@
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
 		},
-		"./lexer": {
-			"types": "./dist/lexer.d.ts",
-			"import": "./dist/lexer.js"
-		},
-		"./parser": {
-			"types": "./dist/parser.d.ts",
-			"import": "./dist/parser.js"
+		"./tokenizer": {
+			"types": "./dist/tokenizer.d.ts",
+			"import": "./dist/tokenizer.js"
 		},
 		"./parse": {
 			"types": "./dist/parse.d.ts",
@@ -30,14 +26,6 @@
 		"./parse-atrule-prelude": {
 			"types": "./dist/parse-atrule-prelude.d.ts",
 			"import": "./dist/parse-atrule-prelude.js"
-		},
-		"./value-parser": {
-			"types": "./dist/value-parser.d.ts",
-			"import": "./dist/value-parser.js"
-		},
-		"./selector-parser": {
-			"types": "./dist/selector-parser.d.ts",
-			"import": "./dist/selector-parser.js"
 		}
 	},
 	"files": [
