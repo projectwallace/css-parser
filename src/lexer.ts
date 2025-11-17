@@ -152,7 +152,8 @@ export class Lexer {
 				// Skip comment without creating token
 				this.advance(2) // Skip /*
 				while (this.pos < this.source.length - 1) {
-					if (this.source.charCodeAt(this.pos) === CHAR_ASTERISK && this.source.charCodeAt(this.pos + 1) === CHAR_FORWARD_SLASH) {
+					let ch = this.source.charCodeAt(this.pos)
+					if (ch === CHAR_ASTERISK && this.source.charCodeAt(this.pos + 1) === CHAR_FORWARD_SLASH) {
 						this.advance(2)
 						break
 					}
@@ -178,15 +179,22 @@ export class Lexer {
 		}
 
 		// CDO: <!--
-		if (ch === CHAR_LESS_THAN && this.peek() === CHAR_EXCLAMATION && this.peek(2) === CHAR_HYPHEN && this.peek(3) === CHAR_HYPHEN) {
-			this.advance(4)
-			return this.make_token(TOKEN_CDO, start, this.pos, start_line, start_column)
+		if (ch === CHAR_LESS_THAN && this.pos + 3 < this.source.length) {
+			if (this.source.charCodeAt(this.pos + 1) === CHAR_EXCLAMATION &&
+				this.source.charCodeAt(this.pos + 2) === CHAR_HYPHEN &&
+				this.source.charCodeAt(this.pos + 3) === CHAR_HYPHEN) {
+				this.advance(4)
+				return this.make_token(TOKEN_CDO, start, this.pos, start_line, start_column)
+			}
 		}
 
 		// CDC: -->
-		if (ch === CHAR_HYPHEN && this.peek() === CHAR_HYPHEN && this.peek(2) === CHAR_GREATER_THAN) {
-			this.advance(3)
-			return this.make_token(TOKEN_CDC, start, this.pos, start_line, start_column)
+		if (ch === CHAR_HYPHEN && this.pos + 2 < this.source.length) {
+			if (this.source.charCodeAt(this.pos + 1) === CHAR_HYPHEN &&
+				this.source.charCodeAt(this.pos + 2) === CHAR_GREATER_THAN) {
+				this.advance(3)
+				return this.make_token(TOKEN_CDC, start, this.pos, start_line, start_column)
+			}
 		}
 
 		// At-keyword: @media, @keyframes, etc
@@ -200,9 +208,15 @@ export class Lexer {
 		}
 
 		// Identifier or function
-		if (is_ident_start(ch) || (ch === CHAR_HYPHEN && is_ident_start(this.peek())) || (ch === CHAR_HYPHEN && this.peek() === CHAR_HYPHEN)) {
-			// - followed by ident start (e.g., -webkit-) or -- for CSS custom properties
+		if (is_ident_start(ch)) {
 			return this.consume_ident_or_function(start_line, start_column)
+		}
+		if (ch === CHAR_HYPHEN) {
+			let next = this.peek()
+			if (is_ident_start(next) || next === CHAR_HYPHEN) {
+				// - followed by ident start (e.g., -webkit-) or -- for CSS custom properties
+				return this.consume_ident_or_function(start_line, start_column)
+			}
 		}
 
 		// Backslash: escape sequence starting an identifier
@@ -214,17 +228,9 @@ export class Lexer {
 			}
 		}
 
-		// Hyphen-minus: could be number like -5 or identifier like -webkit-
-		if (ch === CHAR_HYPHEN) {
-			const next = this.peek()
-			if (is_digit(next) || (next === CHAR_DOT && is_digit(this.peek(2)))) {
-				return this.consume_number(start_line, start_column)
-			}
-		}
-
-		// Plus: could be number like +5
-		if (ch === CHAR_PLUS) {
-			const next = this.peek()
+		// Hyphen/Plus: could be signed number like -5 or +5
+		if (ch === CHAR_HYPHEN || ch === CHAR_PLUS) {
+			let next = this.peek()
 			if (is_digit(next) || (next === CHAR_DOT && is_digit(this.peek(2)))) {
 				return this.consume_number(start_line, start_column)
 			}
@@ -250,7 +256,8 @@ export class Lexer {
 		this.advance(2) // Skip /*
 
 		while (this.pos < this.source.length - 1) {
-			if (this.source.charCodeAt(this.pos) === CHAR_ASTERISK && this.source.charCodeAt(this.pos + 1) === CHAR_FORWARD_SLASH) {
+			let ch = this.source.charCodeAt(this.pos)
+			if (ch === CHAR_ASTERISK && this.source.charCodeAt(this.pos + 1) === CHAR_FORWARD_SLASH) {
 				this.advance(2)
 				break
 			}
@@ -313,9 +320,11 @@ export class Lexer {
 			count++
 		}
 		// Optional whitespace after hex escape
-		let ch = this.source.charCodeAt(this.pos)
-		if (is_whitespace(ch) || is_newline(ch)) {
-			this.advance()
+		if (this.pos < this.source.length) {
+			let ch = this.source.charCodeAt(this.pos)
+			if (is_whitespace(ch) || is_newline(ch)) {
+				this.advance()
+			}
 		}
 	}
 
@@ -347,15 +356,21 @@ export class Lexer {
 		}
 
 		// Exponent: e or E
-		if (this.pos < this.source.length && (this.source.charCodeAt(this.pos) === CHAR_LOWERCASE_E || this.source.charCodeAt(this.pos) === CHAR_UPPERCASE_E)) {
-			let next = this.peek()
-			if (is_digit(next) || ((next === CHAR_PLUS || next === CHAR_HYPHEN) && is_digit(this.peek(2)))) {
-				this.advance() // e or E
-				if (this.source.charCodeAt(this.pos) === CHAR_PLUS || this.source.charCodeAt(this.pos) === CHAR_HYPHEN) {
-					this.advance() // + or -
-				}
-				while (this.pos < this.source.length && is_digit(this.source.charCodeAt(this.pos))) {
-					this.advance()
+		if (this.pos < this.source.length) {
+			let ch = this.source.charCodeAt(this.pos)
+			if (ch === CHAR_LOWERCASE_E || ch === CHAR_UPPERCASE_E) {
+				let next = this.peek()
+				if (is_digit(next) || ((next === CHAR_PLUS || next === CHAR_HYPHEN) && is_digit(this.peek(2)))) {
+					this.advance() // e or E
+					if (this.pos < this.source.length) {
+						let sign = this.source.charCodeAt(this.pos)
+						if (sign === CHAR_PLUS || sign === CHAR_HYPHEN) {
+							this.advance() // + or -
+						}
+					}
+					while (this.pos < this.source.length && is_digit(this.source.charCodeAt(this.pos))) {
+						this.advance()
+					}
 				}
 			}
 		}
