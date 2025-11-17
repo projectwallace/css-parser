@@ -9,7 +9,6 @@ import {
 	NODE_VALUE_KEYWORD,
 	NODE_VALUE_NUMBER,
 	NODE_VALUE_DIMENSION,
-	NODE_SELECTOR_COMBINATOR,
 } from './parser'
 import { walk, walk_enter_leave } from './walk'
 
