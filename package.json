@@ -40,7 +40,8 @@
 		"benchmark:memory": "npm run build && node --expose-gc benchmark/memory.ts",
 		"lint": "oxlint --config .oxlintrc.json",
 		"lint-package": "publint",
-		"check": "tsc --noEmit"
+		"check": "tsc --noEmit",
+		"knip": "knip"
 	},
 	"keywords": [
 		"css",
@@ -57,6 +58,7 @@
 		"@vitest/coverage-v8": "^4.0.8",
 		"bootstrap": "^5.3.8",
 		"css-tree": "^3.1.0",
+		"knip": "^5.69.1",
 		"oxlint": "^1.28.0",
 		"postcss": "^8.5.6",
 		"prettier": "^3.6.2",
