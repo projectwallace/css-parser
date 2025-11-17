@@ -1,6 +1,6 @@
 // CSS Parser - Builds AST using the arena
 import { Lexer } from './lexer'
-import { CSSDataArena, NODE_STYLESHEET, NODE_STYLE_RULE, NODE_SELECTOR, NODE_DECLARATION, NODE_AT_RULE, FLAG_IMPORTANT } from './arena'
+import { CSSDataArena, NODE_STYLESHEET, NODE_STYLE_RULE, NODE_SELECTOR, NODE_DECLARATION, NODE_AT_RULE, FLAG_IMPORTANT, FLAG_HAS_BLOCK } from './arena'
 import { CSSNode } from './css-node'
 import { ValueParser } from './value-parser'
 import { SelectorParser } from './selector-parser'
@@ -157,6 +157,7 @@ export class Parser {
 			return null
 		}
 		this.next_token() // consume '{'
+		this.arena.set_flag(style_rule, FLAG_HAS_BLOCK) // Style rules always have blocks
 
 		// Parse declarations block (and nested rules for CSS Nesting)
 		while (!this.is_eof()) {
@@ -391,6 +392,7 @@ export class Parser {
 		// Check if this at-rule has a block or is a statement
 		if (this.peek_type() === TOKEN_LEFT_BRACE) {
 			this.next_token() // consume '{'
+			this.arena.set_flag(at_rule, FLAG_HAS_BLOCK) // At-rule has a block
 
 			// Determine what to parse inside the block based on the at-rule name
 			let has_declarations = this.atrule_has_declarations(at_rule_name)

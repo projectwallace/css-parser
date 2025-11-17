@@ -68,6 +68,7 @@ export const NODE_PRELUDE_IMPORT_SUPPORTS = 40 // import supports: supports(cond
 export const FLAG_IMPORTANT = 1 << 0 // Has !important
 export const FLAG_HAS_ERROR = 1 << 1 // Syntax error
 export const FLAG_LENGTH_OVERFLOW = 1 << 2 // Node > 65k chars
+export const FLAG_HAS_BLOCK = 1 << 3 // Has { } block (for style rules and at-rules)
 
 export class CSSDataArena {
 	private buffer: ArrayBuffer

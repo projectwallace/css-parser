@@ -37,6 +37,7 @@ import {
 	NODE_PRELUDE_IMPORT_SUPPORTS,
 	FLAG_IMPORTANT,
 	FLAG_HAS_ERROR,
+	FLAG_HAS_BLOCK,
 } from './arena'
 
 // Node type constants (numeric for performance)
@@ -147,6 +148,16 @@ export class CSSNode {
 	// Check if this node has an error
 	get has_error(): boolean {
 		return this.arena.has_flag(this.index, FLAG_HAS_ERROR)
+	}
+
+	// Check if this at-rule has a prelude
+	get has_prelude(): boolean {
+		return this.arena.get_value_length(this.index) > 0
+	}
+
+	// Check if this rule has a block { }
+	get has_block(): boolean {
+		return this.arena.has_flag(this.index, FLAG_HAS_BLOCK)
 	}
 
 	// --- Value Node Access (for declarations) ---
