@@ -61,22 +61,26 @@ export class Lexer {
 	source: string
 	pos: number
 	line: number
+	column: number
 	skip_comments: boolean
 	// Current token properties (avoiding object allocation)
 	token_type: TokenType
 	token_start: number
 	token_end: number
 	token_line: number
+	token_column: number
 
 	constructor(source: string, skip_comments: boolean = false) {
 		this.source = source
 		this.pos = 0
 		this.line = 1
+		this.column = 1
 		this.skip_comments = skip_comments
 		this.token_type = TOKEN_EOF
 		this.token_start = 0
 		this.token_end = 0
 		this.token_line = 1
+		this.token_column = 1
 	}
 
 	// Fast token advancing without object allocation (for internal parser use)
@@ -97,48 +101,49 @@ export class Lexer {
 		let ch = this.source.charCodeAt(this.pos)
 		let start = this.pos
 		let start_line = this.line
+		let start_column = this.column
 
 		// Fast path for single-character tokens
 		if (ch === CHAR_LEFT_BRACE) {
 			this.advance()
-			return this.make_token(TOKEN_LEFT_BRACE, start, this.pos, start_line)
+			return this.make_token(TOKEN_LEFT_BRACE, start, this.pos, start_line, start_column)
 		}
 		if (ch === CHAR_RIGHT_BRACE) {
 			this.advance()
-			return this.make_token(TOKEN_RIGHT_BRACE, start, this.pos, start_line)
+			return this.make_token(TOKEN_RIGHT_BRACE, start, this.pos, start_line, start_column)
 		}
 		if (ch === CHAR_COLON) {
 			this.advance()
-			return this.make_token(TOKEN_COLON, start, this.pos, start_line)
+			return this.make_token(TOKEN_COLON, start, this.pos, start_line, start_column)
 		}
 		if (ch === CHAR_SEMICOLON) {
 			this.advance()
-			return this.make_token(TOKEN_SEMICOLON, start, this.pos, start_line)
+			return this.make_token(TOKEN_SEMICOLON, start, this.pos, start_line, start_column)
 		}
 		if (ch === CHAR_COMMA) {
 			this.advance()
-			return this.make_token(TOKEN_COMMA, start, this.pos, start_line)
+			return this.make_token(TOKEN_COMMA, start, this.pos, start_line, start_column)
 		}
 		if (ch === CHAR_LEFT_BRACKET) {
 			this.advance()
-			return this.make_token(TOKEN_LEFT_BRACKET, start, this.pos, start_line)
+			return this.make_token(TOKEN_LEFT_BRACKET, start, this.pos, start_line, start_column)
 		}
 		if (ch === CHAR_RIGHT_BRACKET) {
 			this.advance()
-			return this.make_token(TOKEN_RIGHT_BRACKET, start, this.pos, start_line)
+			return this.make_token(TOKEN_RIGHT_BRACKET, start, this.pos, start_line, start_column)
 		}
 		if (ch === CHAR_LEFT_PAREN) {
 			this.advance()
-			return this.make_token(TOKEN_LEFT_PAREN, start, this.pos, start_line)
+			return this.make_token(TOKEN_LEFT_PAREN, start, this.pos, start_line, start_column)
 		}
 		if (ch === CHAR_RIGHT_PAREN) {
 			this.advance()
-			return this.make_token(TOKEN_RIGHT_PAREN, start, this.pos, start_line)
+			return this.make_token(TOKEN_RIGHT_PAREN, start, this.pos, start_line, start_column)
 		}
 
 		// Whitespace
 		if (is_whitespace(ch) || is_newline(ch)) {
-			return this.consume_whitespace(start_line)
+			return this.consume_whitespace(start_line, start_column)
 		}
 
 		// Comments: /* */
@@ -156,48 +161,48 @@ export class Lexer {
 				// Recursively get next token
 				return this.next_token_fast(skip_whitespace)
 			}
-			return this.consume_comment(start_line)
+			return this.consume_comment(start_line, start_column)
 		}
 
 		// Strings: " or '
 		if (ch === CHAR_DOUBLE_QUOTE || ch === CHAR_SINGLE_QUOTE) {
-			return this.consume_string(ch, start_line)
+			return this.consume_string(ch, start_line, start_column)
 		}
 
 		// Numbers: digit or . followed by digit
 		if (is_digit(ch)) {
-			return this.consume_number(start_line)
+			return this.consume_number(start_line, start_column)
 		}
 		if (ch === CHAR_DOT && is_digit(this.peek())) {
-			return this.consume_number(start_line)
+			return this.consume_number(start_line, start_column)
 		}
 
 		// CDO: <!--
 		if (ch === CHAR_LESS_THAN && this.peek() === CHAR_EXCLAMATION && this.peek(2) === CHAR_HYPHEN && this.peek(3) === CHAR_HYPHEN) {
 			this.advance(4)
-			return this.make_token(TOKEN_CDO, start, this.pos, start_line)
+			return this.make_token(TOKEN_CDO, start, this.pos, start_line, start_column)
 		}
 
 		// CDC: -->
 		if (ch === CHAR_HYPHEN && this.peek() === CHAR_HYPHEN && this.peek(2) === CHAR_GREATER_THAN) {
 			this.advance(3)
-			return this.make_token(TOKEN_CDC, start, this.pos, start_line)
+			return this.make_token(TOKEN_CDC, start, this.pos, start_line, start_column)
 		}
 
 		// At-keyword: @media, @keyframes, etc
 		if (ch === CHAR_AT_SIGN) {
-			return this.consume_at_keyword(start_line)
+			return this.consume_at_keyword(start_line, start_column)
 		}
 
 		// Hash: #id or #fff
 		if (ch === CHAR_HASH) {
-			return this.consume_hash(start_line)
+			return this.consume_hash(start_line, start_column)
 		}
 
 		// Identifier or function
 		if (is_ident_start(ch) || (ch === CHAR_HYPHEN && is_ident_start(this.peek())) || (ch === CHAR_HYPHEN && this.peek() === CHAR_HYPHEN)) {
 			// - followed by ident start (e.g., -webkit-) or -- for CSS custom properties
-			return this.consume_ident_or_function(start_line)
+			return this.consume_ident_or_function(start_line, start_column)
 		}
 
 		// Backslash: escape sequence starting an identifier
@@ -205,7 +210,7 @@ export class Lexer {
 			let next = this.peek()
 			// Valid escape if not followed by newline or EOF
 			if (next !== 0 && !is_newline(next)) {
-				return this.consume_ident_or_function(start_line)
+				return this.consume_ident_or_function(start_line, start_column)
 			}
 		}
 
@@ -213,7 +218,7 @@ export class Lexer {
 		if (ch === CHAR_HYPHEN) {
 			const next = this.peek()
 			if (is_digit(next) || (next === CHAR_DOT && is_digit(this.peek(2)))) {
-				return this.consume_number(start_line)
+				return this.consume_number(start_line, start_column)
 			}
 		}
 
@@ -221,26 +226,26 @@ export class Lexer {
 		if (ch === CHAR_PLUS) {
 			const next = this.peek()
 			if (is_digit(next) || (next === CHAR_DOT && is_digit(this.peek(2)))) {
-				return this.consume_number(start_line)
+				return this.consume_number(start_line, start_column)
 			}
 		}
 
 		// Default: delimiter
 		this.advance()
-		return this.make_token(TOKEN_DELIM, start, this.pos, start_line)
+		return this.make_token(TOKEN_DELIM, start, this.pos, start_line, start_column)
 	}
 
-	consume_whitespace(start_line: number): TokenType {
+	consume_whitespace(start_line: number, start_column: number): TokenType {
 		let start = this.pos
 		while (this.pos < this.source.length) {
 			let ch = this.source.charCodeAt(this.pos)
 			if (!is_whitespace(ch) && !is_newline(ch)) break
 			this.advance()
 		}
-		return this.make_token(TOKEN_WHITESPACE, start, this.pos, start_line)
+		return this.make_token(TOKEN_WHITESPACE, start, this.pos, start_line, start_column)
 	}
 
-	consume_comment(start_line: number): TokenType {
+	consume_comment(start_line: number, start_column: number): TokenType {
 		let start = this.pos
 		this.advance(2) // Skip /*
 
@@ -252,10 +257,10 @@ export class Lexer {
 			this.advance()
 		}
 
-		return this.make_token(TOKEN_COMMENT, start, this.pos, start_line)
+		return this.make_token(TOKEN_COMMENT, start, this.pos, start_line, start_column)
 	}
 
-	consume_string(quote: number, start_line: number): TokenType {
+	consume_string(quote: number, start_line: number, start_column: number): TokenType {
 		let start = this.pos
 		this.advance() // Skip opening quote
 
@@ -265,12 +270,12 @@ export class Lexer {
 			// Closing quote
 			if (ch === quote) {
 				this.advance()
-				return this.make_token(TOKEN_STRING, start, this.pos, start_line)
+				return this.make_token(TOKEN_STRING, start, this.pos, start_line, start_column)
 			}
 
 			// Newline: unclosed string
 			if (is_newline(ch)) {
-				return this.make_token(TOKEN_BAD_STRING, start, this.pos, start_line)
+				return this.make_token(TOKEN_BAD_STRING, start, this.pos, start_line, start_column)
 			}
 
 			// Escape sequence
@@ -295,7 +300,7 @@ export class Lexer {
 		}
 
 		// EOF: unclosed string
-		return this.make_token(TOKEN_BAD_STRING, start, this.pos, start_line)
+		return this.make_token(TOKEN_BAD_STRING, start, this.pos, start_line, start_column)
 	}
 
 	consume_hex_escape(): void {
@@ -314,7 +319,7 @@ export class Lexer {
 		}
 	}
 
-	consume_number(start_line: number): TokenType {
+	consume_number(start_line: number, start_column: number): TokenType {
 		let start = this.pos
 
 		// Optional sign
@@ -360,21 +365,21 @@ export class Lexer {
 			let ch = this.source.charCodeAt(this.pos)
 			if (ch === CHAR_PERCENT) {
 				this.advance()
-				return this.make_token(TOKEN_PERCENTAGE, start, this.pos, start_line)
+				return this.make_token(TOKEN_PERCENTAGE, start, this.pos, start_line, start_column)
 			}
 			if (is_ident_start(ch) || (ch === CHAR_HYPHEN && is_ident_start(this.peek()))) {
 				// Unit: px, em, rem, etc
 				while (this.pos < this.source.length && is_ident_char(this.source.charCodeAt(this.pos))) {
 					this.advance()
 				}
-				return this.make_token(TOKEN_DIMENSION, start, this.pos, start_line)
+				return this.make_token(TOKEN_DIMENSION, start, this.pos, start_line, start_column)
 			}
 		}
 
-		return this.make_token(TOKEN_NUMBER, start, this.pos, start_line)
+		return this.make_token(TOKEN_NUMBER, start, this.pos, start_line, start_column)
 	}
 
-	consume_ident_or_function(start_line: number): TokenType {
+	consume_ident_or_function(start_line: number, start_column: number): TokenType {
 		let start = this.pos
 
 		// Consume identifier (with escape sequence support)
@@ -424,13 +429,13 @@ export class Lexer {
 		// Check for function: ident(
 		if (this.pos < this.source.length && this.source.charCodeAt(this.pos) === CHAR_LEFT_PAREN) {
 			this.advance()
-			return this.make_token(TOKEN_FUNCTION, start, this.pos, start_line)
+			return this.make_token(TOKEN_FUNCTION, start, this.pos, start_line, start_column)
 		}
 
-		return this.make_token(TOKEN_IDENT, start, this.pos, start_line)
+		return this.make_token(TOKEN_IDENT, start, this.pos, start_line, start_column)
 	}
 
-	consume_at_keyword(start_line: number): TokenType {
+	consume_at_keyword(start_line: number, start_column: number): TokenType {
 		let start = this.pos
 		this.advance() // Skip @
 
@@ -439,10 +444,10 @@ export class Lexer {
 			this.advance()
 		}
 
-		return this.make_token(TOKEN_AT_KEYWORD, start, this.pos, start_line)
+		return this.make_token(TOKEN_AT_KEYWORD, start, this.pos, start_line, start_column)
 	}
 
-	consume_hash(start_line: number): TokenType {
+	consume_hash(start_line: number, start_column: number): TokenType {
 		let start = this.pos
 		this.advance() // Skip #
 
@@ -451,7 +456,7 @@ export class Lexer {
 			this.advance()
 		}
 
-		return this.make_token(TOKEN_HASH, start, this.pos, start_line)
+		return this.make_token(TOKEN_HASH, start, this.pos, start_line, start_column)
 	}
 
 	advance(count: number = 1): void {
@@ -468,6 +473,9 @@ export class Lexer {
 					this.pos++
 				}
 				this.line++
+				this.column = 1
+			} else {
+				this.column++
 			}
 			return
 		}
@@ -486,6 +494,9 @@ export class Lexer {
 					i++ // Count \r\n as 2 characters for advance(count)
 				}
 				this.line++
+				this.column = 1
+			} else {
+				this.column++
 			}
 		}
 	}
@@ -496,11 +507,12 @@ export class Lexer {
 		return this.source.charCodeAt(index)
 	}
 
-	make_token(type: TokenType, start: number, end: number, line: number = this.line): TokenType {
+	make_token(type: TokenType, start: number, end: number, line: number = this.line, column: number = this.column): TokenType {
 		this.token_type = type
 		this.token_start = start
 		this.token_end = end
 		this.token_line = line
+		this.token_column = column
 		return type
 	}
 
@@ -512,6 +524,7 @@ export class Lexer {
 			start: this.token_start,
 			end: this.token_end,
 			line: this.token_line,
+			column: this.token_column,
 		}
 	}
 }

@@ -545,4 +545,196 @@ describe('Lexer', () => {
 			expect(tokens).toEqual([TOKEN_IDENT, TOKEN_COLON, TOKEN_DIMENSION])
 		})
 	})
+
+	describe('column tracking', () => {
+		test('should track column for single line tokens', () => {
+			let lexer = new Lexer('body { color: red; }')
+			let token
+
+			token = lexer.next_token() // 'body'
+			expect(token?.line).toBe(1)
+			expect(token?.column).toBe(1)
+
+			token = lexer.next_token() // whitespace
+			expect(token?.line).toBe(1)
+			expect(token?.column).toBe(5)
+
+			token = lexer.next_token() // '{'
+			expect(token?.line).toBe(1)
+			expect(token?.column).toBe(6)
+
+			token = lexer.next_token() // whitespace
+			expect(token?.line).toBe(1)
+			expect(token?.column).toBe(7)
+
+			token = lexer.next_token() // 'color'
+			expect(token?.line).toBe(1)
+			expect(token?.column).toBe(8)
+		})
+
+		test('should track column across multiple lines', () => {
+			let lexer = new Lexer('body {\n  color: red;\n}')
+			let token
+
+			token = lexer.next_token() // 'body'
+			expect(token?.line).toBe(1)
+			expect(token?.column).toBe(1)
+
+			token = lexer.next_token() // whitespace
+			expect(token?.line).toBe(1)
+			expect(token?.column).toBe(5)
+
+			token = lexer.next_token() // '{'
+			expect(token?.line).toBe(1)
+			expect(token?.column).toBe(6)
+
+			token = lexer.next_token() // '\n  '
+			expect(token?.line).toBe(1)
+			expect(token?.column).toBe(7)
+
+			token = lexer.next_token() // 'color'
+			expect(token?.line).toBe(2)
+			expect(token?.column).toBe(3)
+
+			token = lexer.next_token() // ':'
+			expect(token?.line).toBe(2)
+			expect(token?.column).toBe(8)
+		})
+
+		test('should reset column to 1 after newline', () => {
+			let lexer = new Lexer('a\nb')
+			let token
+
+			token = lexer.next_token() // 'a'
+			expect(token?.line).toBe(1)
+			expect(token?.column).toBe(1)
+
+			token = lexer.next_token() // '\n'
+			expect(token?.line).toBe(1)
+			expect(token?.column).toBe(2)
+
+			token = lexer.next_token() // 'b'
+			expect(token?.line).toBe(2)
+			expect(token?.column).toBe(1)
+		})
+
+		test('should track column for multi-character tokens', () => {
+			let lexer = new Lexer('font-size: 16px;')
+			let token
+
+			token = lexer.next_token() // 'font-size'
+			expect(token?.line).toBe(1)
+			expect(token?.column).toBe(1)
+			expect(lexer.source.slice(token!.start, token!.end)).toBe('font-size')
+
+			token = lexer.next_token() // ':'
+			expect(token?.line).toBe(1)
+			expect(token?.column).toBe(10)
+
+			token = lexer.next_token() // ' '
+			expect(token?.line).toBe(1)
+			expect(token?.column).toBe(11)
+
+			token = lexer.next_token() // '16px'
+			expect(token?.line).toBe(1)
+			expect(token?.column).toBe(12)
+		})
+
+		test('should track column for strings', () => {
+			let lexer = new Lexer('content: "hello world";')
+			let token
+
+			token = lexer.next_token() // 'content'
+			expect(token?.line).toBe(1)
+			expect(token?.column).toBe(1)
+
+			token = lexer.next_token() // ':'
+			token = lexer.next_token() // ' '
+
+			token = lexer.next_token() // '"hello world"'
+			expect(token?.line).toBe(1)
+			expect(token?.column).toBe(10)
+			expect(token?.type).toBe(TOKEN_STRING)
+		})
+
+		test('should track column for comments', () => {
+			let lexer = new Lexer('/* comment */ body', false)
+			let token
+
+			token = lexer.next_token() // '/* comment */'
+			expect(token?.line).toBe(1)
+			expect(token?.column).toBe(1)
+			expect(token?.type).toBe(TOKEN_COMMENT)
+
+			token = lexer.next_token() // ' '
+			expect(token?.line).toBe(1)
+			expect(token?.column).toBe(14)
+		})
+
+		test('should track column for multi-line comments', () => {
+			let lexer = new Lexer('/* line1\nline2 */ a', false)
+			let token
+
+			token = lexer.next_token() // '/* line1\nline2 */'
+			expect(token?.line).toBe(1)
+			expect(token?.column).toBe(1)
+			expect(token?.type).toBe(TOKEN_COMMENT)
+
+			token = lexer.next_token() // ' '
+			expect(token?.line).toBe(2)
+			expect(token?.column).toBe(9)
+
+			token = lexer.next_token() // 'a'
+			expect(token?.line).toBe(2)
+			expect(token?.column).toBe(10)
+		})
+
+		test('should track column for numbers with decimals', () => {
+			let lexer = new Lexer('opacity: 0.5;')
+			let token
+
+			token = lexer.next_token() // 'opacity'
+			expect(token?.column).toBe(1)
+
+			token = lexer.next_token() // ':'
+			token = lexer.next_token() // ' '
+
+			token = lexer.next_token() // '0.5'
+			expect(token?.line).toBe(1)
+			expect(token?.column).toBe(10)
+			expect(token?.type).toBe(TOKEN_NUMBER)
+		})
+
+		test('should track column for at-keywords', () => {
+			let lexer = new Lexer('@media screen')
+			let token
+
+			token = lexer.next_token() // '@media'
+			expect(token?.line).toBe(1)
+			expect(token?.column).toBe(1)
+			expect(token?.type).toBe(TOKEN_AT_KEYWORD)
+
+			token = lexer.next_token() // ' '
+			token = lexer.next_token() // 'screen'
+			expect(token?.line).toBe(1)
+			expect(token?.column).toBe(8)
+		})
+
+		test('should handle \\r\\n as single newline for column counting', () => {
+			let lexer = new Lexer('a\r\nb')
+			let token
+
+			token = lexer.next_token() // 'a'
+			expect(token?.line).toBe(1)
+			expect(token?.column).toBe(1)
+
+			token = lexer.next_token() // '\r\n'
+			expect(token?.line).toBe(1)
+			expect(token?.column).toBe(2)
+
+			token = lexer.next_token() // 'b'
+			expect(token?.line).toBe(2)
+			expect(token?.column).toBe(1)
+		})
+	})
 })

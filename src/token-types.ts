@@ -61,4 +61,5 @@ export type Token = {
 	start: number
 	end: number
 	line: number
+	column: number
 }
