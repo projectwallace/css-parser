@@ -6,7 +6,7 @@ describe('CSSNode', () => {
 	describe('iteration', () => {
 		test('should be iterable with for-of', () => {
 			const source = 'body { color: red; margin: 0; padding: 10px; }'
-			const parser = new Parser(source, { parseSelectors: false, parseValues: false })
+			const parser = new Parser(source, { parse_selectors: false, parse_values: false })
 			const root = parser.parse()
 
 			const rule = root.first_child!
@@ -21,7 +21,7 @@ describe('CSSNode', () => {
 
 		test('should work with spread operator', () => {
 			const source = 'body { color: red; } div { margin: 0; }'
-			const parser = new Parser(source, { parseSelectors: false, parseValues: false })
+			const parser = new Parser(source, { parse_selectors: false, parse_values: false })
 			const root = parser.parse()
 
 			const rules = [...root]
@@ -32,7 +32,7 @@ describe('CSSNode', () => {
 
 		test('should work with Array.from', () => {
 			const source = '@media print { body { color: black; } }'
-			const parser = new Parser(source, { parseSelectors: false, parseValues: false, parse_atrule_preludes: false })
+			const parser = new Parser(source, { parse_selectors: false, parse_values: false, parse_atrule_preludes: false })
 			const root = parser.parse()
 
 			const media = root.first_child!
@@ -43,12 +43,12 @@ describe('CSSNode', () => {
 		})
 
 		test('should iterate over empty children', () => {
-		const source = '@import url("style.css");'
-		const parser = new Parser(source, {
-			parseSelectors: false,
-			parseValues: false,
-			parse_atrule_preludes: false,
-		})
+			const source = '@import url("style.css");'
+			const parser = new Parser(source, {
+				parse_selectors: false,
+				parse_values: false,
+				parse_atrule_preludes: false,
+			})
 			const root = parser.parse()
 
 			const importRule = root.first_child!

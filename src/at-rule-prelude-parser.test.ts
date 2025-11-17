@@ -252,7 +252,7 @@ describe('At-Rule Prelude Parser', () => {
 			// @font-face has no prelude, children should be declarations
 			const children = atRule?.children || []
 			if (children.length > 0) {
-				// If parseValues is enabled, there might be declaration children
+				// If parse_values is enabled, there might be declaration children
 				expect(children[0].type).not.toBe(NODE_PRELUDE_IDENTIFIER)
 			}
 		})

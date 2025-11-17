@@ -14,7 +14,7 @@ import { walk, walk_enter_leave } from './walk'
 
 describe('walk', () => {
 	it('should visit single node', () => {
-		const parser = new Parser('', { parseSelectors: false, parseValues: false })
+		const parser = new Parser('', { parse_selectors: false, parse_values: false })
 		const root = parser.parse()
 		const visited: number[] = []
 
@@ -26,7 +26,7 @@ describe('walk', () => {
 	})
 
 	it('should visit all nodes in simple rule', () => {
-		const parser = new Parser('body { color: red; }', { parseSelectors: false, parseValues: true })
+		const parser = new Parser('body { color: red; }', { parse_selectors: false, parse_values: true })
 		const root = parser.parse()
 		const visited: number[] = []
 
@@ -44,7 +44,7 @@ describe('walk', () => {
 	})
 
 	it('should visit nodes in depth-first order', () => {
-		const parser = new Parser('body { color: red; margin: 0; } div { padding: 1rem; }', { parseSelectors: false, parseValues: true })
+		const parser = new Parser('body { color: red; margin: 0; } div { padding: 1rem; }', { parse_selectors: false, parse_values: true })
 		const root = parser.parse()
 		const visited: number[] = []
 
@@ -68,7 +68,7 @@ describe('walk', () => {
 	})
 
 	it('should visit nested rules', () => {
-		const parser = new Parser('.parent { color: red; .child { color: blue; } }', { parseSelectors: false, parseValues: false })
+		const parser = new Parser('.parent { color: red; .child { color: blue; } }', { parse_selectors: false, parse_values: false })
 		const root = parser.parse()
 		const visited: number[] = []
 
@@ -89,8 +89,8 @@ describe('walk', () => {
 
 	it('should visit at-rule nodes', () => {
 		const parser = new Parser('@media (min-width: 768px) { body { color: red; } }', {
-			parseSelectors: false,
-			parseValues: false,
+			parse_selectors: false,
+			parse_values: false,
 			parse_atrule_preludes: false,
 		})
 		const root = parser.parse()
@@ -110,7 +110,7 @@ describe('walk', () => {
 	})
 
 	it('should allow collecting node data', () => {
-		const parser = new Parser('body { color: red; } .btn { margin: 0; }', { parseSelectors: false, parseValues: false })
+		const parser = new Parser('body { color: red; } .btn { margin: 0; }', { parse_selectors: false, parse_values: false })
 		const root = parser.parse()
 		const selectors: string[] = []
 
@@ -124,7 +124,7 @@ describe('walk', () => {
 	})
 
 	it('should allow collecting property names', () => {
-		const parser = new Parser('body { color: red; margin: 0; padding: 1rem; }', { parseSelectors: false, parseValues: false })
+		const parser = new Parser('body { color: red; margin: 0; padding: 1rem; }', { parse_selectors: false, parse_values: false })
 		const root = parser.parse()
 		const properties: string[] = []
 
@@ -175,7 +175,7 @@ describe('walk', () => {
 	})
 
 	it('should track depth correctly', () => {
-		const parser = new Parser('body { color: red; }', { parseSelectors: false, parseValues: true })
+		const parser = new Parser('body { color: red; }', { parse_selectors: false, parse_values: true })
 		const root = parser.parse()
 		const depths: number[] = []
 
@@ -188,7 +188,7 @@ describe('walk', () => {
 	})
 
 	it('should track depth in nested structures', () => {
-		const parser = new Parser('.a { .b { .c { color: red; } } }', { parseSelectors: false, parseValues: true })
+		const parser = new Parser('.a { .b { .c { color: red; } } }', { parse_selectors: false, parse_values: true })
 		const root = parser.parse()
 		const ruleDepths: number[] = []
 
@@ -203,8 +203,8 @@ describe('walk', () => {
 
 	it('should track depth with at-rules', () => {
 		const parser = new Parser('@media screen { body { color: red; } }', {
-			parseSelectors: false,
-			parseValues: false,
+			parse_selectors: false,
+			parse_values: false,
 			parse_atrule_preludes: false,
 		})
 		const root = parser.parse()
@@ -225,8 +225,8 @@ describe('walk', () => {
 
 	it('should track depth with consecutive at-rules', () => {
 		const parser = new Parser('@media screen { body { color: red; } } @layer { a { color: red; } }', {
-			parseSelectors: false,
-			parseValues: false,
+			parse_selectors: false,
+			parse_values: false,
 			parse_atrule_preludes: false,
 		})
 		const root = parser.parse()
@@ -262,8 +262,8 @@ describe('walk', () => {
 
 describe('walk enter/leave', () => {
 	const parser = new Parser('@media screen { body { color: red; } }', {
-		parseSelectors: false,
-		parseValues: false,
+		parse_selectors: false,
+		parse_values: false,
 		parse_atrule_preludes: false,
 	})
 	const root = parser.parse()

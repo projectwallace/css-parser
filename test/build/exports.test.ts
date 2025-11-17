@@ -157,8 +157,8 @@ describe('Package exports', () => {
 		test('parse() should accept options', async () => {
 			let { parse } = await import('../../dist/parse.js')
 
-			// Test with parseValues option
-			let ast = parse('body { color: red; }', { parseValues: true })
+			// Test with parse_values option
+			let ast = parse('body { color: red; }', { parse_values: true })
 			expect(ast.type).toBe(NODE_STYLESHEET)
 			let rule = ast.first_child!
 			let [_selector, decl] = rule.children

@@ -26,7 +26,7 @@ describe('Parser Options', () => {
 		})
 
 		it('should parse values and selectors with explicit options', () => {
-			const parser = new Parser(css, { parseValues: true, parseSelectors: true })
+			const parser = new Parser(css, { parse_values: true, parse_selectors: true })
 			const root = parser.parse()
 			const rule = root.first_child
 
@@ -42,9 +42,9 @@ describe('Parser Options', () => {
 		})
 	})
 
-	describe('parseValues disabled', () => {
-		it('should not parse value details when parseValues is false', () => {
-			const parser = new Parser(css, { parseValues: false })
+	describe('parse_values disabled', () => {
+		it('should not parse value details when parse_values is false', () => {
+			const parser = new Parser(css, { parse_values: false })
 			const root = parser.parse()
 			const rule = root.first_child
 
@@ -64,7 +64,7 @@ describe('Parser Options', () => {
 		})
 
 		it('should handle complex values without parsing', () => {
-			const parser = new Parser('div { margin: 10px 20px; }', { parseValues: false })
+			const parser = new Parser('div { margin: 10px 20px; }', { parse_values: false })
 			const root = parser.parse()
 			const rule = root.first_child
 			const selector = rule?.first_child
@@ -76,7 +76,7 @@ describe('Parser Options', () => {
 		})
 
 		it('should handle function values without parsing', () => {
-			const parser = new Parser('div { color: rgb(255, 0, 0); }', { parseValues: false })
+			const parser = new Parser('div { color: rgb(255, 0, 0); }', { parse_values: false })
 			const root = parser.parse()
 			const rule = root.first_child
 			const selector = rule?.first_child
@@ -90,7 +90,7 @@ describe('Parser Options', () => {
 
 	describe('parseSelectors disabled', () => {
 		it('should not parse selector details when parseSelectors is false', () => {
-			const parser = new Parser(css, { parseSelectors: false })
+			const parser = new Parser(css, { parse_selectors: false })
 			const root = parser.parse()
 			const rule = root.first_child
 
@@ -108,7 +108,7 @@ describe('Parser Options', () => {
 		})
 
 		it('should handle complex selectors without parsing', () => {
-			const parser = new Parser('div.container#app { color: red; }', { parseSelectors: false })
+			const parser = new Parser('div.container#app { color: red; }', { parse_selectors: false })
 			const root = parser.parse()
 			const rule = root.first_child
 			const selector = rule?.first_child
@@ -119,7 +119,7 @@ describe('Parser Options', () => {
 		})
 
 		it('should handle selector lists without parsing', () => {
-			const parser = new Parser('div, p, span { color: red; }', { parseSelectors: false })
+			const parser = new Parser('div, p, span { color: red; }', { parse_selectors: false })
 			const root = parser.parse()
 			const rule = root.first_child
 			const selector = rule?.first_child
@@ -130,9 +130,9 @@ describe('Parser Options', () => {
 		})
 	})
 
-	describe('Both parseValues and parseSelectors disabled', () => {
+	describe('Both parse_values and parseSelectors disabled', () => {
 		it('should not parse details for values or selectors', () => {
-			const parser = new Parser(css, { parseValues: false, parseSelectors: false })
+			const parser = new Parser(css, { parse_values: false, parse_selectors: false })
 			const root = parser.parse()
 			const rule = root.first_child
 
@@ -157,7 +157,7 @@ describe('Parser Options', () => {
 					color: rgb(255, 0, 0);
 				}
 			`
-			const parser = new Parser(css, { parseValues: false, parseSelectors: false })
+			const parser = new Parser(css, { parse_values: false, parse_selectors: false })
 			const root = parser.parse()
 			const rule = root.first_child
 
@@ -221,7 +221,7 @@ describe('Parser Options', () => {
 					margin: 10px 20px 30px 40px;
 				}
 			`
-			const parser = new Parser(css, { parseValues: false })
+			const parser = new Parser(css, { parse_values: false })
 			const root = parser.parse()
 			const rule = root.first_child
 			const selector = rule?.first_child
@@ -245,7 +245,7 @@ describe('Parser Options', () => {
 				.another-complex[data-attr~="value"] { margin: 0; }
 				#very-specific-id:not(.excluded) { padding: 10px; }
 			`
-			const parser = new Parser(css, { parseSelectors: false })
+			const parser = new Parser(css, { parse_selectors: false })
 			const root = parser.parse()
 
 			// Can quickly count rules without parsing complex selectors
@@ -274,7 +274,7 @@ describe('Parser Options', () => {
 		})
 
 		it('should accept partial options', () => {
-			const parser = new Parser(css, { parseValues: false })
+			const parser = new Parser(css, { parse_values: false })
 			const root = parser.parse()
 			const rule = root.first_child
 			const selector = rule?.first_child
@@ -289,7 +289,7 @@ describe('Parser Options', () => {
 		it('should accept skip_comments with parsing options', () => {
 			const parser = new Parser('/* test */ body { color: red; }', {
 				skip_comments: true,
-				parseValues: false,
+				parse_values: false,
 			})
 			const root = parser.parse()
 			const rule = root.first_child

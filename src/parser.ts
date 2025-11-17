@@ -19,8 +19,8 @@ import { trim_boundaries } from './string-utils'
 
 export interface ParserOptions {
 	skip_comments?: boolean
-	parseValues?: boolean
-	parseSelectors?: boolean
+	parse_values?: boolean
+	parse_selectors?: boolean
 	parse_atrule_preludes?: boolean
 }
 
@@ -51,8 +51,8 @@ export class Parser {
 		}
 
 		let skip_comments = opts.skip_comments ?? true
-		this.parse_values_enabled = opts.parseValues ?? true
-		this.parse_selectors_enabled = opts.parseSelectors ?? true
+		this.parse_values_enabled = opts.parse_values ?? true
+		this.parse_selectors_enabled = opts.parse_selectors ?? true
 		this.parse_atrule_preludes_enabled = opts.parse_atrule_preludes ?? true
 
 		this.lexer = new Lexer(source, skip_comments)

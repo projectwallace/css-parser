@@ -47,20 +47,20 @@ describe('parse()', () => {
 	})
 
 	test('should accept parser options', () => {
-		const result = parse('body { color: red; }', { parseSelectors: false })
+		const result = parse('body { color: red; }', { parse_selectors: false })
 
 		expect(result.type).toBe(NODE_STYLESHEET)
 		expect(result.has_children).toBe(true)
 	})
 
-	test('should parse with parseValues enabled', () => {
-		const result = parse('body { color: red; }', { parseValues: true })
+	test('should parse with parse_values enabled', () => {
+		const result = parse('body { color: red; }', { parse_values: true })
 
 		const rule = result.first_child!
 		const [_selector, decl] = rule.children
 		expect(decl.name).toBe('color')
 		expect(decl.value).toBe('red')
-		// With parseValues, should have value children
+		// With parse_values, should have value children
 		expect(decl.has_children).toBe(true)
 	})
 
