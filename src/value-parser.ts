@@ -64,14 +64,16 @@ export class ValueParser {
 
 			// Stop if we've reached the end of the value
 			if (this.lexer.token_start >= this.value_end) break
-			if (this.lexer.token_type === TOKEN_EOF) break
+
+			let token_type = this.lexer.token_type
+			if (token_type === TOKEN_EOF) break
 
 			// Skip whitespace tokens (they're separators, not value nodes)
 			if (this.is_whitespace_token()) {
 				continue
 			}
 
-			// Parse this token into a value node
+			// Parse this token into a value node (token_type already cached in lexer.token_type)
 			let node = this.parse_value_node()
 			if (node !== null) {
 				nodes.push(node)
@@ -224,13 +226,14 @@ export class ValueParser {
 		while (this.lexer.pos < this.value_end && paren_depth > 0) {
 			this.lexer.next_token_fast(false)
 
-			if (this.lexer.token_type === TOKEN_EOF) break
+			let token_type = this.lexer.token_type
+			if (token_type === TOKEN_EOF) break
 			if (this.lexer.token_start >= this.value_end) break
 
 			// Track parentheses depth
-			if (this.lexer.token_type === TOKEN_LEFT_PAREN) {
+			if (token_type === TOKEN_LEFT_PAREN) {
 				paren_depth++
-			} else if (this.lexer.token_type === TOKEN_RIGHT_PAREN) {
+			} else if (token_type === TOKEN_RIGHT_PAREN) {
 				paren_depth--
 				if (paren_depth === 0) {
 					func_end = this.lexer.token_end

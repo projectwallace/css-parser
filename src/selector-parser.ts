@@ -96,7 +96,8 @@ export class SelectorParser {
 			if (this.lexer.pos >= this.selector_end) break
 
 			this.lexer.next_token_fast(false)
-			if (this.lexer.token_type === TOKEN_COMMA) {
+			let token_type = this.lexer.token_type
+			if (token_type === TOKEN_COMMA) {
 				this.skip_whitespace()
 				continue
 			} else {
@@ -167,7 +168,8 @@ export class SelectorParser {
 			if (this.lexer.pos >= this.selector_end) break
 
 			this.lexer.next_token_fast(false)
-			if (this.lexer.token_type === TOKEN_COMMA || this.lexer.pos >= this.selector_end) {
+			let token_type = this.lexer.token_type
+			if (token_type === TOKEN_COMMA || this.lexer.pos >= this.selector_end) {
 				// Reset position for comma handling
 				this.lexer.pos = pos_before
 				break
@@ -199,7 +201,9 @@ export class SelectorParser {
 			this.lexer.next_token_fast(false)
 
 			if (this.lexer.token_start >= this.selector_end) break
-			if (this.lexer.token_type === TOKEN_EOF) break
+
+			let token_type = this.lexer.token_type
+			if (token_type === TOKEN_EOF) break
 
 			let part = this.parse_simple_selector()
 			if (part !== null) {
@@ -351,9 +355,10 @@ export class SelectorParser {
 		// Find matching ]
 		while (this.lexer.pos < this.selector_end && bracket_depth > 0) {
 			this.lexer.next_token_fast(false)
-			if (this.lexer.token_type === TOKEN_LEFT_BRACKET) {
+			let token_type = this.lexer.token_type
+			if (token_type === TOKEN_LEFT_BRACKET) {
 				bracket_depth++
-			} else if (this.lexer.token_type === TOKEN_RIGHT_BRACKET) {
+			} else if (token_type === TOKEN_RIGHT_BRACKET) {
 				bracket_depth--
 				if (bracket_depth === 0) {
 					end = this.lexer.token_end
@@ -388,7 +393,8 @@ export class SelectorParser {
 		// Next token should be identifier or function
 		this.lexer.next_token_fast(false)
 
-		if (this.lexer.token_type === TOKEN_IDENT) {
+		let token_type = this.lexer.token_type
+		if (token_type === TOKEN_IDENT) {
 			let node = this.arena.create_node()
 			this.arena.set_type(node, is_pseudo_element ? NODE_SELECTOR_PSEUDO_ELEMENT : NODE_SELECTOR_PSEUDO_CLASS)
 			this.arena.set_start_offset(node, start)
@@ -398,7 +404,7 @@ export class SelectorParser {
 			this.arena.set_content_start(node, this.lexer.token_start)
 			this.arena.set_content_length(node, this.lexer.token_end - this.lexer.token_start)
 			return node
-		} else if (this.lexer.token_type === TOKEN_FUNCTION) {
+		} else if (token_type === TOKEN_FUNCTION) {
 			// Pseudo-class function like :nth-child()
 			return this.parse_pseudo_function_after_colon(start, is_pseudo_element)
 		}
@@ -423,9 +429,10 @@ export class SelectorParser {
 
 		while (this.lexer.pos < this.selector_end && paren_depth > 0) {
 			this.lexer.next_token_fast(false)
-			if (this.lexer.token_type === TOKEN_LEFT_PAREN) {
+			let token_type = this.lexer.token_type
+			if (token_type === TOKEN_LEFT_PAREN) {
 				paren_depth++
-			} else if (this.lexer.token_type === TOKEN_RIGHT_PAREN) {
+			} else if (token_type === TOKEN_RIGHT_PAREN) {
 				paren_depth--
 				if (paren_depth === 0) {
 					end = this.lexer.token_end
