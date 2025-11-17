@@ -9,8 +9,9 @@ import {
 	NODE_VALUE_KEYWORD,
 	NODE_VALUE_NUMBER,
 	NODE_VALUE_DIMENSION,
+	NODE_SELECTOR_COMBINATOR,
 } from './parser'
-import { walk } from './walk'
+import { walk, walk_enter_leave } from './walk'
 
 describe('walk', () => {
 	it('should visit single node', () => {
@@ -257,5 +258,59 @@ describe('walk', () => {
 				expect(node.text).toEqual('a')
 			}
 		})
+	})
+})
+
+describe('walk enter/leave', () => {
+	const parser = new Parser('@media screen { body { color: red; } }', {
+		parseSelectors: false,
+		parseValues: false,
+		parse_atrule_preludes: false,
+	})
+	const root = parser.parse()
+
+	test('both enter + leave', () => {
+		const enter: number[] = []
+		const leave: number[] = []
+
+		walk_enter_leave(root, {
+			enter(node) {
+				enter.push(node.type)
+			},
+			leave(node) {
+				leave.push(node.type)
+			},
+		})
+
+		expect(enter).toEqual([NODE_STYLESHEET, NODE_AT_RULE, NODE_STYLE_RULE, NODE_SELECTOR, NODE_DECLARATION])
+		expect(leave).toEqual([NODE_SELECTOR, NODE_DECLARATION, NODE_STYLE_RULE, NODE_AT_RULE, NODE_STYLESHEET])
+	})
+
+	test('only enter', () => {
+		const enter: number[] = []
+
+		walk_enter_leave(root, {
+			enter(node) {
+				enter.push(node.type)
+			},
+		})
+
+		expect(enter).toEqual([NODE_STYLESHEET, NODE_AT_RULE, NODE_STYLE_RULE, NODE_SELECTOR, NODE_DECLARATION])
+	})
+
+	test('only leave', () => {
+		const leave: number[] = []
+
+		walk_enter_leave(root, {
+			leave(node) {
+				leave.push(node.type)
+			},
+		})
+
+		expect(leave).toEqual([NODE_SELECTOR, NODE_DECLARATION, NODE_STYLE_RULE, NODE_AT_RULE, NODE_STYLESHEET])
+	})
+
+	test('neither', () => {
+		expect(() => walk_enter_leave(root)).not.toThrow()
 	})
 })
