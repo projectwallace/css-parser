@@ -159,9 +159,12 @@ export class Parser {
 		this.next_token() // consume '{'
 
 		// Parse declarations block (and nested rules for CSS Nesting)
-		while (!this.is_eof() && this.peek_type() !== TOKEN_RIGHT_BRACE) {
+		while (!this.is_eof()) {
+			let token_type = this.peek_type()
+			if (token_type === TOKEN_RIGHT_BRACE) break
+
 			// Check for nested at-rule
-			if (this.peek_type() === TOKEN_AT_KEYWORD) {
+			if (token_type === TOKEN_AT_KEYWORD) {
 				let nested_at_rule = this.parse_atrule()
 				if (nested_at_rule !== null) {
 					this.arena.append_child(style_rule, nested_at_rule)
@@ -269,9 +272,12 @@ export class Parser {
 		let has_important = false
 		let last_end = this.lexer.token_end
 
-		while (!this.is_eof() && this.peek_type() !== TOKEN_SEMICOLON && this.peek_type() !== TOKEN_RIGHT_BRACE) {
+		while (!this.is_eof()) {
+			let token_type = this.peek_type()
+			if (token_type === TOKEN_SEMICOLON || token_type === TOKEN_RIGHT_BRACE) break
+
 			// Check for ! followed by any identifier (optimized: only check when we see '!')
-			if (this.peek_type() === TOKEN_DELIM && this.source[this.lexer.token_start] === '!') {
+			if (token_type === TOKEN_DELIM && this.source[this.lexer.token_start] === '!') {
 				// Mark end of value before !important
 				value_end = this.lexer.token_start
 				// Check if next token is an identifier
@@ -392,7 +398,10 @@ export class Parser {
 
 			if (has_declarations) {
 				// Parse declarations only (like @font-face, @page)
-				while (!this.is_eof() && this.peek_type() !== TOKEN_RIGHT_BRACE) {
+				while (!this.is_eof()) {
+					let token_type = this.peek_type()
+					if (token_type === TOKEN_RIGHT_BRACE) break
+
 					let declaration = this.parse_declaration()
 					if (declaration !== null) {
 						this.arena.append_child(at_rule, declaration)
@@ -402,9 +411,12 @@ export class Parser {
 				}
 			} else if (is_conditional) {
 				// Conditional at-rules can contain both declarations and rules (CSS Nesting)
-				while (!this.is_eof() && this.peek_type() !== TOKEN_RIGHT_BRACE) {
+				while (!this.is_eof()) {
+					let token_type = this.peek_type()
+					if (token_type === TOKEN_RIGHT_BRACE) break
+
 					// Check for nested at-rule
-					if (this.peek_type() === TOKEN_AT_KEYWORD) {
+					if (token_type === TOKEN_AT_KEYWORD) {
 						let nested_at_rule = this.parse_atrule()
 						if (nested_at_rule !== null) {
 							this.arena.append_child(at_rule, nested_at_rule)
@@ -432,7 +444,10 @@ export class Parser {
 				}
 			} else {
 				// Parse nested rules only (like @keyframes)
-				while (!this.is_eof() && this.peek_type() !== TOKEN_RIGHT_BRACE) {
+				while (!this.is_eof()) {
+					let token_type = this.peek_type()
+					if (token_type === TOKEN_RIGHT_BRACE) break
+
 					let rule = this.parse_rule()
 					if (rule !== null) {
 						this.arena.append_child(at_rule, rule)
