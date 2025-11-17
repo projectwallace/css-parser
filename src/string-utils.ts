@@ -1,13 +1,13 @@
 // String utility functions for CSS parsing
 
-// Character constants
-const CHAR_SPACE = 0x20 // ' '
-const CHAR_TAB = 0x09 // '\t'
-const CHAR_NEWLINE = 0x0a // '\n'
-const CHAR_CARRIAGE_RETURN = 0x0d // '\r'
-const CHAR_FORM_FEED = 0x0c // '\f'
-const CHAR_FORWARD_SLASH = 0x2f // '/'
-const CHAR_ASTERISK = 0x2a // '*'
+// Character constants (exported for use in parsers)
+export const CHAR_SPACE = 0x20 // ' '
+export const CHAR_TAB = 0x09 // '\t'
+export const CHAR_NEWLINE = 0x0a // '\n'
+export const CHAR_CARRIAGE_RETURN = 0x0d // '\r'
+export const CHAR_FORM_FEED = 0x0c // '\f'
+export const CHAR_FORWARD_SLASH = 0x2f // '/'
+export const CHAR_ASTERISK = 0x2a // '*'
 
 /**
  * Check if a character code is whitespace (space, tab, newline, CR, or FF)

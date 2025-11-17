@@ -26,14 +26,7 @@ import {
 	TOKEN_FUNCTION,
 	type TokenType,
 } from './token-types'
-import { trim_boundaries, str_equals } from './string-utils'
-
-// Character codes for whitespace
-const CHAR_SPACE = 0x20 // ' '
-const CHAR_TAB = 0x09 // '\t'
-const CHAR_NEWLINE = 0x0a // '\n'
-const CHAR_CARRIAGE_RETURN = 0x0d // '\r'
-const CHAR_FORM_FEED = 0x0c // '\f'
+import { trim_boundaries, str_equals, CHAR_SPACE, CHAR_TAB, CHAR_NEWLINE, CHAR_CARRIAGE_RETURN, CHAR_FORM_FEED } from './string-utils'
 
 export class AtRulePreludeParser {
 	private lexer: Lexer

@@ -28,14 +28,7 @@ import {
 	TOKEN_EOF,
 	TOKEN_WHITESPACE,
 } from './token-types'
-import { trim_boundaries } from './string-utils'
-
-// Whitespace character codes
-const CH_SPACE = 0x20
-const CH_TAB = 0x09
-const CH_LINE_FEED = 0x0a
-const CH_CARRIAGE_RETURN = 0x0d
-const CH_FORM_FEED = 0x0c
+import { trim_boundaries, is_whitespace as is_whitespace_char } from './string-utils'
 
 export class SelectorParser {
 	private lexer: Lexer
@@ -287,7 +280,7 @@ export class SelectorParser {
 		// Skip whitespace and check for combinator
 		while (this.lexer.pos < this.selector_end) {
 			let ch = this.source.charCodeAt(this.lexer.pos)
-			if (ch === CH_SPACE || ch === CH_TAB || ch === CH_LINE_FEED || ch === CH_CARRIAGE_RETURN || ch === CH_FORM_FEED) {
+			if (is_whitespace_char(ch)) {
 				has_whitespace = true
 				this.lexer.pos++
 			} else {
@@ -314,7 +307,7 @@ export class SelectorParser {
 			this.lexer.pos = start
 			while (this.lexer.pos < this.selector_end) {
 				let ch = this.source.charCodeAt(this.lexer.pos)
-				if (ch === CH_SPACE || ch === CH_TAB || ch === CH_LINE_FEED || ch === CH_CARRIAGE_RETURN || ch === CH_FORM_FEED) {
+				if (is_whitespace_char(ch)) {
 					this.lexer.pos++
 				} else {
 					break
@@ -513,7 +506,7 @@ export class SelectorParser {
 	private skip_whitespace(): void {
 		while (this.lexer.pos < this.selector_end) {
 			let ch = this.source.charCodeAt(this.lexer.pos)
-			if (ch === CH_SPACE || ch === CH_TAB || ch === CH_LINE_FEED || ch === CH_CARRIAGE_RETURN || ch === CH_FORM_FEED) {
+			if (is_whitespace_char(ch)) {
 				this.lexer.pos++
 			} else {
 				break
