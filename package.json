@@ -12,8 +12,8 @@
 			"import": "./dist/index.js"
 		},
 		"./tokenizer": {
-			"types": "./dist/tokenizer.d.ts",
-			"import": "./dist/tokenizer.js"
+			"types": "./dist/tokenize.d.ts",
+			"import": "./dist/tokenize.js"
 		},
 		"./parse": {
 			"types": "./dist/parse.d.ts",
