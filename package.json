@@ -2,6 +2,14 @@
 	"name": "@projectwallace/css-parser",
 	"version": "0.0.0",
 	"description": "High-performance CSS lexer and parser, optimized for CSS inspection and analysis",
+	"author": "Bart Veneman <bat@projectwallace.com>",
+	"license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/projectwallace/css-parser.git"
+  },
+  "issues": "https://github.com/projectwallace/css-parser/issues",
+  "homepage": "https://github.com/projectwallace/css-parser",
 	"type": "module",
 	"main": "./dist/index.js",
 	"module": "./dist/index.js",
@@ -50,8 +58,6 @@
 		"tokenizer",
 		"ast"
 	],
-	"author": "",
-	"license": "ISC",
 	"devDependencies": {
 		"@projectwallace/preset-oxlint": "^0.0.7",
 		"@types/node": "^24.10.1",
