@@ -102,6 +102,7 @@ export class AtRulePreludeParser {
 	}
 
 	private is_and_or_not(str: string): boolean {
+		if (str.length > 3 || str.length < 2) return false
 		return str_equals('and', str) || str_equals('or', str) || str_equals('not', str)
 	}
 
@@ -141,15 +142,16 @@ export class AtRulePreludeParser {
 
 			this.next_token()
 
+			let token_type = this.lexer.token_type
 			// Media feature: (min-width: 768px)
-			if (this.lexer.token_type === TOKEN_LEFT_PAREN) {
+			if (token_type === TOKEN_LEFT_PAREN) {
 				let feature = this.parse_media_feature()
 				if (feature !== null) {
 					components.push(feature)
 				}
 			}
 			// Identifier: media type or operator (and, or, not)
-			else if (this.lexer.token_type === TOKEN_IDENT) {
+			else if (token_type === TOKEN_IDENT) {
 				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
 
 				if (this.is_and_or_not(text)) {
@@ -203,9 +205,10 @@ export class AtRulePreludeParser {
 
 		while (this.lexer.pos < this.prelude_end && depth > 0) {
 			this.next_token()
-			if (this.lexer.token_type === TOKEN_LEFT_PAREN) {
+			let token_type = this.lexer.token_type
+			if (token_type === TOKEN_LEFT_PAREN) {
 				depth++
-			} else if (this.lexer.token_type === TOKEN_RIGHT_PAREN) {
+			} else if (token_type === TOKEN_RIGHT_PAREN) {
 				depth--
 			}
 		}
@@ -247,15 +250,16 @@ export class AtRulePreludeParser {
 
 			this.next_token()
 
+			let token_type = this.lexer.token_type
 			// Container feature: (min-width: 400px)
-			if (this.lexer.token_type === TOKEN_LEFT_PAREN) {
+			if (token_type === TOKEN_LEFT_PAREN) {
 				let feature = this.parse_media_feature() // Reuse media feature parser
 				if (feature !== null) {
 					components.push(feature)
 				}
 			}
 			// Identifier: operator (and, or, not) or container name
-			else if (this.lexer.token_type === TOKEN_IDENT) {
+			else if (token_type === TOKEN_IDENT) {
 				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
 
 				if (this.is_and_or_not(text)) {
@@ -306,8 +310,9 @@ export class AtRulePreludeParser {
 
 			this.next_token()
 
+			let token_type = this.lexer.token_type
 			// Feature query: (property: value)
-			if (this.lexer.token_type === TOKEN_LEFT_PAREN) {
+			if (token_type === TOKEN_LEFT_PAREN) {
 				let feature_start = this.lexer.token_start
 				let feature_line = this.lexer.token_line
 
@@ -317,9 +322,10 @@ export class AtRulePreludeParser {
 
 				while (this.lexer.pos < this.prelude_end && depth > 0) {
 					this.next_token()
-					if (this.lexer.token_type === TOKEN_LEFT_PAREN) {
+					let inner_token_type = this.lexer.token_type
+					if (inner_token_type === TOKEN_LEFT_PAREN) {
 						depth++
-					} else if (this.lexer.token_type === TOKEN_RIGHT_PAREN) {
+					} else if (inner_token_type === TOKEN_RIGHT_PAREN) {
 						depth--
 					}
 				}
@@ -346,7 +352,7 @@ export class AtRulePreludeParser {
 				}
 			}
 			// Identifier: operator (and, or, not)
-			else if (this.lexer.token_type === TOKEN_IDENT) {
+			else if (token_type === TOKEN_IDENT) {
 				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
 
 				if (this.is_and_or_not(text)) {
@@ -373,7 +379,8 @@ export class AtRulePreludeParser {
 
 			this.next_token()
 
-			if (this.lexer.token_type === TOKEN_IDENT) {
+			let token_type = this.lexer.token_type
+			if (token_type === TOKEN_IDENT) {
 				// Layer name
 				let layer = this.arena.create_node()
 				this.arena.set_type(layer, NODE_PRELUDE_LAYER_NAME)
@@ -381,10 +388,10 @@ export class AtRulePreludeParser {
 				this.arena.set_length(layer, this.lexer.token_end - this.lexer.token_start)
 				this.arena.set_start_line(layer, this.lexer.token_line)
 				nodes.push(layer)
-			} else if (this.lexer.token_type === TOKEN_COMMA) {
+			} else if (token_type === TOKEN_COMMA) {
 				// Skip comma separator
 				continue
-			} else if (this.lexer.token_type === TOKEN_WHITESPACE) {
+			} else if (token_type === TOKEN_WHITESPACE) {
 				// Skip whitespace
 				continue
 			}
