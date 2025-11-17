@@ -8,8 +8,7 @@ export { tokenize } from './tokenize'
 export { walk, walk_enter_leave } from './walk'
 
 // Advanced/class-based API
-export { Lexer } from './lexer'
-export { Parser, type ParserOptions } from './parser'
+export { type ParserOptions } from './parser'
 
 // Types
 export { CSSNode, type CSSNodeType } from './css-node'

@@ -5,13 +5,10 @@ export default defineConfig({
 		lib: {
 			entry: {
 				index: './src/index.ts',
-				lexer: './src/lexer.ts',
-				parser: './src/parser.ts',
+				tokenize: './src/tokenize.ts',
 				parse: './src/parse.ts',
 				'parse-selector': './src/parse-selector.ts',
 				'parse-atrule-prelude': './src/parse-atrule-prelude.ts',
-				'value-parser': './src/value-parser.ts',
-				'selector-parser': './src/selector-parser.ts',
 			},
 			formats: ['es'],
 		},

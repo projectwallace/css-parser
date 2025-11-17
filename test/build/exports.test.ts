@@ -2,52 +2,50 @@ import { describe, test, expect } from 'vitest'
 import { NODE_AT_RULE, NODE_STYLE_RULE, NODE_STYLESHEET } from '../../dist/index.js'
 
 describe('Package exports', () => {
-	test('should export Parser and CSSNode and walk from main entry', async () => {
-		let { Parser, CSSNode, walk } = await import('../../dist/index.js')
+	test('should export main exports from main entry', async () => {
+		let { CSSNode, walk, walk_enter_leave, parse, parse_atrule_prelude, parse_selector } = await import('../../dist/index.js')
 
-		expect(typeof Parser).toBe('function')
 		expect(typeof CSSNode).toBe('function')
+		expect(typeof walk).toBe('function')
+		expect(typeof walk_enter_leave).toBe('function')
+		expect(typeof parse_atrule_prelude).toBe('function')
+		expect(typeof parse_selector).toBe('function')
+		expect(typeof parse).toBe('function')
 
 		// Test that Parser works
-		let parser = new Parser('body { color: red; }')
-		let ast = parser.parse()
+		let ast = parse('body { color: red; }')
 		expect(ast.type).toBe(NODE_STYLESHEET)
 
 		walk(ast, (_node, _depth) => {})
 	})
 
 	test('should export Lexer from lexer entry', async () => {
-		let { Lexer } = await import('../../dist/lexer.js')
+		let { tokenize } = await import('../../dist/tokenize.js')
 
-		expect(typeof Lexer).toBe('function')
+		expect(typeof tokenize).toBe('function')
 
 		// Test that Lexer works
-		let lexer = new Lexer('body { color: red; }')
-		let token = lexer.next_token()
-		expect(token).toBeDefined()
-		expect(token).not.toBeNull()
-		if (token) {
+		let stream = tokenize('body { color: red; }')
+		for (let token of stream) {
 			expect(typeof token.type).toBe('number')
 		}
 	})
 
-	test('should export Parser from parser entry', async () => {
-		let { Parser } = await import('../../dist/parser.js')
+	test('should export parse from parse entry', async () => {
+		let { parse } = await import('../../dist/parse.js')
 
-		expect(typeof Parser).toBe('function')
+		expect(typeof parse).toBe('function')
 
 		// Test that Parser works
-		let parser = new Parser('.test { margin: 0; }')
-		let ast = parser.parse()
+		let ast = parse('.test { margin: 0; }')
 		expect(ast.type).toBe(NODE_STYLESHEET)
 		expect(ast.has_children).toBe(true)
 	})
 
 	test('should have working CSSNode API', async () => {
-		let { Parser } = await import('../../dist/index.js')
+		let { parse } = await import('../../dist/index.js')
 
-		let parser = new Parser('body { color: red; margin: 0; }')
-		let ast = parser.parse()
+		let ast = parse('body { color: red; margin: 0; }')
 
 		let rule = ast.first_child!
 		expect(rule.type).toBe(NODE_STYLE_RULE)
@@ -62,10 +60,9 @@ describe('Package exports', () => {
 	})
 
 	test('should parse modern CSS with nesting', async () => {
-		let { Parser } = await import('../../dist/parser.js')
+		let { parse } = await import('../../dist/parse.js')
 
-		let parser = new Parser('.parent { color: red; .child { color: blue; } }')
-		let ast = parser.parse()
+		let ast = parse('.parent { color: red; .child { color: blue; } }')
 
 		let parent = ast.first_child!
 		expect(parent.type).toBe(NODE_STYLE_RULE)
@@ -73,10 +70,9 @@ describe('Package exports', () => {
 	})
 
 	test('should parse at-rules', async () => {
-		let { Parser } = await import('../../dist/parser.js')
+		let { parse } = await import('../../dist/parse.js')
 
-		let parser = new Parser('@media (min-width: 768px) { body { margin: 0; } }')
-		let ast = parser.parse()
+		let ast = parse('@media (min-width: 768px) { body { margin: 0; } }')
 
 		let media = ast.first_child!
 		expect(media.type).toBe(NODE_AT_RULE)
