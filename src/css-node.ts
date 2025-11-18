@@ -38,6 +38,7 @@ import {
 	FLAG_IMPORTANT,
 	FLAG_HAS_ERROR,
 	FLAG_HAS_BLOCK,
+	FLAG_VENDOR_PREFIXED,
 } from './arena'
 
 // Node type constants (numeric for performance)
@@ -138,11 +139,9 @@ export class CSSNode {
 		return this.arena.has_flag(this.index, FLAG_IMPORTANT)
 	}
 
-	// Check if this has a vendor prefix (lazy computation for performance)
+	// Check if this has a vendor prefix (flag-based for performance)
 	get is_vendor_prefixed(): boolean {
-		const name = this.name
-		if (!name) return false
-		return name.startsWith('-webkit-') || name.startsWith('-moz-') || name.startsWith('-ms-') || name.startsWith('-o-')
+		return this.arena.has_flag(this.index, FLAG_VENDOR_PREFIXED)
 	}
 
 	// Check if this node has an error

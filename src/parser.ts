@@ -1,6 +1,16 @@
 // CSS Parser - Builds AST using the arena
 import { Lexer } from './lexer'
-import { CSSDataArena, NODE_STYLESHEET, NODE_STYLE_RULE, NODE_SELECTOR, NODE_DECLARATION, NODE_AT_RULE, FLAG_IMPORTANT, FLAG_HAS_BLOCK } from './arena'
+import {
+	CSSDataArena,
+	NODE_STYLESHEET,
+	NODE_STYLE_RULE,
+	NODE_SELECTOR,
+	NODE_DECLARATION,
+	NODE_AT_RULE,
+	FLAG_IMPORTANT,
+	FLAG_HAS_BLOCK,
+	FLAG_VENDOR_PREFIXED,
+} from './arena'
 import { CSSNode } from './css-node'
 import { ValueParser } from './value-parser'
 import { SelectorParser } from './selector-parser'
@@ -16,6 +26,8 @@ import {
 	TOKEN_AT_KEYWORD,
 } from './token-types'
 import { trim_boundaries } from './string-utils'
+
+const MINUS_HYPHEN = 45
 
 export interface ParserOptions {
 	skip_comments?: boolean
@@ -271,6 +283,15 @@ export class Parser {
 		// Store property name position
 		this.arena.set_content_start(declaration, prop_start)
 		this.arena.set_content_length(declaration, prop_end - prop_start)
+
+		// Check for vendor prefix and set flag if detected
+		if (this.source.charCodeAt(prop_start) === MINUS_HYPHEN && this.source.charCodeAt(prop_start + 1) !== MINUS_HYPHEN) {
+			let prop_length = prop_end - prop_start
+			// Check for -webkit- (8 chars min), -moz- (5 chars), -ms- (4 chars), -o- (3 chars)
+			if (prop_length >= 3 && this.source.indexOf('-', prop_start + 2) !== -1) {
+				this.arena.set_flag(declaration, FLAG_VENDOR_PREFIXED)
+			}
+		}
 
 		// Track value start (after colon, skipping whitespace)
 		let value_start = this.lexer.token_start

@@ -1,7 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { Parser } from './parser'
-// TODO: the node types should be re-exported from parser
-import { NODE_STYLESHEET, NODE_STYLE_RULE, NODE_AT_RULE, NODE_DECLARATION } from './arena'
+import { Parser, NODE_STYLESHEET, NODE_STYLE_RULE, NODE_AT_RULE, NODE_DECLARATION } from './parser'
 
 describe('Parser', () => {
 	describe('basic parsing', () => {
@@ -201,12 +199,12 @@ describe('Parser', () => {
 			test('should parse @import', () => {
 				const source = '@import url("style.css");'
 				const parser = new Parser(source, { parse_atrule_preludes: false })
-			const root = parser.parse()
+				const root = parser.parse()
 
-			const atRule = root.first_child!
-			expect(atRule.type).toBe(NODE_AT_RULE)
-			expect(atRule.name).toBe('import')
-			expect(atRule.has_children).toBe(false)
+				const atRule = root.first_child!
+				expect(atRule.type).toBe(NODE_AT_RULE)
+				expect(atRule.name).toBe('import')
+				expect(atRule.has_children).toBe(false)
 			})
 
 			test('should parse @namespace', () => {
@@ -705,6 +703,138 @@ describe('Parser', () => {
 
 			let rule = root.first_child!
 			expect(rule.type).toBe(NODE_STYLE_RULE)
+		})
+	})
+
+	describe('vendor prefix detection', () => {
+		test('should detect -webkit- vendor prefix', () => {
+			let source = '.box { -webkit-transform: scale(1); }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, decl] = rule.children
+			expect(decl.name).toBe('-webkit-transform')
+			expect(decl.is_vendor_prefixed).toBe(true)
+		})
+
+		test('should detect -moz- vendor prefix', () => {
+			let source = '.box { -moz-transform: scale(1); }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, decl] = rule.children
+			expect(decl.name).toBe('-moz-transform')
+			expect(decl.is_vendor_prefixed).toBe(true)
+		})
+
+		test('should detect -ms- vendor prefix', () => {
+			let source = '.box { -ms-transform: scale(1); }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, decl] = rule.children
+			expect(decl.name).toBe('-ms-transform')
+			expect(decl.is_vendor_prefixed).toBe(true)
+		})
+
+		test('should detect -o- vendor prefix', () => {
+			let source = '.box { -o-transform: scale(1); }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, decl] = rule.children
+			expect(decl.name).toBe('-o-transform')
+			expect(decl.is_vendor_prefixed).toBe(true)
+		})
+
+		test('should not detect vendor prefix for standard properties', () => {
+			let source = '.box { transform: scale(1); }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, decl] = rule.children
+			expect(decl.name).toBe('transform')
+			expect(decl.is_vendor_prefixed).toBe(false)
+		})
+
+		test('should not detect vendor prefix for properties with hyphens', () => {
+			let source = '.box { background-color: red; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, decl] = rule.children
+			expect(decl.name).toBe('background-color')
+			expect(decl.is_vendor_prefixed).toBe(false)
+		})
+
+		test('should not detect vendor prefix for custom properties', () => {
+			let source = ':root { --primary-color: blue; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, decl] = rule.children
+			expect(decl.name).toBe('--primary-color')
+			expect(decl.is_vendor_prefixed).toBe(false)
+		})
+
+		test('should detect vendor prefix with multiple vendor-prefixed properties', () => {
+			let source = '.box { -webkit-transform: scale(1); -moz-transform: scale(1); transform: scale(1); }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, webkit, moz, standard] = rule.children
+
+			expect(webkit.name).toBe('-webkit-transform')
+			expect(webkit.is_vendor_prefixed).toBe(true)
+
+			expect(moz.name).toBe('-moz-transform')
+			expect(moz.is_vendor_prefixed).toBe(true)
+
+			expect(standard.name).toBe('transform')
+			expect(standard.is_vendor_prefixed).toBe(false)
+		})
+
+		test('should detect vendor prefix for complex property names', () => {
+			let source = '.box { -webkit-border-top-left-radius: 5px; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, decl] = rule.children
+			expect(decl.name).toBe('-webkit-border-top-left-radius')
+			expect(decl.is_vendor_prefixed).toBe(true)
+		})
+
+		test('should not detect vendor prefix for similar but non-vendor properties', () => {
+			// Edge case: property that starts with hyphen but isn't a vendor prefix
+			let source = '.box { border-radius: 5px; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let [_selector, decl] = rule.children
+			expect(decl.name).toBe('border-radius')
+			expect(decl.is_vendor_prefixed).toBe(false)
+		})
+
+		test('should return false for nodes without names', () => {
+			// Nodes like selectors or at-rules without property names
+			let source = 'body { }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let selector = rule.first_child!
+			// Selectors have text but checking is_vendor_prefixed should be safe
+			expect(selector.is_vendor_prefixed).toBe(false)
 		})
 	})
 
