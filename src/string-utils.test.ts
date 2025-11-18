@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { is_whitespace, trim_boundaries, str_equals, CHAR_SPACE, CHAR_TAB, CHAR_NEWLINE, CHAR_CARRIAGE_RETURN, CHAR_FORM_FEED } from './string-utils'
+import { is_whitespace, trim_boundaries, str_equals, is_vendor_prefixed, CHAR_SPACE, CHAR_TAB, CHAR_NEWLINE, CHAR_CARRIAGE_RETURN, CHAR_FORM_FEED } from './string-utils'
 
 describe('string-utils', () => {
 	describe('is_whitespace', () => {
@@ -190,6 +190,89 @@ describe('string-utils', () => {
 
 		it('should handle empty strings', () => {
 			expect(str_equals('', '')).toBe(true)
+		})
+	})
+
+	describe('is_vendor_prefixed', () => {
+		it('should detect -webkit- vendor prefix', () => {
+			const source = '-webkit-transform'
+			expect(is_vendor_prefixed(source, 0, source.length)).toBe(true)
+		})
+
+		it('should detect -moz- vendor prefix', () => {
+			const source = '-moz-appearance'
+			expect(is_vendor_prefixed(source, 0, source.length)).toBe(true)
+		})
+
+		it('should detect -ms- vendor prefix', () => {
+			const source = '-ms-filter'
+			expect(is_vendor_prefixed(source, 0, source.length)).toBe(true)
+		})
+
+		it('should detect -o- vendor prefix', () => {
+			const source = '-o-transform'
+			expect(is_vendor_prefixed(source, 0, source.length)).toBe(true)
+		})
+
+		it('should detect vendor prefix with complex property names', () => {
+			const source = '-webkit-border-top-left-radius'
+			expect(is_vendor_prefixed(source, 0, source.length)).toBe(true)
+		})
+
+		it('should detect vendor prefix in substring', () => {
+			const source = 'div { -webkit-transform: scale(1); }'
+			expect(is_vendor_prefixed(source, 6, 23)).toBe(true)
+		})
+
+		it('should not detect vendor prefix for CSS custom properties', () => {
+			const source = '--custom-property'
+			expect(is_vendor_prefixed(source, 0, source.length)).toBe(false)
+		})
+
+		it('should not detect vendor prefix for standard properties', () => {
+			const source = 'transform'
+			expect(is_vendor_prefixed(source, 0, source.length)).toBe(false)
+		})
+
+		it('should not detect vendor prefix for properties with hyphens', () => {
+			const source = 'border-radius'
+			expect(is_vendor_prefixed(source, 0, source.length)).toBe(false)
+		})
+
+		it('should not detect vendor prefix for properties starting with hyphen but too short', () => {
+			const source = '-x'
+			expect(is_vendor_prefixed(source, 0, source.length)).toBe(false)
+		})
+
+		it('should not detect vendor prefix without second hyphen', () => {
+			const source = '-webkit'
+			expect(is_vendor_prefixed(source, 0, source.length)).toBe(false)
+		})
+
+		it('should not detect vendor prefix when second hyphen is outside range', () => {
+			const source = '-webkit-transform'
+			// Only check "-webkit" without the trailing hyphen
+			expect(is_vendor_prefixed(source, 0, 7)).toBe(false)
+		})
+
+		it('should detect vendor prefix for pseudo-classes', () => {
+			const source = '-webkit-autofill'
+			expect(is_vendor_prefixed(source, 0, source.length)).toBe(true)
+		})
+
+		it('should detect vendor prefix for pseudo-elements', () => {
+			const source = '-webkit-scrollbar'
+			expect(is_vendor_prefixed(source, 0, source.length)).toBe(true)
+		})
+
+		it('should detect vendor prefix with minimal length (-o-)', () => {
+			const source = '-o-'
+			expect(is_vendor_prefixed(source, 0, source.length)).toBe(true)
+		})
+
+		it('should work with various offsets', () => {
+			const source = 'prefix-webkit-suffix-rest'
+			expect(is_vendor_prefixed(source, 6, 20)).toBe(true) // "-webkit-suffix"
 		})
 	})
 })

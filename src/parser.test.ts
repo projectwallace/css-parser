@@ -838,6 +838,173 @@ describe('Parser', () => {
 		})
 	})
 
+	describe('vendor prefix detection for selectors', () => {
+		test('should detect -webkit- vendor prefix in pseudo-class', () => {
+			let source = 'input:-webkit-autofill { color: black; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let selector = rule.first_child!
+			// Selector has detailed parsing enabled by default
+			expect(selector.has_children).toBe(true)
+			// Navigate: selector -> type selector (input) -> pseudo-class (next sibling)
+			let typeSelector = selector.first_child!
+			let pseudoClass = typeSelector.next_sibling!
+			expect(pseudoClass.name).toBe('-webkit-autofill')
+			expect(pseudoClass.is_vendor_prefixed).toBe(true)
+		})
+
+		test('should detect -moz- vendor prefix in pseudo-class', () => {
+			let source = 'button:-moz-focusring { outline: 2px solid blue; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let selector = rule.first_child!
+			let typeSelector = selector.first_child!
+			let pseudoClass = typeSelector.next_sibling!
+			expect(pseudoClass.name).toBe('-moz-focusring')
+			expect(pseudoClass.is_vendor_prefixed).toBe(true)
+		})
+
+		test('should detect -ms- vendor prefix in pseudo-class', () => {
+			let source = 'input:-ms-input-placeholder { color: gray; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let selector = rule.first_child!
+			let typeSelector = selector.first_child!
+			let pseudoClass = typeSelector.next_sibling!
+			expect(pseudoClass.name).toBe('-ms-input-placeholder')
+			expect(pseudoClass.is_vendor_prefixed).toBe(true)
+		})
+
+		test('should detect -webkit- vendor prefix in pseudo-element', () => {
+			let source = 'div::-webkit-scrollbar { width: 10px; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let selector = rule.first_child!
+			let typeSelector = selector.first_child!
+			let pseudoElement = typeSelector.next_sibling!
+			expect(pseudoElement.name).toBe('-webkit-scrollbar')
+			expect(pseudoElement.is_vendor_prefixed).toBe(true)
+		})
+
+		test('should detect -moz- vendor prefix in pseudo-element', () => {
+			let source = 'div::-moz-selection { background: yellow; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let selector = rule.first_child!
+			let typeSelector = selector.first_child!
+			let pseudoElement = typeSelector.next_sibling!
+			expect(pseudoElement.name).toBe('-moz-selection')
+			expect(pseudoElement.is_vendor_prefixed).toBe(true)
+		})
+
+		test('should detect -webkit- vendor prefix in pseudo-element with multiple parts', () => {
+			let source = 'input::-webkit-input-placeholder { color: gray; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let selector = rule.first_child!
+			let typeSelector = selector.first_child!
+			let pseudoElement = typeSelector.next_sibling!
+			expect(pseudoElement.name).toBe('-webkit-input-placeholder')
+			expect(pseudoElement.is_vendor_prefixed).toBe(true)
+		})
+
+		test('should detect -webkit- vendor prefix in pseudo-class function', () => {
+			let source = 'input:-webkit-any(input, button) { margin: 0; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let selector = rule.first_child!
+			let typeSelector = selector.first_child!
+			let pseudoClass = typeSelector.next_sibling!
+			expect(pseudoClass.name).toBe('-webkit-any')
+			expect(pseudoClass.is_vendor_prefixed).toBe(true)
+		})
+
+		test('should not detect vendor prefix for standard pseudo-classes', () => {
+			let source = 'a:hover { color: blue; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let selector = rule.first_child!
+			let typeSelector = selector.first_child!
+			let pseudoClass = typeSelector.next_sibling!
+			expect(pseudoClass.name).toBe('hover')
+			expect(pseudoClass.is_vendor_prefixed).toBe(false)
+		})
+
+		test('should not detect vendor prefix for standard pseudo-elements', () => {
+			let source = 'div::before { content: ""; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let selector = rule.first_child!
+			let typeSelector = selector.first_child!
+			let pseudoElement = typeSelector.next_sibling!
+			expect(pseudoElement.name).toBe('before')
+			expect(pseudoElement.is_vendor_prefixed).toBe(false)
+		})
+
+		test('should detect vendor prefix with multiple vendor-prefixed pseudo-elements', () => {
+			let source = 'div::-webkit-scrollbar { } div::-webkit-scrollbar-thumb { } div::after { }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let [rule1, rule2, rule3] = root.children
+
+			let selector1 = rule1.first_child!
+			let typeSelector1 = selector1.first_child!
+			let pseudo1 = typeSelector1.next_sibling!
+			expect(pseudo1.name).toBe('-webkit-scrollbar')
+			expect(pseudo1.is_vendor_prefixed).toBe(true)
+
+			let selector2 = rule2.first_child!
+			let typeSelector2 = selector2.first_child!
+			let pseudo2 = typeSelector2.next_sibling!
+			expect(pseudo2.name).toBe('-webkit-scrollbar-thumb')
+			expect(pseudo2.is_vendor_prefixed).toBe(true)
+
+			let selector3 = rule3.first_child!
+			let typeSelector3 = selector3.first_child!
+			let pseudo3 = typeSelector3.next_sibling!
+			expect(pseudo3.name).toBe('after')
+			expect(pseudo3.is_vendor_prefixed).toBe(false)
+		})
+
+		test('should detect vendor prefix in complex selector', () => {
+			let source = 'input:-webkit-autofill:focus { color: black; }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let rule = root.first_child!
+			let selector = rule.first_child!
+			// Navigate through compound selector: input (type) -> -webkit-autofill (pseudo) -> :focus (pseudo)
+			let typeSelector = selector.first_child!
+			let webkitPseudo = typeSelector.next_sibling!
+			expect(webkitPseudo.name).toBe('-webkit-autofill')
+			expect(webkitPseudo.is_vendor_prefixed).toBe(true)
+
+			// Check the :focus pseudo-class is not vendor prefixed
+			let focusPseudo = webkitPseudo.next_sibling!
+			expect(focusPseudo.name).toBe('focus')
+			expect(focusPseudo.is_vendor_prefixed).toBe(false)
+		})
+	})
+
 	describe('complex real-world scenarios', () => {
 		test('should parse complex nested structure', () => {
 			let source = `

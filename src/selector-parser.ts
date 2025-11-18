@@ -13,6 +13,7 @@ import {
 	NODE_SELECTOR_COMBINATOR,
 	NODE_SELECTOR_UNIVERSAL,
 	NODE_SELECTOR_NESTING,
+	FLAG_VENDOR_PREFIXED,
 } from './arena'
 import {
 	TOKEN_IDENT,
@@ -28,7 +29,7 @@ import {
 	TOKEN_EOF,
 	TOKEN_WHITESPACE,
 } from './token-types'
-import { trim_boundaries, is_whitespace as is_whitespace_char } from './string-utils'
+import { trim_boundaries, is_whitespace as is_whitespace_char, is_vendor_prefixed } from './string-utils'
 
 export class SelectorParser {
 	private lexer: Lexer
@@ -402,6 +403,10 @@ export class SelectorParser {
 			// Content is the pseudo name (without colons)
 			this.arena.set_content_start(node, this.lexer.token_start)
 			this.arena.set_content_length(node, this.lexer.token_end - this.lexer.token_start)
+			// Check for vendor prefix and set flag if detected
+			if (is_vendor_prefixed(this.source, this.lexer.token_start, this.lexer.token_end)) {
+				this.arena.set_flag(node, FLAG_VENDOR_PREFIXED)
+			}
 			return node
 		} else if (token_type === TOKEN_FUNCTION) {
 			// Pseudo-class function like :nth-child()
@@ -449,6 +454,10 @@ export class SelectorParser {
 		// Content is the function name (without colons and parentheses)
 		this.arena.set_content_start(node, func_name_start)
 		this.arena.set_content_length(node, func_name_end - func_name_start)
+		// Check for vendor prefix and set flag if detected
+		if (is_vendor_prefixed(this.source, func_name_start, func_name_end)) {
+			this.arena.set_flag(node, FLAG_VENDOR_PREFIXED)
+		}
 		return node
 	}
 

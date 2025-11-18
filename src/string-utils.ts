@@ -8,6 +8,7 @@ export const CHAR_CARRIAGE_RETURN = 0x0d // '\r'
 export const CHAR_FORM_FEED = 0x0c // '\f'
 export const CHAR_FORWARD_SLASH = 0x2f // '/'
 export const CHAR_ASTERISK = 0x2a // '*'
+export const CHAR_MINUS_HYPHEN = 0x2d // '-'
 
 /**
  * Check if a character code is whitespace (space, tab, newline, CR, or FF)
@@ -111,4 +112,48 @@ export function str_equals(a: string, b: string): boolean {
 	}
 
 	return true
+}
+
+/**
+ * Check if a string range has a vendor prefix
+ *
+ * @param source - The source string
+ * @param start - Start offset in source
+ * @param end - End offset in source
+ * @returns true if the range starts with a vendor prefix (-webkit-, -moz-, -ms-, -o-)
+ *
+ * Detects vendor prefixes by checking:
+ * 1. Starts with a single hyphen (not --)
+ * 2. Contains at least 3 characters (shortest is -o-)
+ * 3. Has a second hyphen after the vendor name
+ *
+ * Examples:
+ * - `-webkit-transform` → true
+ * - `-moz-appearance` → true
+ * - `-ms-filter` → true
+ * - `-o-border-image` → true
+ * - `--custom-property` → false (CSS custom property)
+ * - `border-radius` → false (doesn't start with hyphen)
+ */
+export function is_vendor_prefixed(source: string, start: number, end: number): boolean {
+	// Must start with a hyphen
+	if (source.charCodeAt(start) !== CHAR_MINUS_HYPHEN) {
+		return false
+	}
+
+	// Second char must not be a hyphen (to exclude CSS custom properties like --var)
+	if (source.charCodeAt(start + 1) === CHAR_MINUS_HYPHEN) {
+		return false
+	}
+
+	// Must be at least 3 chars (-o- is shortest vendor prefix)
+	let length = end - start
+	if (length < 3) {
+		return false
+	}
+
+	// Must have another hyphen after the vendor name
+	// This identifies: -webkit-, -moz-, -ms-, -o-
+	let secondHyphenPos = source.indexOf('-', start + 2)
+	return secondHyphenPos !== -1 && secondHyphenPos < end
 }

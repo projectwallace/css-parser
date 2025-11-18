@@ -25,9 +25,7 @@ import {
 	TOKEN_DELIM,
 	TOKEN_AT_KEYWORD,
 } from './token-types'
-import { trim_boundaries } from './string-utils'
-
-const MINUS_HYPHEN = 45
+import { trim_boundaries, is_vendor_prefixed } from './string-utils'
 
 export interface ParserOptions {
 	skip_comments?: boolean
@@ -285,12 +283,8 @@ export class Parser {
 		this.arena.set_content_length(declaration, prop_end - prop_start)
 
 		// Check for vendor prefix and set flag if detected
-		if (this.source.charCodeAt(prop_start) === MINUS_HYPHEN && this.source.charCodeAt(prop_start + 1) !== MINUS_HYPHEN) {
-			let prop_length = prop_end - prop_start
-			// Check for -webkit- (8 chars min), -moz- (5 chars), -ms- (4 chars), -o- (3 chars)
-			if (prop_length >= 3 && this.source.indexOf('-', prop_start + 2) !== -1) {
-				this.arena.set_flag(declaration, FLAG_VENDOR_PREFIXED)
-			}
+		if (is_vendor_prefixed(this.source, prop_start, prop_end)) {
+			this.arena.set_flag(declaration, FLAG_VENDOR_PREFIXED)
 		}
 
 		// Track value start (after colon, skipping whitespace)
