@@ -1,5 +1,8 @@
 # CSS Parser
 
+> [!WARNING]
+> This is a very experimental CSS parser. Expect several bugs and inconveniences!
+
 **High-performance CSS parser optimized for static analysis and formatting**
 
 Built for speed and efficiency, this parser handles large CSS files with minimal memory overhead and blazing-fast parse times. Designed with a data-oriented architecture using a single contiguous memory arena for zero allocations during parsing.
