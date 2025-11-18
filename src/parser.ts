@@ -102,6 +102,7 @@ export class Parser {
 		this.arena.set_start_offset(stylesheet, 0)
 		this.arena.set_length(stylesheet, this.source.length)
 		this.arena.set_start_line(stylesheet, 1)
+		this.arena.set_start_column(stylesheet, 1)
 
 		// Parse all rules at the top level
 		while (!this.is_eof()) {
@@ -139,11 +140,13 @@ export class Parser {
 
 		let rule_start = this.lexer.token_start
 		let rule_line = this.lexer.token_line
+		let rule_column = this.lexer.token_column
 
 		// Create the style rule node
 		let style_rule = this.arena.create_node()
 		this.arena.set_type(style_rule, NODE_STYLE_RULE)
 		this.arena.set_start_line(style_rule, rule_line)
+		this.arena.set_start_column(style_rule, rule_column)
 
 		// Parse selector (everything until '{')
 		let selector = this.parse_selector()
@@ -210,6 +213,7 @@ export class Parser {
 
 		let selector_start = this.lexer.token_start
 		let selector_line = this.lexer.token_line
+		let selector_column = this.lexer.token_column
 
 		// Consume tokens until we hit '{'
 		let last_end = this.lexer.token_end
@@ -220,7 +224,7 @@ export class Parser {
 
 		// If detailed selector parsing is enabled, use SelectorParser
 		if (this.parse_selectors_enabled && this.selector_parser) {
-			let selectorNode = this.selector_parser.parse_selector(selector_start, last_end, selector_line)
+			let selectorNode = this.selector_parser.parse_selector(selector_start, last_end, selector_line, selector_column)
 			if (selectorNode !== null) {
 				return selectorNode
 			}
@@ -230,6 +234,7 @@ export class Parser {
 		let selector = this.arena.create_node()
 		this.arena.set_type(selector, NODE_SELECTOR)
 		this.arena.set_start_line(selector, selector_line)
+		this.arena.set_start_column(selector, selector_column)
 		this.arena.set_start_offset(selector, selector_start)
 		this.arena.set_length(selector, last_end - selector_start)
 
@@ -246,6 +251,7 @@ export class Parser {
 		let prop_start = this.lexer.token_start
 		let prop_end = this.lexer.token_end
 		let decl_line = this.lexer.token_line
+		let decl_column = this.lexer.token_column
 
 		this.next_token() // consume property name
 
@@ -259,6 +265,7 @@ export class Parser {
 		let declaration = this.arena.create_node()
 		this.arena.set_type(declaration, NODE_DECLARATION)
 		this.arena.set_start_line(declaration, decl_line)
+		this.arena.set_start_column(declaration, decl_column)
 		this.arena.set_start_offset(declaration, prop_start)
 
 		// Store property name position
@@ -344,6 +351,7 @@ export class Parser {
 
 		let at_rule_start = this.lexer.token_start
 		let at_rule_line = this.lexer.token_line
+		let at_rule_column = this.lexer.token_column
 
 		// Extract at-rule name (skip the '@')
 		let at_rule_name = this.source.substring(this.lexer.token_start + 1, this.lexer.token_end)
@@ -356,6 +364,7 @@ export class Parser {
 		let at_rule = this.arena.create_node()
 		this.arena.set_type(at_rule, NODE_AT_RULE)
 		this.arena.set_start_line(at_rule, at_rule_line)
+		this.arena.set_start_column(at_rule, at_rule_column)
 		this.arena.set_start_offset(at_rule, at_rule_start)
 
 		// Store at-rule name in contentStart/contentLength
@@ -380,7 +389,7 @@ export class Parser {
 
 			// Parse prelude if enabled
 			if (this.prelude_parser) {
-				let prelude_nodes = this.prelude_parser.parse_prelude(at_rule_name, trimmed[0], trimmed[1], at_rule_line)
+				let prelude_nodes = this.prelude_parser.parse_prelude(at_rule_name, trimmed[0], trimmed[1], at_rule_line, at_rule_column)
 				for (let prelude_node of prelude_nodes) {
 					this.arena.append_child(at_rule, prelude_node)
 				}

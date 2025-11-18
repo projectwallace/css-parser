@@ -18,7 +18,7 @@
 //  32    |  4   | startLine
 //  36    |  4   | valueStart (declaration value / at-rule prelude)
 //  40    |  2   | valueLength
-//  42    |  2   | (padding)
+//  42    |  2   | startColumn
 
 let BYTES_PER_NODE = 44
 
@@ -168,6 +168,11 @@ export class CSSDataArena {
 		return this.view.getUint32(this.node_offset(node_index) + 32, true)
 	}
 
+	// Read start column
+	get_start_column(node_index: number): number {
+		return this.view.getUint16(this.node_offset(node_index) + 42, true)
+	}
+
 	// Read value start offset (declaration value / at-rule prelude)
 	get_value_start(node_index: number): number {
 		return this.view.getUint32(this.node_offset(node_index) + 36, true)
@@ -228,6 +233,11 @@ export class CSSDataArena {
 	// Write start line
 	set_start_line(node_index: number, line: number): void {
 		this.view.setUint32(this.node_offset(node_index) + 32, line, true)
+	}
+
+	// Write start column
+	set_start_column(node_index: number, column: number): void {
+		this.view.setUint16(this.node_offset(node_index) + 42, column, true)
 	}
 
 	// Write value start offset (declaration value / at-rule prelude)

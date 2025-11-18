@@ -43,12 +43,13 @@ export class AtRulePreludeParser {
 	}
 
 	// Parse an at-rule prelude into nodes based on the at-rule type
-	parse_prelude(at_rule_name: string, start: number, end: number, line: number = 1): number[] {
+	parse_prelude(at_rule_name: string, start: number, end: number, line: number = 1, column: number = 1): number[] {
 		this.prelude_end = end
 
 		// Position lexer at prelude start
 		this.lexer.pos = start
 		this.lexer.line = line
+		this.lexer.column = column
 
 		// Dispatch to appropriate parser based on at-rule type
 		if (str_equals('media', at_rule_name)) {
@@ -103,6 +104,7 @@ export class AtRulePreludeParser {
 	private parse_single_media_query(): number | null {
 		let query_start = this.lexer.pos
 		let query_line = this.lexer.line
+		let query_column = this.lexer.column
 
 		// Skip whitespace
 		this.skip_whitespace()
@@ -162,6 +164,7 @@ export class AtRulePreludeParser {
 					this.arena.set_start_offset(media_type, this.lexer.token_start)
 					this.arena.set_length(media_type, this.lexer.token_end - this.lexer.token_start)
 					this.arena.set_start_line(media_type, this.lexer.token_line)
+					this.arena.set_start_column(media_type, this.lexer.token_column)
 					components.push(media_type)
 				}
 			} else {

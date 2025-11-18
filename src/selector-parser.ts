@@ -46,12 +46,13 @@ export class SelectorParser {
 
 	// Parse a selector range into selector nodes
 	// Always returns a NODE_SELECTOR wrapper with detailed selector nodes as children
-	parse_selector(start: number, end: number, line: number = 1): number | null {
+	parse_selector(start: number, end: number, line: number = 1, column: number = 1): number | null {
 		this.selector_end = end
 
 		// Position lexer at selector start
 		this.lexer.pos = start
 		this.lexer.line = line
+		this.lexer.column = column
 
 		// Parse selector list (comma-separated selectors)
 		let innerSelector = this.parse_selector_list()
@@ -65,6 +66,7 @@ export class SelectorParser {
 		this.arena.set_start_offset(selectorWrapper, start)
 		this.arena.set_length(selectorWrapper, end - start)
 		this.arena.set_start_line(selectorWrapper, line)
+		this.arena.set_start_column(selectorWrapper, column)
 
 		// Set the parsed selector as the only child
 		this.arena.set_first_child(selectorWrapper, innerSelector)
@@ -111,6 +113,7 @@ export class SelectorParser {
 			this.arena.set_start_offset(list_node, list_start)
 			this.arena.set_length(list_node, this.lexer.pos - list_start)
 			this.arena.set_start_line(list_node, this.lexer.line)
+			this.arena.set_start_column(list_node, this.lexer.column)
 
 			// Link selectors as children
 			this.arena.set_first_child(list_node, selectors[0])
@@ -334,6 +337,7 @@ export class SelectorParser {
 		this.arena.set_start_offset(node, dot_pos)
 		this.arena.set_length(node, this.lexer.token_end - dot_pos)
 		this.arena.set_start_line(node, this.lexer.line)
+		this.arena.set_start_column(node, this.lexer.column)
 		// Content is the class name (without the dot)
 		this.arena.set_content_start(node, this.lexer.token_start)
 		this.arena.set_content_length(node, this.lexer.token_end - this.lexer.token_start)
@@ -365,6 +369,7 @@ export class SelectorParser {
 		this.arena.set_start_offset(node, start)
 		this.arena.set_length(node, end - start)
 		this.arena.set_start_line(node, this.lexer.line)
+		this.arena.set_start_column(node, this.lexer.column)
 		// Content is everything inside the brackets, trimmed
 		let trimmed = trim_boundaries(this.source, start + 1, end - 1)
 		if (trimmed) {
@@ -393,6 +398,7 @@ export class SelectorParser {
 			this.arena.set_start_offset(node, start)
 			this.arena.set_length(node, this.lexer.token_end - start)
 			this.arena.set_start_line(node, this.lexer.line)
+			this.arena.set_start_column(node, this.lexer.column)
 			// Content is the pseudo name (without colons)
 			this.arena.set_content_start(node, this.lexer.token_start)
 			this.arena.set_content_length(node, this.lexer.token_end - this.lexer.token_start)
@@ -439,6 +445,7 @@ export class SelectorParser {
 		this.arena.set_start_offset(node, start)
 		this.arena.set_length(node, end - start)
 		this.arena.set_start_line(node, this.lexer.line)
+		this.arena.set_start_column(node, this.lexer.column)
 		// Content is the function name (without colons and parentheses)
 		this.arena.set_content_start(node, func_name_start)
 		this.arena.set_content_length(node, func_name_end - func_name_start)
@@ -452,6 +459,7 @@ export class SelectorParser {
 		this.arena.set_start_offset(node, start)
 		this.arena.set_length(node, end - start)
 		this.arena.set_start_line(node, this.lexer.line)
+		this.arena.set_start_column(node, this.lexer.column)
 		this.arena.set_content_start(node, start)
 		this.arena.set_content_length(node, end - start)
 		return node
@@ -463,6 +471,7 @@ export class SelectorParser {
 		this.arena.set_start_offset(node, start)
 		this.arena.set_length(node, end - start)
 		this.arena.set_start_line(node, this.lexer.line)
+		this.arena.set_start_column(node, this.lexer.column)
 		// Content is the ID name (without the #)
 		this.arena.set_content_start(node, start + 1)
 		this.arena.set_content_length(node, end - start - 1)
@@ -475,6 +484,7 @@ export class SelectorParser {
 		this.arena.set_start_offset(node, start)
 		this.arena.set_length(node, end - start)
 		this.arena.set_start_line(node, this.lexer.line)
+		this.arena.set_start_column(node, this.lexer.column)
 		this.arena.set_content_start(node, start)
 		this.arena.set_content_length(node, end - start)
 		return node
@@ -486,6 +496,7 @@ export class SelectorParser {
 		this.arena.set_start_offset(node, start)
 		this.arena.set_length(node, end - start)
 		this.arena.set_start_line(node, this.lexer.line)
+		this.arena.set_start_column(node, this.lexer.column)
 		this.arena.set_content_start(node, start)
 		this.arena.set_content_length(node, end - start)
 		return node
@@ -497,6 +508,7 @@ export class SelectorParser {
 		this.arena.set_start_offset(node, start)
 		this.arena.set_length(node, end - start)
 		this.arena.set_start_line(node, this.lexer.line)
+		this.arena.set_start_column(node, this.lexer.column)
 		this.arena.set_content_start(node, start)
 		this.arena.set_content_length(node, end - start)
 		return node

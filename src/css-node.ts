@@ -189,6 +189,11 @@ export class CSSNode {
 		return this.arena.get_start_line(this.index)
 	}
 
+	// Get start column number
+	get column(): number {
+		return this.arena.get_start_column(this.index)
+	}
+
 	// Get start offset in source
 	get offset(): number {
 		return this.arena.get_start_offset(this.index)
