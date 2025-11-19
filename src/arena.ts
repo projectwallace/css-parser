@@ -70,6 +70,7 @@ export const FLAG_HAS_ERROR = 1 << 1 // Syntax error
 export const FLAG_LENGTH_OVERFLOW = 1 << 2 // Node > 65k chars
 export const FLAG_HAS_BLOCK = 1 << 3 // Has { } block (for style rules and at-rules)
 export const FLAG_VENDOR_PREFIXED = 1 << 4 // Has vendor prefix (-webkit-, -moz-, -ms-, -o-)
+export const FLAG_HAS_DECLARATIONS = 1 << 5 // Has declarations (for style rules)
 
 export class CSSDataArena {
 	private buffer: ArrayBuffer

@@ -39,6 +39,7 @@ import {
 	FLAG_HAS_ERROR,
 	FLAG_HAS_BLOCK,
 	FLAG_VENDOR_PREFIXED,
+	FLAG_HAS_DECLARATIONS,
 } from './arena'
 
 // Node type constants (numeric for performance)
@@ -157,6 +158,11 @@ export class CSSNode {
 	// Check if this rule has a block { }
 	get has_block(): boolean {
 		return this.arena.has_flag(this.index, FLAG_HAS_BLOCK)
+	}
+
+	// Check if this style rule has declarations
+	get has_declarations(): boolean {
+		return this.arena.has_flag(this.index, FLAG_HAS_DECLARATIONS)
 	}
 
 	// --- Value Node Access (for declarations) ---

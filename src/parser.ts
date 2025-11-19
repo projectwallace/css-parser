@@ -10,6 +10,7 @@ import {
 	FLAG_IMPORTANT,
 	FLAG_HAS_BLOCK,
 	FLAG_VENDOR_PREFIXED,
+	FLAG_HAS_DECLARATIONS,
 } from './arena'
 import { CSSNode } from './css-node'
 import { ValueParser } from './value-parser'
@@ -186,6 +187,7 @@ export class Parser {
 			// Try to parse as declaration first
 			let declaration = this.parse_declaration()
 			if (declaration !== null) {
+				this.arena.set_flag(style_rule, FLAG_HAS_DECLARATIONS)
 				this.arena.append_child(style_rule, declaration)
 				continue
 			}

@@ -336,4 +336,56 @@ describe('CSSNode', () => {
 			expect(keyframes.has_block).toBe(true)
 		})
 	})
+
+	describe('has_declarations', () => {
+		test('should return true for style rules with declarations', () => {
+			const source = 'body { color: red; margin: 0; }'
+			const parser = new Parser(source)
+			const root = parser.parse()
+			const rule = root.first_child!
+
+			expect(rule.type).toBe(NODE_STYLE_RULE)
+			expect(rule.has_declarations).toBe(true)
+		})
+
+		test('should return false for empty style rules', () => {
+			const source = 'body { }'
+			const parser = new Parser(source)
+			const root = parser.parse()
+			const rule = root.first_child!
+
+			expect(rule.type).toBe(NODE_STYLE_RULE)
+			expect(rule.has_declarations).toBe(false)
+		})
+
+		test('should return false for style rules with only nested rules', () => {
+			const source = 'body { .nested { color: red; } }'
+			const parser = new Parser(source)
+			const root = parser.parse()
+			const rule = root.first_child!
+
+			expect(rule.type).toBe(NODE_STYLE_RULE)
+			expect(rule.has_declarations).toBe(false)
+		})
+
+		test('should return true for style rules with both declarations and nested rules', () => {
+			const source = 'body { color: blue; .nested { margin: 0; } }'
+			const parser = new Parser(source)
+			const root = parser.parse()
+			const rule = root.first_child!
+
+			expect(rule.type).toBe(NODE_STYLE_RULE)
+			expect(rule.has_declarations).toBe(true)
+		})
+
+		test('should return false for at-rules', () => {
+			const source = '@media screen { body { color: red; } }'
+			const parser = new Parser(source)
+			const root = parser.parse()
+			const media = root.first_child!
+
+			expect(media.type).toBe(NODE_AT_RULE)
+			expect(media.has_declarations).toBe(false)
+		})
+	})
 })
