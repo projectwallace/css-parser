@@ -68,9 +68,31 @@ export class SelectorParser {
 		let list_column = this.lexer.column
 
 		while (this.lexer.pos < this.selector_end) {
-			let selector = this.parse_complex_selector()
-			if (selector !== null) {
-				selectors.push(selector)
+			let selector_start = this.lexer.pos
+			let selector_line = this.lexer.line
+			let selector_column = this.lexer.column
+
+			let complex_selector = this.parse_complex_selector()
+			if (complex_selector !== null) {
+				// Wrap the complex selector (chain of components) in a NODE_SELECTOR
+				let selector_wrapper = this.arena.create_node()
+				this.arena.set_type(selector_wrapper, NODE_SELECTOR)
+				this.arena.set_start_offset(selector_wrapper, selector_start)
+				this.arena.set_length(selector_wrapper, this.lexer.pos - selector_start)
+				this.arena.set_start_line(selector_wrapper, selector_line)
+				this.arena.set_start_column(selector_wrapper, selector_column)
+
+				// Find the last component in the chain
+				let last_component = complex_selector
+				while (this.arena.get_next_sibling(last_component) !== 0) {
+					last_component = this.arena.get_next_sibling(last_component)
+				}
+
+				// Set the complex selector chain as children
+				this.arena.set_first_child(selector_wrapper, complex_selector)
+				this.arena.set_last_child(selector_wrapper, last_component)
+
+				selectors.push(selector_wrapper)
 			}
 
 			// Check for comma (selector separator)
@@ -97,11 +119,11 @@ export class SelectorParser {
 			this.arena.set_start_line(list_node, list_line)
 			this.arena.set_start_column(list_node, list_column)
 
-			// Link selectors as children
+			// Link selector wrapper nodes as children
 			this.arena.set_first_child(list_node, selectors[0])
 			this.arena.set_last_child(list_node, selectors[selectors.length - 1])
 
-			// Chain selectors as siblings
+			// Chain selector wrappers as siblings (simple since they're already wrapped)
 			for (let i = 0; i < selectors.length - 1; i++) {
 				this.arena.set_next_sibling(selectors[i], selectors[i + 1])
 			}

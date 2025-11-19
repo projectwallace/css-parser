@@ -845,7 +845,8 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let rule = root.first_child!
-			let selector = rule.first_child!
+			let selectorList = rule.first_child!
+			let selector = selectorList.first_child! // NODE_SELECTOR wrapper
 			// Selector has detailed parsing enabled by default
 			expect(selector.has_children).toBe(true)
 			// Navigate: selector -> type selector (input) -> pseudo-class (next sibling)
@@ -861,7 +862,8 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let rule = root.first_child!
-			let selector = rule.first_child!
+			let selectorList = rule.first_child!
+			let selector = selectorList.first_child! // NODE_SELECTOR wrapper
 			let typeSelector = selector.first_child!
 			let pseudoClass = typeSelector.next_sibling!
 			expect(pseudoClass.name).toBe('-moz-focusring')
@@ -874,7 +876,8 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let rule = root.first_child!
-			let selector = rule.first_child!
+			let selectorList = rule.first_child!
+			let selector = selectorList.first_child! // NODE_SELECTOR wrapper
 			let typeSelector = selector.first_child!
 			let pseudoClass = typeSelector.next_sibling!
 			expect(pseudoClass.name).toBe('-ms-input-placeholder')
@@ -887,7 +890,8 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let rule = root.first_child!
-			let selector = rule.first_child!
+			let selectorList = rule.first_child!
+			let selector = selectorList.first_child! // NODE_SELECTOR wrapper
 			let typeSelector = selector.first_child!
 			let pseudoElement = typeSelector.next_sibling!
 			expect(pseudoElement.name).toBe('-webkit-scrollbar')
@@ -900,7 +904,8 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let rule = root.first_child!
-			let selector = rule.first_child!
+			let selectorList = rule.first_child!
+			let selector = selectorList.first_child! // NODE_SELECTOR wrapper
 			let typeSelector = selector.first_child!
 			let pseudoElement = typeSelector.next_sibling!
 			expect(pseudoElement.name).toBe('-moz-selection')
@@ -913,7 +918,8 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let rule = root.first_child!
-			let selector = rule.first_child!
+			let selectorList = rule.first_child!
+			let selector = selectorList.first_child! // NODE_SELECTOR wrapper
 			let typeSelector = selector.first_child!
 			let pseudoElement = typeSelector.next_sibling!
 			expect(pseudoElement.name).toBe('-webkit-input-placeholder')
@@ -926,7 +932,8 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let rule = root.first_child!
-			let selector = rule.first_child!
+			let selectorList = rule.first_child!
+			let selector = selectorList.first_child! // NODE_SELECTOR wrapper
 			let typeSelector = selector.first_child!
 			let pseudoClass = typeSelector.next_sibling!
 			expect(pseudoClass.name).toBe('-webkit-any')
@@ -939,7 +946,8 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let rule = root.first_child!
-			let selector = rule.first_child!
+			let selectorList = rule.first_child!
+			let selector = selectorList.first_child! // NODE_SELECTOR wrapper
 			let typeSelector = selector.first_child!
 			let pseudoClass = typeSelector.next_sibling!
 			expect(pseudoClass.name).toBe('hover')
@@ -952,7 +960,8 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let rule = root.first_child!
-			let selector = rule.first_child!
+			let selectorList = rule.first_child!
+			let selector = selectorList.first_child! // NODE_SELECTOR wrapper
 			let typeSelector = selector.first_child!
 			let pseudoElement = typeSelector.next_sibling!
 			expect(pseudoElement.name).toBe('before')
@@ -966,19 +975,22 @@ describe('Parser', () => {
 
 			let [rule1, rule2, rule3] = root.children
 
-			let selector1 = rule1.first_child!
+			let selectorList1 = rule1.first_child!
+			let selector1 = selectorList1.first_child! // NODE_SELECTOR wrapper
 			let typeSelector1 = selector1.first_child!
 			let pseudo1 = typeSelector1.next_sibling!
 			expect(pseudo1.name).toBe('-webkit-scrollbar')
 			expect(pseudo1.is_vendor_prefixed).toBe(true)
 
-			let selector2 = rule2.first_child!
+			let selectorList2 = rule2.first_child!
+			let selector2 = selectorList2.first_child! // NODE_SELECTOR wrapper
 			let typeSelector2 = selector2.first_child!
 			let pseudo2 = typeSelector2.next_sibling!
 			expect(pseudo2.name).toBe('-webkit-scrollbar-thumb')
 			expect(pseudo2.is_vendor_prefixed).toBe(true)
 
-			let selector3 = rule3.first_child!
+			let selectorList3 = rule3.first_child!
+			let selector3 = selectorList3.first_child! // NODE_SELECTOR wrapper
 			let typeSelector3 = selector3.first_child!
 			let pseudo3 = typeSelector3.next_sibling!
 			expect(pseudo3.name).toBe('after')
@@ -991,7 +1003,8 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let rule = root.first_child!
-			let selector = rule.first_child!
+			let selectorList = rule.first_child!
+			let selector = selectorList.first_child! // NODE_SELECTOR wrapper
 			// Navigate through compound selector: input (type) -> -webkit-autofill (pseudo) -> :focus (pseudo)
 			let typeSelector = selector.first_child!
 			let webkitPseudo = typeSelector.next_sibling!
