@@ -49,16 +49,11 @@ export class Parser {
 	private parse_selectors_enabled: boolean
 	private parse_atrule_preludes_enabled: boolean
 
-	constructor(source: string, options?: ParserOptions | boolean) {
+	constructor(source: string, options?: ParserOptions) {
 		this.source = source
 
 		// Support legacy boolean parameter for backwards compatibility
-		let opts: ParserOptions
-		if (typeof options === 'boolean') {
-			opts = { skip_comments: options }
-		} else {
-			opts = options || {}
-		}
+		let opts: ParserOptions = options || {}
 
 		let skip_comments = opts.skip_comments ?? true
 		this.parse_values_enabled = opts.parse_values ?? true

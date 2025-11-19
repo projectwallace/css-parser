@@ -177,41 +177,6 @@ describe('Parser Options', () => {
 		})
 	})
 
-	describe('Backwards compatibility', () => {
-		it('should support legacy boolean parameter for skip_comments', () => {
-			const parser = new Parser('/* comment */ body { color: red; }', true)
-			const root = parser.parse()
-			const rule = root.first_child
-
-			// Should parse normally with comments skipped
-			expect(rule).not.toBeNull()
-			const selector = rule?.first_child
-			expect(selector?.text).toBe('body')
-		})
-
-		it('should support legacy boolean false parameter', () => {
-			const parser = new Parser('/* comment */ body { color: red; }', false)
-			const root = parser.parse()
-
-			// First child should be comment
-			const comment = root.first_child
-			expect(comment).not.toBeNull()
-		})
-
-		it('should parse values and selectors with legacy parameter', () => {
-			const parser = new Parser(css, true)
-			const root = parser.parse()
-			const rule = root.first_child
-			const selector = rule?.first_child
-			const declaration = selector?.next_sibling
-
-			// Both should be parsed by default
-			// Simple selector returns NODE_SELECTOR directly
-			expect(selector?.type).toBe(NODE_SELECTOR)
-			expect(declaration?.has_children).toBe(true)
-		})
-	})
-
 	describe('Performance optimization use cases', () => {
 		it('should skip value parsing for fast property name extraction', () => {
 			const css = `
