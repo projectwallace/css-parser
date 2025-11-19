@@ -8,6 +8,7 @@ import {
 	NODE_SELECTOR_LIST,
 	NODE_DECLARATION,
 	NODE_AT_RULE,
+	NODE_BLOCK,
 	FLAG_IMPORTANT,
 	FLAG_HAS_BLOCK,
 	FLAG_VENDOR_PREFIXED,
@@ -169,6 +170,16 @@ export class Parser {
 		this.next_token() // consume '{'
 		this.arena.set_flag(style_rule, FLAG_HAS_BLOCK) // Style rules always have blocks
 
+		// Create block node
+		let block_start = this.lexer.token_start
+		let block_line = this.lexer.token_line
+		let block_column = this.lexer.token_column
+		let block_node = this.arena.create_node()
+		this.arena.set_type(block_node, NODE_BLOCK)
+		this.arena.set_start_offset(block_node, block_start)
+		this.arena.set_start_line(block_node, block_line)
+		this.arena.set_start_column(block_node, block_column)
+
 		// Parse declarations block (and nested rules for CSS Nesting)
 		while (!this.is_eof()) {
 			let token_type = this.peek_type()
@@ -178,7 +189,7 @@ export class Parser {
 			if (token_type === TOKEN_AT_KEYWORD) {
 				let nested_at_rule = this.parse_atrule()
 				if (nested_at_rule !== null) {
-					this.arena.append_child(style_rule, nested_at_rule)
+					this.arena.append_child(block_node, nested_at_rule)
 				} else {
 					this.next_token()
 				}
@@ -189,14 +200,14 @@ export class Parser {
 			let declaration = this.parse_declaration()
 			if (declaration !== null) {
 				this.arena.set_flag(style_rule, FLAG_HAS_DECLARATIONS)
-				this.arena.append_child(style_rule, declaration)
+				this.arena.append_child(block_node, declaration)
 				continue
 			}
 
 			// If not a declaration, try parsing as nested style rule
 			let nested_rule = this.parse_style_rule()
 			if (nested_rule !== null) {
-				this.arena.append_child(style_rule, nested_rule)
+				this.arena.append_child(block_node, nested_rule)
 			} else {
 				// Skip unknown tokens
 				this.next_token()
@@ -207,6 +218,10 @@ export class Parser {
 		if (this.peek_type() === TOKEN_RIGHT_BRACE) {
 			this.next_token() // consume '}'
 		}
+
+		// Set block length and append to style rule
+		this.arena.set_length(block_node, this.lexer.token_end - block_start)
+		this.arena.append_child(style_rule, block_node)
 
 		// Set the rule's offsets
 		this.arena.set_start_offset(style_rule, rule_start)
@@ -306,6 +321,7 @@ export class Parser {
 				if (next_type === TOKEN_IDENT) {
 					has_important = true
 					last_end = this.lexer.token_end
+					this.next_token() // Advance to next token after "important"
 					break
 				}
 			}
@@ -416,6 +432,16 @@ export class Parser {
 			this.next_token() // consume '{'
 			this.arena.set_flag(at_rule, FLAG_HAS_BLOCK) // At-rule has a block
 
+			// Create block node
+			let block_start = this.lexer.token_start
+			let block_line = this.lexer.token_line
+			let block_column = this.lexer.token_column
+			let block_node = this.arena.create_node()
+			this.arena.set_type(block_node, NODE_BLOCK)
+			this.arena.set_start_offset(block_node, block_start)
+			this.arena.set_start_line(block_node, block_line)
+			this.arena.set_start_column(block_node, block_column)
+
 			// Determine what to parse inside the block based on the at-rule name
 			let has_declarations = this.atrule_has_declarations(at_rule_name)
 			let is_conditional = this.atrule_is_conditional(at_rule_name)
@@ -428,7 +454,7 @@ export class Parser {
 
 					let declaration = this.parse_declaration()
 					if (declaration !== null) {
-						this.arena.append_child(at_rule, declaration)
+						this.arena.append_child(block_node, declaration)
 					} else {
 						this.next_token()
 					}
@@ -443,7 +469,7 @@ export class Parser {
 					if (token_type === TOKEN_AT_KEYWORD) {
 						let nested_at_rule = this.parse_atrule()
 						if (nested_at_rule !== null) {
-							this.arena.append_child(at_rule, nested_at_rule)
+							this.arena.append_child(block_node, nested_at_rule)
 						} else {
 							this.next_token()
 						}
@@ -453,14 +479,14 @@ export class Parser {
 					// Try to parse as declaration first
 					let declaration = this.parse_declaration()
 					if (declaration !== null) {
-						this.arena.append_child(at_rule, declaration)
+						this.arena.append_child(block_node, declaration)
 						continue
 					}
 
 					// If not a declaration, try parsing as nested style rule
 					let nested_rule = this.parse_style_rule()
 					if (nested_rule !== null) {
-						this.arena.append_child(at_rule, nested_rule)
+						this.arena.append_child(block_node, nested_rule)
 					} else {
 						// Skip unknown tokens
 						this.next_token()
@@ -474,7 +500,7 @@ export class Parser {
 
 					let rule = this.parse_rule()
 					if (rule !== null) {
-						this.arena.append_child(at_rule, rule)
+						this.arena.append_child(block_node, rule)
 					} else {
 						this.next_token()
 					}
@@ -486,6 +512,10 @@ export class Parser {
 				last_end = this.lexer.token_end
 				this.next_token()
 			}
+
+			// Set block length and append to at-rule
+			this.arena.set_length(block_node, last_end - block_start)
+			this.arena.append_child(at_rule, block_node)
 		} else if (this.peek_type() === TOKEN_SEMICOLON) {
 			// Statement at-rule (like @import, @namespace)
 			last_end = this.lexer.token_end
@@ -517,6 +547,7 @@ export {
 	NODE_DECLARATION,
 	NODE_SELECTOR,
 	NODE_COMMENT,
+	NODE_BLOCK,
 	NODE_VALUE_KEYWORD,
 	NODE_VALUE_NUMBER,
 	NODE_VALUE_DIMENSION,

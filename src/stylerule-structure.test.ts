@@ -14,12 +14,15 @@ describe('StyleRule Structure', () => {
 		const firstChild = rule.first_child!
 		expect(firstChild.type).toBe(NODE_SELECTOR_LIST)
 
-		// Second child should be declaration
-		const secondChild = firstChild.next_sibling!
-		expect(secondChild).not.toBeNull()
+		// Second child should be block containing declarations
+		const block = firstChild.next_sibling!
+		expect(block).not.toBeNull()
+
+		// Declarations should be inside the block
+		const secondChild = block.first_child!
 		expect(secondChild.type).toBe(NODE_DECLARATION)
 
-		// Third child should be declaration
+		// Second declaration
 		const thirdChild = secondChild.next_sibling!
 		expect(thirdChild).not.toBeNull()
 		expect(thirdChild.type).toBe(NODE_DECLARATION)
@@ -131,15 +134,17 @@ describe('StyleRule Structure', () => {
 		expect(outerRule.type).toBe(NODE_STYLE_RULE)
 		expect(outerRule.first_child!.type).toBe(NODE_SELECTOR_LIST)
 
-		// Find the nested rule
-		const nestedRule = outerRule.first_child!.next_sibling!
+		// Find the nested rule (inside the block)
+		const block = outerRule.first_child!.next_sibling!
+		const nestedRule = block.first_child!
 		expect(nestedRule.type).toBe(NODE_STYLE_RULE)
 
 		// Nested rule should also have selector list as first child
 		expect(nestedRule.first_child!.type).toBe(NODE_SELECTOR_LIST)
 
-		// Declaration comes after selector list in nested rule
-		expect(nestedRule.first_child!.next_sibling!.type).toBe(NODE_DECLARATION)
+		// Declaration comes after selector list in nested rule's block
+		const nestedBlock = nestedRule.first_child!.next_sibling!
+		expect(nestedBlock.first_child!.type).toBe(NODE_DECLARATION)
 	})
 
 	test('selector list with combinators should chain all components correctly', () => {
@@ -186,7 +191,9 @@ describe('StyleRule Structure', () => {
 		expect(rule.type).toBe(NODE_STYLE_RULE)
 		expect(rule.first_child!.type).toBe(NODE_SELECTOR_LIST)
 
-		// Selector list should be the only child
-		expect(rule.first_child!.next_sibling).toBeNull()
+		// Rule should have selector list + empty block
+		const block = rule.first_child!.next_sibling
+		expect(block).not.toBeNull()
+		expect(block!.is_empty).toBe(true)
 	})
 })

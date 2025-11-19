@@ -7,6 +7,7 @@ import {
 	NODE_DECLARATION,
 	NODE_SELECTOR,
 	NODE_COMMENT,
+	NODE_BLOCK,
 	NODE_VALUE_KEYWORD,
 	NODE_VALUE_NUMBER,
 	NODE_VALUE_DIMENSION,
@@ -50,6 +51,7 @@ export type CSSNodeType =
 	| typeof NODE_DECLARATION
 	| typeof NODE_SELECTOR
 	| typeof NODE_COMMENT
+	| typeof NODE_BLOCK
 	| typeof NODE_VALUE_KEYWORD
 	| typeof NODE_VALUE_NUMBER
 	| typeof NODE_VALUE_DIMENSION
@@ -163,6 +165,54 @@ export class CSSNode {
 	// Check if this style rule has declarations
 	get has_declarations(): boolean {
 		return this.arena.has_flag(this.index, FLAG_HAS_DECLARATIONS)
+	}
+
+	// Get the block node (for style rules and at-rules with blocks)
+	get block(): CSSNode | null {
+		// For StyleRule: block is sibling after selector list
+		if (this.type === NODE_STYLE_RULE) {
+			let first = this.first_child
+			if (!first) return null
+			// Block is the sibling after selector list
+			let blockNode = first.next_sibling
+			if (blockNode && blockNode.type === NODE_BLOCK) {
+				return blockNode
+			}
+			return null
+		}
+
+		// For AtRule: block is last child (after prelude nodes)
+		if (this.type === NODE_AT_RULE) {
+			// Find last child that is a block
+			let child = this.first_child
+			while (child) {
+				if (child.type === NODE_BLOCK && !child.next_sibling) {
+					return child
+				}
+				child = child.next_sibling
+			}
+			return null
+		}
+
+		return null
+	}
+
+	// Check if this block is empty (no declarations or rules, only comments allowed)
+	get is_empty(): boolean {
+		// Only valid on block nodes
+		if (this.type !== NODE_BLOCK) {
+			return false
+		}
+
+		// Empty if no children, or all children are comments
+		let child = this.first_child
+		while (child) {
+			if (child.type !== NODE_COMMENT) {
+				return false
+			}
+			child = child.next_sibling
+		}
+		return true
 	}
 
 	// --- Value Node Access (for declarations) ---

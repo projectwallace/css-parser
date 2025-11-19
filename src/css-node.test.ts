@@ -10,13 +10,14 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 
 			const rule = root.first_child!
+			const block = rule.block!
 			const types: number[] = []
 
-			for (const child of rule) {
+			for (const child of block) {
 				types.push(child.type)
 			}
 
-			expect(types).toEqual([NODE_SELECTOR_LIST, NODE_DECLARATION, NODE_DECLARATION, NODE_DECLARATION])
+			expect(types).toEqual([NODE_DECLARATION, NODE_DECLARATION, NODE_DECLARATION])
 		})
 
 		test('should work with spread operator', () => {
@@ -36,7 +37,8 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 
 			const media = root.first_child!
-			const children = Array.from(media)
+			const block = media.block!
+			const children = Array.from(block)
 
 			expect(children).toHaveLength(1)
 			expect(children[0].type).toBe(NODE_STYLE_RULE)
@@ -165,7 +167,8 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 			const rule = root.first_child!
 			const selector = rule.first_child!
-			const declaration = selector.next_sibling!
+			const block = selector.next_sibling!
+			const declaration = block.first_child!
 
 			// Rules and selectors don't use value field
 			expect(rule.has_prelude).toBe(false)

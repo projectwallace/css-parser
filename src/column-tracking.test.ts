@@ -26,7 +26,8 @@ describe('Column Tracking', () => {
 		expect(selector!.column).toBe(1)
 
 		// Declaration (color: red)
-		const decl = selector!.next_sibling
+		const block = selector!.next_sibling
+		const decl = block!.first_child
 		expect(decl).not.toBeNull()
 		expect(decl!.type).toBe(NODE_DECLARATION)
 		expect(decl!.line).toBe(1)
@@ -42,9 +43,10 @@ describe('Column Tracking', () => {
 		const ast = parse(css)
 		const rule = ast.first_child!
 		const selector = rule.first_child!
+		const block = selector.next_sibling!
 
 		// First declaration (color: red) at line 2, column 3
-		const decl1 = selector.next_sibling!
+		const decl1 = block.first_child!
 		expect(decl1.type).toBe(NODE_DECLARATION)
 		expect(decl1.line).toBe(2)
 		expect(decl1.column).toBe(3)
@@ -66,8 +68,9 @@ describe('Column Tracking', () => {
 		expect(atRule.line).toBe(1)
 		expect(atRule.column).toBe(1)
 
-		// Find the nested style rule (skip prelude nodes)
-		let nestedRule = atRule.first_child
+		// Get the block, then find the nested style rule
+		const block = atRule.block!
+		let nestedRule = block.first_child
 		while (nestedRule && nestedRule.type !== NODE_STYLE_RULE) {
 			nestedRule = nestedRule.next_sibling
 		}

@@ -29,6 +29,7 @@ export const NODE_AT_RULE = 3
 export const NODE_DECLARATION = 4
 export const NODE_SELECTOR = 5
 export const NODE_COMMENT = 6
+export const NODE_BLOCK = 7 // Block container for declarations and nested rules
 
 // Value node type constants (for declaration values)
 export const NODE_VALUE_KEYWORD = 10 // identifier: red, auto, inherit
