@@ -46,7 +46,7 @@ export class SelectorParser {
 	}
 
 	// Parse a selector range into selector nodes
-	// Always returns a NODE_SELECTOR wrapper with detailed selector nodes as children
+	// Always returns a NODE_SELECTOR_LIST with selector components as children
 	parse_selector(start: number, end: number, line: number = 1, column: number = 1): number | null {
 		this.selector_end = end
 
@@ -56,30 +56,16 @@ export class SelectorParser {
 		this.lexer.column = column
 
 		// Parse selector list (comma-separated selectors)
-		let innerSelector = this.parse_selector_list()
-		if (innerSelector === null) {
-			return null
-		}
-
-		// Always wrap in NODE_SELECTOR
-		let selectorWrapper = this.arena.create_node()
-		this.arena.set_type(selectorWrapper, NODE_SELECTOR)
-		this.arena.set_start_offset(selectorWrapper, start)
-		this.arena.set_length(selectorWrapper, end - start)
-		this.arena.set_start_line(selectorWrapper, line)
-		this.arena.set_start_column(selectorWrapper, column)
-
-		// Set the parsed selector as the only child
-		this.arena.set_first_child(selectorWrapper, innerSelector)
-		this.arena.set_last_child(selectorWrapper, innerSelector)
-
-		return selectorWrapper
+		// Returns NODE_SELECTOR_LIST directly (no wrapper)
+		return this.parse_selector_list()
 	}
 
 	// Parse comma-separated selectors
 	private parse_selector_list(): number | null {
 		let selectors: number[] = []
 		let list_start = this.lexer.pos
+		let list_line = this.lexer.line
+		let list_column = this.lexer.column
 
 		while (this.lexer.pos < this.selector_end) {
 			let selector = this.parse_complex_selector()
@@ -102,19 +88,14 @@ export class SelectorParser {
 			}
 		}
 
-		// If only one selector, return it directly
-		if (selectors.length === 1) {
-			return selectors[0]
-		}
-
-		// If multiple selectors, wrap in selector list node
-		if (selectors.length > 1) {
+		// Always wrap in selector list node, even for single selectors
+		if (selectors.length >= 1) {
 			let list_node = this.arena.create_node()
 			this.arena.set_type(list_node, NODE_SELECTOR_LIST)
 			this.arena.set_start_offset(list_node, list_start)
 			this.arena.set_length(list_node, this.lexer.pos - list_start)
-			this.arena.set_start_line(list_node, this.lexer.line)
-			this.arena.set_start_column(list_node, this.lexer.column)
+			this.arena.set_start_line(list_node, list_line)
+			this.arena.set_start_column(list_node, list_column)
 
 			// Link selectors as children
 			this.arena.set_first_child(list_node, selectors[0])

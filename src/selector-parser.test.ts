@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import { SelectorParser } from './selector-parser'
 import { CSSDataArena } from './arena'
 import {
-	NODE_SELECTOR,
 	NODE_SELECTOR_LIST,
 	NODE_SELECTOR_TYPE,
 	NODE_SELECTOR_CLASS,
@@ -57,8 +56,8 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// All selectors wrapped in NODE_SELECTOR
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+			// Root is NODE_SELECTOR_LIST
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
 			expect(getNodeText(arena, source, rootNode)).toBe('div')
 
 			// First child is the actual type
@@ -73,8 +72,8 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// All selectors wrapped in NODE_SELECTOR
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+			// Root is NODE_SELECTOR_LIST
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
 
 			const child = arena.get_first_child(rootNode)
 			expect(arena.get_type(child)).toBe(NODE_SELECTOR_CLASS)
@@ -88,8 +87,8 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// All selectors wrapped in NODE_SELECTOR
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+			// Root is NODE_SELECTOR_LIST
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
 
 			const child = arena.get_first_child(rootNode)
 			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ID)
@@ -103,8 +102,8 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// All selectors wrapped in NODE_SELECTOR
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+			// Root is NODE_SELECTOR_LIST
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
 
 			const child = arena.get_first_child(rootNode)
 			expect(arena.get_type(child)).toBe(NODE_SELECTOR_UNIVERSAL)
@@ -117,8 +116,8 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// All selectors wrapped in NODE_SELECTOR
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+			// Root is NODE_SELECTOR_LIST
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
 
 			const child = arena.get_first_child(rootNode)
 			expect(arena.get_type(child)).toBe(NODE_SELECTOR_NESTING)
@@ -133,8 +132,8 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// All selectors wrapped in NODE_SELECTOR
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+			// Root is NODE_SELECTOR_LIST
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
 
 			// Compound selector has multiple children
 			const children = getChildren(arena, source, rootNode)
@@ -151,8 +150,8 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// All selectors wrapped in NODE_SELECTOR
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+			// Root is NODE_SELECTOR_LIST
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
 
 			const children = getChildren(arena, source, rootNode)
 			expect(children).toHaveLength(2)
@@ -310,8 +309,8 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// All selectors wrapped in NODE_SELECTOR
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+			// Root is NODE_SELECTOR_LIST
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
 
 			const child = arena.get_first_child(rootNode)
 			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
@@ -325,8 +324,8 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// All selectors wrapped in NODE_SELECTOR
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+			// Root is NODE_SELECTOR_LIST
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
 
 			const child = arena.get_first_child(rootNode)
 			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
@@ -340,8 +339,8 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// All selectors wrapped in NODE_SELECTOR
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+			// Root is NODE_SELECTOR_LIST
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
 
 			const child = arena.get_first_child(rootNode)
 			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
@@ -401,8 +400,8 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// All selectors wrapped in NODE_SELECTOR
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+			// Root is NODE_SELECTOR_LIST
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
 
 			const children = getChildren(arena, source, rootNode)
 			expect(children.length).toBeGreaterThanOrEqual(2)
@@ -477,14 +476,11 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// All selectors wrapped in NODE_SELECTOR
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+			// Root is NODE_SELECTOR_LIST
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
 
-			// First child is the list
-			const list = arena.get_first_child(rootNode)
-			expect(arena.get_type(list)).toBe(NODE_SELECTOR_LIST)
-
-			const children = getChildren(arena, source, list)
+			// List contains the two selectors
+			const children = getChildren(arena, source, rootNode)
 			expect(children).toHaveLength(2)
 		})
 
@@ -494,14 +490,11 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// All selectors wrapped in NODE_SELECTOR
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+			// Root is NODE_SELECTOR_LIST
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
 
-			// First child is the list
-			const list = arena.get_first_child(rootNode)
-			expect(arena.get_type(list)).toBe(NODE_SELECTOR_LIST)
-
-			const children = getChildren(arena, source, list)
+			// List contains the three selectors
+			const children = getChildren(arena, source, rootNode)
 			expect(children).toHaveLength(3)
 		})
 
@@ -511,14 +504,11 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// All selectors wrapped in NODE_SELECTOR
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+			// Root is NODE_SELECTOR_LIST
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
 
-			// First child is the list
-			const list = arena.get_first_child(rootNode)
-			expect(arena.get_type(list)).toBe(NODE_SELECTOR_LIST)
-
-			const children = getChildren(arena, source, list)
+			// List contains the three complex selectors
+			const children = getChildren(arena, source, rootNode)
 			expect(children).toHaveLength(3)
 		})
 	})
@@ -530,8 +520,8 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// All selectors wrapped in NODE_SELECTOR
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+			// Root is NODE_SELECTOR_LIST
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
 		})
 
 		it('should parse form selector', () => {
@@ -576,8 +566,8 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// All selectors wrapped in NODE_SELECTOR
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+			// Root is NODE_SELECTOR_LIST
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
 
 			const child = arena.get_first_child(rootNode)
 			expect(arena.get_type(child)).toBe(NODE_SELECTOR_PSEUDO_CLASS)
@@ -644,8 +634,8 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// All selectors wrapped in NODE_SELECTOR
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+			// Root is NODE_SELECTOR_LIST
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
 
 			const child = arena.get_first_child(rootNode)
 			expect(arena.get_type(child)).toBe(NODE_SELECTOR_CLASS)
@@ -658,8 +648,8 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// All selectors wrapped in NODE_SELECTOR
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+			// Root is NODE_SELECTOR_LIST
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
 
 			const child = arena.get_first_child(rootNode)
 			expect(arena.get_type(child)).toBe(NODE_SELECTOR_TYPE)
@@ -674,8 +664,8 @@ describe('SelectorParser', () => {
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
 
-			// All selectors wrapped in NODE_SELECTOR
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR)
+			// Root is NODE_SELECTOR_LIST
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
 
 			const child = arena.get_first_child(rootNode)
 			expect(arena.get_type(child)).toBe(NODE_SELECTOR_CLASS)

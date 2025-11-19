@@ -79,7 +79,8 @@ console.log(declaration.value) // "red"
 ```
 Stylesheet (NODE_STYLESHEET)
   └─ StyleRule (NODE_STYLE_RULE)
-       ├─ Selector (NODE_SELECTOR) "body"
+       ├─ SelectorList (NODE_SELECTOR_LIST) "body"
+       │    └─ Type (NODE_SELECTOR_TYPE) "body"
        └─ Declaration (NODE_DECLARATION) "color: red"
             └─ Keyword (NODE_VALUE_KEYWORD) "red"
 ```
@@ -234,8 +235,9 @@ import { parse_selector } from '@projectwallace/css-parser'
 
 const selector = parse_selector('div.class > p#id::before')
 
-console.log(selector.type) // NODE_SELECTOR
-for (const part of selector) {
+console.log(selector.type) // NODE_SELECTOR_LIST
+// Iterate over selector components
+for (const part of selector.first_child) {
 	console.log(part.type, part.text)
 }
 // NODE_SELECTOR_TYPE "div"
@@ -290,7 +292,8 @@ walk(ast, (node, depth) => {
 })
 // NODE_STYLESHEET
 //   NODE_STYLE_RULE
-//     NODE_SELECTOR
+//     NODE_SELECTOR_LIST
+//       NODE_SELECTOR_TYPE
 //     NODE_DECLARATION
 //       NODE_VALUE_KEYWORD
 ```

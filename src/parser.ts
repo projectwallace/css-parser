@@ -5,6 +5,7 @@ import {
 	NODE_STYLESHEET,
 	NODE_STYLE_RULE,
 	NODE_SELECTOR,
+	NODE_SELECTOR_LIST,
 	NODE_DECLARATION,
 	NODE_AT_RULE,
 	FLAG_IMPORTANT,
@@ -237,9 +238,9 @@ export class Parser {
 			}
 		}
 
-		// Otherwise create a simple selector node with just text offsets
+		// Otherwise create a simple selector list node with just text offsets
 		let selector = this.arena.create_node()
-		this.arena.set_type(selector, NODE_SELECTOR)
+		this.arena.set_type(selector, NODE_SELECTOR_LIST)
 		this.arena.set_start_line(selector, selector_line)
 		this.arena.set_start_column(selector, selector_column)
 		this.arena.set_start_offset(selector, selector_start)

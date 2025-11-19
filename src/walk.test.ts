@@ -3,7 +3,7 @@ import {
 	Parser,
 	NODE_STYLESHEET,
 	NODE_STYLE_RULE,
-	NODE_SELECTOR,
+	NODE_SELECTOR_LIST,
 	NODE_DECLARATION,
 	NODE_AT_RULE,
 	NODE_VALUE_KEYWORD,
@@ -37,7 +37,7 @@ describe('walk', () => {
 		expect(visited).toEqual([
 			NODE_STYLESHEET,
 			NODE_STYLE_RULE,
-			NODE_SELECTOR,
+			NODE_SELECTOR_LIST,
 			NODE_DECLARATION,
 			NODE_VALUE_KEYWORD, // red
 		])
@@ -55,13 +55,13 @@ describe('walk', () => {
 		expect(visited).toEqual([
 			NODE_STYLESHEET,
 			NODE_STYLE_RULE, // body rule
-			NODE_SELECTOR, // body selector
+			NODE_SELECTOR_LIST, // body selector
 			NODE_DECLARATION, // color: red
 			NODE_VALUE_KEYWORD, // red
 			NODE_DECLARATION, // margin: 0
 			NODE_VALUE_NUMBER, // 0
 			NODE_STYLE_RULE, // div rule
-			NODE_SELECTOR, // div selector
+			NODE_SELECTOR_LIST, // div selector
 			NODE_DECLARATION, // padding: 1rem
 			NODE_VALUE_DIMENSION, // 1rem
 		])
@@ -79,10 +79,10 @@ describe('walk', () => {
 		expect(visited).toEqual([
 			NODE_STYLESHEET,
 			NODE_STYLE_RULE, // .parent
-			NODE_SELECTOR, // .parent selector
+			NODE_SELECTOR_LIST, // .parent selector
 			NODE_DECLARATION, // color: red
 			NODE_STYLE_RULE, // .child
-			NODE_SELECTOR, // .child selector
+			NODE_SELECTOR_LIST, // .child selector
 			NODE_DECLARATION, // color: blue
 		])
 	})
@@ -104,7 +104,7 @@ describe('walk', () => {
 			NODE_STYLESHEET,
 			NODE_AT_RULE, // @media
 			NODE_STYLE_RULE, // body
-			NODE_SELECTOR, // body selector
+			NODE_SELECTOR_LIST, // body selector
 			NODE_DECLARATION, // color: red
 		])
 	})
@@ -115,7 +115,7 @@ describe('walk', () => {
 		const selectors: string[] = []
 
 		walk(root, (node) => {
-			if (node.type === NODE_SELECTOR) {
+			if (node.type === NODE_SELECTOR_LIST) {
 				selectors.push(node.text)
 			}
 		})
@@ -155,7 +155,7 @@ describe('walk', () => {
 
 		expect.soft(counts[NODE_STYLESHEET]).toBe(1)
 		expect.soft(counts[NODE_STYLE_RULE]).toBe(3)
-		expect.soft(counts[NODE_SELECTOR]).toBe(3)
+		expect.soft(counts[NODE_SELECTOR_LIST]).toBe(3)
 		expect.soft(counts[NODE_DECLARATION]).toBe(3)
 		expect.soft(counts[NODE_AT_RULE]).toBe(1)
 	})
@@ -183,7 +183,7 @@ describe('walk', () => {
 			depths.push(depth)
 		})
 
-		// NODE_STYLESHEET (0), NODE_STYLE_RULE (1), NODE_SELECTOR (2), NODE_DECLARATION (2), NODE_VALUE_KEYWORD (3)
+		// NODE_STYLESHEET (0), NODE_STYLE_RULE (1), NODE_SELECTOR_LIST (2), NODE_DECLARATION (2), NODE_VALUE_KEYWORD (3)
 		expect(depths).toEqual([0, 1, 2, 2, 3])
 	})
 
@@ -218,7 +218,7 @@ describe('walk', () => {
 			{ type: NODE_STYLESHEET, depth: 0 },
 			{ type: NODE_AT_RULE, depth: 1 }, // @media
 			{ type: NODE_STYLE_RULE, depth: 2 }, // body
-			{ type: NODE_SELECTOR, depth: 3 }, // body selector
+			{ type: NODE_SELECTOR_LIST, depth: 3 }, // body selector
 			{ type: NODE_DECLARATION, depth: 3 }, // color: red
 		])
 	})
@@ -240,11 +240,11 @@ describe('walk', () => {
 			{ type: NODE_STYLESHEET, depth: 0 },
 			{ type: NODE_AT_RULE, depth: 1 }, // @media
 			{ type: NODE_STYLE_RULE, depth: 2 }, // body
-			{ type: NODE_SELECTOR, depth: 3 }, // body selector
+			{ type: NODE_SELECTOR_LIST, depth: 3 }, // body selector
 			{ type: NODE_DECLARATION, depth: 3 }, // color: red
 			{ type: NODE_AT_RULE, depth: 1 }, // @layer
 			{ type: NODE_STYLE_RULE, depth: 2 },
-			{ type: NODE_SELECTOR, depth: 3 },
+			{ type: NODE_SELECTOR_LIST, depth: 3 },
 			{ type: NODE_DECLARATION, depth: 3 },
 		])
 	})
@@ -253,7 +253,7 @@ describe('walk', () => {
 		let ast = new Parser('a{}').parse()
 		walk(ast, (node, _depth) => {
 			expectTypeOf(node.type).toBeNumber()
-			if (node.type === NODE_SELECTOR) {
+			if (node.type === NODE_SELECTOR_LIST) {
 				expect(node.text).toEqual('a')
 			}
 		})
@@ -281,8 +281,8 @@ describe('walk enter/leave', () => {
 			},
 		})
 
-		expect(enter).toEqual([NODE_STYLESHEET, NODE_AT_RULE, NODE_STYLE_RULE, NODE_SELECTOR, NODE_DECLARATION])
-		expect(leave).toEqual([NODE_SELECTOR, NODE_DECLARATION, NODE_STYLE_RULE, NODE_AT_RULE, NODE_STYLESHEET])
+		expect(enter).toEqual([NODE_STYLESHEET, NODE_AT_RULE, NODE_STYLE_RULE, NODE_SELECTOR_LIST, NODE_DECLARATION])
+		expect(leave).toEqual([NODE_SELECTOR_LIST, NODE_DECLARATION, NODE_STYLE_RULE, NODE_AT_RULE, NODE_STYLESHEET])
 	})
 
 	test('only enter', () => {
@@ -294,7 +294,7 @@ describe('walk enter/leave', () => {
 			},
 		})
 
-		expect(enter).toEqual([NODE_STYLESHEET, NODE_AT_RULE, NODE_STYLE_RULE, NODE_SELECTOR, NODE_DECLARATION])
+		expect(enter).toEqual([NODE_STYLESHEET, NODE_AT_RULE, NODE_STYLE_RULE, NODE_SELECTOR_LIST, NODE_DECLARATION])
 	})
 
 	test('only leave', () => {
@@ -306,7 +306,7 @@ describe('walk enter/leave', () => {
 			},
 		})
 
-		expect(leave).toEqual([NODE_SELECTOR, NODE_DECLARATION, NODE_STYLE_RULE, NODE_AT_RULE, NODE_STYLESHEET])
+		expect(leave).toEqual([NODE_SELECTOR_LIST, NODE_DECLARATION, NODE_STYLE_RULE, NODE_AT_RULE, NODE_STYLESHEET])
 	})
 
 	test('neither', () => {

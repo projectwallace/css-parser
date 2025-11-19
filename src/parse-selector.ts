@@ -1,4 +1,4 @@
-import { CSSDataArena, NODE_SELECTOR } from './arena'
+import { CSSDataArena, NODE_SELECTOR_LIST } from './arena'
 import { SelectorParser } from './selector-parser'
 import { CSSNode } from './css-node'
 
@@ -18,9 +18,9 @@ export function parse_selector(source: string): CSSNode {
 	const selector_index = selector_parser.parse_selector(0, source.length)
 
 	if (selector_index === null) {
-		// Return empty selector node if parsing failed
+		// Return empty selector list node if parsing failed
 		const empty = arena.create_node()
-		arena.set_type(empty, NODE_SELECTOR)
+		arena.set_type(empty, NODE_SELECTOR_LIST)
 		arena.set_start_offset(empty, 0)
 		arena.set_length(empty, 0)
 		arena.set_start_line(empty, 1)

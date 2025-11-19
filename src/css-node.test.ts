@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { Parser } from './parser'
-import { NODE_DECLARATION, NODE_SELECTOR, NODE_STYLE_RULE, NODE_AT_RULE } from './arena'
+import { NODE_DECLARATION, NODE_SELECTOR_LIST, NODE_STYLE_RULE, NODE_AT_RULE } from './arena'
 
 describe('CSSNode', () => {
 	describe('iteration', () => {
@@ -16,7 +16,7 @@ describe('CSSNode', () => {
 				types.push(child.type)
 			}
 
-			expect(types).toEqual([NODE_SELECTOR, NODE_DECLARATION, NODE_DECLARATION, NODE_DECLARATION])
+			expect(types).toEqual([NODE_SELECTOR_LIST, NODE_DECLARATION, NODE_DECLARATION, NODE_DECLARATION])
 		})
 
 		test('should work with spread operator', () => {

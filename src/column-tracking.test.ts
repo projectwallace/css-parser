@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { parse } from './parse'
-import { NODE_STYLE_RULE, NODE_DECLARATION, NODE_AT_RULE, NODE_SELECTOR } from './parser'
+import { NODE_STYLE_RULE, NODE_DECLARATION, NODE_AT_RULE, NODE_SELECTOR_LIST } from './parser'
 
 describe('Column Tracking', () => {
 	test('should track column for single-line CSS', () => {
@@ -21,7 +21,7 @@ describe('Column Tracking', () => {
 		// Selector (body)
 		const selector = rule!.first_child
 		expect(selector).not.toBeNull()
-		expect(selector!.type).toBe(NODE_SELECTOR)
+		expect(selector!.type).toBe(NODE_SELECTOR_LIST)
 		expect(selector!.line).toBe(1)
 		expect(selector!.column).toBe(1)
 
