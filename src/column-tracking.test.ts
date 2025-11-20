@@ -78,9 +78,8 @@ describe('Column Tracking', () => {
 		expect(nestedRule).not.toBeNull()
 		expect(nestedRule!.type).toBe(NODE_STYLE_RULE)
 		expect(nestedRule!.line).toBe(1)
-		// Column 17 is where 'body' starts, but parser captures at column 22 (the '{' after body)
-		// This is the current behavior - column tracking works, just captures at a different point
-		expect(nestedRule!.column).toBe(22)
+		// Column 17 is where 'body' starts (beginning of selector)
+		expect(nestedRule!.column).toBe(17)
 	})
 
 	test('should track column for multiple rules on same line', () => {

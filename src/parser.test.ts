@@ -1,5 +1,15 @@
 import { describe, test, expect } from 'vitest'
-import { Parser, NODE_STYLESHEET, NODE_STYLE_RULE, NODE_AT_RULE, NODE_DECLARATION } from './parser'
+import {
+	Parser,
+	NODE_STYLESHEET,
+	NODE_STYLE_RULE,
+	NODE_AT_RULE,
+	NODE_DECLARATION,
+	NODE_BLOCK,
+	NODE_SELECTOR_LIST,
+	NODE_SELECTOR,
+} from './parser'
+import { parse } from './parse'
 
 describe('Parser', () => {
 	describe('basic parsing', () => {
@@ -1721,6 +1731,38 @@ describe('Parser', () => {
 		})
 	})
 
+	describe('atrule block children', () => {
+		let css = `@layer test { a {} }`
+		let sheet = parse(css)
+		let atrule = sheet?.first_child
+		let rule = atrule?.block?.first_child
+
+		test('atrule should have block', () => {
+			expect(sheet.type).toBe(NODE_STYLESHEET)
+			expect(atrule!.type).toBe(NODE_AT_RULE)
+			expect(atrule?.block?.type).toBe(NODE_BLOCK)
+		})
+
+		test('block children should be stylerule', () => {
+			expect(atrule!.block).not.toBeNull()
+			expect(rule!.type).toBe(NODE_STYLE_RULE)
+		})
+
+		test('rule should have selectorlist + block', () => {
+			expect(rule!.block).not.toBeNull()
+			expect(rule?.has_block).toBeTruthy()
+			expect(rule?.has_declarations).toBeFalsy()
+			expect(rule?.first_child!.type).toBe(NODE_SELECTOR_LIST)
+		})
+
+		test('has correct nested selectors', () => {
+			let list = rule?.first_child
+			expect(list.type).toBe(NODE_SELECTOR_LIST)
+			expect(list.children).toHaveLength(1)
+			expect(list?.first_child?.type).toEqual(NODE_SELECTOR)
+		})
+	})
+
 	describe('block text excludes braces', () => {
 		test('empty at-rule block should have empty text', () => {
 			const parser = new Parser('@layer test {}')
@@ -1728,7 +1770,7 @@ describe('Parser', () => {
 			const atRule = root.first_child!
 
 			expect(atRule.has_block).toBe(true)
-			expect(atRule.block.text).toBe('')
+			expect(atRule.block!.text).toBe('')
 			expect(atRule.text).toBe('@layer test {}') // at-rule includes braces
 		})
 
@@ -1738,7 +1780,7 @@ describe('Parser', () => {
 			const atRule = root.first_child!
 
 			expect(atRule.has_block).toBe(true)
-			expect(atRule.block.text).toBe(' .foo { color: red; } ')
+			expect(atRule.block!.text).toBe(' .foo { color: red; } ')
 			expect(atRule.text).toBe('@layer test { .foo { color: red; } }') // at-rule includes braces
 		})
 
@@ -1748,7 +1790,7 @@ describe('Parser', () => {
 			const styleRule = root.first_child!
 
 			expect(styleRule.has_block).toBe(true)
-			expect(styleRule.block.text).toBe('')
+			expect(styleRule.block!.text).toBe('')
 			expect(styleRule.text).toBe('body {}') // style rule includes braces
 		})
 
@@ -1758,7 +1800,7 @@ describe('Parser', () => {
 			const styleRule = root.first_child!
 
 			expect(styleRule.has_block).toBe(true)
-			expect(styleRule.block.text).toBe(' color: red; ')
+			expect(styleRule.block!.text).toBe(' color: red; ')
 			expect(styleRule.text).toBe('body { color: red; }') // style rule includes braces
 		})
 
@@ -1766,9 +1808,9 @@ describe('Parser', () => {
 			const parser = new Parser('.parent { .child { margin: 0; } }')
 			const root = parser.parse()
 			const parent = root.first_child!
-			const parentBlock = parent.block
+			const parentBlock = parent.block!
 			const child = parentBlock.first_child!
-			const childBlock = child.block
+			const childBlock = child.block!
 
 			expect(parentBlock.text).toBe(' .child { margin: 0; } ')
 			expect(childBlock.text).toBe(' margin: 0; ')
@@ -1779,7 +1821,7 @@ describe('Parser', () => {
 			const root = parser.parse()
 			const atRule = root.first_child!
 
-			expect(atRule.block.text).toBe(' font-family: "Test"; src: url(test.woff); ')
+			expect(atRule.block!.text).toBe(' font-family: "Test"; src: url(test.woff); ')
 		})
 
 		test('media query with nested rules should exclude braces', () => {
@@ -1787,7 +1829,7 @@ describe('Parser', () => {
 			const root = parser.parse()
 			const mediaRule = root.first_child!
 
-			expect(mediaRule.block.text).toBe(' body { color: blue; } ')
+			expect(mediaRule.block!.text).toBe(' body { color: blue; } ')
 		})
 
 		test('block with no whitespace should be empty', () => {
@@ -1795,7 +1837,7 @@ describe('Parser', () => {
 			const root = parser.parse()
 			const styleRule = root.first_child!
 
-			expect(styleRule.block.text).toBe('')
+			expect(styleRule.block!.text).toBe('')
 		})
 
 		test('block with only whitespace should preserve whitespace', () => {
@@ -1803,7 +1845,7 @@ describe('Parser', () => {
 			const root = parser.parse()
 			const styleRule = root.first_child!
 
-			expect(styleRule.block.text).toBe(' \n\t ')
+			expect(styleRule.block!.text).toBe(' \n\t ')
 		})
 	})
 })

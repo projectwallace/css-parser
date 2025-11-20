@@ -279,10 +279,29 @@ export class Parser {
 		let decl_line = this.lexer.token_line
 		let decl_column = this.lexer.token_column
 
+		// Lookahead: save lexer state before consuming
+		let saved_pos = this.lexer.pos
+		let saved_line = this.lexer.line
+		let saved_column = this.lexer.column
+		let saved_token_type = this.lexer.token_type
+		let saved_token_start = this.lexer.token_start
+		let saved_token_end = this.lexer.token_end
+		let saved_token_line = this.lexer.token_line
+		let saved_token_column = this.lexer.token_column
+
 		this.next_token() // consume property name
 
 		// Expect ':'
 		if (this.peek_type() !== TOKEN_COLON) {
+			// Restore lexer state and return null
+			this.lexer.pos = saved_pos
+			this.lexer.line = saved_line
+			this.lexer.column = saved_column
+			this.lexer.token_type = saved_token_type
+			this.lexer.token_start = saved_token_start
+			this.lexer.token_end = saved_token_end
+			this.lexer.token_line = saved_token_line
+			this.lexer.token_column = saved_token_column
 			return null
 		}
 		this.next_token() // consume ':'
