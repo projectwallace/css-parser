@@ -167,11 +167,12 @@ export class Parser {
 			// Error recovery: skip to next rule
 			return null
 		}
+		// Capture block start position (right after '{') before consuming the token
+		let block_start = this.lexer.token_end
 		this.next_token() // consume '{'
 		this.arena.set_flag(style_rule, FLAG_HAS_BLOCK) // Style rules always have blocks
 
 		// Create block node
-		let block_start = this.lexer.token_start
 		let block_line = this.lexer.token_line
 		let block_column = this.lexer.token_column
 		let block_node = this.arena.create_node()
@@ -214,13 +215,15 @@ export class Parser {
 			}
 		}
 
-		// Expect '}'
+		// Expect '}' and calculate block length (excluding closing brace)
+		let block_end = this.lexer.token_start
 		if (this.peek_type() === TOKEN_RIGHT_BRACE) {
+			block_end = this.lexer.token_start // Position of '}' (not included in block)
 			this.next_token() // consume '}'
 		}
 
 		// Set block length and append to style rule
-		this.arena.set_length(block_node, this.lexer.token_end - block_start)
+		this.arena.set_length(block_node, block_end - block_start)
 		this.arena.append_child(style_rule, block_node)
 
 		// Set the rule's offsets
@@ -429,11 +432,12 @@ export class Parser {
 
 		// Check if this at-rule has a block or is a statement
 		if (this.peek_type() === TOKEN_LEFT_BRACE) {
+			// Capture block start position (right after '{') before consuming the token
+			let block_start = this.lexer.token_end
 			this.next_token() // consume '{'
 			this.arena.set_flag(at_rule, FLAG_HAS_BLOCK) // At-rule has a block
 
 			// Create block node
-			let block_start = this.lexer.token_start
 			let block_line = this.lexer.token_line
 			let block_column = this.lexer.token_column
 			let block_node = this.arena.create_node()
@@ -507,14 +511,19 @@ export class Parser {
 				}
 			}
 
-			// Consume '}'
+			// Consume '}' (block excludes closing brace, but at-rule includes it)
 			if (this.peek_type() === TOKEN_RIGHT_BRACE) {
-				last_end = this.lexer.token_end
+				let block_end = this.lexer.token_start // Position of '}' (not included in block)
 				this.next_token()
+				last_end = this.lexer.token_end // Position after '}' (included in at-rule)
+
+				// Set block length (excludes closing brace)
+				this.arena.set_length(block_node, block_end - block_start)
+			} else {
+				// No closing brace found (error recovery)
+				this.arena.set_length(block_node, last_end - block_start)
 			}
 
-			// Set block length and append to at-rule
-			this.arena.set_length(block_node, last_end - block_start)
 			this.arena.append_child(at_rule, block_node)
 		} else if (this.peek_type() === TOKEN_SEMICOLON) {
 			// Statement at-rule (like @import, @namespace)

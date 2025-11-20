@@ -1720,4 +1720,90 @@ describe('Parser', () => {
 			expect(atrule.value).toBe('(min-width: 768px)')
 		})
 	})
+
+	describe('block text excludes braces', () => {
+		test('empty at-rule block should have empty text', () => {
+			const parser = new Parser('@layer test {}')
+			const root = parser.parse()
+			const atRule = root.first_child!
+
+			expect(atRule.has_block).toBe(true)
+			expect(atRule.block.text).toBe('')
+			expect(atRule.text).toBe('@layer test {}') // at-rule includes braces
+		})
+
+		test('at-rule block with content should exclude braces', () => {
+			const parser = new Parser('@layer test { .foo { color: red; } }')
+			const root = parser.parse()
+			const atRule = root.first_child!
+
+			expect(atRule.has_block).toBe(true)
+			expect(atRule.block.text).toBe(' .foo { color: red; } ')
+			expect(atRule.text).toBe('@layer test { .foo { color: red; } }') // at-rule includes braces
+		})
+
+		test('empty style rule block should have empty text', () => {
+			const parser = new Parser('body {}')
+			const root = parser.parse()
+			const styleRule = root.first_child!
+
+			expect(styleRule.has_block).toBe(true)
+			expect(styleRule.block.text).toBe('')
+			expect(styleRule.text).toBe('body {}') // style rule includes braces
+		})
+
+		test('style rule block with declaration should exclude braces', () => {
+			const parser = new Parser('body { color: red; }')
+			const root = parser.parse()
+			const styleRule = root.first_child!
+
+			expect(styleRule.has_block).toBe(true)
+			expect(styleRule.block.text).toBe(' color: red; ')
+			expect(styleRule.text).toBe('body { color: red; }') // style rule includes braces
+		})
+
+		test('nested style rule blocks should exclude braces', () => {
+			const parser = new Parser('.parent { .child { margin: 0; } }')
+			const root = parser.parse()
+			const parent = root.first_child!
+			const parentBlock = parent.block
+			const child = parentBlock.first_child!
+			const childBlock = child.block
+
+			expect(parentBlock.text).toBe(' .child { margin: 0; } ')
+			expect(childBlock.text).toBe(' margin: 0; ')
+		})
+
+		test('at-rule with multiple declarations should exclude braces', () => {
+			const parser = new Parser('@font-face { font-family: "Test"; src: url(test.woff); }')
+			const root = parser.parse()
+			const atRule = root.first_child!
+
+			expect(atRule.block.text).toBe(' font-family: "Test"; src: url(test.woff); ')
+		})
+
+		test('media query with nested rules should exclude braces', () => {
+			const parser = new Parser('@media screen { body { color: blue; } }')
+			const root = parser.parse()
+			const mediaRule = root.first_child!
+
+			expect(mediaRule.block.text).toBe(' body { color: blue; } ')
+		})
+
+		test('block with no whitespace should be empty', () => {
+			const parser = new Parser('div{}')
+			const root = parser.parse()
+			const styleRule = root.first_child!
+
+			expect(styleRule.block.text).toBe('')
+		})
+
+		test('block with only whitespace should preserve whitespace', () => {
+			const parser = new Parser('div{ \n\t }')
+			const root = parser.parse()
+			const styleRule = root.first_child!
+
+			expect(styleRule.block.text).toBe(' \n\t ')
+		})
+	})
 })

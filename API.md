@@ -419,7 +419,7 @@ import {
 - `NODE_SELECTOR_ATTRIBUTE` (24) - Attribute selector (e.g., `[attr=value]`)
 - `NODE_SELECTOR_PSEUDO_CLASS` (25) - Pseudo-class (e.g., `:hover`)
 - `NODE_SELECTOR_PSEUDO_ELEMENT` (26) - Pseudo-element (e.g., `::before`)
-- `NODE_SELECTOR_COMBINATOR` (27) - Combinator (e.g., `>`, `+`, `~`)
+- `NODE_SELECTOR_COMBINATOR` (27) - Combinator (e.g., `>`, `+`, `~`, or ` `)
 - `NODE_SELECTOR_UNIVERSAL` (28) - Universal selector (`*`)
 - `NODE_SELECTOR_NESTING` (29) - Nesting selector (`&`)
 

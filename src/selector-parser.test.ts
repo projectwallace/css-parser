@@ -652,6 +652,50 @@ describe('SelectorParser', () => {
 			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_NESTING)
 			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_CLASS)
 		})
+
+		it('should parse nesting selector with descendant combinator as single selector', () => {
+			const { arena, rootNode, source } = parseSelector('& span')
+
+			expect(rootNode).not.toBeNull()
+			if (!rootNode) return
+
+			// Root is NODE_SELECTOR_LIST
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
+
+			// Should have only ONE selector, not two
+			const selectorWrappers = getChildren(arena, source, rootNode)
+			expect(selectorWrappers).toHaveLength(1)
+
+			// The single selector should have 3 children: &, combinator (space), span
+			const selectorWrapper = selectorWrappers[0]
+			const children = getChildren(arena, source, selectorWrapper)
+			expect(children).toHaveLength(3)
+			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_NESTING)
+			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(arena.get_type(children[2])).toBe(NODE_SELECTOR_TYPE)
+			expect(getNodeText(arena, source, children[2])).toBe('span')
+		})
+
+		it('should parse nesting selector with child combinator as single selector', () => {
+			const { arena, rootNode, source } = parseSelector('& > div')
+
+			expect(rootNode).not.toBeNull()
+			if (!rootNode) return
+
+			// Should have only ONE selector, not two
+			const selectorWrappers = getChildren(arena, source, rootNode)
+			expect(selectorWrappers).toHaveLength(1)
+
+			// The single selector should have 3 children: &, combinator (>), div
+			const selectorWrapper = selectorWrappers[0]
+			const children = getChildren(arena, source, selectorWrapper)
+			expect(children).toHaveLength(3)
+			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_NESTING)
+			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(getNodeText(arena, source, children[1]).trim()).toBe('>')
+			expect(arena.get_type(children[2])).toBe(NODE_SELECTOR_TYPE)
+			expect(getNodeText(arena, source, children[2])).toBe('div')
+		})
 	})
 
 	describe('Edge cases', () => {
