@@ -36,7 +36,7 @@ describe('ValueParser', () => {
 			expect(decl?.values[0].text).toBe('0.5')
 		})
 
-		it('should parse dimension values', () => {
+		it('should parse px dimension values', () => {
 			const parser = new Parser('body { width: 100px; }')
 			const root = parser.parse()
 			const rule = root.first_child
@@ -46,6 +46,22 @@ describe('ValueParser', () => {
 			expect(decl?.values).toHaveLength(1)
 			expect(decl?.values[0].type).toBe(NODE_VALUE_DIMENSION)
 			expect(decl?.values[0].text).toBe('100px')
+			expect(decl?.values[0].value).toBe(100)
+			expect(decl?.values[0].unit).toBe('px')
+		})
+
+		it('should parse px dimension values', () => {
+			const parser = new Parser('body { font-size: 3em; }')
+			const root = parser.parse()
+			const rule = root.first_child
+			const decl = rule?.first_child?.next_sibling?.first_child
+
+			expect(decl?.value).toBe('3em')
+			expect(decl?.values).toHaveLength(1)
+			expect(decl?.values[0].type).toBe(NODE_VALUE_DIMENSION)
+			expect(decl?.values[0].text).toBe('3em')
+			expect(decl?.values[0].value).toBe(3)
+			expect(decl?.values[0].unit).toBe('em')
 		})
 
 		it('should parse percentage values', () => {

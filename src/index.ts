@@ -13,6 +13,16 @@ export { type ParserOptions } from './parser'
 // Types
 export { CSSNode, type CSSNodeType } from './css-node'
 
+export {
+	ATTR_OPERATOR_NONE,
+	ATTR_OPERATOR_EQUAL,
+	ATTR_OPERATOR_TILDE_EQUAL,
+	ATTR_OPERATOR_PIPE_EQUAL,
+	ATTR_OPERATOR_CARET_EQUAL,
+	ATTR_OPERATOR_DOLLAR_EQUAL,
+	ATTR_OPERATOR_STAR_EQUAL,
+} from './arena'
+
 // Constants
 export {
 	NODE_STYLE_RULE,

@@ -9,6 +9,8 @@ export const CHAR_FORM_FEED = 0x0c // '\f'
 export const CHAR_FORWARD_SLASH = 0x2f // '/'
 export const CHAR_ASTERISK = 0x2a // '*'
 export const CHAR_MINUS_HYPHEN = 0x2d // '-'
+export const CHAR_SINGLE_QUOTE = 0x27 // '''
+export const CHAR_DOUBLE_QUOTE = 0x22 // '"'
 
 /**
  * Check if a character code is whitespace (space, tab, newline, CR, or FF)
@@ -156,4 +158,65 @@ export function is_vendor_prefixed(source: string, start: number, end: number): 
 	// This identifies: -webkit-, -moz-, -ms-, -o-
 	let secondHyphenPos = source.indexOf('-', start + 2)
 	return secondHyphenPos !== -1 && secondHyphenPos < end
+}
+
+/**
+ * Parse a dimension string into numeric value and unit
+ *
+ * @param text - Dimension text like "100px", "50%", "1.5em"
+ * @returns Object with value (number) and unit (string)
+ *
+ * Examples:
+ * - "100px" → { value: 100, unit: "px" }
+ * - "50%" → { value: 50, unit: "%" }
+ * - "1.5em" → { value: 1.5, unit: "em" }
+ * - "-10rem" → { value: -10, unit: "rem" }
+ */
+export function parse_dimension(text: string): { value: number; unit: string } {
+	// Find where the numeric part ends
+	let numEnd = 0
+	for (let i = 0; i < text.length; i++) {
+		let ch = text.charCodeAt(i)
+
+		// Check for e/E (scientific notation)
+		if (ch === 0x65 || ch === 0x45) { // e or E
+			// Only allow e/E if followed by digit or sign+digit
+			if (i + 1 < text.length) {
+				let nextCh = text.charCodeAt(i + 1)
+				// Check if next is digit
+				if (nextCh >= 0x30 && nextCh <= 0x39) {
+					numEnd = i + 1
+					continue
+				}
+				// Check if next is sign followed by digit
+				if ((nextCh === 0x2b || nextCh === 0x2d) && i + 2 < text.length) {
+					let afterSign = text.charCodeAt(i + 2)
+					if (afterSign >= 0x30 && afterSign <= 0x39) {
+						numEnd = i + 1
+						continue
+					}
+				}
+			}
+			// e/E not followed by valid scientific notation, stop
+			break
+		}
+
+		// Allow digits, dot, minus, plus
+		if (
+			(ch >= 0x30 && ch <= 0x39) || // 0-9
+			ch === 0x2e || // .
+			ch === 0x2d || // -
+			ch === 0x2b // +
+		) {
+			numEnd = i + 1
+		} else {
+			break
+		}
+	}
+
+	let numStr = text.substring(0, numEnd)
+	let unit = text.substring(numEnd)
+	let value = numStr ? parseFloat(numStr) : 0
+
+	return { value, unit }
 }

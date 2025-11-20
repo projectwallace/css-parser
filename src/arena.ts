@@ -73,6 +73,15 @@ export const FLAG_HAS_BLOCK = 1 << 3 // Has { } block (for style rules and at-ru
 export const FLAG_VENDOR_PREFIXED = 1 << 4 // Has vendor prefix (-webkit-, -moz-, -ms-, -o-)
 export const FLAG_HAS_DECLARATIONS = 1 << 5 // Has declarations (for style rules)
 
+// Attribute selector operator constants (stored in 1 byte at offset 2)
+export const ATTR_OPERATOR_NONE = 0 // [attr]
+export const ATTR_OPERATOR_EQUAL = 1 // [attr=value]
+export const ATTR_OPERATOR_TILDE_EQUAL = 2 // [attr~=value]
+export const ATTR_OPERATOR_PIPE_EQUAL = 3 // [attr|=value]
+export const ATTR_OPERATOR_CARET_EQUAL = 4 // [attr^=value]
+export const ATTR_OPERATOR_DOLLAR_EQUAL = 5 // [attr$=value]
+export const ATTR_OPERATOR_STAR_EQUAL = 6 // [attr*=value]
+
 export class CSSDataArena {
 	private buffer: ArrayBuffer
 	private view: DataView
@@ -151,6 +160,11 @@ export class CSSDataArena {
 		return this.view.getUint16(this.node_offset(node_index) + 16, true)
 	}
 
+	// Read attribute operator (for NODE_SELECTOR_ATTRIBUTE)
+	get_attr_operator(node_index: number): number {
+		return this.view.getUint8(this.node_offset(node_index) + 2)
+	}
+
 	// Read first child index (0 = no children)
 	get_first_child(node_index: number): number {
 		return this.view.getUint32(this.node_offset(node_index) + 20, true)
@@ -216,6 +230,11 @@ export class CSSDataArena {
 	// Write content length
 	set_content_length(node_index: number, length: number): void {
 		this.view.setUint16(this.node_offset(node_index) + 16, length, true)
+	}
+
+	// Write attribute operator (for NODE_SELECTOR_ATTRIBUTE)
+	set_attr_operator(node_index: number, operator: number): void {
+		this.view.setUint8(this.node_offset(node_index) + 2, operator)
 	}
 
 	// Write first child index

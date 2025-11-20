@@ -368,7 +368,8 @@ describe('SelectorParser', () => {
 			const child = arena.get_first_child(selectorWrapper)
 			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
 			expect(getNodeText(arena, source, child)).toBe('[type="text"]')
-			expect(getNodeContent(arena, source, child)).toBe('type="text"')
+			// Content now stores just the attribute name
+			expect(getNodeContent(arena, source, child)).toBe('type')
 		})
 
 		it('should parse attribute with operator', () => {
@@ -410,7 +411,10 @@ describe('SelectorParser', () => {
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const child = arena.get_first_child(selectorWrapper)
 			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
-			expect(getNodeContent(arena, source, child)).toBe('data-test="value"')
+			// Content now stores just the attribute name
+			expect(getNodeContent(arena, source, child)).toBe('data-test')
+			// Full text still includes brackets
+			expect(getNodeText(arena, source, child)).toBe('[   data-test="value"   ]')
 		})
 
 		it('should trim comments from attribute selectors', () => {
@@ -422,7 +426,8 @@ describe('SelectorParser', () => {
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const child = arena.get_first_child(selectorWrapper)
 			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
-			expect(getNodeContent(arena, source, child)).toBe('data-test="value"')
+			// Content now stores just the attribute name
+			expect(getNodeContent(arena, source, child)).toBe('data-test')
 		})
 
 		it('should trim whitespace and comments from attribute selectors', () => {
@@ -434,7 +439,8 @@ describe('SelectorParser', () => {
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const child = arena.get_first_child(selectorWrapper)
 			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
-			expect(getNodeContent(arena, source, child)).toBe('data-test="value"')
+			// Content now stores just the attribute name
+			expect(getNodeContent(arena, source, child)).toBe('data-test')
 		})
 	})
 

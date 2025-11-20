@@ -14,6 +14,13 @@ import {
 	NODE_SELECTOR_UNIVERSAL,
 	NODE_SELECTOR_NESTING,
 	FLAG_VENDOR_PREFIXED,
+	ATTR_OPERATOR_NONE,
+	ATTR_OPERATOR_EQUAL,
+	ATTR_OPERATOR_TILDE_EQUAL,
+	ATTR_OPERATOR_PIPE_EQUAL,
+	ATTR_OPERATOR_CARET_EQUAL,
+	ATTR_OPERATOR_DOLLAR_EQUAL,
+	ATTR_OPERATOR_STAR_EQUAL,
 } from './arena'
 import {
 	TOKEN_IDENT,
@@ -377,6 +384,8 @@ export class SelectorParser {
 	private parse_attribute_selector(start: number): number | null {
 		let bracket_depth = 1
 		let end = this.lexer.token_end
+		let content_start = start + 1 // Position after '['
+		let content_end = content_start
 
 		// Find matching ]
 		while (this.lexer.pos < this.selector_end && bracket_depth > 0) {
@@ -387,6 +396,7 @@ export class SelectorParser {
 			} else if (token_type === TOKEN_RIGHT_BRACKET) {
 				bracket_depth--
 				if (bracket_depth === 0) {
+					content_end = this.lexer.token_start // Position before ']'
 					end = this.lexer.token_end
 					break
 				}
@@ -399,13 +409,208 @@ export class SelectorParser {
 		this.arena.set_length(node, end - start)
 		this.arena.set_start_line(node, this.lexer.line)
 		this.arena.set_start_column(node, this.lexer.column)
-		// Content is everything inside the brackets, trimmed
-		let trimmed = trim_boundaries(this.source, start + 1, end - 1)
-		if (trimmed) {
-			this.arena.set_content_start(node, trimmed[0])
-			this.arena.set_content_length(node, trimmed[1] - trimmed[0])
-		}
+
+		// Parse the content inside brackets to extract name, operator, and value
+		this.parse_attribute_content(node, content_start, content_end)
+
 		return node
+	}
+
+	// Parse attribute content to extract name, operator, and value
+	private parse_attribute_content(node: number, start: number, end: number): void {
+		// Skip leading whitespace and comments
+		while (start < end) {
+			let ch = this.source.charCodeAt(start)
+			if (is_whitespace_char(ch)) {
+				start++
+				continue
+			}
+			// Skip comments /*...*/
+			if (ch === 0x2f /* / */ && start + 1 < end && this.source.charCodeAt(start + 1) === 0x2a /* * */) {
+				start += 2 // Skip /*
+				while (start < end) {
+					if (this.source.charCodeAt(start) === 0x2a && start + 1 < end && this.source.charCodeAt(start + 1) === 0x2f) {
+						start += 2 // Skip */
+						break
+					}
+					start++
+				}
+				continue
+			}
+			break
+		}
+
+		// Skip trailing whitespace and comments
+		while (end > start) {
+			let ch = this.source.charCodeAt(end - 1)
+			if (is_whitespace_char(ch)) {
+				end--
+				continue
+			}
+			// Skip comments /*...*/
+			if (ch === 0x2f && end >= 2 && this.source.charCodeAt(end - 2) === 0x2a) {
+				// Find start of comment
+				let pos = end - 2
+				while (pos > start && !(this.source.charCodeAt(pos) === 0x2f && this.source.charCodeAt(pos + 1) === 0x2a)) {
+					pos--
+				}
+				if (pos > start) {
+					end = pos
+					continue
+				}
+			}
+			break
+		}
+
+		if (start >= end) return
+
+		// Find attribute name (up to operator or end)
+		let name_start = start
+		let name_end = start
+		let operator_start = -1
+		let operator_end = -1
+		let value_start = -1
+		let value_end = -1
+
+		// Scan for attribute name
+		while (name_end < end) {
+			let ch = this.source.charCodeAt(name_end)
+			if (is_whitespace_char(ch) || ch === 0x3d /* = */ || ch === 0x7e /* ~ */ || ch === 0x7c /* | */ || ch === 0x5e /* ^ */ || ch === 0x24 /* $ */ || ch === 0x2a /* * */) {
+				break
+			}
+			name_end++
+		}
+
+		// Store attribute name in content fields
+		if (name_end > name_start) {
+			this.arena.set_content_start(node, name_start)
+			this.arena.set_content_length(node, name_end - name_start)
+		}
+
+		// Skip whitespace and comments after name
+		let pos = name_end
+		while (pos < end) {
+			let ch = this.source.charCodeAt(pos)
+			if (is_whitespace_char(ch)) {
+				pos++
+				continue
+			}
+			// Skip comments
+			if (ch === 0x2f && pos + 1 < end && this.source.charCodeAt(pos + 1) === 0x2a) {
+				pos += 2
+				while (pos < end) {
+					if (this.source.charCodeAt(pos) === 0x2a && pos + 1 < end && this.source.charCodeAt(pos + 1) === 0x2f) {
+						pos += 2
+						break
+					}
+					pos++
+				}
+				continue
+			}
+			break
+		}
+
+		if (pos >= end) {
+			// No operator, just [attr]
+			this.arena.set_attr_operator(node, ATTR_OPERATOR_NONE)
+			return
+		}
+
+		// Parse operator
+		operator_start = pos
+		let ch1 = this.source.charCodeAt(pos)
+
+		if (ch1 === 0x3d) { // =
+			operator_end = pos + 1
+			this.arena.set_attr_operator(node, ATTR_OPERATOR_EQUAL)
+		} else if (ch1 === 0x7e && pos + 1 < end && this.source.charCodeAt(pos + 1) === 0x3d) { // ~=
+			operator_end = pos + 2
+			this.arena.set_attr_operator(node, ATTR_OPERATOR_TILDE_EQUAL)
+		} else if (ch1 === 0x7c && pos + 1 < end && this.source.charCodeAt(pos + 1) === 0x3d) { // |=
+			operator_end = pos + 2
+			this.arena.set_attr_operator(node, ATTR_OPERATOR_PIPE_EQUAL)
+		} else if (ch1 === 0x5e && pos + 1 < end && this.source.charCodeAt(pos + 1) === 0x3d) { // ^=
+			operator_end = pos + 2
+			this.arena.set_attr_operator(node, ATTR_OPERATOR_CARET_EQUAL)
+		} else if (ch1 === 0x24 && pos + 1 < end && this.source.charCodeAt(pos + 1) === 0x3d) { // $=
+			operator_end = pos + 2
+			this.arena.set_attr_operator(node, ATTR_OPERATOR_DOLLAR_EQUAL)
+		} else if (ch1 === 0x2a && pos + 1 < end && this.source.charCodeAt(pos + 1) === 0x3d) { // *=
+			operator_end = pos + 2
+			this.arena.set_attr_operator(node, ATTR_OPERATOR_STAR_EQUAL)
+		} else {
+			// No valid operator
+			this.arena.set_attr_operator(node, ATTR_OPERATOR_NONE)
+			return
+		}
+
+		// Skip whitespace and comments after operator
+		pos = operator_end
+		while (pos < end) {
+			let ch = this.source.charCodeAt(pos)
+			if (is_whitespace_char(ch)) {
+				pos++
+				continue
+			}
+			// Skip comments
+			if (ch === 0x2f && pos + 1 < end && this.source.charCodeAt(pos + 1) === 0x2a) {
+				pos += 2
+				while (pos < end) {
+					if (this.source.charCodeAt(pos) === 0x2a && pos + 1 < end && this.source.charCodeAt(pos + 1) === 0x2f) {
+						pos += 2
+						break
+					}
+					pos++
+				}
+				continue
+			}
+			break
+		}
+
+		if (pos >= end) {
+			// No value after operator
+			return
+		}
+
+		// Parse value (can be quoted or unquoted)
+		value_start = pos
+		let ch = this.source.charCodeAt(pos)
+
+		if (ch === 0x22 || ch === 0x27) { // " or '
+			// Quoted string - find matching quote
+			let quote = ch
+			value_start = pos // Include quotes in value
+			pos++
+			while (pos < end) {
+				let c = this.source.charCodeAt(pos)
+				if (c === quote) {
+					pos++
+					break
+				}
+				if (c === 0x5c) { // backslash - skip next char
+					pos += 2
+				} else {
+					pos++
+				}
+			}
+			value_end = pos
+		} else {
+			// Unquoted identifier
+			while (pos < end) {
+				let c = this.source.charCodeAt(pos)
+				if (is_whitespace_char(c)) {
+					break
+				}
+				pos++
+			}
+			value_end = pos
+		}
+
+		// Store value in value fields
+		if (value_end > value_start) {
+			this.arena.set_value_start(node, value_start)
+			this.arena.set_value_length(node, value_end - value_start)
+		}
 	}
 
 	// Parse pseudo-class or pseudo-element (:hover, ::before)

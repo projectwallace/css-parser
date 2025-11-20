@@ -43,6 +43,8 @@ import {
 	FLAG_HAS_DECLARATIONS,
 } from './arena'
 
+import { parse_dimension, CHAR_SINGLE_QUOTE, CHAR_DOUBLE_QUOTE } from './string-utils'
+
 // Node type constants (numeric for performance)
 export type CSSNodeType =
 	| typeof NODE_STYLESHEET
@@ -124,7 +126,15 @@ export class CSSNode {
 	}
 
 	// Get the value text (for declarations: "blue" in "color: blue")
-	get value(): string | null {
+	// For dimension/number nodes: returns the numeric value as a number
+	// For string nodes: returns the string content without quotes
+	get value(): string | number | null {
+		// For dimension and number nodes, parse and return as number
+		if (this.type === NODE_VALUE_DIMENSION || this.type === NODE_VALUE_NUMBER) {
+			return parse_dimension(this.text).value
+		}
+
+		// For other nodes, return as string
 		let start = this.arena.get_value_start(this.index)
 		let length = this.arena.get_value_length(this.index)
 		if (length === 0) return null
@@ -134,7 +144,20 @@ export class CSSNode {
 	// Get the prelude text (for at-rules: "(min-width: 768px)" in "@media (min-width: 768px)")
 	// This is an alias for `value` to make at-rule usage more semantic
 	get prelude(): string | null {
-		return this.value
+		let val = this.value
+		return typeof val === 'string' ? val : null
+	}
+
+	// Get the attribute operator (for attribute selectors: =, ~=, |=, ^=, $=, *=)
+	// Returns one of the ATTR_OPERATOR_* constants
+	get attr_operator(): number {
+		return this.arena.get_attr_operator(this.index)
+	}
+
+	// Get the unit for dimension nodes (e.g., "px" from "100px", "%" from "50%")
+	get unit(): string | null {
+		if (this.type !== NODE_VALUE_DIMENSION) return null
+		return parse_dimension(this.text).unit
 	}
 
 	// Check if this declaration has !important

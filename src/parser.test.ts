@@ -10,8 +10,10 @@ import {
 	NODE_SELECTOR,
 	NODE_SELECTOR_PSEUDO_CLASS,
 	NODE_SELECTOR_TYPE,
+	NODE_SELECTOR_ATTRIBUTE,
 } from './parser'
 import { parse } from './parse'
+import { ATTR_OPERATOR_PIPE_EQUAL } from './arena'
 
 describe('Parser', () => {
 	describe('basic parsing', () => {
@@ -128,6 +130,20 @@ describe('Parser', () => {
 			const pseudo = selector.children[1]
 			expect(pseudo.text).toBe(':has(a)')
 			expect(pseudo.children).toHaveLength(1)
+		})
+
+		test('attribute selector should have name, value and operator', () => {
+			const source = '[root|="test"] {}'
+			const root = parse(source)
+			const rule = root.first_child!
+			const selectorlist = rule.first_child!
+			const selector = selectorlist.first_child!
+			expect(selector.type).toBe(NODE_SELECTOR)
+			const s = selector.children[0]
+			expect(s.type).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(s.attr_operator).toEqual(ATTR_OPERATOR_PIPE_EQUAL)
+			expect(s.name).toBe('root')
+			expect(s.value).toBe('"test"')
 		})
 	})
 
