@@ -8,6 +8,8 @@ import {
 	NODE_BLOCK,
 	NODE_SELECTOR_LIST,
 	NODE_SELECTOR,
+	NODE_SELECTOR_PSEUDO_CLASS,
+	NODE_SELECTOR_TYPE,
 } from './parser'
 import { parse } from './parse'
 
@@ -110,6 +112,22 @@ describe('Parser', () => {
 			expect(selector.children[2].text).toBe('>')
 			expect(selector.children[3].text).toBe('p')
 			expect(selector.children[4].text).toBe('#id')
+		})
+
+		test('should parse pseudo class selector', () => {
+			const source = 'p:has(a) {}'
+			const root = parse(source)
+			const rule = root.first_child!
+			const selectorlist = rule.first_child!
+			const selector = selectorlist.first_child!
+
+			expect(selector.type).toBe(NODE_SELECTOR)
+			expect(selector.children[0].type).toBe(NODE_SELECTOR_TYPE)
+			expect(selector.children[1].type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(selector.children[2]).toBeUndefined()
+			const pseudo = selector.children[1]
+			expect(pseudo.text).toBe(':has(a)')
+			expect(pseudo.children).toHaveLength(1)
 		})
 	})
 

@@ -464,6 +464,10 @@ export class SelectorParser {
 		let func_name_start = this.lexer.token_start
 		let func_name_end = this.lexer.token_end - 1 // Exclude the '('
 
+		// Capture content start (right after the '(')
+		let content_start = this.lexer.pos
+		let content_end = content_start
+
 		// Find matching )
 		let paren_depth = 1
 		let end = this.lexer.token_end
@@ -476,6 +480,7 @@ export class SelectorParser {
 			} else if (token_type === TOKEN_RIGHT_PAREN) {
 				paren_depth--
 				if (paren_depth === 0) {
+					content_end = this.lexer.token_start // Position before ')'
 					end = this.lexer.token_end
 					break
 				}
@@ -495,6 +500,31 @@ export class SelectorParser {
 		if (is_vendor_prefixed(this.source, func_name_start, func_name_end)) {
 			this.arena.set_flag(node, FLAG_VENDOR_PREFIXED)
 		}
+
+		// Parse the content inside the parentheses as a selector
+		if (content_end > content_start) {
+			// Save current lexer state and selector_end
+			let saved_selector_end = this.selector_end
+			let saved_pos = this.lexer.pos
+			let saved_line = this.lexer.line
+			let saved_column = this.lexer.column
+
+			// Recursively parse the content as a selector
+			let child_selector = this.parse_selector(content_start, content_end, this.lexer.line, this.lexer.column)
+
+			// Restore lexer state and selector_end
+			this.selector_end = saved_selector_end
+			this.lexer.pos = saved_pos
+			this.lexer.line = saved_line
+			this.lexer.column = saved_column
+
+			// Add as child if parsed successfully
+			if (child_selector !== null) {
+				this.arena.set_first_child(node, child_selector)
+				this.arena.set_last_child(node, child_selector)
+			}
+		}
+
 		return node
 	}
 
