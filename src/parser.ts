@@ -215,10 +215,12 @@ export class Parser {
 			}
 		}
 
-		// Expect '}' and calculate block length (excluding closing brace)
+		// Expect '}' and calculate lengths (block excludes brace, rule includes it)
 		let block_end = this.lexer.token_start
+		let rule_end = this.lexer.token_end
 		if (this.peek_type() === TOKEN_RIGHT_BRACE) {
 			block_end = this.lexer.token_start // Position of '}' (not included in block)
+			rule_end = this.lexer.token_end // Position after '}' (included in rule)
 			this.next_token() // consume '}'
 		}
 
@@ -228,7 +230,7 @@ export class Parser {
 
 		// Set the rule's offsets
 		this.arena.set_start_offset(style_rule, rule_start)
-		this.arena.set_length(style_rule, this.lexer.token_end - rule_start)
+		this.arena.set_length(style_rule, rule_end - rule_start)
 
 		return style_rule
 	}

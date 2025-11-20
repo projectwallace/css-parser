@@ -163,7 +163,9 @@ export class SelectorParser {
 			}
 
 			// Peek ahead for comma or end
-			let pos_before = this.lexer.pos
+			let saved_pos = this.lexer.pos
+			let saved_line = this.lexer.line
+			let saved_column = this.lexer.column
 			this.skip_whitespace()
 			if (this.lexer.pos >= this.selector_end) break
 
@@ -171,19 +173,29 @@ export class SelectorParser {
 			let token_type = this.lexer.token_type
 			if (token_type === TOKEN_COMMA || this.lexer.pos >= this.selector_end) {
 				// Reset position for comma handling
-				this.lexer.pos = pos_before
+				this.lexer.pos = saved_pos
+				this.lexer.line = saved_line
+				this.lexer.column = saved_column
 				break
 			}
 			// Reset for next iteration
-			this.lexer.pos = pos_before
+			this.lexer.pos = saved_pos
+			this.lexer.line = saved_line
+			this.lexer.column = saved_column
 			break
 		}
 
 		if (components.length === 0) return null
 
-		// Chain components as siblings
+		// Chain components as siblings (need to find last node in each compound selector chain)
 		for (let i = 0; i < components.length - 1; i++) {
-			this.arena.set_next_sibling(components[i], components[i + 1])
+			// Find the last node in the current component's chain
+			let last_node = components[i]
+			while (this.arena.get_next_sibling(last_node) !== 0) {
+				last_node = this.arena.get_next_sibling(last_node)
+			}
+			// Link the last node to the next component
+			this.arena.set_next_sibling(last_node, components[i + 1])
 		}
 
 		// Return first component (others are chained as siblings)
@@ -196,8 +208,10 @@ export class SelectorParser {
 		let parts: number[] = []
 
 		while (this.lexer.pos < this.selector_end) {
-			// Save position before getting token
-			let pos_before = this.lexer.pos
+			// Save lexer state before getting token
+			let saved_pos = this.lexer.pos
+			let saved_line = this.lexer.line
+			let saved_column = this.lexer.column
 			this.lexer.next_token_fast(false)
 
 			if (this.lexer.token_start >= this.selector_end) break
@@ -209,8 +223,10 @@ export class SelectorParser {
 			if (part !== null) {
 				parts.push(part)
 			} else {
-				// Not a simple selector part, reset position and break
-				this.lexer.pos = pos_before
+				// Not a simple selector part, restore lexer state and break
+				this.lexer.pos = saved_pos
+				this.lexer.line = saved_line
+				this.lexer.column = saved_column
 				break
 			}
 		}
@@ -281,7 +297,7 @@ export class SelectorParser {
 
 	// Parse combinator (>, +, ~, or descendant space)
 	private try_parse_combinator(): number | null {
-		let start = this.lexer.pos
+		let whitespace_start = this.lexer.pos
 		let has_whitespace = false
 
 		// Skip whitespace and check for combinator
@@ -303,15 +319,15 @@ export class SelectorParser {
 		if (this.lexer.token_type === TOKEN_DELIM) {
 			let ch = this.source.charCodeAt(this.lexer.token_start)
 			if (ch === 0x3e || ch === 0x2b || ch === 0x7e) {
-				// > + ~
-				return this.create_combinator(start, this.lexer.token_end)
+				// > + ~ (combinator text excludes leading whitespace)
+				return this.create_combinator(this.lexer.token_start, this.lexer.token_end)
 			}
 		}
 
 		// If we had whitespace but no explicit combinator, it's a descendant combinator
 		if (has_whitespace) {
 			// Reset lexer position
-			this.lexer.pos = start
+			this.lexer.pos = whitespace_start
 			while (this.lexer.pos < this.selector_end) {
 				let ch = this.source.charCodeAt(this.lexer.pos)
 				if (is_whitespace_char(ch)) {
@@ -320,19 +336,28 @@ export class SelectorParser {
 					break
 				}
 			}
-			return this.create_combinator(start, this.lexer.pos)
+			return this.create_combinator(whitespace_start, this.lexer.pos)
 		}
 
 		// No combinator found, reset position
-		this.lexer.pos = start
+		this.lexer.pos = whitespace_start
 		return null
 	}
 
 	// Parse class selector (.classname)
 	private parse_class_selector(dot_pos: number): number | null {
+		// Save lexer state for potential restoration
+		let saved_pos = this.lexer.pos
+		let saved_line = this.lexer.line
+		let saved_column = this.lexer.column
+
 		// Next token should be identifier
 		this.lexer.next_token_fast(false)
 		if (this.lexer.token_type !== TOKEN_IDENT) {
+			// Restore lexer state and return null
+			this.lexer.pos = saved_pos
+			this.lexer.line = saved_line
+			this.lexer.column = saved_column
 			return null
 		}
 
@@ -385,6 +410,11 @@ export class SelectorParser {
 
 	// Parse pseudo-class or pseudo-element (:hover, ::before)
 	private parse_pseudo(start: number): number | null {
+		// Save lexer state for potential restoration
+		let saved_pos = this.lexer.pos
+		let saved_line = this.lexer.line
+		let saved_column = this.lexer.column
+
 		// Check for double colon (::)
 		let is_pseudo_element = false
 		if (this.lexer.pos < this.selector_end && this.source.charCodeAt(this.lexer.pos) === 0x3a) {
@@ -416,6 +446,10 @@ export class SelectorParser {
 			return this.parse_pseudo_function_after_colon(start, is_pseudo_element)
 		}
 
+		// Restore lexer state and return null
+		this.lexer.pos = saved_pos
+		this.lexer.line = saved_line
+		this.lexer.column = saved_column
 		return null
 	}
 

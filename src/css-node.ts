@@ -275,6 +275,11 @@ export class CSSNode {
 		return new CSSNode(this.arena, this.source, sibling_index)
 	}
 
+	get has_next(): boolean {
+		let sibling_index = this.arena.get_next_sibling(this.index)
+		return sibling_index !== 0
+	}
+
 	// Check if this node has children
 	get has_children(): boolean {
 		return this.arena.has_children(this.index)

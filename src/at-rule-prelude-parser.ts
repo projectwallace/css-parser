@@ -507,6 +507,7 @@ export class AtRulePreludeParser {
 		// Peek at next token
 		let saved_pos = this.lexer.pos
 		let saved_line = this.lexer.line
+		let saved_column = this.lexer.column
 
 		this.next_token()
 
@@ -569,6 +570,7 @@ export class AtRulePreludeParser {
 		// Not a layer, restore position
 		this.lexer.pos = saved_pos
 		this.lexer.line = saved_line
+		this.lexer.column = saved_column
 		return null
 	}
 
@@ -577,6 +579,7 @@ export class AtRulePreludeParser {
 		// Peek at next token
 		let saved_pos = this.lexer.pos
 		let saved_line = this.lexer.line
+		let saved_column = this.lexer.column
 
 		this.next_token()
 
@@ -619,6 +622,7 @@ export class AtRulePreludeParser {
 		// Not supports(), restore position
 		this.lexer.pos = saved_pos
 		this.lexer.line = saved_line
+		this.lexer.column = saved_column
 		return null
 	}
 
@@ -637,12 +641,14 @@ export class AtRulePreludeParser {
 	private peek_token_type(): number {
 		let saved_pos = this.lexer.pos
 		let saved_line = this.lexer.line
+		let saved_column = this.lexer.column
 
 		this.next_token()
 		let type = this.lexer.token_type
 
 		this.lexer.pos = saved_pos
 		this.lexer.line = saved_line
+		this.lexer.column = saved_column
 
 		return type
 	}

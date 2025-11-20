@@ -95,14 +95,21 @@ describe('Parser', () => {
 			const root = parser.parse()
 
 			const rule = root.first_child!
-			const selector = rule.first_child!
+			const selectorlist = rule.first_child!
 
 			// With parseSelectors enabled, selector is now detailed
-			expect(selector.offset).toBe(0)
+			expect(selectorlist.offset).toBe(0)
 			// Selector includes tokens up to but not including the '{'
 			// Whitespace is skipped by lexer, so actual length is 16
-			expect(selector.length).toBe(16) // "div.class > p#id".length
-			expect(selector.text).toBe('div.class > p#id')
+			expect(selectorlist.length).toBe(16) // "div.class > p#id".length
+			expect(selectorlist.text).toBe('div.class > p#id')
+
+			const selector = selectorlist.first_child!
+			expect(selector.children[0].text).toBe('div')
+			expect(selector.children[1].text).toBe('.class')
+			expect(selector.children[2].text).toBe('>')
+			expect(selector.children[3].text).toBe('p')
+			expect(selector.children[4].text).toBe('#id')
 		})
 	})
 
@@ -1746,6 +1753,7 @@ describe('Parser', () => {
 		test('block children should be stylerule', () => {
 			expect(atrule!.block).not.toBeNull()
 			expect(rule!.type).toBe(NODE_STYLE_RULE)
+			expect(rule!.text).toBe('a {}')
 		})
 
 		test('rule should have selectorlist + block', () => {
@@ -1757,9 +1765,10 @@ describe('Parser', () => {
 
 		test('has correct nested selectors', () => {
 			let list = rule?.first_child
-			expect(list.type).toBe(NODE_SELECTOR_LIST)
-			expect(list.children).toHaveLength(1)
+			expect(list!.type).toBe(NODE_SELECTOR_LIST)
+			expect(list!.children).toHaveLength(1)
 			expect(list?.first_child?.type).toEqual(NODE_SELECTOR)
+			expect(list?.first_child?.text).toEqual('a')
 		})
 	})
 
