@@ -13,6 +13,8 @@ import {
 	NODE_SELECTOR_COMBINATOR,
 	NODE_SELECTOR_UNIVERSAL,
 	NODE_SELECTOR_NESTING,
+	NODE_SELECTOR_NTH,
+	NODE_SELECTOR_NTH_OF,
 	FLAG_VENDOR_PREFIXED,
 	ATTR_OPERATOR_NONE,
 	ATTR_OPERATOR_EQUAL,
@@ -37,6 +39,7 @@ import {
 	TOKEN_WHITESPACE,
 } from './token-types'
 import { trim_boundaries, is_whitespace as is_whitespace_char, is_vendor_prefixed } from './string-utils'
+import { ANplusBParser } from './anplusb-parser'
 
 export class SelectorParser {
 	private lexer: Lexer
@@ -706,31 +709,141 @@ export class SelectorParser {
 			this.arena.set_flag(node, FLAG_VENDOR_PREFIXED)
 		}
 
-		// Parse the content inside the parentheses as a selector
+		// Parse the content inside the parentheses
 		if (content_end > content_start) {
-			// Save current lexer state and selector_end
+			// Check if this is an nth-* pseudo-class
+			let func_name = this.source.substring(func_name_start, func_name_end).toLowerCase()
+
+			if (this.is_nth_pseudo(func_name)) {
+				// Parse as An+B expression
+				let child = this.parse_nth_expression(content_start, content_end, node)
+				if (child !== null) {
+					this.arena.set_first_child(node, child)
+					this.arena.set_last_child(node, child)
+				}
+			} else {
+				// Parse as selector (for :is(), :where(), :has(), etc.)
+				// Save current lexer state and selector_end
+				let saved_selector_end = this.selector_end
+				let saved_pos = this.lexer.pos
+				let saved_line = this.lexer.line
+				let saved_column = this.lexer.column
+
+				// Recursively parse the content as a selector
+				let child_selector = this.parse_selector(content_start, content_end, this.lexer.line, this.lexer.column)
+
+				// Restore lexer state and selector_end
+				this.selector_end = saved_selector_end
+				this.lexer.pos = saved_pos
+				this.lexer.line = saved_line
+				this.lexer.column = saved_column
+
+				// Add as child if parsed successfully
+				if (child_selector !== null) {
+					this.arena.set_first_child(node, child_selector)
+					this.arena.set_last_child(node, child_selector)
+				}
+			}
+		}
+
+		return node
+	}
+
+	// Check if pseudo-class name is an nth-* pseudo
+	private is_nth_pseudo(name: string): boolean {
+		return (
+			name === 'nth-child' ||
+			name === 'nth-last-child' ||
+			name === 'nth-of-type' ||
+			name === 'nth-last-of-type' ||
+			name === 'nth-col' ||
+			name === 'nth-last-col'
+		)
+	}
+
+	// Parse An+B expression for nth-* pseudo-classes
+	// Handles both simple An+B and "An+B of S" syntax
+	private parse_nth_expression(start: number, end: number, parent_node: number): number | null {
+		// Check for "of <selector>" syntax
+		// e.g., "2n+1 of .active, .disabled"
+		let of_index = this.find_of_keyword(start, end)
+
+		if (of_index !== -1) {
+			// Parse An+B part before "of"
+			let anplusb_parser = new ANplusBParser(this.arena, this.source)
+			let anplusb_node = anplusb_parser.parse_anplusb(start, of_index, this.lexer.line)
+
+			// Parse selector list after "of"
+			let selector_start = of_index + 2 // skip "of"
+			// Skip whitespace
+			while (
+				selector_start < end &&
+				is_whitespace_char(this.source.charCodeAt(selector_start))
+			) {
+				selector_start++
+			}
+
+			// Save current state
 			let saved_selector_end = this.selector_end
 			let saved_pos = this.lexer.pos
 			let saved_line = this.lexer.line
 			let saved_column = this.lexer.column
 
-			// Recursively parse the content as a selector
-			let child_selector = this.parse_selector(content_start, content_end, this.lexer.line, this.lexer.column)
+			// Parse selector list
+			this.selector_end = end
+			this.lexer.pos = selector_start
+			let selector_list = this.parse_selector_list()
 
-			// Restore lexer state and selector_end
+			// Restore state
 			this.selector_end = saved_selector_end
 			this.lexer.pos = saved_pos
 			this.lexer.line = saved_line
 			this.lexer.column = saved_column
 
-			// Add as child if parsed successfully
-			if (child_selector !== null) {
-				this.arena.set_first_child(node, child_selector)
-				this.arena.set_last_child(node, child_selector)
+			// Create NTH_OF wrapper
+			let of_node = this.arena.create_node()
+			this.arena.set_type(of_node, NODE_SELECTOR_NTH_OF)
+			this.arena.set_start_offset(of_node, start)
+			this.arena.set_length(of_node, end - start)
+			this.arena.set_start_line(of_node, this.lexer.line)
+
+			// Link An+B and selector list
+			if (anplusb_node !== null && selector_list !== null) {
+				this.arena.set_first_child(of_node, anplusb_node)
+				this.arena.set_last_child(of_node, selector_list)
+				this.arena.set_next_sibling(anplusb_node, selector_list)
+			} else if (anplusb_node !== null) {
+				this.arena.set_first_child(of_node, anplusb_node)
+				this.arena.set_last_child(of_node, anplusb_node)
+			}
+
+			return of_node
+		} else {
+			// Just An+B, no "of" clause
+			let anplusb_parser = new ANplusBParser(this.arena, this.source)
+			return anplusb_parser.parse_anplusb(start, end, this.lexer.line)
+		}
+	}
+
+	// Find the position of standalone "of" keyword
+	private find_of_keyword(start: number, end: number): number {
+		for (let i = start; i < end - 1; i++) {
+			if (
+				this.source.charCodeAt(i) === 0x6f /* o */ &&
+				this.source.charCodeAt(i + 1) === 0x66 /* f */
+			) {
+				// Check it's a word boundary
+				let before_ok =
+					i === start || is_whitespace_char(this.source.charCodeAt(i - 1))
+				let after_ok =
+					i + 2 >= end || is_whitespace_char(this.source.charCodeAt(i + 2))
+
+				if (before_ok && after_ok) {
+					return i
+				}
 			}
 		}
-
-		return node
+		return -1
 	}
 
 	// Create simple selector nodes

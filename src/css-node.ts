@@ -25,6 +25,8 @@ import {
 	NODE_SELECTOR_COMBINATOR,
 	NODE_SELECTOR_UNIVERSAL,
 	NODE_SELECTOR_NESTING,
+	NODE_SELECTOR_NTH,
+	NODE_SELECTOR_NTH_OF,
 	NODE_PRELUDE_MEDIA_QUERY,
 	NODE_PRELUDE_MEDIA_FEATURE,
 	NODE_PRELUDE_MEDIA_TYPE,
@@ -71,6 +73,8 @@ export type CSSNodeType =
 	| typeof NODE_SELECTOR_COMBINATOR
 	| typeof NODE_SELECTOR_UNIVERSAL
 	| typeof NODE_SELECTOR_NESTING
+	| typeof NODE_SELECTOR_NTH
+	| typeof NODE_SELECTOR_NTH_OF
 	| typeof NODE_PRELUDE_MEDIA_QUERY
 	| typeof NODE_PRELUDE_MEDIA_FEATURE
 	| typeof NODE_PRELUDE_MEDIA_TYPE
@@ -326,5 +330,108 @@ export class CSSNode {
 			yield child
 			child = child.next_sibling
 		}
+	}
+
+	// --- An+B Expression Helpers (for NODE_SELECTOR_NTH) ---
+
+	// Get the 'a' coefficient from An+B expression (e.g., "2" from "2n+1")
+	get nth_a(): string | null {
+		if (this.type !== NODE_SELECTOR_NTH) return null
+
+		// Check for special keywords first
+		let text = this.text.toLowerCase()
+		if (text === 'odd' || text === 'even') {
+			return '2'
+		}
+
+		// Check for 'n', '+n', '-n' patterns (including with b coefficient)
+		// Handle with or without spaces (e.g., "n+5", "n + 5")
+		if (
+			text === 'n' ||
+			text === '+n' ||
+			text.startsWith('n+') ||
+			text.startsWith('n-') ||
+			text.startsWith('n ')
+		) {
+			return '1'
+		}
+		if (
+			text === '-n' ||
+			text.startsWith('-n+') ||
+			text.startsWith('-n-') ||
+			text.startsWith('-n ')
+		) {
+			return '-1'
+		}
+
+		// Otherwise, get from stored position
+		let len = this.arena.get_content_length(this.index)
+		if (len === 0) return null
+		let start = this.arena.get_content_start(this.index)
+		let value = this.source.substring(start, start + len)
+		// Strip leading + if present
+		if (value.charCodeAt(0) === 0x2b /* + */) {
+			return value.substring(1)
+		}
+		return value
+	}
+
+	// Get the 'b' coefficient from An+B expression (e.g., "1" from "2n+1")
+	get nth_b(): string | null {
+		if (this.type !== NODE_SELECTOR_NTH) return null
+
+		// Check for special keywords first
+		let text = this.text.toLowerCase()
+		if (text === 'odd') {
+			return '1'
+		}
+		if (text === 'even') {
+			return '0'
+		}
+
+		// Check for just 'n' cases (no b coefficient)
+		if (text === 'n' || text === '+n' || text === '-n') {
+			return null
+		}
+
+		// Otherwise, get from stored position
+		let len = this.arena.get_value_length(this.index)
+		if (len === 0) return null
+		let start = this.arena.get_value_start(this.index)
+		let value = this.source.substring(start, start + len)
+
+		// Check if there's a - sign before this position (handling "2n - 1" with spaces)
+		// Look backwards for a - or + sign, skipping whitespace
+		let check_pos = start - 1
+		while (check_pos >= 0) {
+			let ch = this.source.charCodeAt(check_pos)
+			if (ch === 0x20 /* space */ || ch === 0x09 /* tab */ || ch === 0x0a /* \n */ || ch === 0x0d /* \r */) {
+				check_pos--
+				continue
+			}
+			// Found non-whitespace
+			if (ch === 0x2d /* - */) {
+				// Prepend - to value
+				value = '-' + value
+			}
+			// Note: + signs are implicit, so we don't prepend them
+			break
+		}
+
+		// Strip leading + if present in the token itself
+		if (value.charCodeAt(0) === 0x2b /* + */) {
+			return value.substring(1)
+		}
+		return value
+	}
+
+	// Check if An+B represents "odd" (2n+1)
+	get is_odd(): boolean {
+		return this.nth_a === '2' && this.nth_b === '1'
+	}
+
+	// Check if An+B represents "even" (2n or 2n+0)
+	get is_even(): boolean {
+		return this.nth_a === '2' && (this.nth_b === '0' || this.nth_b === null)
 	}
 }

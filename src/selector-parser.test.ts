@@ -13,6 +13,7 @@ import {
 	NODE_SELECTOR_COMBINATOR,
 	NODE_SELECTOR_UNIVERSAL,
 	NODE_SELECTOR_NESTING,
+	NODE_SELECTOR_NTH,
 } from './arena'
 import { parse_selector } from './parse-selector'
 
@@ -836,6 +837,41 @@ describe('SelectorParser', () => {
 
 			expect(has.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
 			expect(has.text).toBe(':has(:nth-child(1 of li))')
+		})
+
+		it('should parse :nth-child(1)', () => {
+			const root = parse_selector(':nth-child(1)')
+
+			expect(root.first_child?.type).toBe(NODE_SELECTOR)
+			expect(root.first_child!.children).toHaveLength(1)
+			const nth_child = root.first_child!.first_child!
+			expect(nth_child.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(nth_child.text).toBe(':nth-child(1)')
+
+			// Should have An+B child node
+			expect(nth_child.children).toHaveLength(1)
+			const anplusb = nth_child.first_child!
+			expect(anplusb.type).toBe(NODE_SELECTOR_NTH)
+			expect(anplusb.nth_a).toBe(null) // No 'a' coefficient, just 'b'
+			expect(anplusb.nth_b).toBe('1')
+		})
+
+		it('should parse :nth-child(2n+1)', () => {
+			const root = parse_selector(':nth-child(2n+1)')
+
+			expect(root.first_child?.type).toBe(NODE_SELECTOR)
+			expect(root.first_child!.children).toHaveLength(1)
+			const nth_child = root.first_child!.first_child!
+			expect(nth_child.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(nth_child.text).toBe(':nth-child(2n+1)')
+
+			// Should have An+B child node
+			expect(nth_child.children).toHaveLength(1)
+			const anplusb = nth_child.first_child!
+			expect(anplusb.type).toBe(NODE_SELECTOR_NTH)
+			expect(anplusb.nth_a).toBe('2')
+			expect(anplusb.nth_b).toBe('1')
+			expect(anplusb.is_odd).toBe(true)
 		})
 	})
 })
