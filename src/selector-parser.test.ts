@@ -14,6 +14,7 @@ import {
 	NODE_SELECTOR_UNIVERSAL,
 	NODE_SELECTOR_NESTING,
 } from './arena'
+import { parse_selector } from './parse-selector'
 
 // Helper to create a selector parser and parse a selector
 function parseSelector(selector: string) {
@@ -822,6 +823,19 @@ describe('SelectorParser', () => {
 			expect(children).toHaveLength(2)
 			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_PSEUDO_CLASS)
 			expect(getNodeContent(arena, source, children[1])).toBe('nth-of-type')
+		})
+
+		it('should parse ul:has(:nth-child(1 of li))', () => {
+			const root = parse_selector('ul:has(:nth-child(1 of li))')
+
+			expect(root.first_child?.type).toBe(NODE_SELECTOR)
+			expect(root.first_child!.children).toHaveLength(2)
+			const [ul, has] = root.first_child!.children
+			expect(ul.type).toBe(NODE_SELECTOR_TYPE)
+			expect(ul.text).toBe('ul')
+
+			expect(has.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(has.text).toBe(':has(:nth-child(1 of li))')
 		})
 	})
 })

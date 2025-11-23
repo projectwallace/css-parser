@@ -680,7 +680,7 @@ export class SelectorParser {
 		while (this.lexer.pos < this.selector_end && paren_depth > 0) {
 			this.lexer.next_token_fast(false)
 			let token_type = this.lexer.token_type
-			if (token_type === TOKEN_LEFT_PAREN) {
+			if (token_type === TOKEN_LEFT_PAREN || token_type === TOKEN_FUNCTION) {
 				paren_depth++
 			} else if (token_type === TOKEN_RIGHT_PAREN) {
 				paren_depth--

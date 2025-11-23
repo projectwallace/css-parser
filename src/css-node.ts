@@ -43,7 +43,7 @@ import {
 	FLAG_HAS_DECLARATIONS,
 } from './arena'
 
-import { parse_dimension, CHAR_SINGLE_QUOTE, CHAR_DOUBLE_QUOTE } from './string-utils'
+import { parse_dimension } from './string-utils'
 
 // Node type constants (numeric for performance)
 export type CSSNodeType =

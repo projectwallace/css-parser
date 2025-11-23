@@ -104,7 +104,6 @@ export class AtRulePreludeParser {
 	private parse_single_media_query(): number | null {
 		let query_start = this.lexer.pos
 		let query_line = this.lexer.line
-		let query_column = this.lexer.column
 
 		// Skip whitespace
 		this.skip_whitespace()
@@ -479,7 +478,7 @@ export class AtRulePreludeParser {
 			let paren_depth = 1
 			while (this.lexer.pos < this.prelude_end && paren_depth > 0) {
 				let tokenType = this.next_token()
-				if (tokenType === TOKEN_LEFT_PAREN) {
+				if (tokenType === TOKEN_LEFT_PAREN || tokenType === TOKEN_FUNCTION) {
 					paren_depth++
 				} else if (tokenType === TOKEN_RIGHT_PAREN) {
 					paren_depth--
@@ -533,7 +532,7 @@ export class AtRulePreludeParser {
 					let paren_depth = 1
 					while (this.lexer.pos < this.prelude_end && paren_depth > 0) {
 						let tokenType = this.next_token()
-						if (tokenType === TOKEN_LEFT_PAREN) {
+						if (tokenType === TOKEN_LEFT_PAREN || tokenType === TOKEN_FUNCTION) {
 							paren_depth++
 						} else if (tokenType === TOKEN_RIGHT_PAREN) {
 							paren_depth--
@@ -596,7 +595,7 @@ export class AtRulePreludeParser {
 
 				while (this.lexer.pos < this.prelude_end && paren_depth > 0) {
 					let tokenType = this.next_token()
-					if (tokenType === TOKEN_LEFT_PAREN) {
+					if (tokenType === TOKEN_LEFT_PAREN || tokenType === TOKEN_FUNCTION) {
 						paren_depth++
 					} else if (tokenType === TOKEN_RIGHT_PAREN) {
 						paren_depth--
