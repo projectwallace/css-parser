@@ -34,6 +34,10 @@
 		"./parse-atrule-prelude": {
 			"types": "./dist/parse-atrule-prelude.d.ts",
 			"import": "./dist/parse-atrule-prelude.js"
+		},
+		"./parse-anplusb": {
+			"types": "./dist/parse-anplusb.d.ts",
+			"import": "./dist/parse-anplusb.js"
 		}
 	},
 	"files": [
