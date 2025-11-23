@@ -334,67 +334,20 @@ export class CSSNode {
 
 	// --- An+B Expression Helpers (for NODE_SELECTOR_NTH) ---
 
-	// Get the 'a' coefficient from An+B expression (e.g., "2" from "2n+1")
+	// Get the 'a' coefficient from An+B expression (e.g., "2n" from "2n+1", "odd" from "odd")
 	get nth_a(): string | null {
 		if (this.type !== NODE_SELECTOR_NTH) return null
 
-		// Check for special keywords first
-		let text = this.text.toLowerCase()
-		if (text === 'odd' || text === 'even') {
-			return '2'
-		}
-
-		// Check for 'n', '+n', '-n' patterns (including with b coefficient)
-		// Handle with or without spaces (e.g., "n+5", "n + 5")
-		if (
-			text === 'n' ||
-			text === '+n' ||
-			text.startsWith('n+') ||
-			text.startsWith('n-') ||
-			text.startsWith('n ')
-		) {
-			return '1'
-		}
-		if (
-			text === '-n' ||
-			text.startsWith('-n+') ||
-			text.startsWith('-n-') ||
-			text.startsWith('-n ')
-		) {
-			return '-1'
-		}
-
-		// Otherwise, get from stored position
 		let len = this.arena.get_content_length(this.index)
 		if (len === 0) return null
 		let start = this.arena.get_content_start(this.index)
-		let value = this.source.substring(start, start + len)
-		// Strip leading + if present
-		if (value.charCodeAt(0) === 0x2b /* + */) {
-			return value.substring(1)
-		}
-		return value
+		return this.source.substring(start, start + len)
 	}
 
 	// Get the 'b' coefficient from An+B expression (e.g., "1" from "2n+1")
 	get nth_b(): string | null {
 		if (this.type !== NODE_SELECTOR_NTH) return null
 
-		// Check for special keywords first
-		let text = this.text.toLowerCase()
-		if (text === 'odd') {
-			return '1'
-		}
-		if (text === 'even') {
-			return '0'
-		}
-
-		// Check for just 'n' cases (no b coefficient)
-		if (text === 'n' || text === '+n' || text === '-n') {
-			return null
-		}
-
-		// Otherwise, get from stored position
 		let len = this.arena.get_value_length(this.index)
 		if (len === 0) return null
 		let start = this.arena.get_value_start(this.index)
@@ -423,15 +376,5 @@ export class CSSNode {
 			return value.substring(1)
 		}
 		return value
-	}
-
-	// Check if An+B represents "odd" (2n+1)
-	get is_odd(): boolean {
-		return this.nth_a === '2' && this.nth_b === '1'
-	}
-
-	// Check if An+B represents "even" (2n or 2n+0)
-	get is_even(): boolean {
-		return this.nth_a === '2' && (this.nth_b === '0' || this.nth_b === null)
 	}
 }

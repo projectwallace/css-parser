@@ -55,9 +55,11 @@ export class ANplusBParser {
 			const text = this.source.substring(this.lexer.token_start, this.lexer.token_end).toLowerCase()
 
 			if (text === 'odd' || text === 'even') {
-				// Keywords - values will be computed by CSSNode getters
-				// Just store the node, no need for positions
-				return this.create_anplusb_node(node_start, null, null, 0, 0, 0, 0)
+				// Store the keyword as authored
+				a = text
+				a_start = this.lexer.token_start
+				a_end = this.lexer.token_end
+				return this.create_anplusb_node(node_start, a, null, a_start, a_end, 0, 0)
 			}
 
 			// Check if it's 'n', '-n', or starts with 'n'
@@ -71,13 +73,20 @@ export class ANplusBParser {
 					const third_char = this.source.charCodeAt(this.lexer.token_start + 2)
 					if (third_char === 0x2d /* - */) {
 						// -n-5 pattern
+						a = '-n'
+						a_start = this.lexer.token_start
+						a_end = this.lexer.token_start + 2
 						b = this.source.substring(this.lexer.token_start + 2, this.lexer.token_end)
 						b_start = this.lexer.token_start + 2
 						b_end = this.lexer.token_end
-						// a will be computed by getter
-						return this.create_anplusb_node(node_start, null, b, 0, 0, b_start, b_end)
+						return this.create_anplusb_node(node_start, a, b, a_start, a_end, b_start, b_end)
 					}
 				}
+
+				// Store -n as authored
+				a = '-n'
+				a_start = this.lexer.token_start
+				a_end = this.lexer.token_start + 2
 
 				// Check for separate b part after whitespace
 				b = this.parse_b_part()
@@ -85,8 +94,7 @@ export class ANplusBParser {
 					b_start = this.lexer.token_start
 					b_end = this.lexer.token_end
 				}
-				// a will be computed by getter
-				return this.create_anplusb_node(node_start, null, b, 0, 0, b_start, b_end)
+				return this.create_anplusb_node(node_start, a, b, a_start, a_end, b_start, b_end)
 			}
 
 			// n, n+3, n-5
@@ -96,13 +104,20 @@ export class ANplusBParser {
 					const second_char = this.source.charCodeAt(this.lexer.token_start + 1)
 					if (second_char === 0x2d /* - */) {
 						// n-5 pattern
+						a = 'n'
+						a_start = this.lexer.token_start
+						a_end = this.lexer.token_start + 1
 						b = this.source.substring(this.lexer.token_start + 1, this.lexer.token_end)
 						b_start = this.lexer.token_start + 1
 						b_end = this.lexer.token_end
-						// a will be computed by getter
-						return this.create_anplusb_node(node_start, null, b, 0, 0, b_start, b_end)
+						return this.create_anplusb_node(node_start, a, b, a_start, a_end, b_start, b_end)
 					}
 				}
+
+				// Store n as authored
+				a = 'n'
+				a_start = this.lexer.token_start
+				a_end = this.lexer.token_start + 1
 
 				// Check for separate b part
 				b = this.parse_b_part()
@@ -110,8 +125,7 @@ export class ANplusBParser {
 					b_start = this.lexer.token_start
 					b_end = this.lexer.token_end
 				}
-				// a will be computed by getter
-				return this.create_anplusb_node(node_start, null, b, 0, 0, b_start, b_end)
+				return this.create_anplusb_node(node_start, a, b, a_start, a_end, b_start, b_end)
 			}
 
 			// Not a valid An+B pattern
@@ -129,6 +143,11 @@ export class ANplusBParser {
 				const first_char = text.charCodeAt(0)
 
 				if (first_char === 0x6e /* n */) {
+					// Store +n as authored (including the +)
+					a = '+n'
+					a_start = saved_pos - 1 // Position of the + delim
+					a_end = this.lexer.token_start + 1
+
 					// Check for attached n-digit pattern
 					if (this.lexer.token_end > this.lexer.token_start + 1) {
 						const second_char = this.source.charCodeAt(this.lexer.token_start + 1)
@@ -137,8 +156,7 @@ export class ANplusBParser {
 							b = this.source.substring(this.lexer.token_start + 1, this.lexer.token_end)
 							b_start = this.lexer.token_start + 1
 							b_end = this.lexer.token_end
-							// a will be computed by getter
-							return this.create_anplusb_node(node_start, null, b, 0, 0, b_start, b_end)
+							return this.create_anplusb_node(node_start, a, b, a_start, a_end, b_start, b_end)
 						}
 					}
 
@@ -148,8 +166,7 @@ export class ANplusBParser {
 						b_start = this.lexer.token_start
 						b_end = this.lexer.token_end
 					}
-					// a will be computed by getter
-					return this.create_anplusb_node(node_start, null, b, 0, 0, b_start, b_end)
+					return this.create_anplusb_node(node_start, a, b, a_start, a_end, b_start, b_end)
 				}
 			}
 
@@ -162,21 +179,10 @@ export class ANplusBParser {
 			const n_index = token_text.toLowerCase().indexOf('n')
 
 			if (n_index !== -1) {
-				// Extract 'a' coefficient
-				let a_text = token_text.substring(0, n_index)
-				if (a_text === '' || a_text === '+') {
-					a_text = '1'
-				} else if (a_text === '-') {
-					a_text = '-1'
-				}
-				// Remove leading + if present
-				if (a_text.charCodeAt(0) === 0x2b /* + */) {
-					a_text = a_text.substring(1)
-				}
-
-				a = a_text
+				// Store 'a' coefficient including the 'n'
+				a = token_text.substring(0, n_index + 1)
 				a_start = this.lexer.token_start
-				a_end = this.lexer.token_start + n_index
+				a_end = this.lexer.token_start + n_index + 1
 
 				// Check for b part after 'n'
 				if (n_index + 1 < token_text.length) {
@@ -204,10 +210,6 @@ export class ANplusBParser {
 		// Handle simple integer (b only, no 'a')
 		if (this.lexer.token_type === TOKEN_NUMBER) {
 			let num_text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
-			// Remove leading + if present
-			if (num_text.charCodeAt(0) === 0x2b /* + */) {
-				num_text = num_text.substring(1)
-			}
 			b = num_text
 			b_start = this.lexer.token_start
 			b_end = this.lexer.token_end

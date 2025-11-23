@@ -869,9 +869,8 @@ describe('SelectorParser', () => {
 			expect(nth_child.children).toHaveLength(1)
 			const anplusb = nth_child.first_child!
 			expect(anplusb.type).toBe(NODE_SELECTOR_NTH)
-			expect(anplusb.nth_a).toBe('2')
+			expect(anplusb.nth_a).toBe('2n')
 			expect(anplusb.nth_b).toBe('1')
-			expect(anplusb.is_odd).toBe(true)
 		})
 	})
 })
