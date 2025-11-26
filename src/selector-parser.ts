@@ -57,7 +57,7 @@ export class SelectorParser {
 
 	// Parse a selector range into selector nodes
 	// Always returns a NODE_SELECTOR_LIST with selector components as children
-	parse_selector(start: number, end: number, line: number = 1, column: number = 1): number | null {
+	parse_selector(start: number, end: number, line: number = 1, column: number = 1, allow_relative: boolean = false): number | null {
 		this.selector_end = end
 
 		// Position lexer at selector start
@@ -67,11 +67,11 @@ export class SelectorParser {
 
 		// Parse selector list (comma-separated selectors)
 		// Returns NODE_SELECTOR_LIST directly (no wrapper)
-		return this.parse_selector_list()
+		return this.parse_selector_list(allow_relative)
 	}
 
 	// Parse comma-separated selectors
-	private parse_selector_list(): number | null {
+	private parse_selector_list(allow_relative: boolean = false): number | null {
 		let selectors: number[] = []
 		let list_start = this.lexer.pos
 		let list_line = this.lexer.line
@@ -82,7 +82,7 @@ export class SelectorParser {
 			let selector_line = this.lexer.line
 			let selector_column = this.lexer.column
 
-			let complex_selector = this.parse_complex_selector()
+			let complex_selector = this.parse_complex_selector(allow_relative)
 			if (complex_selector !== null) {
 				// Wrap the complex selector (chain of components) in a NODE_SELECTOR
 				let selector_wrapper = this.arena.create_node()
@@ -146,11 +146,43 @@ export class SelectorParser {
 
 	// Parse a complex selector (with combinators)
 	// e.g., "div.class > p + span"
-	private parse_complex_selector(): number | null {
+	private parse_complex_selector(allow_relative: boolean = false): number | null {
 		let components: number[] = []
 
 		// Skip leading whitespace
 		this.skip_whitespace()
+
+		// Check for leading combinator (relative selector) if allowed
+		if (allow_relative && this.lexer.pos < this.selector_end) {
+			let saved_pos = this.lexer.pos
+			let saved_line = this.lexer.line
+			let saved_column = this.lexer.column
+
+			this.lexer.next_token_fast(false)
+			let token_type = this.lexer.token_type
+
+			// Check if token is a combinator
+			if (token_type === TOKEN_DELIM) {
+				let ch = this.source.charCodeAt(this.lexer.token_start)
+				if (ch === 0x3e || ch === 0x2b || ch === 0x7e) {
+					// Found leading combinator (>, +, ~) - this is a relative selector
+					let combinator = this.create_combinator(this.lexer.token_start, this.lexer.token_end)
+					components.push(combinator)
+					this.skip_whitespace()
+					// Continue to parse the rest normally
+				} else {
+					// Not a combinator, restore position
+					this.lexer.pos = saved_pos
+					this.lexer.line = saved_line
+					this.lexer.column = saved_column
+				}
+			} else {
+				// Not a delimiter, restore position
+				this.lexer.pos = saved_pos
+				this.lexer.line = saved_line
+				this.lexer.column = saved_column
+			}
+		}
 
 		while (this.lexer.pos < this.selector_end) {
 			if (this.lexer.pos >= this.selector_end) break
@@ -730,7 +762,9 @@ export class SelectorParser {
 				let saved_column = this.lexer.column
 
 				// Recursively parse the content as a selector
-				let child_selector = this.parse_selector(content_start, content_end, this.lexer.line, this.lexer.column)
+				// Only :has() accepts relative selectors (starting with combinator)
+				let allow_relative = func_name === 'has'
+				let child_selector = this.parse_selector(content_start, content_end, this.lexer.line, this.lexer.column, allow_relative)
 
 				// Restore lexer state and selector_end
 				this.selector_end = saved_selector_end

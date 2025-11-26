@@ -636,16 +636,102 @@ describe('SelectorParser', () => {
 		})
 
 		it('should parse :has() pseudo-class', () => {
-			const { arena, rootNode, source } = parseSelector('div:has(> p)')
+			const root = parse_selector('div:has(> p)')
 
-			expect(rootNode).not.toBeNull()
-			if (!rootNode) return
+			expect(root.first_child?.type).toBe(NODE_SELECTOR)
+			expect(root.first_child!.children).toHaveLength(2)
+			const [div, has] = root.first_child!.children
+			expect(div.type).toBe(NODE_SELECTOR_TYPE)
+			expect(div.text).toBe('div')
 
-			const selectorWrapper = arena.get_first_child(rootNode)
-			const children = getChildren(arena, source, selectorWrapper)
-			expect(children).toHaveLength(2)
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_PSEUDO_CLASS)
-			expect(getNodeContent(arena, source, children[1])).toBe('has')
+			expect(has.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(has.text).toBe(':has(> p)')
+
+			// Check children of :has() - should contain selector list with > combinator and p type selector
+			expect(has.has_children).toBe(true)
+			const selectorList = has.first_child!
+			expect(selectorList.type).toBe(NODE_SELECTOR_LIST)
+
+			// Selector list contains one selector
+			const selector = selectorList.first_child!
+			expect(selector.type).toBe(NODE_SELECTOR)
+
+			const selectorParts = selector.children
+			expect(selectorParts).toHaveLength(2)
+			expect(selectorParts[0].type).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(selectorParts[0].text).toBe('>')
+			expect(selectorParts[1].type).toBe(NODE_SELECTOR_TYPE)
+			expect(selectorParts[1].text).toBe('p')
+		})
+
+		it('should parse :has() with adjacent sibling combinator (+)', () => {
+			const root = parse_selector('div:has(+ p)')
+			const has = root.first_child!.children[1]
+			const selectorList = has.first_child!
+			const selector = selectorList.first_child!
+			const parts = selector.children
+
+			expect(parts).toHaveLength(2)
+			expect(parts[0].type).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(parts[0].text).toBe('+')
+			expect(parts[1].type).toBe(NODE_SELECTOR_TYPE)
+			expect(parts[1].text).toBe('p')
+		})
+
+		it('should parse :has() with general sibling combinator (~)', () => {
+			const root = parse_selector('div:has(~ p)')
+			const has = root.first_child!.children[1]
+			const selectorList = has.first_child!
+			const selector = selectorList.first_child!
+			const parts = selector.children
+
+			expect(parts).toHaveLength(2)
+			expect(parts[0].type).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(parts[0].text).toBe('~')
+			expect(parts[1].type).toBe(NODE_SELECTOR_TYPE)
+			expect(parts[1].text).toBe('p')
+		})
+
+		it('should parse :has() with descendant selector (no combinator)', () => {
+			const root = parse_selector('div:has(p)')
+			const has = root.first_child!.children[1]
+			const selectorList = has.first_child!
+			const selector = selectorList.first_child!
+
+			expect(selector.children).toHaveLength(1)
+			expect(selector.children[0].type).toBe(NODE_SELECTOR_TYPE)
+			expect(selector.children[0].text).toBe('p')
+		})
+
+		it('should parse :has() with multiple selectors', () => {
+			const root = parse_selector('div:has(> p, + span)')
+			const has = root.first_child!.children[1]
+
+			// Should have 2 selector children (selector list with 2 items)
+			expect(has.children).toHaveLength(1) // Selector list
+			const selectorList = has.first_child!
+			expect(selectorList.children).toHaveLength(2) // Two selectors in the list
+
+			// First selector: > p
+			const firstSelector = selectorList.children[0]
+			expect(firstSelector.children).toHaveLength(2)
+			expect(firstSelector.children[0].text).toBe('>')
+			expect(firstSelector.children[1].text).toBe('p')
+
+			// Second selector: + span
+			const secondSelector = selectorList.children[1]
+			expect(secondSelector.children).toHaveLength(2)
+			expect(secondSelector.children[0].text).toBe('+')
+			expect(secondSelector.children[1].text).toBe('span')
+		})
+
+		it('should handle empty :has()', () => {
+			const root = parse_selector('div:has()')
+			const has = root.first_child!.children[1]
+
+			expect(has.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(has.text).toBe(':has()')
+			expect(has.has_children).toBe(false)
 		})
 
 		it('should parse nesting with ampersand', () => {
@@ -871,6 +957,7 @@ describe('SelectorParser', () => {
 			expect(anplusb.type).toBe(NODE_SELECTOR_NTH)
 			expect(anplusb.nth_a).toBe('2n')
 			expect(anplusb.nth_b).toBe('1')
+			expect(anplusb.text).toBe('2n+1')
 		})
 	})
 })
