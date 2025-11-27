@@ -53,6 +53,7 @@ export const NODE_SELECTOR_UNIVERSAL = 28 // universal selector: *
 export const NODE_SELECTOR_NESTING = 29 // nesting selector: &
 export const NODE_SELECTOR_NTH = 30 // An+B expression: 2n+1, odd, even
 export const NODE_SELECTOR_NTH_OF = 31 // An+B with "of <selector>" syntax
+export const NODE_SELECTOR_LANG = 56 // language identifier for :lang() pseudo-class
 
 // At-rule prelude node type constants (for at-rule prelude parsing)
 export const NODE_PRELUDE_MEDIA_QUERY = 32 // media query: screen, (min-width: 768px)

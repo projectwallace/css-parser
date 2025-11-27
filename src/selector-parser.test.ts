@@ -1015,5 +1015,66 @@ describe('SelectorParser', () => {
 			expect(selector.type).toBe(NODE_SELECTOR)
 			expect(selector.first_child!.text).toBe('.selector')
 		})
+
+		test(':is(a, b)', () => {
+			const root = parse_selector(':is(a, b)')
+
+			// Root is selector list
+			expect(root.type).toBe(NODE_SELECTOR_LIST)
+
+			// First selector in the list
+			const selector = root.first_child!
+			expect(selector.type).toBe(NODE_SELECTOR)
+
+			// Selector has :is() pseudo-class
+			const isPseudoClass = selector.first_child!
+			expect(isPseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(isPseudoClass.text).toBe(':is(a, b)')
+
+			// :is() has 1 child: a selector list
+			expect(isPseudoClass.children).toHaveLength(1)
+			const innerSelectorList = isPseudoClass.first_child!
+			expect(innerSelectorList.type).toBe(NODE_SELECTOR_LIST)
+
+			// The selector list has 2 children: selector for 'a' and selector for 'b'
+			expect(innerSelectorList.children).toHaveLength(2)
+
+			// First selector: 'a'
+			const selectorA = innerSelectorList.children[0]
+			expect(selectorA.type).toBe(NODE_SELECTOR)
+			expect(selectorA.children).toHaveLength(1)
+			expect(selectorA.children[0].type).toBe(NODE_SELECTOR_TYPE)
+			expect(selectorA.children[0].text).toBe('a')
+
+			// Second selector: 'b'
+			const selectorB = innerSelectorList.children[1]
+			expect(selectorB.type).toBe(NODE_SELECTOR)
+			expect(selectorB.children).toHaveLength(1)
+			expect(selectorB.children[0].type).toBe(NODE_SELECTOR_TYPE)
+			expect(selectorB.children[0].text).toBe('b')
+		})
+
+		test(':lang("nl", "de")', () => {
+			const root = parse_selector(':lang("nl", "de")')
+
+			// Root is selector list
+			expect(root.type).toBe(NODE_SELECTOR_LIST)
+
+			// First selector in the list
+			const selector = root.first_child!
+			expect(selector.type).toBe(NODE_SELECTOR)
+
+			// Selector has :lang() pseudo-class
+			const langPseudoClass = selector.first_child!
+			expect(langPseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(langPseudoClass.text).toBe(':lang("nl", "de")')
+
+			// :lang() has NO children (strings are not parsed as selectors)
+			// Unlike :is(), :where(), :has() which accept selectors,
+			// :lang() accepts language identifiers (strings/idents) which the
+			// parser doesn't currently parse into child nodes
+			expect(langPseudoClass.has_children).toBe(false)
+			expect(langPseudoClass.children).toHaveLength(0)
+		})
 	})
 })
