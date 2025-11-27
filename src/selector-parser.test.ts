@@ -14,6 +14,7 @@ import {
 	NODE_SELECTOR_UNIVERSAL,
 	NODE_SELECTOR_NESTING,
 	NODE_SELECTOR_NTH,
+	NODE_SELECTOR_NTH_OF,
 } from './arena'
 import { parse_selector } from './parse-selector'
 
@@ -635,7 +636,32 @@ describe('SelectorParser', () => {
 			expect(getNodeContent(arena, source, child)).toBe('where')
 		})
 
-		it('should parse :has() pseudo-class', () => {
+		it('should parse :has(a) pseudo-class', () => {
+			const root = parse_selector('div:has(a)')
+
+			expect(root.first_child?.type).toBe(NODE_SELECTOR)
+			expect(root.first_child!.children).toHaveLength(2)
+			const [_, has] = root.first_child!.children
+
+			expect(has.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(has.text).toBe(':has(a)')
+
+			// Check children of :has() - should contain selector list with > combinator and p type selector
+			expect(has.has_children).toBe(true)
+			const selectorList = has.first_child!
+			expect(selectorList.type).toBe(NODE_SELECTOR_LIST)
+
+			// Selector list contains one selector
+			const selector = selectorList.first_child!
+			expect(selector.type).toBe(NODE_SELECTOR)
+
+			const selectorParts = selector.children
+			expect(selectorParts).toHaveLength(1)
+			expect(selectorParts[0].type).toBe(NODE_SELECTOR_TYPE)
+			expect(selectorParts[0].text).toBe('a')
+		})
+
+		it('should parse :has(> p) pseudo-class', () => {
 			const root = parse_selector('div:has(> p)')
 
 			expect(root.first_child?.type).toBe(NODE_SELECTOR)
@@ -958,6 +984,36 @@ describe('SelectorParser', () => {
 			expect(anplusb.nth_a).toBe('2n')
 			expect(anplusb.nth_b).toBe('1')
 			expect(anplusb.text).toBe('2n+1')
+		})
+
+		it('should parse :nth-child(2n of .selector)', () => {
+			const root = parse_selector(':nth-child(2n of .selector)')
+
+			expect(root.first_child?.type).toBe(NODE_SELECTOR)
+			expect(root.first_child!.children).toHaveLength(1)
+			const nth_child = root.first_child!.first_child!
+			expect(nth_child.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(nth_child.text).toBe(':nth-child(2n of .selector)')
+
+			// Should have NTH_OF child node (An+B with selector)
+			expect(nth_child.children).toHaveLength(1)
+			const nth_of = nth_child.first_child!
+			expect(nth_of.type).toBe(NODE_SELECTOR_NTH_OF)
+			expect(nth_of.text).toBe('2n of .selector')
+
+			// NTH_OF has two children: An+B and selector list
+			expect(nth_of.children).toHaveLength(2)
+			const anplusb = nth_of.first_child!
+			expect(anplusb.type).toBe(NODE_SELECTOR_NTH)
+			expect(anplusb.nth_a).toBe('2n')
+			expect(anplusb.nth_b).toBe(null)
+
+			// Second child is the selector list
+			const selectorList = nth_of.children[1]
+			expect(selectorList.type).toBe(NODE_SELECTOR_LIST)
+			const selector = selectorList.first_child!
+			expect(selector.type).toBe(NODE_SELECTOR)
+			expect(selector.first_child!.text).toBe('.selector')
 		})
 	})
 })

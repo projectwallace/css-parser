@@ -11,6 +11,7 @@ import {
 	NODE_SELECTOR_PSEUDO_CLASS,
 	NODE_SELECTOR_TYPE,
 	NODE_SELECTOR_ATTRIBUTE,
+	NODE_SELECTOR_NESTING,
 } from './parser'
 import { parse } from './parse'
 import { ATTR_OPERATOR_PIPE_EQUAL } from './arena'
@@ -1889,6 +1890,109 @@ describe('Parser', () => {
 			const styleRule = root.first_child!
 
 			expect(styleRule.block!.text).toBe(' \n\t ')
+		})
+	})
+
+	describe('deeply nested modern CSS', () => {
+		test('@container should parse nested style rules', () => {
+			let css = `@container (width > 0) { div { color: red; } }`
+			let ast = parse(css)
+
+			const container = ast.first_child!
+			expect(container.type).toBe(NODE_AT_RULE)
+			expect(container.name).toBe('container')
+
+			const containerBlock = container.block!
+			const rule = containerBlock.first_child!
+			expect(rule.type).toBe(NODE_STYLE_RULE)
+		})
+
+		test('@container should parse rules with :has() selector', () => {
+			let css = `@container (width > 0) { ul:has(li) { color: red; } }`
+			let ast = parse(css)
+
+			const container = ast.first_child!
+			const containerBlock = container.block!
+			const rule = containerBlock.first_child!
+			expect(rule.type).toBe(NODE_STYLE_RULE)
+		})
+
+		test('modern CSS example by Vadim Makeev', () => {
+			let css = `
+				@layer what {
+					@container (width > 0) {
+						ul:has(:nth-child(1 of li)) {
+							@media (height > 0) {
+								&:hover {
+									--is: this;
+								}
+							}
+						}
+					}
+				}`
+			let ast = parse(css)
+
+			// Root should be stylesheet
+			expect(ast.type).toBe(NODE_STYLESHEET)
+			expect(ast.has_children).toBe(true)
+
+			// First child: @layer what
+			const layer = ast.first_child!
+			expect(layer.type).toBe(NODE_AT_RULE)
+			expect(layer.name).toBe('layer')
+			expect(layer.prelude).toBe('what')
+			expect(layer.has_block).toBe(true)
+
+			// Inside @layer: @container (width > 0)
+			const container = layer.block!.first_child!
+			expect(container.type).toBe(NODE_AT_RULE)
+			expect(container.name).toBe('container')
+			expect(container.prelude).toBe('(width > 0)')
+			expect(container.has_block).toBe(true)
+
+			// Inside @container: ul:has(:nth-child(1 of li))
+			const ulRule = container.block!.first_child!
+			expect(ulRule.type).toBe(NODE_STYLE_RULE)
+			expect(ulRule.has_block).toBe(true)
+
+			// Verify selector contains ul and :has(:nth-child(1 of li))
+			const selectorList = ulRule.first_child!
+			expect(selectorList.type).toBe(NODE_SELECTOR_LIST)
+			const selector = selectorList.first_child!
+			expect(selector.type).toBe(NODE_SELECTOR)
+			// The selector should have ul type selector and :has() pseudo-class
+			const selectorParts = selector.children
+			expect(selectorParts.length).toBeGreaterThan(0)
+			expect(selectorParts[0].type).toBe(NODE_SELECTOR_TYPE)
+			expect(selectorParts[0].text).toBe('ul')
+
+			// Inside ul rule: @media (height > 0)
+			const media = ulRule.block!.first_child!
+			expect(media.type).toBe(NODE_AT_RULE)
+			expect(media.name).toBe('media')
+			expect(media.prelude).toBe('(height > 0)')
+			expect(media.has_block).toBe(true)
+
+			// Inside @media: &:hover
+			const nestingRule = media.block!.first_child!
+			expect(nestingRule.type).toBe(NODE_STYLE_RULE)
+			expect(nestingRule.has_block).toBe(true)
+
+			// Verify nesting selector &:hover
+			const nestingSelectorList = nestingRule.first_child!
+			expect(nestingSelectorList.type).toBe(NODE_SELECTOR_LIST)
+			const nestingSelector = nestingSelectorList.first_child!
+			expect(nestingSelector.type).toBe(NODE_SELECTOR)
+			const nestingParts = nestingSelector.children
+			expect(nestingParts.length).toBeGreaterThan(0)
+			expect(nestingParts[0].type).toBe(NODE_SELECTOR_NESTING)
+			expect(nestingParts[0].text).toBe('&')
+
+			// Inside &:hover: --is: this declaration
+			const declaration = nestingRule.block!.first_child!
+			expect(declaration.type).toBe(NODE_DECLARATION)
+			expect(declaration.property).toBe('--is')
+			expect(declaration.value).toBe('this')
 		})
 	})
 })

@@ -336,6 +336,20 @@ export class Parser {
 			let token_type = this.peek_type()
 			if (token_type === TOKEN_SEMICOLON || token_type === TOKEN_RIGHT_BRACE) break
 
+			// If we encounter '{', this is actually a style rule, not a declaration
+			if (token_type === TOKEN_LEFT_BRACE) {
+				// Restore lexer state and return null
+				this.lexer.pos = saved_pos
+				this.lexer.line = saved_line
+				this.lexer.column = saved_column
+				this.lexer.token_type = saved_token_type
+				this.lexer.token_start = saved_token_start
+				this.lexer.token_end = saved_token_end
+				this.lexer.token_line = saved_token_line
+				this.lexer.token_column = saved_token_column
+				return null
+			}
+
 			// Check for ! followed by any identifier (optimized: only check when we see '!')
 			if (token_type === TOKEN_DELIM && this.source[this.lexer.token_start] === '!') {
 				// Mark end of value before !important
