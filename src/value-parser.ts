@@ -231,7 +231,7 @@ export class ValueParser {
 			if (this.lexer.token_start >= this.value_end) break
 
 			// Track parentheses depth
-			if (token_type === TOKEN_LEFT_PAREN) {
+			if (token_type === TOKEN_LEFT_PAREN || token_type === TOKEN_FUNCTION) {
 				paren_depth++
 			} else if (token_type === TOKEN_RIGHT_PAREN) {
 				paren_depth--

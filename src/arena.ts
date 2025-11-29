@@ -29,6 +29,7 @@ export const NODE_AT_RULE = 3
 export const NODE_DECLARATION = 4
 export const NODE_SELECTOR = 5
 export const NODE_COMMENT = 6
+export const NODE_BLOCK = 7 // Block container for declarations and nested rules
 
 // Value node type constants (for declaration values)
 export const NODE_VALUE_KEYWORD = 10 // identifier: red, auto, inherit
@@ -50,19 +51,22 @@ export const NODE_SELECTOR_PSEUDO_ELEMENT = 26 // pseudo-element: ::before, ::af
 export const NODE_SELECTOR_COMBINATOR = 27 // combinator: >, +, ~, space
 export const NODE_SELECTOR_UNIVERSAL = 28 // universal selector: *
 export const NODE_SELECTOR_NESTING = 29 // nesting selector: &
+export const NODE_SELECTOR_NTH = 30 // An+B expression: 2n+1, odd, even
+export const NODE_SELECTOR_NTH_OF = 31 // An+B with "of <selector>" syntax
+export const NODE_SELECTOR_LANG = 56 // language identifier for :lang() pseudo-class
 
 // At-rule prelude node type constants (for at-rule prelude parsing)
-export const NODE_PRELUDE_MEDIA_QUERY = 30 // media query: screen, (min-width: 768px)
-export const NODE_PRELUDE_MEDIA_FEATURE = 31 // media feature: (min-width: 768px)
-export const NODE_PRELUDE_MEDIA_TYPE = 32 // media type: screen, print, all
-export const NODE_PRELUDE_CONTAINER_QUERY = 33 // container query: sidebar (min-width: 400px)
-export const NODE_PRELUDE_SUPPORTS_QUERY = 34 // supports query: (display: flex)
-export const NODE_PRELUDE_LAYER_NAME = 35 // layer name: base, components
-export const NODE_PRELUDE_IDENTIFIER = 36 // generic identifier: keyframe name, property name
-export const NODE_PRELUDE_OPERATOR = 37 // logical operator: and, or, not
-export const NODE_PRELUDE_IMPORT_URL = 38 // import URL: url("file.css") or "file.css"
-export const NODE_PRELUDE_IMPORT_LAYER = 39 // import layer: layer or layer(name)
-export const NODE_PRELUDE_IMPORT_SUPPORTS = 40 // import supports: supports(condition)
+export const NODE_PRELUDE_MEDIA_QUERY = 32 // media query: screen, (min-width: 768px)
+export const NODE_PRELUDE_MEDIA_FEATURE = 33 // media feature: (min-width: 768px)
+export const NODE_PRELUDE_MEDIA_TYPE = 34 // media type: screen, print, all
+export const NODE_PRELUDE_CONTAINER_QUERY = 35 // container query: sidebar (min-width: 400px)
+export const NODE_PRELUDE_SUPPORTS_QUERY = 36 // supports query: (display: flex)
+export const NODE_PRELUDE_LAYER_NAME = 37 // layer name: base, components
+export const NODE_PRELUDE_IDENTIFIER = 38 // generic identifier: keyframe name, property name
+export const NODE_PRELUDE_OPERATOR = 39 // logical operator: and, or, not
+export const NODE_PRELUDE_IMPORT_URL = 40 // import URL: url("file.css") or "file.css"
+export const NODE_PRELUDE_IMPORT_LAYER = 41 // import layer: layer or layer(name)
+export const NODE_PRELUDE_IMPORT_SUPPORTS = 42 // import supports: supports(condition)
 
 // Flag constants (bit-packed in 1 byte)
 export const FLAG_IMPORTANT = 1 << 0 // Has !important
@@ -71,6 +75,15 @@ export const FLAG_LENGTH_OVERFLOW = 1 << 2 // Node > 65k chars
 export const FLAG_HAS_BLOCK = 1 << 3 // Has { } block (for style rules and at-rules)
 export const FLAG_VENDOR_PREFIXED = 1 << 4 // Has vendor prefix (-webkit-, -moz-, -ms-, -o-)
 export const FLAG_HAS_DECLARATIONS = 1 << 5 // Has declarations (for style rules)
+
+// Attribute selector operator constants (stored in 1 byte at offset 2)
+export const ATTR_OPERATOR_NONE = 0 // [attr]
+export const ATTR_OPERATOR_EQUAL = 1 // [attr=value]
+export const ATTR_OPERATOR_TILDE_EQUAL = 2 // [attr~=value]
+export const ATTR_OPERATOR_PIPE_EQUAL = 3 // [attr|=value]
+export const ATTR_OPERATOR_CARET_EQUAL = 4 // [attr^=value]
+export const ATTR_OPERATOR_DOLLAR_EQUAL = 5 // [attr$=value]
+export const ATTR_OPERATOR_STAR_EQUAL = 6 // [attr*=value]
 
 export class CSSDataArena {
 	private buffer: ArrayBuffer
@@ -150,6 +163,11 @@ export class CSSDataArena {
 		return this.view.getUint16(this.node_offset(node_index) + 16, true)
 	}
 
+	// Read attribute operator (for NODE_SELECTOR_ATTRIBUTE)
+	get_attr_operator(node_index: number): number {
+		return this.view.getUint8(this.node_offset(node_index) + 2)
+	}
+
 	// Read first child index (0 = no children)
 	get_first_child(node_index: number): number {
 		return this.view.getUint32(this.node_offset(node_index) + 20, true)
@@ -215,6 +233,11 @@ export class CSSDataArena {
 	// Write content length
 	set_content_length(node_index: number, length: number): void {
 		this.view.setUint16(this.node_offset(node_index) + 16, length, true)
+	}
+
+	// Write attribute operator (for NODE_SELECTOR_ATTRIBUTE)
+	set_attr_operator(node_index: number, operator: number): void {
+		this.view.setUint8(this.node_offset(node_index) + 2, operator)
 	}
 
 	// Write first child index

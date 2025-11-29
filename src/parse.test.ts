@@ -39,7 +39,8 @@ describe('parse()', () => {
 		const result = parse('body { color: red; margin: 0; }')
 
 		const rule = result.first_child!
-		const [_selector, decl1, decl2] = rule.children
+		const [_selector, block] = rule.children
+		const [decl1, decl2] = block.children
 		expect(decl1.type).toBe(NODE_DECLARATION)
 		expect(decl1.name).toBe('color')
 		expect(decl2.type).toBe(NODE_DECLARATION)
@@ -57,7 +58,8 @@ describe('parse()', () => {
 		const result = parse('body { color: red; }', { parse_values: true })
 
 		const rule = result.first_child!
-		const [_selector, decl] = rule.children
+		const [_selector, block] = rule.children
+		const decl = block.first_child!
 		expect(decl.name).toBe('color')
 		expect(decl.value).toBe('red')
 		// With parse_values, should have value children

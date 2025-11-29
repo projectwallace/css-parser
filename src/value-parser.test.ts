@@ -16,7 +16,7 @@ describe('ValueParser', () => {
 			const parser = new Parser('body { color: red; }')
 			const root = parser.parse()
 			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling // Skip selector
+			const decl = rule?.first_child?.next_sibling?.first_child // selector → block → declaration
 
 			expect(decl?.value).toBe('red')
 			expect(decl?.values).toHaveLength(1)
@@ -28,7 +28,7 @@ describe('ValueParser', () => {
 			const parser = new Parser('body { opacity: 0.5; }')
 			const root = parser.parse()
 			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling
+			const decl = rule?.first_child?.next_sibling?.first_child
 
 			expect(decl?.value).toBe('0.5')
 			expect(decl?.values).toHaveLength(1)
@@ -36,23 +36,39 @@ describe('ValueParser', () => {
 			expect(decl?.values[0].text).toBe('0.5')
 		})
 
-		it('should parse dimension values', () => {
+		it('should parse px dimension values', () => {
 			const parser = new Parser('body { width: 100px; }')
 			const root = parser.parse()
 			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling
+			const decl = rule?.first_child?.next_sibling?.first_child
 
 			expect(decl?.value).toBe('100px')
 			expect(decl?.values).toHaveLength(1)
 			expect(decl?.values[0].type).toBe(NODE_VALUE_DIMENSION)
 			expect(decl?.values[0].text).toBe('100px')
+			expect(decl?.values[0].value).toBe(100)
+			expect(decl?.values[0].unit).toBe('px')
+		})
+
+		it('should parse px dimension values', () => {
+			const parser = new Parser('body { font-size: 3em; }')
+			const root = parser.parse()
+			const rule = root.first_child
+			const decl = rule?.first_child?.next_sibling?.first_child
+
+			expect(decl?.value).toBe('3em')
+			expect(decl?.values).toHaveLength(1)
+			expect(decl?.values[0].type).toBe(NODE_VALUE_DIMENSION)
+			expect(decl?.values[0].text).toBe('3em')
+			expect(decl?.values[0].value).toBe(3)
+			expect(decl?.values[0].unit).toBe('em')
 		})
 
 		it('should parse percentage values', () => {
 			const parser = new Parser('body { width: 50%; }')
 			const root = parser.parse()
 			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling
+			const decl = rule?.first_child?.next_sibling?.first_child
 
 			expect(decl?.value).toBe('50%')
 			expect(decl?.values).toHaveLength(1)
@@ -64,7 +80,7 @@ describe('ValueParser', () => {
 			const parser = new Parser('body { content: "hello"; }')
 			const root = parser.parse()
 			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling
+			const decl = rule?.first_child?.next_sibling?.first_child
 
 			expect(decl?.value).toBe('"hello"')
 			expect(decl?.values).toHaveLength(1)
@@ -76,7 +92,7 @@ describe('ValueParser', () => {
 			const parser = new Parser('body { color: #ff0000; }')
 			const root = parser.parse()
 			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling
+			const decl = rule?.first_child?.next_sibling?.first_child
 
 			expect(decl?.value).toBe('#ff0000')
 			expect(decl?.values).toHaveLength(1)
@@ -90,7 +106,7 @@ describe('ValueParser', () => {
 			const parser = new Parser('body { font-family: Arial, sans-serif; }')
 			const root = parser.parse()
 			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling
+			const decl = rule?.first_child?.next_sibling?.first_child
 
 			expect(decl?.values).toHaveLength(3)
 			expect(decl?.values[0].type).toBe(NODE_VALUE_KEYWORD)
@@ -105,7 +121,7 @@ describe('ValueParser', () => {
 			const parser = new Parser('body { margin: 10px 20px 30px 40px; }')
 			const root = parser.parse()
 			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling
+			const decl = rule?.first_child?.next_sibling?.first_child
 
 			expect(decl?.values).toHaveLength(4)
 			expect(decl?.values[0].type).toBe(NODE_VALUE_DIMENSION)
@@ -122,7 +138,7 @@ describe('ValueParser', () => {
 			const parser = new Parser('body { border: 1px solid red; }')
 			const root = parser.parse()
 			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling
+			const decl = rule?.first_child?.next_sibling?.first_child
 
 			expect(decl?.values).toHaveLength(3)
 			expect(decl?.values[0].type).toBe(NODE_VALUE_DIMENSION)
@@ -139,7 +155,7 @@ describe('ValueParser', () => {
 			const parser = new Parser('body { color: rgb(255, 0, 0); }')
 			const root = parser.parse()
 			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling
+			const decl = rule?.first_child?.next_sibling?.first_child
 
 			expect(decl?.values).toHaveLength(1)
 			expect(decl?.values[0].type).toBe(NODE_VALUE_FUNCTION)
@@ -151,7 +167,7 @@ describe('ValueParser', () => {
 			const parser = new Parser('body { color: rgb(255, 0, 0); }')
 			const root = parser.parse()
 			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling
+			const decl = rule?.first_child?.next_sibling?.first_child
 			const func = decl?.values[0]
 
 			expect(func?.children).toHaveLength(5)
@@ -171,7 +187,7 @@ describe('ValueParser', () => {
 			const parser = new Parser('body { width: calc(100% - 20px); }')
 			const root = parser.parse()
 			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling
+			const decl = rule?.first_child?.next_sibling?.first_child
 
 			expect(decl?.values).toHaveLength(1)
 			expect(decl?.values[0].type).toBe(NODE_VALUE_FUNCTION)
@@ -189,7 +205,7 @@ describe('ValueParser', () => {
 			const parser = new Parser('body { color: var(--primary-color); }')
 			const root = parser.parse()
 			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling
+			const decl = rule?.first_child?.next_sibling?.first_child
 
 			expect(decl?.values).toHaveLength(1)
 			expect(decl?.values[0].type).toBe(NODE_VALUE_FUNCTION)
@@ -203,7 +219,7 @@ describe('ValueParser', () => {
 			const parser = new Parser('body { background: url("image.png"); }')
 			const root = parser.parse()
 			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling
+			const decl = rule?.first_child?.next_sibling?.first_child
 
 			expect(decl?.values).toHaveLength(1)
 			expect(decl?.values[0].type).toBe(NODE_VALUE_FUNCTION)
@@ -219,7 +235,7 @@ describe('ValueParser', () => {
 			const parser = new Parser('body { background: url("bg.png") no-repeat center center / cover; }')
 			const root = parser.parse()
 			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling
+			const decl = rule?.first_child?.next_sibling?.first_child
 
 			expect(decl?.values.length).toBeGreaterThan(1)
 			expect(decl?.values[0].type).toBe(NODE_VALUE_FUNCTION)
@@ -232,7 +248,7 @@ describe('ValueParser', () => {
 			const parser = new Parser('body { transform: translateX(10px) rotate(45deg); }')
 			const root = parser.parse()
 			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling
+			const decl = rule?.first_child?.next_sibling?.first_child
 
 			expect(decl?.values).toHaveLength(2)
 			expect(decl?.values[0].type).toBe(NODE_VALUE_FUNCTION)
@@ -245,7 +261,7 @@ describe('ValueParser', () => {
 			const parser = new Parser('body { filter: blur(5px) brightness(1.2); }')
 			const root = parser.parse()
 			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling
+			const decl = rule?.first_child?.next_sibling?.first_child
 
 			expect(decl?.values).toHaveLength(2)
 			expect(decl?.values[0].type).toBe(NODE_VALUE_FUNCTION)
@@ -262,7 +278,7 @@ describe('ValueParser', () => {
 			const parser = new Parser('body { color: ; }')
 			const root = parser.parse()
 			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling
+			const decl = rule?.first_child?.next_sibling?.first_child
 
 			expect(decl?.value).toBeNull()
 			expect(decl?.values).toHaveLength(0)
@@ -272,7 +288,7 @@ describe('ValueParser', () => {
 			const parser = new Parser('body { color: red !important; }')
 			const root = parser.parse()
 			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling
+			const decl = rule?.first_child?.next_sibling?.first_child
 
 			expect(decl?.value).toBe('red')
 			expect(decl?.values).toHaveLength(1)
@@ -285,7 +301,7 @@ describe('ValueParser', () => {
 			const parser = new Parser('body { margin: -10px; }')
 			const root = parser.parse()
 			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling
+			const decl = rule?.first_child?.next_sibling?.first_child
 
 			expect(decl?.values).toHaveLength(1)
 			expect(decl?.values[0].type).toBe(NODE_VALUE_DIMENSION)
@@ -296,7 +312,7 @@ describe('ValueParser', () => {
 			const parser = new Parser('body { margin: 0px; }')
 			const root = parser.parse()
 			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling
+			const decl = rule?.first_child?.next_sibling?.first_child
 
 			expect(decl?.values).toHaveLength(1)
 			expect(decl?.values[0].type).toBe(NODE_VALUE_DIMENSION)
@@ -307,7 +323,7 @@ describe('ValueParser', () => {
 			const parser = new Parser('body { margin: 0; }')
 			const root = parser.parse()
 			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling
+			const decl = rule?.first_child?.next_sibling?.first_child
 
 			expect(decl?.values).toHaveLength(1)
 			expect(decl?.values[0].type).toBe(NODE_VALUE_NUMBER)
@@ -320,7 +336,7 @@ describe('ValueParser', () => {
 			const parser = new Parser('body { font-family: Arial, sans-serif; }')
 			const root = parser.parse()
 			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling
+			const decl = rule?.first_child?.next_sibling?.first_child
 
 			expect(decl?.values[1].type).toBe(NODE_VALUE_OPERATOR)
 			expect(decl?.values[1].text).toBe(',')
@@ -330,7 +346,7 @@ describe('ValueParser', () => {
 			const parser = new Parser('body { width: calc(100% - 20px); }')
 			const root = parser.parse()
 			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling
+			const decl = rule?.first_child?.next_sibling?.first_child
 			const func = decl?.values[0]
 
 			expect(func?.children[1].type).toBe(NODE_VALUE_OPERATOR)
@@ -341,7 +357,7 @@ describe('ValueParser', () => {
 			const parser = new Parser('body { width: calc(1px + 2px * 3px / 4px - 5px); }')
 			const root = parser.parse()
 			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling
+			const decl = rule?.first_child?.next_sibling?.first_child
 			const func = decl?.values[0]
 
 			const operators = func?.children.filter((n) => n.type === NODE_VALUE_OPERATOR)

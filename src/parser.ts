@@ -8,6 +8,7 @@ import {
 	NODE_SELECTOR_LIST,
 	NODE_DECLARATION,
 	NODE_AT_RULE,
+	NODE_BLOCK,
 	FLAG_IMPORTANT,
 	FLAG_HAS_BLOCK,
 	FLAG_VENDOR_PREFIXED,
@@ -166,8 +167,19 @@ export class Parser {
 			// Error recovery: skip to next rule
 			return null
 		}
+		// Capture block start position (right after '{') before consuming the token
+		let block_start = this.lexer.token_end
 		this.next_token() // consume '{'
 		this.arena.set_flag(style_rule, FLAG_HAS_BLOCK) // Style rules always have blocks
+
+		// Create block node
+		let block_line = this.lexer.token_line
+		let block_column = this.lexer.token_column
+		let block_node = this.arena.create_node()
+		this.arena.set_type(block_node, NODE_BLOCK)
+		this.arena.set_start_offset(block_node, block_start)
+		this.arena.set_start_line(block_node, block_line)
+		this.arena.set_start_column(block_node, block_column)
 
 		// Parse declarations block (and nested rules for CSS Nesting)
 		while (!this.is_eof()) {
@@ -178,7 +190,7 @@ export class Parser {
 			if (token_type === TOKEN_AT_KEYWORD) {
 				let nested_at_rule = this.parse_atrule()
 				if (nested_at_rule !== null) {
-					this.arena.append_child(style_rule, nested_at_rule)
+					this.arena.append_child(block_node, nested_at_rule)
 				} else {
 					this.next_token()
 				}
@@ -189,28 +201,36 @@ export class Parser {
 			let declaration = this.parse_declaration()
 			if (declaration !== null) {
 				this.arena.set_flag(style_rule, FLAG_HAS_DECLARATIONS)
-				this.arena.append_child(style_rule, declaration)
+				this.arena.append_child(block_node, declaration)
 				continue
 			}
 
 			// If not a declaration, try parsing as nested style rule
 			let nested_rule = this.parse_style_rule()
 			if (nested_rule !== null) {
-				this.arena.append_child(style_rule, nested_rule)
+				this.arena.append_child(block_node, nested_rule)
 			} else {
 				// Skip unknown tokens
 				this.next_token()
 			}
 		}
 
-		// Expect '}'
+		// Expect '}' and calculate lengths (block excludes brace, rule includes it)
+		let block_end = this.lexer.token_start
+		let rule_end = this.lexer.token_end
 		if (this.peek_type() === TOKEN_RIGHT_BRACE) {
+			block_end = this.lexer.token_start // Position of '}' (not included in block)
+			rule_end = this.lexer.token_end // Position after '}' (included in rule)
 			this.next_token() // consume '}'
 		}
 
+		// Set block length and append to style rule
+		this.arena.set_length(block_node, block_end - block_start)
+		this.arena.append_child(style_rule, block_node)
+
 		// Set the rule's offsets
 		this.arena.set_start_offset(style_rule, rule_start)
-		this.arena.set_length(style_rule, this.lexer.token_end - rule_start)
+		this.arena.set_length(style_rule, rule_end - rule_start)
 
 		return style_rule
 	}
@@ -261,10 +281,29 @@ export class Parser {
 		let decl_line = this.lexer.token_line
 		let decl_column = this.lexer.token_column
 
+		// Lookahead: save lexer state before consuming
+		let saved_pos = this.lexer.pos
+		let saved_line = this.lexer.line
+		let saved_column = this.lexer.column
+		let saved_token_type = this.lexer.token_type
+		let saved_token_start = this.lexer.token_start
+		let saved_token_end = this.lexer.token_end
+		let saved_token_line = this.lexer.token_line
+		let saved_token_column = this.lexer.token_column
+
 		this.next_token() // consume property name
 
 		// Expect ':'
 		if (this.peek_type() !== TOKEN_COLON) {
+			// Restore lexer state and return null
+			this.lexer.pos = saved_pos
+			this.lexer.line = saved_line
+			this.lexer.column = saved_column
+			this.lexer.token_type = saved_token_type
+			this.lexer.token_start = saved_token_start
+			this.lexer.token_end = saved_token_end
+			this.lexer.token_line = saved_token_line
+			this.lexer.token_column = saved_token_column
 			return null
 		}
 		this.next_token() // consume ':'
@@ -297,6 +336,20 @@ export class Parser {
 			let token_type = this.peek_type()
 			if (token_type === TOKEN_SEMICOLON || token_type === TOKEN_RIGHT_BRACE) break
 
+			// If we encounter '{', this is actually a style rule, not a declaration
+			if (token_type === TOKEN_LEFT_BRACE) {
+				// Restore lexer state and return null
+				this.lexer.pos = saved_pos
+				this.lexer.line = saved_line
+				this.lexer.column = saved_column
+				this.lexer.token_type = saved_token_type
+				this.lexer.token_start = saved_token_start
+				this.lexer.token_end = saved_token_end
+				this.lexer.token_line = saved_token_line
+				this.lexer.token_column = saved_token_column
+				return null
+			}
+
 			// Check for ! followed by any identifier (optimized: only check when we see '!')
 			if (token_type === TOKEN_DELIM && this.source[this.lexer.token_start] === '!') {
 				// Mark end of value before !important
@@ -306,6 +359,7 @@ export class Parser {
 				if (next_type === TOKEN_IDENT) {
 					has_important = true
 					last_end = this.lexer.token_end
+					this.next_token() // Advance to next token after "important"
 					break
 				}
 			}
@@ -413,8 +467,19 @@ export class Parser {
 
 		// Check if this at-rule has a block or is a statement
 		if (this.peek_type() === TOKEN_LEFT_BRACE) {
+			// Capture block start position (right after '{') before consuming the token
+			let block_start = this.lexer.token_end
 			this.next_token() // consume '{'
 			this.arena.set_flag(at_rule, FLAG_HAS_BLOCK) // At-rule has a block
+
+			// Create block node
+			let block_line = this.lexer.token_line
+			let block_column = this.lexer.token_column
+			let block_node = this.arena.create_node()
+			this.arena.set_type(block_node, NODE_BLOCK)
+			this.arena.set_start_offset(block_node, block_start)
+			this.arena.set_start_line(block_node, block_line)
+			this.arena.set_start_column(block_node, block_column)
 
 			// Determine what to parse inside the block based on the at-rule name
 			let has_declarations = this.atrule_has_declarations(at_rule_name)
@@ -428,7 +493,7 @@ export class Parser {
 
 					let declaration = this.parse_declaration()
 					if (declaration !== null) {
-						this.arena.append_child(at_rule, declaration)
+						this.arena.append_child(block_node, declaration)
 					} else {
 						this.next_token()
 					}
@@ -443,7 +508,7 @@ export class Parser {
 					if (token_type === TOKEN_AT_KEYWORD) {
 						let nested_at_rule = this.parse_atrule()
 						if (nested_at_rule !== null) {
-							this.arena.append_child(at_rule, nested_at_rule)
+							this.arena.append_child(block_node, nested_at_rule)
 						} else {
 							this.next_token()
 						}
@@ -453,14 +518,14 @@ export class Parser {
 					// Try to parse as declaration first
 					let declaration = this.parse_declaration()
 					if (declaration !== null) {
-						this.arena.append_child(at_rule, declaration)
+						this.arena.append_child(block_node, declaration)
 						continue
 					}
 
 					// If not a declaration, try parsing as nested style rule
 					let nested_rule = this.parse_style_rule()
 					if (nested_rule !== null) {
-						this.arena.append_child(at_rule, nested_rule)
+						this.arena.append_child(block_node, nested_rule)
 					} else {
 						// Skip unknown tokens
 						this.next_token()
@@ -474,18 +539,27 @@ export class Parser {
 
 					let rule = this.parse_rule()
 					if (rule !== null) {
-						this.arena.append_child(at_rule, rule)
+						this.arena.append_child(block_node, rule)
 					} else {
 						this.next_token()
 					}
 				}
 			}
 
-			// Consume '}'
+			// Consume '}' (block excludes closing brace, but at-rule includes it)
 			if (this.peek_type() === TOKEN_RIGHT_BRACE) {
-				last_end = this.lexer.token_end
+				let block_end = this.lexer.token_start // Position of '}' (not included in block)
 				this.next_token()
+				last_end = this.lexer.token_end // Position after '}' (included in at-rule)
+
+				// Set block length (excludes closing brace)
+				this.arena.set_length(block_node, block_end - block_start)
+			} else {
+				// No closing brace found (error recovery)
+				this.arena.set_length(block_node, last_end - block_start)
 			}
+
+			this.arena.append_child(at_rule, block_node)
 		} else if (this.peek_type() === TOKEN_SEMICOLON) {
 			// Statement at-rule (like @import, @namespace)
 			last_end = this.lexer.token_end
@@ -517,6 +591,7 @@ export {
 	NODE_DECLARATION,
 	NODE_SELECTOR,
 	NODE_COMMENT,
+	NODE_BLOCK,
 	NODE_VALUE_KEYWORD,
 	NODE_VALUE_NUMBER,
 	NODE_VALUE_DIMENSION,
@@ -534,6 +609,9 @@ export {
 	NODE_SELECTOR_COMBINATOR,
 	NODE_SELECTOR_UNIVERSAL,
 	NODE_SELECTOR_NESTING,
+	NODE_SELECTOR_NTH,
+	NODE_SELECTOR_NTH_OF,
+	NODE_SELECTOR_LANG,
 	NODE_PRELUDE_MEDIA_QUERY,
 	NODE_PRELUDE_MEDIA_FEATURE,
 	NODE_PRELUDE_MEDIA_TYPE,

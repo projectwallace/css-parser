@@ -18,7 +18,8 @@ describe('Parser Options', () => {
 			expect(selector?.type).toBe(NODE_SELECTOR_LIST)
 
 			// Check value is parsed with detailed structure
-			const declaration = selector?.next_sibling
+			const block = selector?.next_sibling
+			const declaration = block?.first_child
 			expect(declaration).not.toBeNull()
 			expect(declaration?.type).toBe(NODE_DECLARATION)
 			expect(declaration?.has_children).toBe(true)
@@ -36,7 +37,8 @@ describe('Parser Options', () => {
 			expect(selector?.type).toBe(NODE_SELECTOR_LIST)
 
 			// Check value is parsed
-			const declaration = selector?.next_sibling
+			const block = selector?.next_sibling
+			const declaration = block?.first_child
 			expect(declaration?.has_children).toBe(true)
 			expect(declaration?.first_child?.type).toBe(NODE_VALUE_KEYWORD)
 		})
@@ -55,7 +57,8 @@ describe('Parser Options', () => {
 			expect(selector?.type).toBe(NODE_SELECTOR_LIST)
 
 			// Declaration should exist but have no value children
-			const declaration = selector?.next_sibling
+			const block = selector?.next_sibling
+			const declaration = block?.first_child
 			expect(declaration).not.toBeNull()
 			expect(declaration?.type).toBe(NODE_DECLARATION)
 			expect(declaration?.property).toBe('color')
@@ -68,7 +71,8 @@ describe('Parser Options', () => {
 			const root = parser.parse()
 			const rule = root.first_child
 			const selector = rule?.first_child
-			const declaration = selector?.next_sibling
+			const block = selector?.next_sibling
+			const declaration = block?.first_child
 
 			expect(declaration?.property).toBe('margin')
 			expect(declaration?.value).toBe('10px 20px')
@@ -80,7 +84,8 @@ describe('Parser Options', () => {
 			const root = parser.parse()
 			const rule = root.first_child
 			const selector = rule?.first_child
-			const declaration = selector?.next_sibling
+			const block = selector?.next_sibling
+			const declaration = block?.first_child
 
 			expect(declaration?.property).toBe('color')
 			expect(declaration?.value).toBe('rgb(255, 0, 0)')
@@ -102,7 +107,8 @@ describe('Parser Options', () => {
 			expect(selector?.has_children).toBe(false) // No detailed selector nodes
 
 			// Values should still be parsed
-			const declaration = selector?.next_sibling
+			const block = selector?.next_sibling
+			const declaration = block?.first_child
 			expect(declaration?.has_children).toBe(true)
 			expect(declaration?.first_child?.type).toBe(NODE_VALUE_KEYWORD)
 		})
@@ -143,7 +149,8 @@ describe('Parser Options', () => {
 			expect(selector?.has_children).toBe(false)
 
 			// Declaration should have no value children
-			const declaration = selector?.next_sibling
+			const block = selector?.next_sibling
+			const declaration = block?.first_child
 			expect(declaration?.type).toBe(NODE_DECLARATION)
 			expect(declaration?.property).toBe('color')
 			expect(declaration?.value).toBe('red')
@@ -165,7 +172,8 @@ describe('Parser Options', () => {
 			expect(selector?.type).toBe(NODE_SELECTOR_LIST)
 			expect(selector?.has_children).toBe(false)
 
-			const decl1 = selector?.next_sibling
+			const block = selector?.next_sibling
+			const decl1 = block?.first_child
 			expect(decl1?.property).toBe('margin')
 			expect(decl1?.value).toBe('10px 20px')
 			expect(decl1?.has_children).toBe(false)
@@ -192,7 +200,8 @@ describe('Parser Options', () => {
 			const selector = rule?.first_child
 
 			// Can quickly iterate through declarations without parsing complex values
-			let decl = selector?.next_sibling
+			const block = selector?.next_sibling
+			let decl = block?.first_child
 			const properties: string[] = []
 			while (decl) {
 				if (decl.property) {
@@ -231,7 +240,8 @@ describe('Parser Options', () => {
 			const root = parser.parse()
 			const rule = root.first_child
 			const selector = rule?.first_child
-			const declaration = selector?.next_sibling
+			const block = selector?.next_sibling
+			const declaration = block?.first_child
 
 			// Should use defaults (both enabled)
 			expect(selector?.type).toBe(NODE_SELECTOR_LIST)
@@ -243,7 +253,8 @@ describe('Parser Options', () => {
 			const root = parser.parse()
 			const rule = root.first_child
 			const selector = rule?.first_child
-			const declaration = selector?.next_sibling
+			const block = selector?.next_sibling
+			const declaration = block?.first_child
 
 			// Selector should still be parsed (default true)
 			expect(selector?.type).toBe(NODE_SELECTOR_LIST)

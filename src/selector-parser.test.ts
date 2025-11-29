@@ -13,7 +13,11 @@ import {
 	NODE_SELECTOR_COMBINATOR,
 	NODE_SELECTOR_UNIVERSAL,
 	NODE_SELECTOR_NESTING,
+	NODE_SELECTOR_NTH,
+	NODE_SELECTOR_NTH_OF,
+	NODE_SELECTOR_LANG,
 } from './arena'
+import { parse_selector } from './parse-selector'
 
 // Helper to create a selector parser and parse a selector
 function parseSelector(selector: string) {
@@ -368,7 +372,8 @@ describe('SelectorParser', () => {
 			const child = arena.get_first_child(selectorWrapper)
 			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
 			expect(getNodeText(arena, source, child)).toBe('[type="text"]')
-			expect(getNodeContent(arena, source, child)).toBe('type="text"')
+			// Content now stores just the attribute name
+			expect(getNodeContent(arena, source, child)).toBe('type')
 		})
 
 		it('should parse attribute with operator', () => {
@@ -410,7 +415,10 @@ describe('SelectorParser', () => {
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const child = arena.get_first_child(selectorWrapper)
 			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
-			expect(getNodeContent(arena, source, child)).toBe('data-test="value"')
+			// Content now stores just the attribute name
+			expect(getNodeContent(arena, source, child)).toBe('data-test')
+			// Full text still includes brackets
+			expect(getNodeText(arena, source, child)).toBe('[   data-test="value"   ]')
 		})
 
 		it('should trim comments from attribute selectors', () => {
@@ -422,7 +430,8 @@ describe('SelectorParser', () => {
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const child = arena.get_first_child(selectorWrapper)
 			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
-			expect(getNodeContent(arena, source, child)).toBe('data-test="value"')
+			// Content now stores just the attribute name
+			expect(getNodeContent(arena, source, child)).toBe('data-test')
 		})
 
 		it('should trim whitespace and comments from attribute selectors', () => {
@@ -434,7 +443,8 @@ describe('SelectorParser', () => {
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const child = arena.get_first_child(selectorWrapper)
 			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
-			expect(getNodeContent(arena, source, child)).toBe('data-test="value"')
+			// Content now stores just the attribute name
+			expect(getNodeContent(arena, source, child)).toBe('data-test')
 		})
 	})
 
@@ -627,17 +637,128 @@ describe('SelectorParser', () => {
 			expect(getNodeContent(arena, source, child)).toBe('where')
 		})
 
-		it('should parse :has() pseudo-class', () => {
-			const { arena, rootNode, source } = parseSelector('div:has(> p)')
+		it('should parse :has(a) pseudo-class', () => {
+			const root = parse_selector('div:has(a)')
 
-			expect(rootNode).not.toBeNull()
-			if (!rootNode) return
+			expect(root.first_child?.type).toBe(NODE_SELECTOR)
+			expect(root.first_child!.children).toHaveLength(2)
+			const [_, has] = root.first_child!.children
 
-			const selectorWrapper = arena.get_first_child(rootNode)
-			const children = getChildren(arena, source, selectorWrapper)
-			expect(children).toHaveLength(2)
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_PSEUDO_CLASS)
-			expect(getNodeContent(arena, source, children[1])).toBe('has')
+			expect(has.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(has.text).toBe(':has(a)')
+
+			// Check children of :has() - should contain selector list with > combinator and p type selector
+			expect(has.has_children).toBe(true)
+			const selectorList = has.first_child!
+			expect(selectorList.type).toBe(NODE_SELECTOR_LIST)
+
+			// Selector list contains one selector
+			const selector = selectorList.first_child!
+			expect(selector.type).toBe(NODE_SELECTOR)
+
+			const selectorParts = selector.children
+			expect(selectorParts).toHaveLength(1)
+			expect(selectorParts[0].type).toBe(NODE_SELECTOR_TYPE)
+			expect(selectorParts[0].text).toBe('a')
+		})
+
+		it('should parse :has(> p) pseudo-class', () => {
+			const root = parse_selector('div:has(> p)')
+
+			expect(root.first_child?.type).toBe(NODE_SELECTOR)
+			expect(root.first_child!.children).toHaveLength(2)
+			const [div, has] = root.first_child!.children
+			expect(div.type).toBe(NODE_SELECTOR_TYPE)
+			expect(div.text).toBe('div')
+
+			expect(has.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(has.text).toBe(':has(> p)')
+
+			// Check children of :has() - should contain selector list with > combinator and p type selector
+			expect(has.has_children).toBe(true)
+			const selectorList = has.first_child!
+			expect(selectorList.type).toBe(NODE_SELECTOR_LIST)
+
+			// Selector list contains one selector
+			const selector = selectorList.first_child!
+			expect(selector.type).toBe(NODE_SELECTOR)
+
+			const selectorParts = selector.children
+			expect(selectorParts).toHaveLength(2)
+			expect(selectorParts[0].type).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(selectorParts[0].text).toBe('>')
+			expect(selectorParts[1].type).toBe(NODE_SELECTOR_TYPE)
+			expect(selectorParts[1].text).toBe('p')
+		})
+
+		it('should parse :has() with adjacent sibling combinator (+)', () => {
+			const root = parse_selector('div:has(+ p)')
+			const has = root.first_child!.children[1]
+			const selectorList = has.first_child!
+			const selector = selectorList.first_child!
+			const parts = selector.children
+
+			expect(parts).toHaveLength(2)
+			expect(parts[0].type).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(parts[0].text).toBe('+')
+			expect(parts[1].type).toBe(NODE_SELECTOR_TYPE)
+			expect(parts[1].text).toBe('p')
+		})
+
+		it('should parse :has() with general sibling combinator (~)', () => {
+			const root = parse_selector('div:has(~ p)')
+			const has = root.first_child!.children[1]
+			const selectorList = has.first_child!
+			const selector = selectorList.first_child!
+			const parts = selector.children
+
+			expect(parts).toHaveLength(2)
+			expect(parts[0].type).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(parts[0].text).toBe('~')
+			expect(parts[1].type).toBe(NODE_SELECTOR_TYPE)
+			expect(parts[1].text).toBe('p')
+		})
+
+		it('should parse :has() with descendant selector (no combinator)', () => {
+			const root = parse_selector('div:has(p)')
+			const has = root.first_child!.children[1]
+			const selectorList = has.first_child!
+			const selector = selectorList.first_child!
+
+			expect(selector.children).toHaveLength(1)
+			expect(selector.children[0].type).toBe(NODE_SELECTOR_TYPE)
+			expect(selector.children[0].text).toBe('p')
+		})
+
+		it('should parse :has() with multiple selectors', () => {
+			const root = parse_selector('div:has(> p, + span)')
+			const has = root.first_child!.children[1]
+
+			// Should have 2 selector children (selector list with 2 items)
+			expect(has.children).toHaveLength(1) // Selector list
+			const selectorList = has.first_child!
+			expect(selectorList.children).toHaveLength(2) // Two selectors in the list
+
+			// First selector: > p
+			const firstSelector = selectorList.children[0]
+			expect(firstSelector.children).toHaveLength(2)
+			expect(firstSelector.children[0].text).toBe('>')
+			expect(firstSelector.children[1].text).toBe('p')
+
+			// Second selector: + span
+			const secondSelector = selectorList.children[1]
+			expect(secondSelector.children).toHaveLength(2)
+			expect(secondSelector.children[0].text).toBe('+')
+			expect(secondSelector.children[1].text).toBe('span')
+		})
+
+		it('should handle empty :has()', () => {
+			const root = parse_selector('div:has()')
+			const has = root.first_child!.children[1]
+
+			expect(has.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(has.text).toBe(':has()')
+			expect(has.has_children).toBe(false)
 		})
 
 		it('should parse nesting with ampersand', () => {
@@ -651,6 +772,50 @@ describe('SelectorParser', () => {
 			expect(children).toHaveLength(2)
 			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_NESTING)
 			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_CLASS)
+		})
+
+		it('should parse nesting selector with descendant combinator as single selector', () => {
+			const { arena, rootNode, source } = parseSelector('& span')
+
+			expect(rootNode).not.toBeNull()
+			if (!rootNode) return
+
+			// Root is NODE_SELECTOR_LIST
+			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
+
+			// Should have only ONE selector, not two
+			const selectorWrappers = getChildren(arena, source, rootNode)
+			expect(selectorWrappers).toHaveLength(1)
+
+			// The single selector should have 3 children: &, combinator (space), span
+			const selectorWrapper = selectorWrappers[0]
+			const children = getChildren(arena, source, selectorWrapper)
+			expect(children).toHaveLength(3)
+			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_NESTING)
+			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(arena.get_type(children[2])).toBe(NODE_SELECTOR_TYPE)
+			expect(getNodeText(arena, source, children[2])).toBe('span')
+		})
+
+		it('should parse nesting selector with child combinator as single selector', () => {
+			const { arena, rootNode, source } = parseSelector('& > div')
+
+			expect(rootNode).not.toBeNull()
+			if (!rootNode) return
+
+			// Should have only ONE selector, not two
+			const selectorWrappers = getChildren(arena, source, rootNode)
+			expect(selectorWrappers).toHaveLength(1)
+
+			// The single selector should have 3 children: &, combinator (>), div
+			const selectorWrapper = selectorWrappers[0]
+			const children = getChildren(arena, source, selectorWrapper)
+			expect(children).toHaveLength(3)
+			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_NESTING)
+			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(getNodeText(arena, source, children[1]).trim()).toBe('>')
+			expect(arena.get_type(children[2])).toBe(NODE_SELECTOR_TYPE)
+			expect(getNodeText(arena, source, children[2])).toBe('div')
 		})
 	})
 
@@ -772,6 +937,209 @@ describe('SelectorParser', () => {
 			expect(children).toHaveLength(2)
 			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_PSEUDO_CLASS)
 			expect(getNodeContent(arena, source, children[1])).toBe('nth-of-type')
+		})
+
+		it('should parse ul:has(:nth-child(1 of li))', () => {
+			const root = parse_selector('ul:has(:nth-child(1 of li))')
+
+			expect(root.first_child?.type).toBe(NODE_SELECTOR)
+			expect(root.first_child!.children).toHaveLength(2)
+			const [ul, has] = root.first_child!.children
+			expect(ul.type).toBe(NODE_SELECTOR_TYPE)
+			expect(ul.text).toBe('ul')
+
+			expect(has.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(has.text).toBe(':has(:nth-child(1 of li))')
+		})
+
+		it('should parse :nth-child(1)', () => {
+			const root = parse_selector(':nth-child(1)')
+
+			expect(root.first_child?.type).toBe(NODE_SELECTOR)
+			expect(root.first_child!.children).toHaveLength(1)
+			const nth_child = root.first_child!.first_child!
+			expect(nth_child.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(nth_child.text).toBe(':nth-child(1)')
+
+			// Should have An+B child node
+			expect(nth_child.children).toHaveLength(1)
+			const anplusb = nth_child.first_child!
+			expect(anplusb.type).toBe(NODE_SELECTOR_NTH)
+			expect(anplusb.nth_a).toBe(null) // No 'a' coefficient, just 'b'
+			expect(anplusb.nth_b).toBe('1')
+		})
+
+		it('should parse :nth-child(2n+1)', () => {
+			const root = parse_selector(':nth-child(2n+1)')
+
+			expect(root.first_child?.type).toBe(NODE_SELECTOR)
+			expect(root.first_child!.children).toHaveLength(1)
+			const nth_child = root.first_child!.first_child!
+			expect(nth_child.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(nth_child.text).toBe(':nth-child(2n+1)')
+
+			// Should have An+B child node
+			expect(nth_child.children).toHaveLength(1)
+			const anplusb = nth_child.first_child!
+			expect(anplusb.type).toBe(NODE_SELECTOR_NTH)
+			expect(anplusb.nth_a).toBe('2n')
+			expect(anplusb.nth_b).toBe('1')
+			expect(anplusb.text).toBe('2n+1')
+		})
+
+		it('should parse :nth-child(2n of .selector)', () => {
+			const root = parse_selector(':nth-child(2n of .selector)')
+
+			expect(root.first_child?.type).toBe(NODE_SELECTOR)
+			expect(root.first_child!.children).toHaveLength(1)
+			const nth_child = root.first_child!.first_child!
+			expect(nth_child.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(nth_child.text).toBe(':nth-child(2n of .selector)')
+
+			// Should have NTH_OF child node (An+B with selector)
+			expect(nth_child.children).toHaveLength(1)
+			const nth_of = nth_child.first_child!
+			expect(nth_of.type).toBe(NODE_SELECTOR_NTH_OF)
+			expect(nth_of.text).toBe('2n of .selector')
+
+			// NTH_OF has two children: An+B and selector list
+			expect(nth_of.children).toHaveLength(2)
+			const anplusb = nth_of.first_child!
+			expect(anplusb.type).toBe(NODE_SELECTOR_NTH)
+			expect(anplusb.nth_a).toBe('2n')
+			expect(anplusb.nth_b).toBe(null)
+
+			// Second child is the selector list
+			const selectorList = nth_of.children[1]
+			expect(selectorList.type).toBe(NODE_SELECTOR_LIST)
+			const selector = selectorList.first_child!
+			expect(selector.type).toBe(NODE_SELECTOR)
+			expect(selector.first_child!.text).toBe('.selector')
+		})
+
+		test(':is(a, b)', () => {
+			const root = parse_selector(':is(a, b)')
+
+			// Root is selector list
+			expect(root.type).toBe(NODE_SELECTOR_LIST)
+
+			// First selector in the list
+			const selector = root.first_child!
+			expect(selector.type).toBe(NODE_SELECTOR)
+
+			// Selector has :is() pseudo-class
+			const isPseudoClass = selector.first_child!
+			expect(isPseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(isPseudoClass.text).toBe(':is(a, b)')
+
+			// :is() has 1 child: a selector list
+			expect(isPseudoClass.children).toHaveLength(1)
+			const innerSelectorList = isPseudoClass.first_child!
+			expect(innerSelectorList.type).toBe(NODE_SELECTOR_LIST)
+
+			// The selector list has 2 children: selector for 'a' and selector for 'b'
+			expect(innerSelectorList.children).toHaveLength(2)
+
+			// First selector: 'a'
+			const selectorA = innerSelectorList.children[0]
+			expect(selectorA.type).toBe(NODE_SELECTOR)
+			expect(selectorA.children).toHaveLength(1)
+			expect(selectorA.children[0].type).toBe(NODE_SELECTOR_TYPE)
+			expect(selectorA.children[0].text).toBe('a')
+
+			// Second selector: 'b'
+			const selectorB = innerSelectorList.children[1]
+			expect(selectorB.type).toBe(NODE_SELECTOR)
+			expect(selectorB.children).toHaveLength(1)
+			expect(selectorB.children[0].type).toBe(NODE_SELECTOR_TYPE)
+			expect(selectorB.children[0].text).toBe('b')
+		})
+
+		test(':lang("nl", "de")', () => {
+			const root = parse_selector(':lang("nl", "de")')
+
+			// Root is selector list
+			expect(root.type).toBe(NODE_SELECTOR_LIST)
+
+			// First selector in the list
+			const selector = root.first_child!
+			expect(selector.type).toBe(NODE_SELECTOR)
+
+			// Selector has :lang() pseudo-class
+			const langPseudoClass = selector.first_child!
+			expect(langPseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(langPseudoClass.text).toBe(':lang("nl", "de")')
+
+			// :lang() has 2 children - language identifiers
+			expect(langPseudoClass.has_children).toBe(true)
+			expect(langPseudoClass.children).toHaveLength(2)
+
+			// First language identifier: "nl"
+			const lang1 = langPseudoClass.children[0]
+			expect(lang1.type).toBe(NODE_SELECTOR_LANG)
+			expect(lang1.text).toBe('"nl"')
+
+			// Second language identifier: "de"
+			const lang2 = langPseudoClass.children[1]
+			expect(lang2.type).toBe(NODE_SELECTOR_LANG)
+			expect(lang2.text).toBe('"de"')
+		})
+
+		test(':lang(en, fr) with unquoted identifiers', () => {
+			const root = parse_selector(':lang(en, fr)')
+
+			const selector = root.first_child!
+			const langPseudoClass = selector.first_child!
+
+			expect(langPseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(langPseudoClass.text).toBe(':lang(en, fr)')
+
+			// :lang() has 2 children - language identifiers
+			expect(langPseudoClass.children).toHaveLength(2)
+
+			// First language identifier: en
+			const lang1 = langPseudoClass.children[0]
+			expect(lang1.type).toBe(NODE_SELECTOR_LANG)
+			expect(lang1.text).toBe('en')
+
+			// Second language identifier: fr
+			const lang2 = langPseudoClass.children[1]
+			expect(lang2.type).toBe(NODE_SELECTOR_LANG)
+			expect(lang2.text).toBe('fr')
+		})
+
+		test(':lang(en-US) single language with hyphen', () => {
+			const root = parse_selector(':lang(en-US)')
+
+			const selector = root.first_child!
+			const langPseudoClass = selector.first_child!
+
+			expect(langPseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(langPseudoClass.text).toBe(':lang(en-US)')
+
+			// :lang() has 1 child - single language identifier
+			expect(langPseudoClass.children).toHaveLength(1)
+
+			const lang1 = langPseudoClass.children[0]
+			expect(lang1.type).toBe(NODE_SELECTOR_LANG)
+			expect(lang1.text).toBe('en-US')
+		})
+
+		test(':lang("*-Latn") wildcard pattern', () => {
+			const root = parse_selector(':lang("*-Latn")')
+
+			const selector = root.first_child!
+			const langPseudoClass = selector.first_child!
+
+			expect(langPseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(langPseudoClass.text).toBe(':lang("*-Latn")')
+
+			// :lang() has 1 child - wildcard language identifier
+			expect(langPseudoClass.children).toHaveLength(1)
+
+			const lang1 = langPseudoClass.children[0]
+			expect(lang1.type).toBe(NODE_SELECTOR_LANG)
+			expect(lang1.text).toBe('"*-Latn"')
 		})
 	})
 })

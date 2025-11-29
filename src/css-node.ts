@@ -7,6 +7,7 @@ import {
 	NODE_DECLARATION,
 	NODE_SELECTOR,
 	NODE_COMMENT,
+	NODE_BLOCK,
 	NODE_VALUE_KEYWORD,
 	NODE_VALUE_NUMBER,
 	NODE_VALUE_DIMENSION,
@@ -24,6 +25,9 @@ import {
 	NODE_SELECTOR_COMBINATOR,
 	NODE_SELECTOR_UNIVERSAL,
 	NODE_SELECTOR_NESTING,
+	NODE_SELECTOR_NTH,
+	NODE_SELECTOR_NTH_OF,
+	NODE_SELECTOR_LANG,
 	NODE_PRELUDE_MEDIA_QUERY,
 	NODE_PRELUDE_MEDIA_FEATURE,
 	NODE_PRELUDE_MEDIA_TYPE,
@@ -42,6 +46,8 @@ import {
 	FLAG_HAS_DECLARATIONS,
 } from './arena'
 
+import { parse_dimension } from './string-utils'
+
 // Node type constants (numeric for performance)
 export type CSSNodeType =
 	| typeof NODE_STYLESHEET
@@ -50,6 +56,7 @@ export type CSSNodeType =
 	| typeof NODE_DECLARATION
 	| typeof NODE_SELECTOR
 	| typeof NODE_COMMENT
+	| typeof NODE_BLOCK
 	| typeof NODE_VALUE_KEYWORD
 	| typeof NODE_VALUE_NUMBER
 	| typeof NODE_VALUE_DIMENSION
@@ -67,6 +74,9 @@ export type CSSNodeType =
 	| typeof NODE_SELECTOR_COMBINATOR
 	| typeof NODE_SELECTOR_UNIVERSAL
 	| typeof NODE_SELECTOR_NESTING
+	| typeof NODE_SELECTOR_NTH
+	| typeof NODE_SELECTOR_NTH_OF
+	| typeof NODE_SELECTOR_LANG
 	| typeof NODE_PRELUDE_MEDIA_QUERY
 	| typeof NODE_PRELUDE_MEDIA_FEATURE
 	| typeof NODE_PRELUDE_MEDIA_TYPE
@@ -122,7 +132,15 @@ export class CSSNode {
 	}
 
 	// Get the value text (for declarations: "blue" in "color: blue")
-	get value(): string | null {
+	// For dimension/number nodes: returns the numeric value as a number
+	// For string nodes: returns the string content without quotes
+	get value(): string | number | null {
+		// For dimension and number nodes, parse and return as number
+		if (this.type === NODE_VALUE_DIMENSION || this.type === NODE_VALUE_NUMBER) {
+			return parse_dimension(this.text).value
+		}
+
+		// For other nodes, return as string
 		let start = this.arena.get_value_start(this.index)
 		let length = this.arena.get_value_length(this.index)
 		if (length === 0) return null
@@ -132,7 +150,20 @@ export class CSSNode {
 	// Get the prelude text (for at-rules: "(min-width: 768px)" in "@media (min-width: 768px)")
 	// This is an alias for `value` to make at-rule usage more semantic
 	get prelude(): string | null {
-		return this.value
+		let val = this.value
+		return typeof val === 'string' ? val : null
+	}
+
+	// Get the attribute operator (for attribute selectors: =, ~=, |=, ^=, $=, *=)
+	// Returns one of the ATTR_OPERATOR_* constants
+	get attr_operator(): number {
+		return this.arena.get_attr_operator(this.index)
+	}
+
+	// Get the unit for dimension nodes (e.g., "px" from "100px", "%" from "50%")
+	get unit(): string | null {
+		if (this.type !== NODE_VALUE_DIMENSION) return null
+		return parse_dimension(this.text).unit
 	}
 
 	// Check if this declaration has !important
@@ -163,6 +194,54 @@ export class CSSNode {
 	// Check if this style rule has declarations
 	get has_declarations(): boolean {
 		return this.arena.has_flag(this.index, FLAG_HAS_DECLARATIONS)
+	}
+
+	// Get the block node (for style rules and at-rules with blocks)
+	get block(): CSSNode | null {
+		// For StyleRule: block is sibling after selector list
+		if (this.type === NODE_STYLE_RULE) {
+			let first = this.first_child
+			if (!first) return null
+			// Block is the sibling after selector list
+			let blockNode = first.next_sibling
+			if (blockNode && blockNode.type === NODE_BLOCK) {
+				return blockNode
+			}
+			return null
+		}
+
+		// For AtRule: block is last child (after prelude nodes)
+		if (this.type === NODE_AT_RULE) {
+			// Find last child that is a block
+			let child = this.first_child
+			while (child) {
+				if (child.type === NODE_BLOCK && !child.next_sibling) {
+					return child
+				}
+				child = child.next_sibling
+			}
+			return null
+		}
+
+		return null
+	}
+
+	// Check if this block is empty (no declarations or rules, only comments allowed)
+	get is_empty(): boolean {
+		// Only valid on block nodes
+		if (this.type !== NODE_BLOCK) {
+			return false
+		}
+
+		// Empty if no children, or all children are comments
+		let child = this.first_child
+		while (child) {
+			if (child.type !== NODE_COMMENT) {
+				return false
+			}
+			child = child.next_sibling
+		}
+		return true
 	}
 
 	// --- Value Node Access (for declarations) ---
@@ -225,6 +304,11 @@ export class CSSNode {
 		return new CSSNode(this.arena, this.source, sibling_index)
 	}
 
+	get has_next(): boolean {
+		let sibling_index = this.arena.get_next_sibling(this.index)
+		return sibling_index !== 0
+	}
+
 	// Check if this node has children
 	get has_children(): boolean {
 		return this.arena.has_children(this.index)
@@ -248,5 +332,51 @@ export class CSSNode {
 			yield child
 			child = child.next_sibling
 		}
+	}
+
+	// --- An+B Expression Helpers (for NODE_SELECTOR_NTH) ---
+
+	// Get the 'a' coefficient from An+B expression (e.g., "2n" from "2n+1", "odd" from "odd")
+	get nth_a(): string | null {
+		if (this.type !== NODE_SELECTOR_NTH) return null
+
+		let len = this.arena.get_content_length(this.index)
+		if (len === 0) return null
+		let start = this.arena.get_content_start(this.index)
+		return this.source.substring(start, start + len)
+	}
+
+	// Get the 'b' coefficient from An+B expression (e.g., "1" from "2n+1")
+	get nth_b(): string | null {
+		if (this.type !== NODE_SELECTOR_NTH) return null
+
+		let len = this.arena.get_value_length(this.index)
+		if (len === 0) return null
+		let start = this.arena.get_value_start(this.index)
+		let value = this.source.substring(start, start + len)
+
+		// Check if there's a - sign before this position (handling "2n - 1" with spaces)
+		// Look backwards for a - or + sign, skipping whitespace
+		let check_pos = start - 1
+		while (check_pos >= 0) {
+			let ch = this.source.charCodeAt(check_pos)
+			if (ch === 0x20 /* space */ || ch === 0x09 /* tab */ || ch === 0x0a /* \n */ || ch === 0x0d /* \r */) {
+				check_pos--
+				continue
+			}
+			// Found non-whitespace
+			if (ch === 0x2d /* - */) {
+				// Prepend - to value
+				value = '-' + value
+			}
+			// Note: + signs are implicit, so we don't prepend them
+			break
+		}
+
+		// Strip leading + if present in the token itself
+		if (value.charCodeAt(0) === 0x2b /* + */) {
+			return value.substring(1)
+		}
+		return value
 	}
 }

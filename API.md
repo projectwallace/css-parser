@@ -46,6 +46,8 @@ function parse(source: string, options?: ParserOptions): CSSNode
 - `has_prelude` - Whether at-rule has a prelude
 - `has_block` - Whether rule has a `{ }` block
 - `has_children` - Whether node has child nodes
+- `block` - Block node containing declarations/nested rules (for style rules and at-rules with blocks)
+- `is_empty` - Whether block has no declarations or rules (only comments allowed)
 - `first_child` - First child node or `null`
 - `next_sibling` - Next sibling node or `null`
 - `children` - Array of all child nodes
@@ -69,7 +71,12 @@ console.log(rule.has_block) // true
 const selector = rule.first_child
 console.log(selector.text) // "body"
 
-const declaration = selector.next_sibling
+// Access block, then declaration inside it
+const block = rule.block
+console.log(block.type) // 7 (NODE_BLOCK)
+console.log(block.is_empty) // false
+
+const declaration = block.first_child
 console.log(declaration.property) // "color"
 console.log(declaration.value) // "red"
 ```
@@ -81,8 +88,9 @@ Stylesheet (NODE_STYLESHEET)
   └─ StyleRule (NODE_STYLE_RULE)
        ├─ SelectorList (NODE_SELECTOR_LIST) "body"
        │    └─ Type (NODE_SELECTOR_TYPE) "body"
-       └─ Declaration (NODE_DECLARATION) "color: red"
-            └─ Keyword (NODE_VALUE_KEYWORD) "red"
+       └─ Block (NODE_BLOCK)
+            └─ Declaration (NODE_DECLARATION) "color: red"
+                 └─ Keyword (NODE_VALUE_KEYWORD) "red"
 ```
 
 ### Example 2: Parsing with Options
@@ -97,8 +105,8 @@ const ast = parse('div { margin: 10px 20px; }', {
 })
 
 const rule = ast.first_child
-const selector = rule.first_child
-const declaration = selector.next_sibling
+const block = rule.block
+const declaration = block.first_child
 
 console.log(declaration.property) // "margin"
 console.log(declaration.value) // "10px 20px"
@@ -120,13 +128,15 @@ console.log(mediaRule.has_block) // true
 console.log(mediaRule.has_children) // true
 
 // Access prelude nodes when parse_atrule_preludes is true
+// (Prelude nodes are first children, before the block)
 const mediaQuery = mediaRule.first_child
 console.log(mediaQuery.type) // NODE_PRELUDE_MEDIA_QUERY
 console.log(mediaQuery.text) // "(min-width: 768px)"
 console.log(mediaQuery.value) // "min-width: 768px" (without parentheses)
 
-// Access block content
-for (const child of mediaRule) {
+// Access block content (nested rules/declarations)
+const block = mediaRule.block
+for (const child of block) {
 	if (child.type === 2) {
 		// NODE_STYLE_RULE
 		console.log('Found style rule in media query')
@@ -218,6 +228,37 @@ const firstNode = ast2.first_child
 console.log(firstNode.type) // NODE_STYLE_RULE (comment skipped)
 ```
 
+### Example 7: Block Nodes and Empty Rules
+
+```typescript
+import { parse } from '@projectwallace/css-parser'
+
+// Empty rule
+const ast1 = parse('.empty { }')
+const rule1 = ast1.first_child
+console.log(rule1.has_block) // true
+console.log(rule1.block.is_empty) // true
+
+// Rule with only comments
+const ast2 = parse('.comments { /* todo */ }', { skip_comments: false })
+const rule2 = ast2.first_child
+console.log(rule2.block.is_empty) // true (only comments)
+
+// Rule with declarations
+const ast3 = parse('.filled { color: red; }')
+const rule3 = ast3.first_child
+console.log(rule3.block.is_empty) // false
+
+// Nested rules inside blocks
+const ast4 = parse('.parent { .child { color: blue; } }')
+const parent = ast4.first_child
+const parentBlock = parent.block
+const nestedRule = parentBlock.first_child
+
+console.log(nestedRule.type) // NODE_STYLE_RULE
+console.log(nestedRule.block.is_empty) // false
+```
+
 ---
 
 ## `parse_selector(source)`
@@ -294,8 +335,9 @@ walk(ast, (node, depth) => {
 //   NODE_STYLE_RULE
 //     NODE_SELECTOR_LIST
 //       NODE_SELECTOR_TYPE
-//     NODE_DECLARATION
-//       NODE_VALUE_KEYWORD
+//     NODE_BLOCK
+//       NODE_DECLARATION
+//         NODE_VALUE_KEYWORD
 ```
 
 ---
@@ -328,3 +370,69 @@ for (const token of tokenize('body { color: red; }')) {
 // TOKEN_WHITESPACE " "
 // TOKEN_RIGHT_BRACE "}"
 ```
+
+---
+
+## Node Type Constants
+
+The parser uses numeric constants for node types. Import them from the parser:
+
+```typescript
+import {
+	NODE_STYLESHEET,
+	NODE_STYLE_RULE,
+	NODE_AT_RULE,
+	NODE_DECLARATION,
+	NODE_SELECTOR,
+	NODE_COMMENT,
+	NODE_BLOCK,
+	// ... and more
+} from '@projectwallace/css-parser'
+```
+
+### Core Node Types
+
+- `NODE_STYLESHEET` (1) - Root stylesheet node
+- `NODE_STYLE_RULE` (2) - Style rule (e.g., `body { }`)
+- `NODE_AT_RULE` (3) - At-rule (e.g., `@media`, `@keyframes`)
+- `NODE_DECLARATION` (4) - Property declaration (e.g., `color: red`)
+- `NODE_SELECTOR` (5) - Selector wrapper (deprecated, use NODE_SELECTOR_LIST)
+- `NODE_COMMENT` (6) - CSS comment
+- `NODE_BLOCK` (7) - Block container for declarations and nested rules
+
+### Value Node Types (10-16)
+
+- `NODE_VALUE_KEYWORD` (10) - Keyword value (e.g., `red`, `auto`)
+- `NODE_VALUE_NUMBER` (11) - Number value (e.g., `42`, `3.14`)
+- `NODE_VALUE_DIMENSION` (12) - Dimension value (e.g., `10px`, `2em`, `50%`)
+- `NODE_VALUE_STRING` (13) - String value (e.g., `"hello"`)
+- `NODE_VALUE_COLOR` (14) - Hex color (e.g., `#fff`, `#ff0000`)
+- `NODE_VALUE_FUNCTION` (15) - Function (e.g., `calc()`, `var()`)
+- `NODE_VALUE_OPERATOR` (16) - Operator (e.g., `+`, `,`)
+
+### Selector Node Types (20-29)
+
+- `NODE_SELECTOR_LIST` (20) - Selector list container
+- `NODE_SELECTOR_TYPE` (21) - Type selector (e.g., `div`, `span`)
+- `NODE_SELECTOR_CLASS` (22) - Class selector (e.g., `.classname`)
+- `NODE_SELECTOR_ID` (23) - ID selector (e.g., `#identifier`)
+- `NODE_SELECTOR_ATTRIBUTE` (24) - Attribute selector (e.g., `[attr=value]`)
+- `NODE_SELECTOR_PSEUDO_CLASS` (25) - Pseudo-class (e.g., `:hover`)
+- `NODE_SELECTOR_PSEUDO_ELEMENT` (26) - Pseudo-element (e.g., `::before`)
+- `NODE_SELECTOR_COMBINATOR` (27) - Combinator (e.g., `>`, `+`, `~`, or ` `)
+- `NODE_SELECTOR_UNIVERSAL` (28) - Universal selector (`*`)
+- `NODE_SELECTOR_NESTING` (29) - Nesting selector (`&`)
+
+### At-Rule Prelude Node Types (30-40)
+
+- `NODE_PRELUDE_MEDIA_QUERY` (30) - Media query
+- `NODE_PRELUDE_MEDIA_FEATURE` (31) - Media feature
+- `NODE_PRELUDE_MEDIA_TYPE` (32) - Media type (e.g., `screen`, `print`)
+- `NODE_PRELUDE_CONTAINER_QUERY` (33) - Container query
+- `NODE_PRELUDE_SUPPORTS_QUERY` (34) - Supports query
+- `NODE_PRELUDE_LAYER_NAME` (35) - Layer name
+- `NODE_PRELUDE_IDENTIFIER` (36) - Generic identifier
+- `NODE_PRELUDE_OPERATOR` (37) - Logical operator (e.g., `and`, `or`)
+- `NODE_PRELUDE_IMPORT_URL` (38) - Import URL
+- `NODE_PRELUDE_IMPORT_LAYER` (39) - Import layer
+- `NODE_PRELUDE_IMPORT_SUPPORTS` (40) - Import supports condition

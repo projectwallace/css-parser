@@ -104,7 +104,6 @@ export class AtRulePreludeParser {
 	private parse_single_media_query(): number | null {
 		let query_start = this.lexer.pos
 		let query_line = this.lexer.line
-		let query_column = this.lexer.column
 
 		// Skip whitespace
 		this.skip_whitespace()
@@ -479,7 +478,7 @@ export class AtRulePreludeParser {
 			let paren_depth = 1
 			while (this.lexer.pos < this.prelude_end && paren_depth > 0) {
 				let tokenType = this.next_token()
-				if (tokenType === TOKEN_LEFT_PAREN) {
+				if (tokenType === TOKEN_LEFT_PAREN || tokenType === TOKEN_FUNCTION) {
 					paren_depth++
 				} else if (tokenType === TOKEN_RIGHT_PAREN) {
 					paren_depth--
@@ -507,6 +506,7 @@ export class AtRulePreludeParser {
 		// Peek at next token
 		let saved_pos = this.lexer.pos
 		let saved_line = this.lexer.line
+		let saved_column = this.lexer.column
 
 		this.next_token()
 
@@ -532,7 +532,7 @@ export class AtRulePreludeParser {
 					let paren_depth = 1
 					while (this.lexer.pos < this.prelude_end && paren_depth > 0) {
 						let tokenType = this.next_token()
-						if (tokenType === TOKEN_LEFT_PAREN) {
+						if (tokenType === TOKEN_LEFT_PAREN || tokenType === TOKEN_FUNCTION) {
 							paren_depth++
 						} else if (tokenType === TOKEN_RIGHT_PAREN) {
 							paren_depth--
@@ -569,6 +569,7 @@ export class AtRulePreludeParser {
 		// Not a layer, restore position
 		this.lexer.pos = saved_pos
 		this.lexer.line = saved_line
+		this.lexer.column = saved_column
 		return null
 	}
 
@@ -577,6 +578,7 @@ export class AtRulePreludeParser {
 		// Peek at next token
 		let saved_pos = this.lexer.pos
 		let saved_line = this.lexer.line
+		let saved_column = this.lexer.column
 
 		this.next_token()
 
@@ -593,7 +595,7 @@ export class AtRulePreludeParser {
 
 				while (this.lexer.pos < this.prelude_end && paren_depth > 0) {
 					let tokenType = this.next_token()
-					if (tokenType === TOKEN_LEFT_PAREN) {
+					if (tokenType === TOKEN_LEFT_PAREN || tokenType === TOKEN_FUNCTION) {
 						paren_depth++
 					} else if (tokenType === TOKEN_RIGHT_PAREN) {
 						paren_depth--
@@ -619,6 +621,7 @@ export class AtRulePreludeParser {
 		// Not supports(), restore position
 		this.lexer.pos = saved_pos
 		this.lexer.line = saved_line
+		this.lexer.column = saved_column
 		return null
 	}
 
@@ -637,12 +640,14 @@ export class AtRulePreludeParser {
 	private peek_token_type(): number {
 		let saved_pos = this.lexer.pos
 		let saved_line = this.lexer.line
+		let saved_column = this.lexer.column
 
 		this.next_token()
 		let type = this.lexer.token_type
 
 		this.lexer.pos = saved_pos
 		this.lexer.line = saved_line
+		this.lexer.column = saved_column
 
 		return type
 	}
