@@ -1,6 +1,7 @@
 *.md
 !API.md
 !README.md
+!MIGRATION-TYPED-NODES.md
 dist
 coverage
 .claude/settings.local.json
