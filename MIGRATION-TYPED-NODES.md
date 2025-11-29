@@ -2,14 +2,14 @@
 
 **Branch**: `tree-structure`
 **Status**: In Progress
-**Progress**: 11/25 batches completed
+**Progress**: 12/25 batches completed
 
 ---
 
 ## Quick Reference
 
-**Current Batch**: Batch 12 - Implement Complex Value Nodes
-**Next Steps**: See [Batch 12](#batch-12-implement-complex-value-nodes) below
+**Current Batch**: Batch 13 - Implement Simple Selector Nodes
+**Next Steps**: See [Batch 13](#batch-13-implement-simple-selector-nodes) below
 
 ---
 
@@ -31,7 +31,7 @@
 
 ### Phase 3: Value Nodes
 - [x] **Batch 11**: Implement Simple Value Nodes (15 min) ✅
-- [ ] **Batch 12**: Implement Complex Value Nodes (20 min)
+- [x] **Batch 12**: Implement Complex Value Nodes (20 min) ✅
 
 ### Phase 4: Selector Nodes
 - [ ] **Batch 13**: Implement Simple Selector Nodes (15 min)
