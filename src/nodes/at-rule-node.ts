@@ -1,7 +1,7 @@
 // AtRuleNode - CSS at-rule (@media, @import, @keyframes, etc.)
 import { CSSNode as CSSNodeBase } from '../css-node-base'
 import { CSSNode } from '../css-node'
-import { FLAG_HAS_BLOCK, NODE_BLOCK } from '../arena'
+import { FLAG_HAS_BLOCK, NODE_BLOCK, NODE_AT_RULE } from '../arena'
 import type { AnyNode } from '../types'
 
 // Forward declarations for child types
@@ -9,6 +9,10 @@ export type PreludeNode = AnyNode
 export type BlockNode = AnyNode
 
 export class AtRuleNode extends CSSNodeBase {
+	override get type(): typeof NODE_AT_RULE {
+		return this.arena.get_type(this.index) as typeof NODE_AT_RULE
+	}
+
 	// Get prelude nodes (children before the block, if any)
 	get prelude_nodes(): PreludeNode[] {
 		const nodes: PreludeNode[] = []

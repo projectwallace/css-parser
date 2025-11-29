@@ -3,6 +3,7 @@
 import { CSSNode as CSSNodeBase } from '../css-node-base'
 import { CSSNode } from '../css-node'
 import type { AnyNode } from '../types'
+import { NODE_SELECTOR_NTH, NODE_SELECTOR_NTH_OF } from '../arena'
 
 // Forward declaration for selector types
 export type SelectorComponentNode = AnyNode
@@ -21,6 +22,10 @@ export type SelectorComponentNode = AnyNode
  * Used in :nth-child(), :nth-last-child(), :nth-of-type(), :nth-last-of-type()
  */
 export class SelectorNthNode extends CSSNodeBase {
+	override get type(): typeof NODE_SELECTOR_NTH {
+		return this.arena.get_type(this.index) as typeof NODE_SELECTOR_NTH
+	}
+
 	// Get the 'a' coefficient from An+B expression (e.g., "2n" from "2n+1", "odd" from "odd")
 	get nth_a(): string | null {
 		let len = this.arena.get_content_length(this.index)
@@ -104,6 +109,10 @@ export class SelectorNthNode extends CSSNodeBase {
  * The selector part is a child node
  */
 export class SelectorNthOfNode extends CSSNodeBase {
+	override get type(): typeof NODE_SELECTOR_NTH_OF {
+		return this.arena.get_type(this.index) as typeof NODE_SELECTOR_NTH_OF
+	}
+
 	// Get the 'a' coefficient from An+B expression (e.g., "2n" from "2n+1", "odd" from "odd")
 	get nth_a(): string | null {
 		let len = this.arena.get_content_length(this.index)

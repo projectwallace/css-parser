@@ -10,6 +10,7 @@ import {
 	ATTR_OPERATOR_CARET_EQUAL,
 	ATTR_OPERATOR_DOLLAR_EQUAL,
 	ATTR_OPERATOR_STAR_EQUAL,
+	NODE_SELECTOR_ATTRIBUTE,
 } from '../arena'
 import type { AnyNode } from '../types'
 
@@ -37,6 +38,10 @@ const ATTR_OPERATOR_STRINGS: Record<number, string> = {
  * - [attr=value i] - case-insensitive
  */
 export class SelectorAttributeNode extends CSSNodeBase {
+	override get type(): typeof NODE_SELECTOR_ATTRIBUTE {
+		return this.arena.get_type(this.index) as typeof NODE_SELECTOR_ATTRIBUTE
+	}
+
 	// Get the attribute name
 	// For [data-id], returns "data-id"
 	get attribute_name(): string {

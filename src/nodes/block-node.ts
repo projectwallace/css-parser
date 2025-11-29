@@ -1,7 +1,7 @@
 // BlockNode - Block container for declarations and nested rules
 import { CSSNode as CSSNodeBase } from '../css-node-base'
 import { CSSNode } from '../css-node'
-import { NODE_COMMENT } from '../arena'
+import { NODE_COMMENT, NODE_BLOCK } from '../arena'
 import type { AnyNode } from '../types'
 
 // Forward declarations for child types
@@ -11,6 +11,10 @@ export type AtRuleNode = AnyNode
 export type CommentNode = AnyNode
 
 export class BlockNode extends CSSNodeBase {
+	override get type(): typeof NODE_BLOCK {
+		return this.arena.get_type(this.index) as typeof NODE_BLOCK
+	}
+
 	// Override children with typed return
 	// Blocks can contain declarations, style rules, at-rules, and comments
 	override get children(): (DeclarationNode | StyleRuleNode | AtRuleNode | CommentNode)[] {

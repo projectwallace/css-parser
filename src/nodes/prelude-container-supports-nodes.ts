@@ -3,6 +3,13 @@
 import { CSSNode as CSSNodeBase } from '../css-node-base'
 import { CSSNode } from '../css-node'
 import type { AnyNode } from '../types'
+import {
+	NODE_PRELUDE_CONTAINER_QUERY,
+	NODE_PRELUDE_IDENTIFIER,
+	NODE_PRELUDE_LAYER_NAME,
+	NODE_PRELUDE_OPERATOR,
+	NODE_PRELUDE_SUPPORTS_QUERY,
+} from '../arena'
 
 // Forward declarations for child types
 export type PreludeComponentNode = AnyNode
@@ -16,6 +23,9 @@ export type PreludeComponentNode = AnyNode
  * - style(--custom-property: value)
  */
 export class PreludeContainerQueryNode extends CSSNodeBase {
+	override get type(): typeof NODE_PRELUDE_CONTAINER_QUERY {
+		return this.arena.get_type(this.index) as typeof NODE_PRELUDE_CONTAINER_QUERY
+	}
 	// Override children to return query components
 	override get children(): PreludeComponentNode[] {
 		return super.children as PreludeComponentNode[]
@@ -35,6 +45,10 @@ export class PreludeContainerQueryNode extends CSSNodeBase {
  * - selector(:has(a))
  */
 export class PreludeSupportsQueryNode extends CSSNodeBase {
+	override get type(): typeof NODE_PRELUDE_SUPPORTS_QUERY {
+		return this.arena.get_type(this.index) as typeof NODE_PRELUDE_SUPPORTS_QUERY
+	}
+
 	// Get the query value (content inside parentheses, trimmed)
 	// For (display: flex), returns "display: flex"
 	get value(): string {
@@ -44,7 +58,10 @@ export class PreludeSupportsQueryNode extends CSSNodeBase {
 			text = text.slice(1, -1)
 		}
 		// Remove comments and normalize whitespace
-		text = text.replace(/\/\*.*?\*\//g, '').replace(/\s+/g, ' ').trim()
+		text = text
+			.replace(/\/\*.*?\*\//g, '')
+			.replace(/\s+/g, ' ')
+			.trim()
 		return text
 	}
 
@@ -67,16 +84,24 @@ export class PreludeSupportsQueryNode extends CSSNodeBase {
  * - theme.dark (dot notation)
  */
 export class PreludeLayerNameNode extends CSSNodeBase {
+	override get type(): typeof NODE_PRELUDE_LAYER_NAME {
+		return this.arena.get_type(this.index) as typeof NODE_PRELUDE_LAYER_NAME
+	}
+
+	get name() {
+		return this.text
+	}
+
 	// Leaf node - the layer name is available via 'text'
 
 	// Get the layer name parts (split by dots)
 	get parts(): string[] {
-		return this.text.split('.')
+		return this.name.split('.')
 	}
 
 	// Check if this is a nested layer (has dots)
 	get is_nested(): boolean {
-		return this.text.includes('.')
+		return this.name.includes('.')
 	}
 
 	protected override create_node_wrapper(index: number): AnyNode {
@@ -93,6 +118,10 @@ export class PreludeLayerNameNode extends CSSNodeBase {
  * - Generic identifiers in various contexts
  */
 export class PreludeIdentifierNode extends CSSNodeBase {
+	override get type(): typeof NODE_PRELUDE_IDENTIFIER {
+		return this.arena.get_type(this.index) as typeof NODE_PRELUDE_IDENTIFIER
+	}
+
 	// Leaf node - the identifier is available via 'text'
 
 	protected override create_node_wrapper(index: number): AnyNode {
@@ -108,6 +137,9 @@ export class PreludeIdentifierNode extends CSSNodeBase {
  * - not
  */
 export class PreludeOperatorNode extends CSSNodeBase {
+	override get type(): typeof NODE_PRELUDE_OPERATOR {
+		return this.arena.get_type(this.index) as typeof NODE_PRELUDE_OPERATOR
+	}
 	// Leaf node - the operator is available via 'text'
 
 	protected override create_node_wrapper(index: number): AnyNode {

@@ -3,6 +3,7 @@
 import { CSSNode as CSSNodeBase } from '../css-node-base'
 import { CSSNode } from '../css-node'
 import type { AnyNode } from '../types'
+import { NODE_PRELUDE_IMPORT_LAYER, NODE_PRELUDE_IMPORT_SUPPORTS, NODE_PRELUDE_IMPORT_URL } from '../arena'
 
 // Forward declarations for child types
 export type ImportComponentNode = AnyNode
@@ -15,6 +16,10 @@ export type ImportComponentNode = AnyNode
  * - url(https://example.com/styles.css)
  */
 export class PreludeImportUrlNode extends CSSNodeBase {
+	override get type(): typeof NODE_PRELUDE_IMPORT_URL {
+		return this.arena.get_type(this.index) as typeof NODE_PRELUDE_IMPORT_URL
+	}
+
 	// Get the URL value (without url() wrapper or quotes if present)
 	get url(): string {
 		const text = this.text.trim()
@@ -23,16 +28,14 @@ export class PreludeImportUrlNode extends CSSNodeBase {
 		if (text.startsWith('url(') && text.endsWith(')')) {
 			const inner = text.slice(4, -1).trim()
 			// Remove quotes if present
-			if ((inner.startsWith('"') && inner.endsWith('"')) ||
-			    (inner.startsWith("'") && inner.endsWith("'"))) {
+			if ((inner.startsWith('"') && inner.endsWith('"')) || (inner.startsWith("'") && inner.endsWith("'"))) {
 				return inner.slice(1, -1)
 			}
 			return inner
 		}
 
 		// Handle quoted string
-		if ((text.startsWith('"') && text.endsWith('"')) ||
-		    (text.startsWith("'") && text.endsWith("'"))) {
+		if ((text.startsWith('"') && text.endsWith('"')) || (text.startsWith("'") && text.endsWith("'"))) {
 			return text.slice(1, -1)
 		}
 
@@ -57,6 +60,10 @@ export class PreludeImportUrlNode extends CSSNodeBase {
  * - layer(theme.dark)
  */
 export class PreludeImportLayerNode extends CSSNodeBase {
+	override get type(): typeof NODE_PRELUDE_IMPORT_LAYER {
+		return this.arena.get_type(this.index) as typeof NODE_PRELUDE_IMPORT_LAYER
+	}
+
 	// Get the layer name (null if just "layer" without parentheses, empty string otherwise)
 	get layer_name(): string | null {
 		const text = this.text.trim()
@@ -70,7 +77,10 @@ export class PreludeImportLayerNode extends CSSNodeBase {
 		if (text.toLowerCase().startsWith('layer(') && text.endsWith(')')) {
 			let inner = text.slice(6, -1)
 			// Remove comments and normalize whitespace
-			inner = inner.replace(/\/\*.*?\*\//g, '').replace(/\s+/g, ' ').trim()
+			inner = inner
+				.replace(/\/\*.*?\*\//g, '')
+				.replace(/\s+/g, ' ')
+				.trim()
 			return inner
 		}
 
@@ -100,6 +110,10 @@ export class PreludeImportLayerNode extends CSSNodeBase {
  * - supports(selector(:has(a)))
  */
 export class PreludeImportSupportsNode extends CSSNodeBase {
+	override get type(): typeof NODE_PRELUDE_IMPORT_SUPPORTS {
+		return this.arena.get_type(this.index) as typeof NODE_PRELUDE_IMPORT_SUPPORTS
+	}
+
 	// Get the supports condition (content inside parentheses)
 	get condition(): string {
 		const text = this.text.trim()

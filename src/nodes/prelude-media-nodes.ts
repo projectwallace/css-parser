@@ -3,6 +3,7 @@
 import { CSSNode as CSSNodeBase } from '../css-node-base'
 import { CSSNode } from '../css-node'
 import type { AnyNode } from '../types'
+import { NODE_PRELUDE_MEDIA_FEATURE, NODE_PRELUDE_MEDIA_QUERY, NODE_PRELUDE_MEDIA_TYPE } from '../arena'
 
 // Forward declarations for child types
 export type MediaComponentNode = AnyNode
@@ -17,6 +18,10 @@ export type MediaComponentNode = AnyNode
  * - only screen and (orientation: landscape)
  */
 export class PreludeMediaQueryNode extends CSSNodeBase {
+	override get type(): typeof NODE_PRELUDE_MEDIA_QUERY {
+		return this.arena.get_type(this.index) as typeof NODE_PRELUDE_MEDIA_QUERY
+	}
+
 	// Override children to return media query components
 	// Children can be media types, media features, and logical operators
 	override get children(): MediaComponentNode[] {
@@ -38,6 +43,10 @@ export class PreludeMediaQueryNode extends CSSNodeBase {
  * - (400px <= width <= 800px) - range syntax
  */
 export class PreludeMediaFeatureNode extends CSSNodeBase {
+	override get type(): typeof NODE_PRELUDE_MEDIA_FEATURE {
+		return this.arena.get_type(this.index) as typeof NODE_PRELUDE_MEDIA_FEATURE
+	}
+
 	// Get the feature value (content inside parentheses, trimmed)
 	// For (min-width: 768px), returns "min-width: 768px"
 	get value(): string {
@@ -45,7 +54,10 @@ export class PreludeMediaFeatureNode extends CSSNodeBase {
 		// Remove parentheses
 		let inner = text.slice(1, -1)
 		// Remove comments and normalize whitespace
-		inner = inner.replace(/\/\*.*?\*\//g, '').replace(/\s+/g, ' ').trim()
+		inner = inner
+			.replace(/\/\*.*?\*\//g, '')
+			.replace(/\s+/g, ' ')
+			.trim()
 		return inner
 	}
 
@@ -65,7 +77,7 @@ export class PreludeMediaFeatureNode extends CSSNodeBase {
 
 		// Find the first operator position
 		let opIndex = -1
-		const indices = [colonIndex, geIndex, leIndex, gtIndex, ltIndex, eqIndex].filter(i => i > 0)
+		const indices = [colonIndex, geIndex, leIndex, gtIndex, ltIndex, eqIndex].filter((i) => i > 0)
 		if (indices.length > 0) {
 			opIndex = Math.min(...indices)
 		}
@@ -83,8 +95,14 @@ export class PreludeMediaFeatureNode extends CSSNodeBase {
 	// For (min-width: 768px), returns false
 	get is_boolean(): boolean {
 		const text = this.text
-		return !text.includes(':') && !text.includes('>=') && !text.includes('<=') &&
-		       !text.includes('>') && !text.includes('<') && !text.includes('=')
+		return (
+			!text.includes(':') &&
+			!text.includes('>=') &&
+			!text.includes('<=') &&
+			!text.includes('>') &&
+			!text.includes('<') &&
+			!text.includes('=')
+		)
 	}
 
 	// Override children for range syntax values
@@ -106,6 +124,10 @@ export class PreludeMediaFeatureNode extends CSSNodeBase {
  * - speech
  */
 export class PreludeMediaTypeNode extends CSSNodeBase {
+	override get type(): typeof NODE_PRELUDE_MEDIA_TYPE {
+		return this.arena.get_type(this.index) as typeof NODE_PRELUDE_MEDIA_TYPE
+	}
+
 	// Leaf node - the media type is available via 'text'
 
 	protected override create_node_wrapper(index: number): AnyNode {

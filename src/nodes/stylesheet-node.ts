@@ -1,6 +1,7 @@
 // StylesheetNode - Root node of the CSS AST
 import { CSSNode as CSSNodeBase } from '../css-node-base'
 import { CSSNode } from '../css-node'
+import { NODE_STYLESHEET } from '../arena'
 import type { CSSDataArena } from '../arena'
 import type { AnyNode } from '../types'
 
@@ -13,6 +14,10 @@ export type CommentNode = AnyNode
 export class StylesheetNode extends CSSNodeBase {
 	constructor(arena: CSSDataArena, source: string, index: number) {
 		super(arena, source, index)
+	}
+
+	override get type(): typeof NODE_STYLESHEET {
+		return this.arena.get_type(this.index) as typeof NODE_STYLESHEET
 	}
 
 	// Override children with typed return

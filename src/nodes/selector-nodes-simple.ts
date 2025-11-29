@@ -2,6 +2,13 @@
 // These are the basic building blocks of CSS selectors
 import { CSSNode as CSSNodeBase } from '../css-node-base'
 import { CSSNode } from '../css-node'
+import {
+	NODE_SELECTOR_LIST,
+	NODE_SELECTOR_TYPE,
+	NODE_SELECTOR_UNIVERSAL,
+	NODE_SELECTOR_NESTING,
+	NODE_SELECTOR_COMBINATOR,
+} from '../arena'
 import type { AnyNode } from '../types'
 
 // Forward declaration for selector component types
@@ -13,6 +20,10 @@ export type SelectorComponentNode = AnyNode
  * This is always the first child of a StyleRule
  */
 export class SelectorListNode extends CSSNodeBase {
+	override get type(): typeof NODE_SELECTOR_LIST {
+		return this.arena.get_type(this.index) as typeof NODE_SELECTOR_LIST
+	}
+
 	// Override children to return selector components
 	override get children(): SelectorComponentNode[] {
 		return super.children as SelectorComponentNode[]
@@ -28,6 +39,10 @@ export class SelectorListNode extends CSSNodeBase {
  * Examples: div, span, p, h1, article
  */
 export class SelectorTypeNode extends CSSNodeBase {
+	override get type(): typeof NODE_SELECTOR_TYPE {
+		return this.arena.get_type(this.index) as typeof NODE_SELECTOR_TYPE
+	}
+
 	// Leaf node - no additional properties
 	// The element name is available via 'text'
 
@@ -41,6 +56,10 @@ export class SelectorTypeNode extends CSSNodeBase {
  * Example: *
  */
 export class SelectorUniversalNode extends CSSNodeBase {
+	override get type(): typeof NODE_SELECTOR_UNIVERSAL {
+		return this.arena.get_type(this.index) as typeof NODE_SELECTOR_UNIVERSAL
+	}
+
 	// Leaf node - always represents "*"
 	// The text is available via 'text'
 
@@ -54,6 +73,10 @@ export class SelectorUniversalNode extends CSSNodeBase {
  * Example: &
  */
 export class SelectorNestingNode extends CSSNodeBase {
+	override get type(): typeof NODE_SELECTOR_NESTING {
+		return this.arena.get_type(this.index) as typeof NODE_SELECTOR_NESTING
+	}
+
 	// Leaf node - always represents "&"
 	// The text is available via 'text'
 
@@ -67,6 +90,10 @@ export class SelectorNestingNode extends CSSNodeBase {
  * Examples: " " (descendant), ">" (child), "+" (adjacent sibling), "~" (general sibling)
  */
 export class SelectorCombinatorNode extends CSSNodeBase {
+	override get type(): typeof NODE_SELECTOR_COMBINATOR {
+		return this.arena.get_type(this.index) as typeof NODE_SELECTOR_COMBINATOR
+	}
+
 	// Leaf node - the combinator symbol
 	// The combinator is available via 'text'
 

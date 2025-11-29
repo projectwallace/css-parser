@@ -2,6 +2,15 @@
 // These nodes represent parsed values in CSS declarations
 import { CSSNode as CSSNodeBase } from '../css-node-base'
 import { CSSNode } from '../css-node'
+import {
+	NODE_VALUE_KEYWORD,
+	NODE_VALUE_NUMBER,
+	NODE_VALUE_DIMENSION,
+	NODE_VALUE_STRING,
+	NODE_VALUE_COLOR,
+	NODE_VALUE_FUNCTION,
+	NODE_VALUE_OPERATOR,
+} from '../arena'
 import type { AnyNode } from '../types'
 
 /**
@@ -9,6 +18,10 @@ import type { AnyNode } from '../types'
  * Examples: red, auto, inherit, initial, flex, block
  */
 export class ValueKeywordNode extends CSSNodeBase {
+	override get type(): typeof NODE_VALUE_KEYWORD {
+		return this.arena.get_type(this.index) as typeof NODE_VALUE_KEYWORD
+	}
+
 	// Keyword nodes are leaf nodes with no additional properties
 	// The keyword text is available via the inherited 'text' property
 
@@ -22,6 +35,10 @@ export class ValueKeywordNode extends CSSNodeBase {
  * Examples: "hello", 'world', "path/to/file.css"
  */
 export class ValueStringNode extends CSSNodeBase {
+	override get type(): typeof NODE_VALUE_STRING {
+		return this.arena.get_type(this.index) as typeof NODE_VALUE_STRING
+	}
+
 	// String nodes are leaf nodes
 	// The full string (including quotes) is available via 'text'
 
@@ -45,6 +62,10 @@ export class ValueStringNode extends CSSNodeBase {
  * Examples: #fff, #ff0000, #rgba
  */
 export class ValueColorNode extends CSSNodeBase {
+	override get type(): typeof NODE_VALUE_COLOR {
+		return this.arena.get_type(this.index) as typeof NODE_VALUE_COLOR
+	}
+
 	// Color nodes are leaf nodes
 	// The hex color (including #) is available via 'text'
 
@@ -64,6 +85,10 @@ export class ValueColorNode extends CSSNodeBase {
  * Examples: +, -, *, /, comma (,)
  */
 export class ValueOperatorNode extends CSSNodeBase {
+	override get type(): typeof NODE_VALUE_OPERATOR {
+		return this.arena.get_type(this.index) as typeof NODE_VALUE_OPERATOR
+	}
+
 	// Operator nodes are leaf nodes
 	// The operator symbol is available via 'text'
 
@@ -77,6 +102,10 @@ export class ValueOperatorNode extends CSSNodeBase {
  * Examples: 42, 3.14, -5, .5
  */
 export class ValueNumberNode extends CSSNodeBase {
+	override get type(): typeof NODE_VALUE_NUMBER {
+		return this.arena.get_type(this.index) as typeof NODE_VALUE_NUMBER
+	}
+
 	// Number nodes are leaf nodes
 
 	// Get the numeric value
@@ -94,6 +123,10 @@ export class ValueNumberNode extends CSSNodeBase {
  * Examples: 10px, 2em, 50%, 1.5rem, 90deg
  */
 export class ValueDimensionNode extends CSSNodeBase {
+	override get type(): typeof NODE_VALUE_DIMENSION {
+		return this.arena.get_type(this.index) as typeof NODE_VALUE_DIMENSION
+	}
+
 	// Dimension nodes are leaf nodes
 
 	// Get the numeric value (without the unit)
@@ -131,6 +164,10 @@ export class ValueDimensionNode extends CSSNodeBase {
  * Examples: calc(100% - 20px), var(--color), rgb(255, 0, 0), url("image.png")
  */
 export class ValueFunctionNode extends CSSNodeBase {
+	override get type(): typeof NODE_VALUE_FUNCTION {
+		return this.arena.get_type(this.index) as typeof NODE_VALUE_FUNCTION
+	}
+
 	// Function nodes can have children (function arguments)
 
 	// Get the function name (without parentheses)
