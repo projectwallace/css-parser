@@ -3,7 +3,7 @@
 // Will be replaced by type-specific classes in future batches
 import { CSSNode as CSSNodeBase } from './css-node-base'
 import type { CSSDataArena } from './arena'
-import { NODE_STYLESHEET, NODE_COMMENT, NODE_BLOCK, NODE_DECLARATION, NODE_AT_RULE, NODE_STYLE_RULE, NODE_SELECTOR, NODE_VALUE_KEYWORD, NODE_VALUE_STRING, NODE_VALUE_COLOR, NODE_VALUE_OPERATOR, NODE_VALUE_NUMBER, NODE_VALUE_DIMENSION, NODE_VALUE_FUNCTION, NODE_SELECTOR_LIST, NODE_SELECTOR_TYPE, NODE_SELECTOR_UNIVERSAL, NODE_SELECTOR_NESTING, NODE_SELECTOR_COMBINATOR, NODE_SELECTOR_CLASS, NODE_SELECTOR_ID, NODE_SELECTOR_LANG, NODE_SELECTOR_ATTRIBUTE } from './arena'
+import { NODE_STYLESHEET, NODE_COMMENT, NODE_BLOCK, NODE_DECLARATION, NODE_AT_RULE, NODE_STYLE_RULE, NODE_SELECTOR, NODE_VALUE_KEYWORD, NODE_VALUE_STRING, NODE_VALUE_COLOR, NODE_VALUE_OPERATOR, NODE_VALUE_NUMBER, NODE_VALUE_DIMENSION, NODE_VALUE_FUNCTION, NODE_SELECTOR_LIST, NODE_SELECTOR_TYPE, NODE_SELECTOR_UNIVERSAL, NODE_SELECTOR_NESTING, NODE_SELECTOR_COMBINATOR, NODE_SELECTOR_CLASS, NODE_SELECTOR_ID, NODE_SELECTOR_LANG, NODE_SELECTOR_ATTRIBUTE, NODE_SELECTOR_PSEUDO_CLASS, NODE_SELECTOR_PSEUDO_ELEMENT } from './arena'
 import { StylesheetNode } from './nodes/stylesheet-node'
 import { CommentNode } from './nodes/comment-node'
 import { BlockNode } from './nodes/block-node'
@@ -15,6 +15,7 @@ import { ValueKeywordNode, ValueStringNode, ValueColorNode, ValueOperatorNode, V
 import { SelectorListNode, SelectorTypeNode, SelectorUniversalNode, SelectorNestingNode, SelectorCombinatorNode } from './nodes/selector-nodes-simple'
 import { SelectorClassNode, SelectorIdNode, SelectorLangNode } from './nodes/selector-nodes-named'
 import { SelectorAttributeNode } from './nodes/selector-attribute-node'
+import { SelectorPseudoClassNode, SelectorPseudoElementNode } from './nodes/selector-pseudo-nodes'
 
 // Re-export CSSNodeType from base
 export type { CSSNodeType } from './css-node-base'
@@ -31,6 +32,7 @@ export { ValueKeywordNode, ValueStringNode, ValueColorNode, ValueOperatorNode, V
 export { SelectorListNode, SelectorTypeNode, SelectorUniversalNode, SelectorNestingNode, SelectorCombinatorNode } from './nodes/selector-nodes-simple'
 export { SelectorClassNode, SelectorIdNode, SelectorLangNode } from './nodes/selector-nodes-named'
 export { SelectorAttributeNode } from './nodes/selector-attribute-node'
+export { SelectorPseudoClassNode, SelectorPseudoElementNode } from './nodes/selector-pseudo-nodes'
 
 export class CSSNode extends CSSNodeBase {
 	// Implement factory method that returns type-specific node classes
@@ -88,6 +90,10 @@ export class CSSNode extends CSSNodeBase {
 				return new SelectorLangNode(arena, source, index)
 			case NODE_SELECTOR_ATTRIBUTE:
 				return new SelectorAttributeNode(arena, source, index)
+			case NODE_SELECTOR_PSEUDO_CLASS:
+				return new SelectorPseudoClassNode(arena, source, index)
+			case NODE_SELECTOR_PSEUDO_ELEMENT:
+				return new SelectorPseudoElementNode(arena, source, index)
 			default:
 				// For all other types, return generic CSSNode
 				return new CSSNode(arena, source, index)
