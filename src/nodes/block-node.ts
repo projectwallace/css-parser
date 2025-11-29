@@ -1,5 +1,6 @@
 // BlockNode - Block container for declarations and nested rules
-import { CSSNode } from '../css-node-base'
+import { CSSNode as CSSNodeBase } from '../css-node-base'
+import { CSSNode } from '../css-node'
 import { NODE_COMMENT } from '../arena'
 
 // Forward declarations for child types
@@ -8,7 +9,7 @@ export type StyleRuleNode = CSSNode
 export type AtRuleNode = CSSNode
 export type CommentNode = CSSNode
 
-export class BlockNode extends CSSNode {
+export class BlockNode extends CSSNodeBase {
 	// Override children with typed return
 	// Blocks can contain declarations, style rules, at-rules, and comments
 	override get children(): (DeclarationNode | StyleRuleNode | AtRuleNode | CommentNode)[] {
@@ -31,5 +32,9 @@ export class BlockNode extends CSSNode {
 	// Snake_case alias for isEmpty
 	get is_empty(): boolean {
 		return this.isEmpty
+	}
+
+	protected override create_node_wrapper(index: number): CSSNode {
+		return CSSNode.from(this.arena, this.source, index)
 	}
 }

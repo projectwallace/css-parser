@@ -1,6 +1,7 @@
 // Container and Supports Prelude Node Classes
 // Represents container query and supports query components
-import { CSSNode } from '../css-node-base'
+import { CSSNode as CSSNodeBase } from '../css-node-base'
+import { CSSNode } from '../css-node'
 
 // Forward declarations for child types
 export type PreludeComponentNode = CSSNode
@@ -13,10 +14,14 @@ export type PreludeComponentNode = CSSNode
  * - (orientation: portrait)
  * - style(--custom-property: value)
  */
-export class PreludeContainerQueryNode extends CSSNode {
+export class PreludeContainerQueryNode extends CSSNodeBase {
 	// Override children to return query components
 	override get children(): PreludeComponentNode[] {
 		return super.children as PreludeComponentNode[]
+	}
+
+	protected override create_node_wrapper(index: number): CSSNode {
+		return CSSNode.from(this.arena, this.source, index)
 	}
 }
 
@@ -28,21 +33,27 @@ export class PreludeContainerQueryNode extends CSSNode {
  * - not (display: flex)
  * - selector(:has(a))
  */
-export class PreludeSupportsQueryNode extends CSSNode {
+export class PreludeSupportsQueryNode extends CSSNodeBase {
 	// Get the query value (content inside parentheses, trimmed)
 	// For (display: flex), returns "display: flex"
 	get value(): string {
-		const text = this.text
-		// Remove parentheses and trim
+		let text = this.text
+		// Remove parentheses
 		if (text.startsWith('(') && text.endsWith(')')) {
-			return text.slice(1, -1).trim()
+			text = text.slice(1, -1)
 		}
-		return text.trim()
+		// Remove comments and normalize whitespace
+		text = text.replace(/\/\*.*?\*\//g, '').replace(/\s+/g, ' ').trim()
+		return text
 	}
 
 	// Override children to return query components
 	override get children(): PreludeComponentNode[] {
 		return super.children as PreludeComponentNode[]
+	}
+
+	protected override create_node_wrapper(index: number): CSSNode {
+		return CSSNode.from(this.arena, this.source, index)
 	}
 }
 
@@ -54,7 +65,7 @@ export class PreludeSupportsQueryNode extends CSSNode {
  * - utilities
  * - theme.dark (dot notation)
  */
-export class PreludeLayerNameNode extends CSSNode {
+export class PreludeLayerNameNode extends CSSNodeBase {
 	// Leaf node - the layer name is available via 'text'
 
 	// Get the layer name parts (split by dots)
@@ -66,6 +77,10 @@ export class PreludeLayerNameNode extends CSSNode {
 	get is_nested(): boolean {
 		return this.text.includes('.')
 	}
+
+	protected override create_node_wrapper(index: number): CSSNode {
+		return CSSNode.from(this.arena, this.source, index)
+	}
 }
 
 /**
@@ -76,8 +91,12 @@ export class PreludeLayerNameNode extends CSSNode {
  * - Container names in @container
  * - Generic identifiers in various contexts
  */
-export class PreludeIdentifierNode extends CSSNode {
+export class PreludeIdentifierNode extends CSSNodeBase {
 	// Leaf node - the identifier is available via 'text'
+
+	protected override create_node_wrapper(index: number): CSSNode {
+		return CSSNode.from(this.arena, this.source, index)
+	}
 }
 
 /**
@@ -87,6 +106,10 @@ export class PreludeIdentifierNode extends CSSNode {
  * - or
  * - not
  */
-export class PreludeOperatorNode extends CSSNode {
+export class PreludeOperatorNode extends CSSNodeBase {
 	// Leaf node - the operator is available via 'text'
+
+	protected override create_node_wrapper(index: number): CSSNode {
+		return CSSNode.from(this.arena, this.source, index)
+	}
 }

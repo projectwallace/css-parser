@@ -12,6 +12,7 @@ import {
 	NODE_VALUE_DIMENSION,
 } from './parser'
 import { walk, walk_enter_leave } from './walk'
+import { DeclarationNode } from './css-node'
 
 describe('walk', () => {
 	it('should visit single node', () => {
@@ -138,7 +139,7 @@ describe('walk', () => {
 
 		walk(root, (node) => {
 			if (node.type === NODE_DECLARATION) {
-				const name = node.name
+				const name = (node as DeclarationNode).name
 				if (name) properties.push(name)
 			}
 		})

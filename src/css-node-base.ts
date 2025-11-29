@@ -222,4 +222,15 @@ export abstract class CSSNode {
 		return false
 	}
 
+	// Check if this node has a vendor prefix
+	// Default: false. DeclarationNode and selector pseudo nodes override this.
+	get is_vendor_prefixed(): boolean {
+		return false
+	}
+
+	// CamelCase alias for is_vendor_prefixed
+	get isVendorPrefixed(): boolean {
+		return this.is_vendor_prefixed
+	}
+
 }

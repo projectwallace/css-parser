@@ -1,5 +1,6 @@
 // StylesheetNode - Root node of the CSS AST
-import { CSSNode } from '../css-node-base'
+import { CSSNode as CSSNodeBase } from '../css-node-base'
+import { CSSNode } from '../css-node'
 import type { CSSDataArena } from '../arena'
 
 // Forward declarations for child types (will be implemented in future batches)
@@ -8,7 +9,7 @@ export type StyleRuleNode = CSSNode
 export type AtRuleNode = CSSNode
 export type CommentNode = CSSNode
 
-export class StylesheetNode extends CSSNode {
+export class StylesheetNode extends CSSNodeBase {
 	constructor(arena: CSSDataArena, source: string, index: number) {
 		super(arena, source, index)
 	}
@@ -17,5 +18,9 @@ export class StylesheetNode extends CSSNode {
 	// Stylesheet can contain style rules, at-rules, and comments
 	override get children(): (StyleRuleNode | AtRuleNode | CommentNode)[] {
 		return super.children as (StyleRuleNode | AtRuleNode | CommentNode)[]
+	}
+
+	protected override create_node_wrapper(index: number): CSSNode {
+		return CSSNode.from(this.arena, this.source, index)
 	}
 }

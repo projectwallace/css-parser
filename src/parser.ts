@@ -124,7 +124,7 @@ export class Parser {
 		}
 
 		// Return wrapped node
-		return new CSSNode(this.arena, this.source, stylesheet)
+		return CSSNode.from(this.arena, this.source, stylesheet)
 	}
 
 	// Parse a rule (style rule or at-rule)

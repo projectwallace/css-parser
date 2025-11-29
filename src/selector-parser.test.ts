@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { SelectorParser } from './selector-parser'
 import { CSSDataArena } from './arena'
+import { SelectorNthNode } from './css-node'
 import {
 	NODE_SELECTOR,
 	NODE_SELECTOR_LIST,
@@ -965,8 +966,8 @@ describe('SelectorParser', () => {
 			expect(nth_child.children).toHaveLength(1)
 			const anplusb = nth_child.first_child!
 			expect(anplusb.type).toBe(NODE_SELECTOR_NTH)
-			expect(anplusb.nth_a).toBe(null) // No 'a' coefficient, just 'b'
-			expect(anplusb.nth_b).toBe('1')
+			expect((anplusb as SelectorNthNode).nth_a).toBe(null) // No 'a' coefficient, just 'b'
+			expect((anplusb as SelectorNthNode).nth_b).toBe('1')
 		})
 
 		it('should parse :nth-child(2n+1)', () => {
@@ -982,8 +983,8 @@ describe('SelectorParser', () => {
 			expect(nth_child.children).toHaveLength(1)
 			const anplusb = nth_child.first_child!
 			expect(anplusb.type).toBe(NODE_SELECTOR_NTH)
-			expect(anplusb.nth_a).toBe('2n')
-			expect(anplusb.nth_b).toBe('1')
+			expect((anplusb as SelectorNthNode).nth_a).toBe('2n')
+			expect((anplusb as SelectorNthNode).nth_b).toBe('1')
 			expect(anplusb.text).toBe('2n+1')
 		})
 
@@ -1006,8 +1007,8 @@ describe('SelectorParser', () => {
 			expect(nth_of.children).toHaveLength(2)
 			const anplusb = nth_of.first_child!
 			expect(anplusb.type).toBe(NODE_SELECTOR_NTH)
-			expect(anplusb.nth_a).toBe('2n')
-			expect(anplusb.nth_b).toBe(null)
+			expect((anplusb as SelectorNthNode).nth_a).toBe('2n')
+			expect((anplusb as SelectorNthNode).nth_b).toBe(null)
 
 			// Second child is the selector list
 			const selectorList = nth_of.children[1]

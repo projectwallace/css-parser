@@ -1,12 +1,12 @@
 // DeclarationNode - CSS declaration (property: value)
-import { CSSNode } from '../css-node-base'
-import { FLAG_IMPORTANT, FLAG_VENDOR_PREFIXED, NODE_VALUE_DIMENSION, NODE_VALUE_NUMBER } from '../arena'
-import { parse_dimension } from '../string-utils'
+import { CSSNode as CSSNodeBase } from '../css-node-base'
+import { CSSNode } from '../css-node'
+import { FLAG_IMPORTANT, FLAG_VENDOR_PREFIXED } from '../arena'
 
 // Forward declarations for child types (value nodes)
 export type ValueNode = CSSNode
 
-export class DeclarationNode extends CSSNode {
+export class DeclarationNode extends CSSNodeBase {
 	// Get the property name (e.g., "color", "display")
 	get name(): string {
 		let start = this.arena.get_content_start(this.index)
@@ -31,15 +31,7 @@ export class DeclarationNode extends CSSNode {
 	}
 
 	// Get the value text (for declarations: "blue" in "color: blue")
-	// For dimension/number nodes: returns the numeric value as a number
-	// For string nodes: returns the string content without quotes
-	get value(): string | number | null {
-		// For dimension and number nodes, parse and return as number
-		if (this.type === NODE_VALUE_DIMENSION || this.type === NODE_VALUE_NUMBER) {
-			return parse_dimension(this.text).value
-		}
-
-		// For other nodes, return as string
+	get value(): string | null {
 		let start = this.arena.get_value_start(this.index)
 		let length = this.arena.get_value_length(this.index)
 		if (length === 0) return null
@@ -75,5 +67,9 @@ export class DeclarationNode extends CSSNode {
 			child = child.next_sibling
 		}
 		return count
+	}
+
+	protected override create_node_wrapper(index: number): CSSNode {
+		return CSSNode.from(this.arena, this.source, index)
 	}
 }

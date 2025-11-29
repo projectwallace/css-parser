@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { Parser } from './parser'
 import { NODE_SELECTOR_LIST, NODE_DECLARATION, NODE_VALUE_KEYWORD } from './arena'
+import { DeclarationNode } from './css-node'
 
 describe('Parser Options', () => {
 	const css = 'body { color: red; }'
@@ -58,7 +59,7 @@ describe('Parser Options', () => {
 
 			// Declaration should exist but have no value children
 			const block = selector?.next_sibling
-			const declaration = block?.first_child
+			const declaration = block?.first_child as DeclarationNode
 			expect(declaration).not.toBeNull()
 			expect(declaration?.type).toBe(NODE_DECLARATION)
 			expect(declaration?.property).toBe('color')
@@ -72,7 +73,7 @@ describe('Parser Options', () => {
 			const rule = root.first_child
 			const selector = rule?.first_child
 			const block = selector?.next_sibling
-			const declaration = block?.first_child
+			const declaration = block?.first_child as DeclarationNode
 
 			expect(declaration?.property).toBe('margin')
 			expect(declaration?.value).toBe('10px 20px')
@@ -85,7 +86,7 @@ describe('Parser Options', () => {
 			const rule = root.first_child
 			const selector = rule?.first_child
 			const block = selector?.next_sibling
-			const declaration = block?.first_child
+			const declaration = block?.first_child as DeclarationNode
 
 			expect(declaration?.property).toBe('color')
 			expect(declaration?.value).toBe('rgb(255, 0, 0)')
@@ -150,7 +151,7 @@ describe('Parser Options', () => {
 
 			// Declaration should have no value children
 			const block = selector?.next_sibling
-			const declaration = block?.first_child
+			const declaration = block?.first_child as DeclarationNode
 			expect(declaration?.type).toBe(NODE_DECLARATION)
 			expect(declaration?.property).toBe('color')
 			expect(declaration?.value).toBe('red')
@@ -173,12 +174,12 @@ describe('Parser Options', () => {
 			expect(selector?.has_children).toBe(false)
 
 			const block = selector?.next_sibling
-			const decl1 = block?.first_child
+			const decl1 = block?.first_child as DeclarationNode
 			expect(decl1?.property).toBe('margin')
 			expect(decl1?.value).toBe('10px 20px')
 			expect(decl1?.has_children).toBe(false)
 
-			const decl2 = decl1?.next_sibling
+			const decl2 = decl1?.next_sibling as DeclarationNode
 			expect(decl2?.property).toBe('color')
 			expect(decl2?.value).toBe('rgb(255, 0, 0)')
 			expect(decl2?.has_children).toBe(false)
@@ -204,8 +205,8 @@ describe('Parser Options', () => {
 			let decl = block?.first_child
 			const properties: string[] = []
 			while (decl) {
-				if (decl.property) {
-					properties.push(decl.property)
+				if ((decl as DeclarationNode).property) {
+					properties.push((decl as DeclarationNode).property)
 				}
 				decl = decl.next_sibling
 			}

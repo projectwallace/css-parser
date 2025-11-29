@@ -1,6 +1,7 @@
 // Attribute Selector Node Class
 // Represents CSS attribute selectors
-import { CSSNode } from '../css-node-base'
+import { CSSNode as CSSNodeBase } from '../css-node-base'
+import { CSSNode } from '../css-node'
 import {
 	ATTR_OPERATOR_NONE,
 	ATTR_OPERATOR_EQUAL,
@@ -34,7 +35,7 @@ const ATTR_OPERATOR_STRINGS: Record<number, string> = {
  * - [attr*=value] - contains
  * - [attr=value i] - case-insensitive
  */
-export class SelectorAttributeNode extends CSSNode {
+export class SelectorAttributeNode extends CSSNodeBase {
 	// Get the attribute name
 	// For [data-id], returns "data-id"
 	get attribute_name(): string {
@@ -112,5 +113,9 @@ export class SelectorAttributeNode extends CSSNode {
 		if (text.endsWith(' i]')) return 'i'
 		if (text.endsWith(' s]')) return 's'
 		return null
+	}
+
+	protected override create_node_wrapper(index: number): CSSNode {
+		return CSSNode.from(this.arena, this.source, index)
 	}
 }

@@ -1,6 +1,7 @@
 // Nth Selector Node Classes
 // Represents An+B expressions in pseudo-class selectors
-import { CSSNode } from '../css-node-base'
+import { CSSNode as CSSNodeBase } from '../css-node-base'
+import { CSSNode } from '../css-node'
 
 // Forward declaration for selector types
 export type SelectorComponentNode = CSSNode
@@ -18,7 +19,7 @@ export type SelectorComponentNode = CSSNode
  *
  * Used in :nth-child(), :nth-last-child(), :nth-of-type(), :nth-last-of-type()
  */
-export class SelectorNthNode extends CSSNode {
+export class SelectorNthNode extends CSSNodeBase {
 	// Get the 'a' coefficient from An+B expression (e.g., "2n" from "2n+1", "odd" from "odd")
 	get nth_a(): string | null {
 		let len = this.arena.get_content_length(this.index)
@@ -85,6 +86,10 @@ export class SelectorNthNode extends CSSNode {
 		const a = this.nth_a
 		return a === 'odd' || a === 'even'
 	}
+
+	protected override create_node_wrapper(index: number): CSSNode {
+		return CSSNode.from(this.arena, this.source, index)
+	}
 }
 
 /**
@@ -97,7 +102,7 @@ export class SelectorNthNode extends CSSNode {
  * Used in :nth-child(An+B of selector) and :nth-last-child(An+B of selector)
  * The selector part is a child node
  */
-export class SelectorNthOfNode extends CSSNode {
+export class SelectorNthOfNode extends CSSNodeBase {
 	// Get the 'a' coefficient from An+B expression (e.g., "2n" from "2n+1", "odd" from "odd")
 	get nth_a(): string | null {
 		let len = this.arena.get_content_length(this.index)
@@ -163,5 +168,9 @@ export class SelectorNthOfNode extends CSSNode {
 	// For "2n+1 of .class", children would contain the selector nodes
 	override get children(): SelectorComponentNode[] {
 		return super.children as SelectorComponentNode[]
+	}
+
+	protected override create_node_wrapper(index: number): CSSNode {
+		return CSSNode.from(this.arena, this.source, index)
 	}
 }

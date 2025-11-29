@@ -1,6 +1,7 @@
 // Media Prelude Node Classes
 // Represents media query components in @media at-rules
-import { CSSNode } from '../css-node-base'
+import { CSSNode as CSSNodeBase } from '../css-node-base'
+import { CSSNode } from '../css-node'
 
 // Forward declarations for child types
 export type MediaComponentNode = CSSNode
@@ -14,11 +15,15 @@ export type MediaComponentNode = CSSNode
  * - not print
  * - only screen and (orientation: landscape)
  */
-export class PreludeMediaQueryNode extends CSSNode {
+export class PreludeMediaQueryNode extends CSSNodeBase {
 	// Override children to return media query components
 	// Children can be media types, media features, and logical operators
 	override get children(): MediaComponentNode[] {
 		return super.children as MediaComponentNode[]
+	}
+
+	protected override create_node_wrapper(index: number): CSSNode {
+		return CSSNode.from(this.arena, this.source, index)
 	}
 }
 
@@ -31,13 +36,16 @@ export class PreludeMediaQueryNode extends CSSNode {
  * - (width >= 600px) - range syntax
  * - (400px <= width <= 800px) - range syntax
  */
-export class PreludeMediaFeatureNode extends CSSNode {
+export class PreludeMediaFeatureNode extends CSSNodeBase {
 	// Get the feature value (content inside parentheses, trimmed)
 	// For (min-width: 768px), returns "min-width: 768px"
 	get value(): string {
 		const text = this.text
-		// Remove parentheses and trim
-		return text.slice(1, -1).trim()
+		// Remove parentheses
+		let inner = text.slice(1, -1)
+		// Remove comments and normalize whitespace
+		inner = inner.replace(/\/\*.*?\*\//g, '').replace(/\s+/g, ' ').trim()
+		return inner
 	}
 
 	// Get the feature name
@@ -82,6 +90,10 @@ export class PreludeMediaFeatureNode extends CSSNode {
 	override get children(): CSSNode[] {
 		return super.children
 	}
+
+	protected override create_node_wrapper(index: number): CSSNode {
+		return CSSNode.from(this.arena, this.source, index)
+	}
 }
 
 /**
@@ -92,6 +104,10 @@ export class PreludeMediaFeatureNode extends CSSNode {
  * - all
  * - speech
  */
-export class PreludeMediaTypeNode extends CSSNode {
+export class PreludeMediaTypeNode extends CSSNodeBase {
 	// Leaf node - the media type is available via 'text'
+
+	protected override create_node_wrapper(index: number): CSSNode {
+		return CSSNode.from(this.arena, this.source, index)
+	}
 }

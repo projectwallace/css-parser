@@ -1,6 +1,7 @@
 // Import Prelude Node Classes
 // Represents components of @import at-rule preludes
-import { CSSNode } from '../css-node-base'
+import { CSSNode as CSSNodeBase } from '../css-node-base'
+import { CSSNode } from '../css-node'
 
 // Forward declarations for child types
 export type ImportComponentNode = CSSNode
@@ -12,7 +13,7 @@ export type ImportComponentNode = CSSNode
  * - "styles.css"
  * - url(https://example.com/styles.css)
  */
-export class PreludeImportUrlNode extends CSSNode {
+export class PreludeImportUrlNode extends CSSNodeBase {
 	// Get the URL value (without url() wrapper or quotes if present)
 	get url(): string {
 		const text = this.text.trim()
@@ -41,6 +42,10 @@ export class PreludeImportUrlNode extends CSSNode {
 	get uses_url_function(): boolean {
 		return this.text.trim().startsWith('url(')
 	}
+
+	protected override create_node_wrapper(index: number): CSSNode {
+		return CSSNode.from(this.arena, this.source, index)
+	}
 }
 
 /**
@@ -50,7 +55,7 @@ export class PreludeImportUrlNode extends CSSNode {
  * - layer(utilities)
  * - layer(theme.dark)
  */
-export class PreludeImportLayerNode extends CSSNode {
+export class PreludeImportLayerNode extends CSSNodeBase {
 	// Get the layer name (null if just "layer" without parentheses, empty string otherwise)
 	get layer_name(): string | null {
 		const text = this.text.trim()
@@ -62,7 +67,10 @@ export class PreludeImportLayerNode extends CSSNode {
 
 		// layer(name) syntax
 		if (text.toLowerCase().startsWith('layer(') && text.endsWith(')')) {
-			return text.slice(6, -1).trim()
+			let inner = text.slice(6, -1)
+			// Remove comments and normalize whitespace
+			inner = inner.replace(/\/\*.*?\*\//g, '').replace(/\s+/g, ' ').trim()
+			return inner
 		}
 
 		return null
@@ -77,6 +85,10 @@ export class PreludeImportLayerNode extends CSSNode {
 	get is_anonymous(): boolean {
 		return this.layer_name === null
 	}
+
+	protected override create_node_wrapper(index: number): CSSNode {
+		return CSSNode.from(this.arena, this.source, index)
+	}
 }
 
 /**
@@ -86,7 +98,7 @@ export class PreludeImportLayerNode extends CSSNode {
  * - supports(display: grid)
  * - supports(selector(:has(a)))
  */
-export class PreludeImportSupportsNode extends CSSNode {
+export class PreludeImportSupportsNode extends CSSNodeBase {
 	// Get the supports condition (content inside parentheses)
 	get condition(): string {
 		const text = this.text.trim()
@@ -102,5 +114,9 @@ export class PreludeImportSupportsNode extends CSSNode {
 	// Override children for complex supports conditions
 	override get children(): CSSNode[] {
 		return super.children
+	}
+
+	protected override create_node_wrapper(index: number): CSSNode {
+		return CSSNode.from(this.arena, this.source, index)
 	}
 }

@@ -1,12 +1,13 @@
 // Named Selector Node Classes
 // These selectors have specific names/identifiers
-import { CSSNode } from '../css-node-base'
+import { CSSNode as CSSNodeBase } from '../css-node-base'
+import { CSSNode } from '../css-node'
 
 /**
  * SelectorClassNode - Class selector
  * Examples: .container, .btn-primary, .nav-item
  */
-export class SelectorClassNode extends CSSNode {
+export class SelectorClassNode extends CSSNodeBase {
 	// Leaf node
 
 	// Get the class name (without the leading dot)
@@ -14,13 +15,17 @@ export class SelectorClassNode extends CSSNode {
 		const text = this.text
 		return text.startsWith('.') ? text.slice(1) : text
 	}
+
+	protected override create_node_wrapper(index: number): CSSNode {
+		return CSSNode.from(this.arena, this.source, index)
+	}
 }
 
 /**
  * SelectorIdNode - ID selector
  * Examples: #header, #main-content, #footer
  */
-export class SelectorIdNode extends CSSNode {
+export class SelectorIdNode extends CSSNodeBase {
 	// Leaf node
 
 	// Get the ID name (without the leading hash)
@@ -28,13 +33,21 @@ export class SelectorIdNode extends CSSNode {
 		const text = this.text
 		return text.startsWith('#') ? text.slice(1) : text
 	}
+
+	protected override create_node_wrapper(index: number): CSSNode {
+		return CSSNode.from(this.arena, this.source, index)
+	}
 }
 
 /**
  * SelectorLangNode - Language identifier for :lang() pseudo-class
  * Examples: en, fr, de, zh-CN
  */
-export class SelectorLangNode extends CSSNode {
+export class SelectorLangNode extends CSSNodeBase {
 	// Leaf node - the language code
 	// The language code is available via 'text'
+
+	protected override create_node_wrapper(index: number): CSSNode {
+		return CSSNode.from(this.arena, this.source, index)
+	}
 }

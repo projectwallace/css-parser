@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'vitest'
 import { parse } from './parse'
 import { NODE_STYLESHEET, NODE_STYLE_RULE, NODE_DECLARATION, NODE_AT_RULE } from './arena'
+import { AtRuleNode, DeclarationNode } from './css-node'
 
 describe('parse()', () => {
 	test('should parse CSS and return CSSNode', () => {
@@ -30,7 +31,7 @@ describe('parse()', () => {
 		const result = parse('@media (min-width: 768px) { body { color: blue; } }')
 
 		expect(result.type).toBe(NODE_STYLESHEET)
-		const media = result.first_child!
+		const media = result.first_child! as AtRuleNode
 		expect(media.type).toBe(NODE_AT_RULE)
 		expect(media.name).toBe('media')
 	})
@@ -42,9 +43,9 @@ describe('parse()', () => {
 		const [_selector, block] = rule.children
 		const [decl1, decl2] = block.children
 		expect(decl1.type).toBe(NODE_DECLARATION)
-		expect(decl1.name).toBe('color')
+		expect((decl1 as DeclarationNode).name).toBe('color')
 		expect(decl2.type).toBe(NODE_DECLARATION)
-		expect(decl2.name).toBe('margin')
+		expect((decl2 as DeclarationNode).name).toBe('margin')
 	})
 
 	test('should accept parser options', () => {
@@ -59,7 +60,7 @@ describe('parse()', () => {
 
 		const rule = result.first_child!
 		const [_selector, block] = rule.children
-		const decl = block.first_child!
+		const decl = block.first_child! as DeclarationNode
 		expect(decl.name).toBe('color')
 		expect(decl.value).toBe('red')
 		// With parse_values, should have value children
@@ -69,7 +70,7 @@ describe('parse()', () => {
 	test('should parse with parse_atrule_preludes enabled', () => {
 		const result = parse('@media (min-width: 768px) { }', { parse_atrule_preludes: true })
 
-		const media = result.first_child!
+		const media = result.first_child! as AtRuleNode
 		expect(media.type).toBe(NODE_AT_RULE)
 		expect(media.name).toBe('media')
 		// With parse_atrule_preludes, should have prelude children
