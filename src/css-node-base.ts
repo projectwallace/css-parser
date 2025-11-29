@@ -297,19 +297,28 @@ export abstract class CSSNode {
 	// --- Tree Traversal ---
 
 	// Get first child node
+	// Note: Returns generic CSSNode. Subclasses can override to return typed nodes.
 	get first_child(): CSSNode | null {
 		let child_index = this.arena.get_first_child(this.index)
 		if (child_index === 0) return null
-		// Use factory method to create correct type
-		return (this.constructor as typeof CSSNode).from(this.arena, this.source, child_index)
+		// Return a wrapper that will use the factory when accessed
+		// This is a temporary implementation - will be improved in later batches
+		return this.create_node_wrapper(child_index)
 	}
 
 	// Get next sibling node
+	// Note: Returns generic CSSNode. Subclasses can override to return typed nodes.
 	get next_sibling(): CSSNode | null {
 		let sibling_index = this.arena.get_next_sibling(this.index)
 		if (sibling_index === 0) return null
-		// Use factory method to create correct type
-		return (this.constructor as typeof CSSNode).from(this.arena, this.source, sibling_index)
+		// Return a wrapper that will use the factory when accessed
+		return this.create_node_wrapper(sibling_index)
+	}
+
+	// Helper to create node wrappers - can be overridden by subclasses
+	protected create_node_wrapper(index: number): CSSNode {
+		// Create instance of the same class type
+		return new (this.constructor as any)(this.arena, this.source, index)
 	}
 
 	get has_next(): boolean {

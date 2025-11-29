@@ -3,9 +3,10 @@
 // Will be replaced by type-specific classes in future batches
 import { CSSNode as CSSNodeBase } from './css-node-base'
 import type { CSSDataArena } from './arena'
-import { NODE_STYLESHEET, NODE_COMMENT } from './arena'
+import { NODE_STYLESHEET, NODE_COMMENT, NODE_BLOCK } from './arena'
 import { StylesheetNode } from './nodes/stylesheet-node'
 import { CommentNode } from './nodes/comment-node'
+import { BlockNode } from './nodes/block-node'
 
 // Re-export CSSNodeType from base
 export type { CSSNodeType } from './css-node-base'
@@ -13,6 +14,7 @@ export type { CSSNodeType } from './css-node-base'
 // Re-export type-specific node classes
 export { StylesheetNode } from './nodes/stylesheet-node'
 export { CommentNode } from './nodes/comment-node'
+export { BlockNode } from './nodes/block-node'
 
 export class CSSNode extends CSSNodeBase {
 	// Implement factory method that returns type-specific node classes
@@ -26,9 +28,16 @@ export class CSSNode extends CSSNodeBase {
 				return new StylesheetNode(arena, source, index)
 			case NODE_COMMENT:
 				return new CommentNode(arena, source, index)
+			case NODE_BLOCK:
+				return new BlockNode(arena, source, index)
 			default:
 				// For all other types, return generic CSSNode
 				return new CSSNode(arena, source, index)
 		}
+	}
+
+	// Override create_node_wrapper to use the factory
+	protected override create_node_wrapper(index: number): CSSNode {
+		return CSSNode.from(this.arena, this.source, index)
 	}
 }
