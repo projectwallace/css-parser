@@ -2,14 +2,14 @@
 
 **Branch**: `tree-structure`
 **Status**: In Progress
-**Progress**: 20/25 batches completed
+**Progress**: 21/25 batches completed
 
 ---
 
 ## Quick Reference
 
-**Current Batch**: Batch 21 - Update Main Parse Function Return Type
-**Next Steps**: See [Batch 21](#batch-21-update-main-parse-function-return-type) below
+**Current Batch**: Batch 22 - Add Barrel Exports
+**Next Steps**: See [Batch 22](#batch-22-add-barrel-exports) below
 
 ---
 
@@ -46,7 +46,7 @@
 - [x] **Batch 20**: Implement Import Prelude Nodes (15 min) ✅
 
 ### Phase 6: Integration & Polish
-- [ ] **Batch 21**: Update Main Parse Function Return Type (10 min)
+- [x] **Batch 21**: Update Main Parse Function Return Type (10 min) ✅
 - [ ] **Batch 22**: Add Barrel Exports (10 min)
 - [ ] **Batch 23**: Update Package Exports (10 min)
 - [ ] **Batch 24**: Update walk() Function Types (15 min)
