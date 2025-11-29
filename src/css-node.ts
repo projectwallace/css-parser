@@ -3,7 +3,7 @@
 // Will be replaced by type-specific classes in future batches
 import { CSSNode as CSSNodeBase } from './css-node-base'
 import type { CSSDataArena } from './arena'
-import { NODE_STYLESHEET, NODE_COMMENT, NODE_BLOCK, NODE_DECLARATION, NODE_AT_RULE, NODE_STYLE_RULE, NODE_SELECTOR } from './arena'
+import { NODE_STYLESHEET, NODE_COMMENT, NODE_BLOCK, NODE_DECLARATION, NODE_AT_RULE, NODE_STYLE_RULE, NODE_SELECTOR, NODE_VALUE_KEYWORD, NODE_VALUE_STRING, NODE_VALUE_COLOR, NODE_VALUE_OPERATOR } from './arena'
 import { StylesheetNode } from './nodes/stylesheet-node'
 import { CommentNode } from './nodes/comment-node'
 import { BlockNode } from './nodes/block-node'
@@ -11,6 +11,7 @@ import { DeclarationNode } from './nodes/declaration-node'
 import { AtRuleNode } from './nodes/at-rule-node'
 import { StyleRuleNode } from './nodes/style-rule-node'
 import { SelectorNode } from './nodes/selector-node'
+import { ValueKeywordNode, ValueStringNode, ValueColorNode, ValueOperatorNode } from './nodes/value-nodes'
 
 // Re-export CSSNodeType from base
 export type { CSSNodeType } from './css-node-base'
@@ -23,6 +24,7 @@ export { DeclarationNode } from './nodes/declaration-node'
 export { AtRuleNode } from './nodes/at-rule-node'
 export { StyleRuleNode } from './nodes/style-rule-node'
 export { SelectorNode } from './nodes/selector-node'
+export { ValueKeywordNode, ValueStringNode, ValueColorNode, ValueOperatorNode } from './nodes/value-nodes'
 
 export class CSSNode extends CSSNodeBase {
 	// Implement factory method that returns type-specific node classes
@@ -46,6 +48,15 @@ export class CSSNode extends CSSNodeBase {
 				return new StyleRuleNode(arena, source, index)
 			case NODE_SELECTOR:
 				return new SelectorNode(arena, source, index)
+			// Value nodes
+			case NODE_VALUE_KEYWORD:
+				return new ValueKeywordNode(arena, source, index)
+			case NODE_VALUE_STRING:
+				return new ValueStringNode(arena, source, index)
+			case NODE_VALUE_COLOR:
+				return new ValueColorNode(arena, source, index)
+			case NODE_VALUE_OPERATOR:
+				return new ValueOperatorNode(arena, source, index)
 			default:
 				// For all other types, return generic CSSNode
 				return new CSSNode(arena, source, index)
