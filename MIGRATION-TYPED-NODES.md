@@ -2,14 +2,14 @@
 
 **Branch**: `tree-structure`
 **Status**: In Progress
-**Progress**: 3/25 batches completed
+**Progress**: 4/25 batches completed
 
 ---
 
 ## Quick Reference
 
-**Current Batch**: Batch 4 - Implement StylesheetNode
-**Next Steps**: See [Batch 4](#batch-4-implement-stylesheetnode) below
+**Current Batch**: Batch 5 - Implement CommentNode
+**Next Steps**: See [Batch 5](#batch-5-implement-commentnode) below
 
 ---
 
@@ -21,7 +21,7 @@
 - [x] **Batch 3**: Update Current CSSNode to Use Factory Pattern (10 min) ✅
 
 ### Phase 2: Core Structure Nodes
-- [ ] **Batch 4**: Implement StylesheetNode (15 min)
+- [x] **Batch 4**: Implement StylesheetNode (15 min) ✅
 - [ ] **Batch 5**: Implement CommentNode (10 min)
 - [ ] **Batch 6**: Implement BlockNode (15 min)
 - [ ] **Batch 7**: Implement DeclarationNode (20 min)
