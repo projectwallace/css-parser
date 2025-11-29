@@ -1,22 +1,22 @@
 # Migration Plan: Type-Specific Node Classes
 
 **Branch**: `tree-structure`
-**Status**: Not Started
-**Progress**: 0/20 batches completed
+**Status**: In Progress
+**Progress**: 1/25 batches completed
 
 ---
 
 ## Quick Reference
 
-**Current Batch**: Batch 1 - Create Base CSSNode Abstract Class
-**Next Steps**: See [Batch 1](#batch-1-create-base-cssnode-abstract-class) below
+**Current Batch**: Batch 2 - Add Node Type Union and Helpers
+**Next Steps**: See [Batch 2](#batch-2-add-node-type-union-and-helpers) below
 
 ---
 
 ## Progress Tracker
 
 ### Phase 1: Foundation
-- [ ] **Batch 1**: Create Base CSSNode Abstract Class (15 min)
+- [x] **Batch 1**: Create Base CSSNode Abstract Class (15 min) ✅
 - [ ] **Batch 2**: Add Node Type Union and Helpers (15 min)
 - [ ] **Batch 3**: Update Current CSSNode to Use Factory Pattern (10 min)
 
