@@ -2,14 +2,14 @@
 
 **Branch**: `tree-structure`
 **Status**: In Progress
-**Progress**: 12/25 batches completed
+**Progress**: 13/25 batches completed
 
 ---
 
 ## Quick Reference
 
-**Current Batch**: Batch 13 - Implement Simple Selector Nodes
-**Next Steps**: See [Batch 13](#batch-13-implement-simple-selector-nodes) below
+**Current Batch**: Batch 14 - Implement Named Selector Nodes
+**Next Steps**: See [Batch 14](#batch-14-implement-named-selector-nodes) below
 
 ---
 
@@ -34,7 +34,7 @@
 - [x] **Batch 12**: Implement Complex Value Nodes (20 min) ✅
 
 ### Phase 4: Selector Nodes
-- [ ] **Batch 13**: Implement Simple Selector Nodes (15 min)
+- [x] **Batch 13**: Implement Simple Selector Nodes (15 min) ✅
 - [ ] **Batch 14**: Implement Named Selector Nodes (15 min)
 - [ ] **Batch 15**: Implement Attribute Selector Node (20 min)
 - [ ] **Batch 16**: Implement Pseudo Selector Nodes (20 min)

@@ -3,7 +3,7 @@
 // Will be replaced by type-specific classes in future batches
 import { CSSNode as CSSNodeBase } from './css-node-base'
 import type { CSSDataArena } from './arena'
-import { NODE_STYLESHEET, NODE_COMMENT, NODE_BLOCK, NODE_DECLARATION, NODE_AT_RULE, NODE_STYLE_RULE, NODE_SELECTOR, NODE_VALUE_KEYWORD, NODE_VALUE_STRING, NODE_VALUE_COLOR, NODE_VALUE_OPERATOR, NODE_VALUE_NUMBER, NODE_VALUE_DIMENSION, NODE_VALUE_FUNCTION } from './arena'
+import { NODE_STYLESHEET, NODE_COMMENT, NODE_BLOCK, NODE_DECLARATION, NODE_AT_RULE, NODE_STYLE_RULE, NODE_SELECTOR, NODE_VALUE_KEYWORD, NODE_VALUE_STRING, NODE_VALUE_COLOR, NODE_VALUE_OPERATOR, NODE_VALUE_NUMBER, NODE_VALUE_DIMENSION, NODE_VALUE_FUNCTION, NODE_SELECTOR_LIST, NODE_SELECTOR_TYPE, NODE_SELECTOR_UNIVERSAL, NODE_SELECTOR_NESTING, NODE_SELECTOR_COMBINATOR } from './arena'
 import { StylesheetNode } from './nodes/stylesheet-node'
 import { CommentNode } from './nodes/comment-node'
 import { BlockNode } from './nodes/block-node'
@@ -12,6 +12,7 @@ import { AtRuleNode } from './nodes/at-rule-node'
 import { StyleRuleNode } from './nodes/style-rule-node'
 import { SelectorNode } from './nodes/selector-node'
 import { ValueKeywordNode, ValueStringNode, ValueColorNode, ValueOperatorNode, ValueNumberNode, ValueDimensionNode, ValueFunctionNode } from './nodes/value-nodes'
+import { SelectorListNode, SelectorTypeNode, SelectorUniversalNode, SelectorNestingNode, SelectorCombinatorNode } from './nodes/selector-nodes-simple'
 
 // Re-export CSSNodeType from base
 export type { CSSNodeType } from './css-node-base'
@@ -25,6 +26,7 @@ export { AtRuleNode } from './nodes/at-rule-node'
 export { StyleRuleNode } from './nodes/style-rule-node'
 export { SelectorNode } from './nodes/selector-node'
 export { ValueKeywordNode, ValueStringNode, ValueColorNode, ValueOperatorNode, ValueNumberNode, ValueDimensionNode, ValueFunctionNode } from './nodes/value-nodes'
+export { SelectorListNode, SelectorTypeNode, SelectorUniversalNode, SelectorNestingNode, SelectorCombinatorNode } from './nodes/selector-nodes-simple'
 
 export class CSSNode extends CSSNodeBase {
 	// Implement factory method that returns type-specific node classes
@@ -63,6 +65,17 @@ export class CSSNode extends CSSNodeBase {
 				return new ValueDimensionNode(arena, source, index)
 			case NODE_VALUE_FUNCTION:
 				return new ValueFunctionNode(arena, source, index)
+			// Selector nodes
+			case NODE_SELECTOR_LIST:
+				return new SelectorListNode(arena, source, index)
+			case NODE_SELECTOR_TYPE:
+				return new SelectorTypeNode(arena, source, index)
+			case NODE_SELECTOR_UNIVERSAL:
+				return new SelectorUniversalNode(arena, source, index)
+			case NODE_SELECTOR_NESTING:
+				return new SelectorNestingNode(arena, source, index)
+			case NODE_SELECTOR_COMBINATOR:
+				return new SelectorCombinatorNode(arena, source, index)
 			default:
 				// For all other types, return generic CSSNode
 				return new CSSNode(arena, source, index)
