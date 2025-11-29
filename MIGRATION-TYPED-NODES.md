@@ -2,14 +2,14 @@
 
 **Branch**: `tree-structure`
 **Status**: In Progress
-**Progress**: 6/25 batches completed
+**Progress**: 7/25 batches completed
 
 ---
 
 ## Quick Reference
 
-**Current Batch**: Batch 7 - Implement DeclarationNode
-**Next Steps**: See [Batch 7](#batch-7-implement-declarationnode) below
+**Current Batch**: Batch 8 - Implement AtRuleNode
+**Next Steps**: See [Batch 8](#batch-8-implement-atrulenode) below
 
 ---
 
@@ -24,7 +24,7 @@
 - [x] **Batch 4**: Implement StylesheetNode (15 min) ✅
 - [x] **Batch 5**: Implement CommentNode (10 min) ✅
 - [x] **Batch 6**: Implement BlockNode (15 min) ✅
-- [ ] **Batch 7**: Implement DeclarationNode (20 min)
+- [x] **Batch 7**: Implement DeclarationNode (20 min) ✅
 - [ ] **Batch 8**: Implement AtRuleNode (20 min)
 - [ ] **Batch 9**: Implement StyleRuleNode (20 min)
 - [ ] **Batch 10**: Implement SelectorNode (10 min)
