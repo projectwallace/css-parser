@@ -2,14 +2,14 @@
 
 **Branch**: `tree-structure`
 **Status**: In Progress
-**Progress**: 14/25 batches completed
+**Progress**: 15/25 batches completed
 
 ---
 
 ## Quick Reference
 
-**Current Batch**: Batch 15 - Implement Attribute Selector Node
-**Next Steps**: See [Batch 15](#batch-15-implement-attribute-selector-node) below
+**Current Batch**: Batch 16 - Implement Pseudo Selector Nodes
+**Next Steps**: See [Batch 16](#batch-16-implement-pseudo-selector-nodes) below
 
 ---
 
@@ -36,7 +36,7 @@
 ### Phase 4: Selector Nodes
 - [x] **Batch 13**: Implement Simple Selector Nodes (15 min) ✅
 - [x] **Batch 14**: Implement Named Selector Nodes (15 min) ✅
-- [ ] **Batch 15**: Implement Attribute Selector Node (20 min)
+- [x] **Batch 15**: Implement Attribute Selector Node (20 min) ✅
 - [ ] **Batch 16**: Implement Pseudo Selector Nodes (20 min)
 - [ ] **Batch 17**: Implement Nth Selector Nodes (20 min)
 
