@@ -1,15 +1,15 @@
 # Migration Plan: Type-Specific Node Classes
 
 **Branch**: `tree-structure`
-**Status**: In Progress
-**Progress**: 24/25 batches completed
+**Status**: Complete ✅
+**Progress**: 25/25 batches completed
 
 ---
 
 ## Quick Reference
 
-**Current Batch**: Batch 25 - Update Documentation and Examples
-**Next Steps**: See [Batch 25](#batch-25-update-documentation-and-examples) below
+**Current Batch**: ✅ All batches complete!
+**Next Steps**: Migration complete - ready to merge into main branch
 
 ---
 
@@ -50,7 +50,7 @@
 - [x] **Batch 22**: Add Barrel Exports (10 min) ✅
 - [x] **Batch 23**: Update Package Exports (10 min) ✅
 - [x] **Batch 24**: Update walk() Function Types (15 min) ✅
-- [ ] **Batch 25**: Update Documentation and Examples (20 min)
+- [x] **Batch 25**: Update Documentation and Examples (20 min) ✅
 
 **Total Estimated Time**: 5-6 hours across 10-15 sessions
 
@@ -597,8 +597,15 @@ export class CommentNode extends CSSNode {
 **Commit**: `docs: update for type-specific node classes`
 
 **Testing**:
-- [ ] Documentation accurate
-- [ ] Examples work
+- [x] Documentation accurate ✅
+- [x] Examples work ✅
+
+**Completion Notes**:
+- Updated CLAUDE.md with type-specific node class documentation
+- Added comprehensive examples showing instanceof type guards
+- Updated API documentation to reflect StylesheetNode return type
+- Added /nodes subpath export documentation
+- All 586 tests passing
 
 ---
 
