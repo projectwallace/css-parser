@@ -2,14 +2,14 @@
 
 **Branch**: `tree-structure`
 **Status**: In Progress
-**Progress**: 16/25 batches completed
+**Progress**: 17/25 batches completed
 
 ---
 
 ## Quick Reference
 
-**Current Batch**: Batch 17 - Implement Nth Selector Nodes
-**Next Steps**: See [Batch 17](#batch-17-implement-nth-selector-nodes) below
+**Current Batch**: Batch 18 - Implement Media Prelude Nodes
+**Next Steps**: See [Batch 18](#batch-18-implement-media-prelude-nodes) below
 
 ---
 
@@ -38,7 +38,7 @@
 - [x] **Batch 14**: Implement Named Selector Nodes (15 min) ✅
 - [x] **Batch 15**: Implement Attribute Selector Node (20 min) ✅
 - [x] **Batch 16**: Implement Pseudo Selector Nodes (20 min) ✅
-- [ ] **Batch 17**: Implement Nth Selector Nodes (20 min)
+- [x] **Batch 17**: Implement Nth Selector Nodes (20 min) ✅
 
 ### Phase 5: Prelude Nodes
 - [ ] **Batch 18**: Implement Media Prelude Nodes (15 min)
