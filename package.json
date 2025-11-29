@@ -38,6 +38,10 @@
 		"./parse-anplusb": {
 			"types": "./dist/parse-anplusb.d.ts",
 			"import": "./dist/parse-anplusb.js"
+		},
+		"./nodes": {
+			"types": "./dist/nodes/index.d.ts",
+			"import": "./dist/nodes/index.js"
 		}
 	},
 	"files": [
