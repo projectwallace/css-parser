@@ -19,7 +19,6 @@ import {
 	AtRuleNode,
 	PreludeMediaFeatureNode,
 	PreludeImportLayerNode,
-	PreludeSupportsQueryNode,
 } from './nodes'
 
 describe('At-Rule Prelude Parser', () => {
@@ -57,7 +56,7 @@ describe('At-Rule Prelude Parser', () => {
 			expect(queryChildren.some((c) => c.type === NODE_PRELUDE_MEDIA_FEATURE)).toBe(true)
 
 			// Feature should have content
-			const feature = queryChildren.find((c) => c.type === NODE_PRELUDE_MEDIA_FEATURE) as PreludeMediaFeatureNode
+			const feature = queryChildren.find((c) => c.type === NODE_PRELUDE_MEDIA_FEATURE)
 			expect(feature?.value).toContain('min-width')
 		})
 
@@ -67,7 +66,7 @@ describe('At-Rule Prelude Parser', () => {
 			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 			const queryChildren = children[0].children
-			const feature = queryChildren.find((c) => c.type === NODE_PRELUDE_MEDIA_FEATURE) as PreludeMediaFeatureNode
+			const feature = queryChildren.find((c) => c.type === NODE_PRELUDE_MEDIA_FEATURE)
 
 			expect(feature?.value).toBe('min-width: 768px')
 		})
@@ -151,7 +150,7 @@ describe('At-Rule Prelude Parser', () => {
 			const children = atRule?.children || []
 			expect(children.some((c) => c.type === NODE_PRELUDE_SUPPORTS_QUERY)).toBe(true)
 
-			const query = children.find((c) => c.type === NODE_PRELUDE_SUPPORTS_QUERY) as PreludeSupportsQueryNode
+			const query = children.find((c) => c.type === NODE_PRELUDE_SUPPORTS_QUERY)
 			expect(query?.value).toContain('display')
 			expect(query?.value).toContain('flex')
 		})
@@ -161,7 +160,7 @@ describe('At-Rule Prelude Parser', () => {
 			const ast = parse(css)
 			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
-			const query = children.find((c) => c.type === NODE_PRELUDE_SUPPORTS_QUERY) as PreludeSupportsQueryNode
+			const query = children.find((c) => c.type === NODE_PRELUDE_SUPPORTS_QUERY)
 
 			expect(query?.value).toBe('display: flex')
 		})
@@ -332,7 +331,7 @@ describe('At-Rule Prelude Parser', () => {
 			expect(children[0].type).toBe(NODE_PRELUDE_IMPORT_URL)
 			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_LAYER)
 			expect(children[1].text).toBe('layer')
-			expect((children[1] as PreludeImportLayerNode).name).toBe('')
+			expect(children[1].name).toBe('')
 		})
 
 		it('should parse with anonymous LAYER', () => {
@@ -345,7 +344,7 @@ describe('At-Rule Prelude Parser', () => {
 			expect(children[0].type).toBe(NODE_PRELUDE_IMPORT_URL)
 			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_LAYER)
 			expect(children[1].text).toBe('LAYER')
-			expect((children[1] as PreludeImportLayerNode).name).toBe('')
+			expect(children[1].name).toBe('')
 		})
 
 		it('should parse with named layer', () => {
@@ -358,7 +357,7 @@ describe('At-Rule Prelude Parser', () => {
 			expect(children[0].type).toBe(NODE_PRELUDE_IMPORT_URL)
 			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_LAYER)
 			expect(children[1].text).toBe('layer(utilities)')
-			expect((children[1] as PreludeImportLayerNode).name).toBe('utilities')
+			expect(children[1].name).toBe('utilities')
 		})
 
 		it('should trim whitespace from layer names', () => {
@@ -368,7 +367,7 @@ describe('At-Rule Prelude Parser', () => {
 			const children = atRule?.children || []
 
 			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_LAYER)
-			expect((children[1] as PreludeImportLayerNode).name).toBe('utilities')
+			expect(children[1].name).toBe('utilities')
 		})
 
 		it('should trim comments from layer names', () => {
@@ -378,7 +377,7 @@ describe('At-Rule Prelude Parser', () => {
 			const children = atRule?.children || []
 
 			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_LAYER)
-			expect((children[1] as PreludeImportLayerNode).name).toBe('utilities')
+			expect(children[1].name).toBe('utilities')
 		})
 
 		it('should trim whitespace and comments from dotted layer names', () => {
@@ -388,7 +387,7 @@ describe('At-Rule Prelude Parser', () => {
 			const children = atRule?.children || []
 
 			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_LAYER)
-			expect((children[1] as PreludeImportLayerNode).name).toBe('named.nested')
+			expect(children[1].name).toBe('named.nested')
 		})
 
 		it('should parse with supports query', () => {

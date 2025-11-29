@@ -1,5 +1,6 @@
 // StyleRuleNode - CSS style rule with selector and declarations
 import { CSSNode } from '../css-node-base'
+import { FLAG_HAS_BLOCK, FLAG_HAS_DECLARATIONS, NODE_BLOCK } from '../arena'
 
 // Forward declarations for child types
 export type SelectorListNode = CSSNode
@@ -23,6 +24,35 @@ export class StyleRuleNode extends CSSNode {
 		return super.children as (SelectorListNode | BlockNode)[]
 	}
 
-	// All other properties (block, has_block, has_declarations)
-	// are already defined in base class
+	// Check if this rule has a block { }
+	get hasBlock(): boolean {
+		return this.arena.has_flag(this.index, FLAG_HAS_BLOCK)
+	}
+
+	// Snake_case alias for hasBlock (overrides base class)
+	override get has_block(): boolean {
+		return this.hasBlock
+	}
+
+	// Check if this style rule has declarations
+	get hasDeclarations(): boolean {
+		return this.arena.has_flag(this.index, FLAG_HAS_DECLARATIONS)
+	}
+
+	// Snake_case alias for hasDeclarations (overrides base class)
+	override get has_declarations(): boolean {
+		return this.hasDeclarations
+	}
+
+	// Get the block node (sibling after selector list)
+	get block(): BlockNode | null {
+		let first = this.first_child
+		if (!first) return null
+		// Block is the sibling after selector list
+		let blockNode = first.next_sibling
+		if (blockNode && blockNode.type === NODE_BLOCK) {
+			return blockNode as BlockNode
+		}
+		return null
+	}
 }

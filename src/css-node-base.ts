@@ -1,5 +1,6 @@
 // CSSNode Base - Abstract base class for all type-specific node classes
 import type { CSSDataArena } from './arena'
+import type { AnyNode } from './types'
 import {
 	NODE_STYLESHEET,
 	NODE_STYLE_RULE,
@@ -39,14 +40,8 @@ import {
 	NODE_PRELUDE_IMPORT_URL,
 	NODE_PRELUDE_IMPORT_LAYER,
 	NODE_PRELUDE_IMPORT_SUPPORTS,
-	FLAG_IMPORTANT,
 	FLAG_HAS_ERROR,
-	FLAG_HAS_BLOCK,
-	FLAG_VENDOR_PREFIXED,
-	FLAG_HAS_DECLARATIONS,
 } from './arena'
-
-import { parse_dimension } from './string-utils'
 
 // Node type constants (numeric for performance)
 export type CSSNodeType =
@@ -123,155 +118,9 @@ export abstract class CSSNode {
 		return this.source.substring(start, start + length)
 	}
 
-	// Get the "content" text (property name for declarations, at-rule name for at-rules, layer name for import layers)
-	get name(): string {
-		let start = this.arena.get_content_start(this.index)
-		let length = this.arena.get_content_length(this.index)
-		if (length === 0) return ''
-		return this.source.substring(start, start + length)
-	}
-
-	// Alias for name (for declarations: "color" in "color: blue")
-	// More semantic than `name` for declaration nodes
-	get property(): string {
-		return this.name
-	}
-
-	// Get the value text (for declarations: "blue" in "color: blue")
-	// For dimension/number nodes: returns the numeric value as a number
-	// For string nodes: returns the string content without quotes
-	get value(): string | number | null {
-		// For dimension and number nodes, parse and return as number
-		if (this.type === NODE_VALUE_DIMENSION || this.type === NODE_VALUE_NUMBER) {
-			return parse_dimension(this.text).value
-		}
-
-		// For other nodes, return as string
-		let start = this.arena.get_value_start(this.index)
-		let length = this.arena.get_value_length(this.index)
-		if (length === 0) return null
-		return this.source.substring(start, start + length)
-	}
-
-	// Get the prelude text (for at-rules: "(min-width: 768px)" in "@media (min-width: 768px)")
-	// This is an alias for `value` to make at-rule usage more semantic
-	get prelude(): string | null {
-		let val = this.value
-		return typeof val === 'string' ? val : null
-	}
-
-	// Get the attribute operator (for attribute selectors: =, ~=, |=, ^=, $=, *=)
-	// Returns one of the ATTR_OPERATOR_* constants
-	get attr_operator(): number {
-		return this.arena.get_attr_operator(this.index)
-	}
-
-	// Get the unit for dimension nodes (e.g., "px" from "100px", "%" from "50%")
-	get unit(): string | null {
-		if (this.type !== NODE_VALUE_DIMENSION) return null
-		return parse_dimension(this.text).unit
-	}
-
-	// Check if this declaration has !important
-	get is_important(): boolean {
-		return this.arena.has_flag(this.index, FLAG_IMPORTANT)
-	}
-
-	// Check if this has a vendor prefix (flag-based for performance)
-	get is_vendor_prefixed(): boolean {
-		return this.arena.has_flag(this.index, FLAG_VENDOR_PREFIXED)
-	}
-
 	// Check if this node has an error
 	get has_error(): boolean {
 		return this.arena.has_flag(this.index, FLAG_HAS_ERROR)
-	}
-
-	// Check if this at-rule has a prelude
-	get has_prelude(): boolean {
-		return this.arena.get_value_length(this.index) > 0
-	}
-
-	// Check if this rule has a block { }
-	get has_block(): boolean {
-		return this.arena.has_flag(this.index, FLAG_HAS_BLOCK)
-	}
-
-	// Check if this style rule has declarations
-	get has_declarations(): boolean {
-		return this.arena.has_flag(this.index, FLAG_HAS_DECLARATIONS)
-	}
-
-	// Get the block node (for style rules and at-rules with blocks)
-	get block(): CSSNode | null {
-		// For StyleRule: block is sibling after selector list
-		if (this.type === NODE_STYLE_RULE) {
-			let first = this.first_child
-			if (!first) return null
-			// Block is the sibling after selector list
-			let blockNode = first.next_sibling
-			if (blockNode && blockNode.type === NODE_BLOCK) {
-				return blockNode
-			}
-			return null
-		}
-
-		// For AtRule: block is last child (after prelude nodes)
-		if (this.type === NODE_AT_RULE) {
-			// Find last child that is a block
-			let child = this.first_child
-			while (child) {
-				if (child.type === NODE_BLOCK && !child.next_sibling) {
-					return child
-				}
-				child = child.next_sibling
-			}
-			return null
-		}
-
-		return null
-	}
-
-	// Check if this block is empty (no declarations or rules, only comments allowed)
-	get is_empty(): boolean {
-		// Only valid on block nodes
-		if (this.type !== NODE_BLOCK) {
-			return false
-		}
-
-		// Empty if no children, or all children are comments
-		let child = this.first_child
-		while (child) {
-			if (child.type !== NODE_COMMENT) {
-				return false
-			}
-			child = child.next_sibling
-		}
-		return true
-	}
-
-	// --- Value Node Access (for declarations) ---
-
-	// Get array of parsed value nodes (for declarations only)
-	get values(): CSSNode[] {
-		let result: CSSNode[] = []
-		let child = this.first_child
-		while (child) {
-			result.push(child)
-			child = child.next_sibling
-		}
-		return result
-	}
-
-	// Get count of value nodes
-	get value_count(): number {
-		let count = 0
-		let child = this.first_child
-		while (child) {
-			count++
-			child = child.next_sibling
-		}
-		return count
 	}
 
 	// Get start line number
@@ -297,21 +146,20 @@ export abstract class CSSNode {
 	// --- Tree Traversal ---
 
 	// Get first child node
-	// Note: Returns generic CSSNode. Subclasses can override to return typed nodes.
-	get first_child(): CSSNode | null {
+	// Returns type-specific node (StylesheetNode, DeclarationNode, etc.)
+	get first_child(): AnyNode | null {
 		let child_index = this.arena.get_first_child(this.index)
 		if (child_index === 0) return null
-		// Return a wrapper that will use the factory when accessed
-		// This is a temporary implementation - will be improved in later batches
+		// Factory returns the correct type-specific node
 		return this.create_node_wrapper(child_index)
 	}
 
 	// Get next sibling node
-	// Note: Returns generic CSSNode. Subclasses can override to return typed nodes.
-	get next_sibling(): CSSNode | null {
+	// Returns type-specific node (StylesheetNode, DeclarationNode, etc.)
+	get next_sibling(): AnyNode | null {
 		let sibling_index = this.arena.get_next_sibling(this.index)
 		if (sibling_index === 0) return null
-		// Return a wrapper that will use the factory when accessed
+		// Factory returns the correct type-specific node
 		return this.create_node_wrapper(sibling_index)
 	}
 
@@ -332,8 +180,9 @@ export abstract class CSSNode {
 	}
 
 	// Get all children as an array
-	get children(): CSSNode[] {
-		let result: CSSNode[] = []
+	// Returns array of type-specific nodes
+	get children(): AnyNode[] {
+		let result: AnyNode[] = []
 		let child = this.first_child
 		while (child) {
 			result.push(child)
@@ -343,7 +192,8 @@ export abstract class CSSNode {
 	}
 
 	// Make CSSNode iterable over its children
-	*[Symbol.iterator](): Iterator<CSSNode> {
+	// Yields type-specific nodes
+	*[Symbol.iterator](): Iterator<AnyNode> {
 		let child = this.first_child
 		while (child) {
 			yield child
@@ -351,49 +201,25 @@ export abstract class CSSNode {
 		}
 	}
 
-	// --- An+B Expression Helpers (for NODE_SELECTOR_NTH) ---
+	// Default implementations for properties that only some node types have
+	// Subclasses can override these to provide specific behavior
 
-	// Get the 'a' coefficient from An+B expression (e.g., "2n" from "2n+1", "odd" from "odd")
-	get nth_a(): string | null {
-		if (this.type !== NODE_SELECTOR_NTH) return null
-
-		let len = this.arena.get_content_length(this.index)
-		if (len === 0) return null
-		let start = this.arena.get_content_start(this.index)
-		return this.source.substring(start, start + len)
+	// Check if this node has a prelude (for at-rules)
+	// Default: false. AtRuleNode overrides this.
+	get has_prelude(): boolean {
+		return this.arena.get_value_length(this.index) > 0
 	}
 
-	// Get the 'b' coefficient from An+B expression (e.g., "1" from "2n+1")
-	get nth_b(): string | null {
-		if (this.type !== NODE_SELECTOR_NTH) return null
-
-		let len = this.arena.get_value_length(this.index)
-		if (len === 0) return null
-		let start = this.arena.get_value_start(this.index)
-		let value = this.source.substring(start, start + len)
-
-		// Check if there's a - sign before this position (handling "2n - 1" with spaces)
-		// Look backwards for a - or + sign, skipping whitespace
-		let check_pos = start - 1
-		while (check_pos >= 0) {
-			let ch = this.source.charCodeAt(check_pos)
-			if (ch === 0x20 /* space */ || ch === 0x09 /* tab */ || ch === 0x0a /* \n */ || ch === 0x0d /* \r */) {
-				check_pos--
-				continue
-			}
-			// Found non-whitespace
-			if (ch === 0x2d /* - */) {
-				// Prepend - to value
-				value = '-' + value
-			}
-			// Note: + signs are implicit, so we don't prepend them
-			break
-		}
-
-		// Strip leading + if present in the token itself
-		if (value.charCodeAt(0) === 0x2b /* + */) {
-			return value.substring(1)
-		}
-		return value
+	// Check if this node has a block (for at-rules and style rules)
+	// Default: false. AtRuleNode and StyleRuleNode override this.
+	get has_block(): boolean {
+		return false
 	}
+
+	// Check if this style rule has declarations (for style rules)
+	// Default: false. Only StyleRuleNode overrides this.
+	get has_declarations(): boolean {
+		return false
+	}
+
 }

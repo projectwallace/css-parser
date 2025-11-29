@@ -51,21 +51,26 @@ export class PreludeImportUrlNode extends CSSNode {
  * - layer(theme.dark)
  */
 export class PreludeImportLayerNode extends CSSNode {
-	// Get the layer name (null if just "layer" without parentheses)
+	// Get the layer name (null if just "layer" without parentheses, empty string otherwise)
 	get layer_name(): string | null {
 		const text = this.text.trim()
 
 		// Just "layer" keyword
-		if (text === 'layer') {
+		if (text === 'layer' || text.toUpperCase() === 'LAYER') {
 			return null
 		}
 
 		// layer(name) syntax
-		if (text.startsWith('layer(') && text.endsWith(')')) {
+		if (text.toLowerCase().startsWith('layer(') && text.endsWith(')')) {
 			return text.slice(6, -1).trim()
 		}
 
 		return null
+	}
+
+	// Alias for layer_name that returns empty string instead of null
+	get name(): string {
+		return this.layer_name || ''
 	}
 
 	// Check if this is an anonymous layer (just "layer" without a name)

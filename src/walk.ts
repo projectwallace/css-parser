@@ -1,7 +1,7 @@
 // AST walker - depth-first traversal
-import type { CSSNode } from './css-node-base'
+import type { AnyNode } from './types'
 
-type WalkCallback = (node: CSSNode, depth: number) => void
+type WalkCallback = (node: AnyNode, depth: number) => void
 
 /**
  * Walk the AST in depth-first order, calling the callback for each node
@@ -27,7 +27,7 @@ type WalkCallback = (node: CSSNode, depth: number) => void
  *   counts.set(typename, (counts.get(typename) || 0) + 1)
  * })
  */
-export function walk(node: CSSNode, callback: WalkCallback, depth = 0): void {
+export function walk(node: AnyNode, callback: WalkCallback, depth = 0): void {
 	// Call callback for current node
 	callback(node, depth)
 
@@ -41,7 +41,7 @@ export function walk(node: CSSNode, callback: WalkCallback, depth = 0): void {
 
 const NOOP = function () {}
 
-type WalkEnterLeaveCallback = (node: CSSNode) => void
+type WalkEnterLeaveCallback = (node: AnyNode) => void
 
 interface WalkEnterLeaveOptions {
 	enter?: WalkEnterLeaveCallback
@@ -70,7 +70,7 @@ interface WalkEnterLeaveOptions {
  *   }
  * })
  */
-export function walk_enter_leave(node: CSSNode, { enter = NOOP, leave = NOOP }: WalkEnterLeaveOptions = {}) {
+export function walk_enter_leave(node: AnyNode, { enter = NOOP, leave = NOOP }: WalkEnterLeaveOptions = {}) {
 	// Call enter callback before processing children
 	enter(node)
 

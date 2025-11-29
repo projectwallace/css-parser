@@ -32,13 +32,19 @@ export class PreludeMediaQueryNode extends CSSNode {
  * - (400px <= width <= 800px) - range syntax
  */
 export class PreludeMediaFeatureNode extends CSSNode {
+	// Get the feature value (content inside parentheses, trimmed)
+	// For (min-width: 768px), returns "min-width: 768px"
+	get value(): string {
+		const text = this.text
+		// Remove parentheses and trim
+		return text.slice(1, -1).trim()
+	}
+
 	// Get the feature name
 	// For (min-width: 768px), returns "min-width"
 	// For (orientation: portrait), returns "orientation"
 	get feature_name(): string {
-		const text = this.text
-		// Remove parentheses
-		const inner = text.slice(1, -1).trim()
+		const inner = this.value
 
 		// Find the first colon or comparison operator
 		const colonIndex = inner.indexOf(':')

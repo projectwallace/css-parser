@@ -61,6 +61,12 @@ export class SelectorAttributeNode extends CSSNode {
 		return inner
 	}
 
+	// Get the attribute operator (for attribute selectors: =, ~=, |=, ^=, $=, *=)
+	// Returns one of the ATTR_OPERATOR_* constants
+	get attr_operator(): number {
+		return this.arena.get_attr_operator(this.index)
+	}
+
 	// Get the operator as a string
 	get operator(): string {
 		return ATTR_OPERATOR_STRINGS[this.attr_operator] || ''

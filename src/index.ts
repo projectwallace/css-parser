@@ -12,6 +12,7 @@ export { type ParserOptions } from './parser'
 
 // Types
 export { CSSNode, type CSSNodeType } from './css-node'
+export type { AnyNode } from './types'
 
 export {
 	ATTR_OPERATOR_NONE,

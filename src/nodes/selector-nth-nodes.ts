@@ -19,6 +19,46 @@ export type SelectorComponentNode = CSSNode
  * Used in :nth-child(), :nth-last-child(), :nth-of-type(), :nth-last-of-type()
  */
 export class SelectorNthNode extends CSSNode {
+	// Get the 'a' coefficient from An+B expression (e.g., "2n" from "2n+1", "odd" from "odd")
+	get nth_a(): string | null {
+		let len = this.arena.get_content_length(this.index)
+		if (len === 0) return null
+		let start = this.arena.get_content_start(this.index)
+		return this.source.substring(start, start + len)
+	}
+
+	// Get the 'b' coefficient from An+B expression (e.g., "1" from "2n+1")
+	get nth_b(): string | null {
+		let len = this.arena.get_value_length(this.index)
+		if (len === 0) return null
+		let start = this.arena.get_value_start(this.index)
+		let value = this.source.substring(start, start + len)
+
+		// Check if there's a - sign before this position (handling "2n - 1" with spaces)
+		// Look backwards for a - or + sign, skipping whitespace
+		let check_pos = start - 1
+		while (check_pos >= 0) {
+			let ch = this.source.charCodeAt(check_pos)
+			if (ch === 0x20 /* space */ || ch === 0x09 /* tab */ || ch === 0x0a /* \n */ || ch === 0x0d /* \r */) {
+				check_pos--
+				continue
+			}
+			// Found non-whitespace
+			if (ch === 0x2d /* - */) {
+				// Prepend - to value
+				value = '-' + value
+			}
+			// Note: + signs are implicit, so we don't prepend them
+			break
+		}
+
+		// Strip leading + if present in the token itself
+		if (value.charCodeAt(0) === 0x2b /* + */) {
+			return value.substring(1)
+		}
+		return value
+	}
+
 	// Get the 'a' coefficient from An+B
 	// For "2n+1", returns "2n"
 	// For "odd", returns "odd"
@@ -58,6 +98,46 @@ export class SelectorNthNode extends CSSNode {
  * The selector part is a child node
  */
 export class SelectorNthOfNode extends CSSNode {
+	// Get the 'a' coefficient from An+B expression (e.g., "2n" from "2n+1", "odd" from "odd")
+	get nth_a(): string | null {
+		let len = this.arena.get_content_length(this.index)
+		if (len === 0) return null
+		let start = this.arena.get_content_start(this.index)
+		return this.source.substring(start, start + len)
+	}
+
+	// Get the 'b' coefficient from An+B expression (e.g., "1" from "2n+1")
+	get nth_b(): string | null {
+		let len = this.arena.get_value_length(this.index)
+		if (len === 0) return null
+		let start = this.arena.get_value_start(this.index)
+		let value = this.source.substring(start, start + len)
+
+		// Check if there's a - sign before this position (handling "2n - 1" with spaces)
+		// Look backwards for a - or + sign, skipping whitespace
+		let check_pos = start - 1
+		while (check_pos >= 0) {
+			let ch = this.source.charCodeAt(check_pos)
+			if (ch === 0x20 /* space */ || ch === 0x09 /* tab */ || ch === 0x0a /* \n */ || ch === 0x0d /* \r */) {
+				check_pos--
+				continue
+			}
+			// Found non-whitespace
+			if (ch === 0x2d /* - */) {
+				// Prepend - to value
+				value = '-' + value
+			}
+			// Note: + signs are implicit, so we don't prepend them
+			break
+		}
+
+		// Strip leading + if present in the token itself
+		if (value.charCodeAt(0) === 0x2b /* + */) {
+			return value.substring(1)
+		}
+		return value
+	}
+
 	// Get the 'a' coefficient from An+B
 	get a(): string | null {
 		return this.nth_a

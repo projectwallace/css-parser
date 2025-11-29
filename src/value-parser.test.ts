@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { Parser } from './parser'
+import { DeclarationNode } from './css-node'
 import {
 	NODE_VALUE_KEYWORD,
 	NODE_VALUE_NUMBER,
@@ -16,7 +17,7 @@ describe('ValueParser', () => {
 			const parser = new Parser('body { color: red; }')
 			const root = parser.parse()
 			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child // selector → block → declaration
+			const decl = rule?.first_child?.next_sibling?.first_child as DeclarationNode // selector → block → declaration
 
 			expect(decl?.value).toBe('red')
 			expect(decl?.values).toHaveLength(1)

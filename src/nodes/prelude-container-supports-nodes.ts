@@ -29,6 +29,17 @@ export class PreludeContainerQueryNode extends CSSNode {
  * - selector(:has(a))
  */
 export class PreludeSupportsQueryNode extends CSSNode {
+	// Get the query value (content inside parentheses, trimmed)
+	// For (display: flex), returns "display: flex"
+	get value(): string {
+		const text = this.text
+		// Remove parentheses and trim
+		if (text.startsWith('(') && text.endsWith(')')) {
+			return text.slice(1, -1).trim()
+		}
+		return text.trim()
+	}
+
 	// Override children to return query components
 	override get children(): PreludeComponentNode[] {
 		return super.children as PreludeComponentNode[]

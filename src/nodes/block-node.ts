@@ -1,5 +1,6 @@
 // BlockNode - Block container for declarations and nested rules
 import { CSSNode } from '../css-node-base'
+import { NODE_COMMENT } from '../arena'
 
 // Forward declarations for child types
 export type DeclarationNode = CSSNode
@@ -14,5 +15,21 @@ export class BlockNode extends CSSNode {
 		return super.children as (DeclarationNode | StyleRuleNode | AtRuleNode | CommentNode)[]
 	}
 
-	// is_empty is already defined in base class, no need to override
+	// Check if this block is empty (no declarations or rules, only comments allowed)
+	get isEmpty(): boolean {
+		// Empty if no children, or all children are comments
+		let child = this.first_child
+		while (child) {
+			if (child.type !== NODE_COMMENT) {
+				return false
+			}
+			child = child.next_sibling
+		}
+		return true
+	}
+
+	// Snake_case alias for isEmpty
+	get is_empty(): boolean {
+		return this.isEmpty
+	}
 }
