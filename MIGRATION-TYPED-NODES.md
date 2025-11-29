@@ -2,14 +2,14 @@
 
 **Branch**: `tree-structure`
 **Status**: In Progress
-**Progress**: 4/25 batches completed
+**Progress**: 5/25 batches completed
 
 ---
 
 ## Quick Reference
 
-**Current Batch**: Batch 5 - Implement CommentNode
-**Next Steps**: See [Batch 5](#batch-5-implement-commentnode) below
+**Current Batch**: Batch 6 - Implement BlockNode
+**Next Steps**: See [Batch 6](#batch-6-implement-blocknode) below
 
 ---
 
@@ -22,7 +22,7 @@
 
 ### Phase 2: Core Structure Nodes
 - [x] **Batch 4**: Implement StylesheetNode (15 min) ✅
-- [ ] **Batch 5**: Implement CommentNode (10 min)
+- [x] **Batch 5**: Implement CommentNode (10 min) ✅
 - [ ] **Batch 6**: Implement BlockNode (15 min)
 - [ ] **Batch 7**: Implement DeclarationNode (20 min)
 - [ ] **Batch 8**: Implement AtRuleNode (20 min)
