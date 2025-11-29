@@ -38,6 +38,7 @@ import {
 	TOKEN_RIGHT_PAREN,
 	TOKEN_EOF,
 	TOKEN_WHITESPACE,
+	TOKEN_STRING,
 } from './token-types'
 import { trim_boundaries, is_whitespace as is_whitespace_char, is_vendor_prefixed } from './string-utils'
 import { ANplusBParser } from './anplusb-parser'
@@ -754,6 +755,9 @@ export class SelectorParser {
 					this.arena.set_first_child(node, child)
 					this.arena.set_last_child(node, child)
 				}
+			} else if (func_name === 'lang') {
+				// Parse as :lang() - comma-separated language identifiers
+				this.parse_lang_identifiers(content_start, content_end, node)
 			} else {
 				// Parse as selector (for :is(), :where(), :has(), etc.)
 				// Save current lexer state and selector_end
@@ -794,6 +798,79 @@ export class SelectorParser {
 			name === 'nth-col' ||
 			name === 'nth-last-col'
 		)
+	}
+
+	// Parse :lang() content - comma-separated language identifiers
+	// Accepts both quoted strings: :lang("en", "fr") and unquoted: :lang(en, fr)
+	private parse_lang_identifiers(start: number, end: number, parent_node: number): void {
+		// Save current lexer state
+		let saved_selector_end = this.selector_end
+		let saved_pos = this.lexer.pos
+		let saved_line = this.lexer.line
+		let saved_column = this.lexer.column
+
+		// Set lexer to parse this range
+		this.lexer.pos = start
+		this.selector_end = end
+
+		let first_child: number | null = null
+		let last_child: number | null = null
+
+		while (this.lexer.pos < end) {
+			this.lexer.next_token_fast(false)
+			let token_type = this.lexer.token_type
+			let token_start = this.lexer.token_start
+			let token_end = this.lexer.token_end
+
+			// Skip whitespace
+			if (token_type === TOKEN_WHITESPACE) {
+				continue
+			}
+
+			// Skip commas
+			if (token_type === TOKEN_COMMA) {
+				continue
+			}
+
+			// Accept both strings and identifiers
+			if (token_type === TOKEN_STRING || token_type === TOKEN_IDENT) {
+				// Create language identifier node
+				let lang_node = this.arena.create_node()
+				this.arena.set_type(lang_node, NODE_SELECTOR_LANG)
+				this.arena.set_start_offset(lang_node, token_start)
+				this.arena.set_length(lang_node, token_end - token_start)
+				this.arena.set_start_line(lang_node, this.lexer.line)
+				this.arena.set_start_column(lang_node, this.lexer.column)
+
+				// Link as child of :lang() pseudo-class
+				if (first_child === null) {
+					first_child = lang_node
+				}
+				if (last_child !== null) {
+					this.arena.set_next_sibling(last_child, lang_node)
+				}
+				last_child = lang_node
+			}
+
+			// Stop if we've reached the end
+			if (this.lexer.pos >= end) {
+				break
+			}
+		}
+
+		// Set children on parent node
+		if (first_child !== null) {
+			this.arena.set_first_child(parent_node, first_child)
+		}
+		if (last_child !== null) {
+			this.arena.set_last_child(parent_node, last_child)
+		}
+
+		// Restore lexer state
+		this.selector_end = saved_selector_end
+		this.lexer.pos = saved_pos
+		this.lexer.line = saved_line
+		this.lexer.column = saved_column
 	}
 
 	// Parse An+B expression for nth-* pseudo-classes

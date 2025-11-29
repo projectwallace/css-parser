@@ -15,6 +15,7 @@ import {
 	NODE_SELECTOR_NESTING,
 	NODE_SELECTOR_NTH,
 	NODE_SELECTOR_NTH_OF,
+	NODE_SELECTOR_LANG,
 } from './arena'
 import { parse_selector } from './parse-selector'
 
@@ -1069,12 +1070,76 @@ describe('SelectorParser', () => {
 			expect(langPseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
 			expect(langPseudoClass.text).toBe(':lang("nl", "de")')
 
-			// :lang() has NO children (strings are not parsed as selectors)
-			// Unlike :is(), :where(), :has() which accept selectors,
-			// :lang() accepts language identifiers (strings/idents) which the
-			// parser doesn't currently parse into child nodes
-			expect(langPseudoClass.has_children).toBe(false)
-			expect(langPseudoClass.children).toHaveLength(0)
+			// :lang() has 2 children - language identifiers
+			expect(langPseudoClass.has_children).toBe(true)
+			expect(langPseudoClass.children).toHaveLength(2)
+
+			// First language identifier: "nl"
+			const lang1 = langPseudoClass.children[0]
+			expect(lang1.type).toBe(NODE_SELECTOR_LANG)
+			expect(lang1.text).toBe('"nl"')
+
+			// Second language identifier: "de"
+			const lang2 = langPseudoClass.children[1]
+			expect(lang2.type).toBe(NODE_SELECTOR_LANG)
+			expect(lang2.text).toBe('"de"')
+		})
+
+		test(':lang(en, fr) with unquoted identifiers', () => {
+			const root = parse_selector(':lang(en, fr)')
+
+			const selector = root.first_child!
+			const langPseudoClass = selector.first_child!
+
+			expect(langPseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(langPseudoClass.text).toBe(':lang(en, fr)')
+
+			// :lang() has 2 children - language identifiers
+			expect(langPseudoClass.children).toHaveLength(2)
+
+			// First language identifier: en
+			const lang1 = langPseudoClass.children[0]
+			expect(lang1.type).toBe(NODE_SELECTOR_LANG)
+			expect(lang1.text).toBe('en')
+
+			// Second language identifier: fr
+			const lang2 = langPseudoClass.children[1]
+			expect(lang2.type).toBe(NODE_SELECTOR_LANG)
+			expect(lang2.text).toBe('fr')
+		})
+
+		test(':lang(en-US) single language with hyphen', () => {
+			const root = parse_selector(':lang(en-US)')
+
+			const selector = root.first_child!
+			const langPseudoClass = selector.first_child!
+
+			expect(langPseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(langPseudoClass.text).toBe(':lang(en-US)')
+
+			// :lang() has 1 child - single language identifier
+			expect(langPseudoClass.children).toHaveLength(1)
+
+			const lang1 = langPseudoClass.children[0]
+			expect(lang1.type).toBe(NODE_SELECTOR_LANG)
+			expect(lang1.text).toBe('en-US')
+		})
+
+		test(':lang("*-Latn") wildcard pattern', () => {
+			const root = parse_selector(':lang("*-Latn")')
+
+			const selector = root.first_child!
+			const langPseudoClass = selector.first_child!
+
+			expect(langPseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(langPseudoClass.text).toBe(':lang("*-Latn")')
+
+			// :lang() has 1 child - wildcard language identifier
+			expect(langPseudoClass.children).toHaveLength(1)
+
+			const lang1 = langPseudoClass.children[0]
+			expect(lang1.type).toBe(NODE_SELECTOR_LANG)
+			expect(lang1.text).toBe('"*-Latn"')
 		})
 	})
 })
