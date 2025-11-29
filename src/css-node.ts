@@ -3,7 +3,7 @@
 // Will be replaced by type-specific classes in future batches
 import { CSSNode as CSSNodeBase } from './css-node-base'
 import type { CSSDataArena } from './arena'
-import { NODE_STYLESHEET, NODE_COMMENT, NODE_BLOCK, NODE_DECLARATION, NODE_AT_RULE, NODE_STYLE_RULE, NODE_SELECTOR, NODE_VALUE_KEYWORD, NODE_VALUE_STRING, NODE_VALUE_COLOR, NODE_VALUE_OPERATOR, NODE_VALUE_NUMBER, NODE_VALUE_DIMENSION, NODE_VALUE_FUNCTION, NODE_SELECTOR_LIST, NODE_SELECTOR_TYPE, NODE_SELECTOR_UNIVERSAL, NODE_SELECTOR_NESTING, NODE_SELECTOR_COMBINATOR, NODE_SELECTOR_CLASS, NODE_SELECTOR_ID, NODE_SELECTOR_LANG, NODE_SELECTOR_ATTRIBUTE, NODE_SELECTOR_PSEUDO_CLASS, NODE_SELECTOR_PSEUDO_ELEMENT, NODE_SELECTOR_NTH, NODE_SELECTOR_NTH_OF, NODE_PRELUDE_MEDIA_QUERY, NODE_PRELUDE_MEDIA_FEATURE, NODE_PRELUDE_MEDIA_TYPE } from './arena'
+import { NODE_STYLESHEET, NODE_COMMENT, NODE_BLOCK, NODE_DECLARATION, NODE_AT_RULE, NODE_STYLE_RULE, NODE_SELECTOR, NODE_VALUE_KEYWORD, NODE_VALUE_STRING, NODE_VALUE_COLOR, NODE_VALUE_OPERATOR, NODE_VALUE_NUMBER, NODE_VALUE_DIMENSION, NODE_VALUE_FUNCTION, NODE_SELECTOR_LIST, NODE_SELECTOR_TYPE, NODE_SELECTOR_UNIVERSAL, NODE_SELECTOR_NESTING, NODE_SELECTOR_COMBINATOR, NODE_SELECTOR_CLASS, NODE_SELECTOR_ID, NODE_SELECTOR_LANG, NODE_SELECTOR_ATTRIBUTE, NODE_SELECTOR_PSEUDO_CLASS, NODE_SELECTOR_PSEUDO_ELEMENT, NODE_SELECTOR_NTH, NODE_SELECTOR_NTH_OF, NODE_PRELUDE_MEDIA_QUERY, NODE_PRELUDE_MEDIA_FEATURE, NODE_PRELUDE_MEDIA_TYPE, NODE_PRELUDE_CONTAINER_QUERY, NODE_PRELUDE_SUPPORTS_QUERY, NODE_PRELUDE_LAYER_NAME, NODE_PRELUDE_IDENTIFIER, NODE_PRELUDE_OPERATOR } from './arena'
 import { StylesheetNode } from './nodes/stylesheet-node'
 import { CommentNode } from './nodes/comment-node'
 import { BlockNode } from './nodes/block-node'
@@ -18,6 +18,7 @@ import { SelectorAttributeNode } from './nodes/selector-attribute-node'
 import { SelectorPseudoClassNode, SelectorPseudoElementNode } from './nodes/selector-pseudo-nodes'
 import { SelectorNthNode, SelectorNthOfNode } from './nodes/selector-nth-nodes'
 import { PreludeMediaQueryNode, PreludeMediaFeatureNode, PreludeMediaTypeNode } from './nodes/prelude-media-nodes'
+import { PreludeContainerQueryNode, PreludeSupportsQueryNode, PreludeLayerNameNode, PreludeIdentifierNode, PreludeOperatorNode } from './nodes/prelude-container-supports-nodes'
 
 // Re-export CSSNodeType from base
 export type { CSSNodeType } from './css-node-base'
@@ -37,6 +38,7 @@ export { SelectorAttributeNode } from './nodes/selector-attribute-node'
 export { SelectorPseudoClassNode, SelectorPseudoElementNode } from './nodes/selector-pseudo-nodes'
 export { SelectorNthNode, SelectorNthOfNode } from './nodes/selector-nth-nodes'
 export { PreludeMediaQueryNode, PreludeMediaFeatureNode, PreludeMediaTypeNode } from './nodes/prelude-media-nodes'
+export { PreludeContainerQueryNode, PreludeSupportsQueryNode, PreludeLayerNameNode, PreludeIdentifierNode, PreludeOperatorNode } from './nodes/prelude-container-supports-nodes'
 
 export class CSSNode extends CSSNodeBase {
 	// Implement factory method that returns type-specific node classes
@@ -109,6 +111,16 @@ export class CSSNode extends CSSNodeBase {
 				return new PreludeMediaFeatureNode(arena, source, index)
 			case NODE_PRELUDE_MEDIA_TYPE:
 				return new PreludeMediaTypeNode(arena, source, index)
+			case NODE_PRELUDE_CONTAINER_QUERY:
+				return new PreludeContainerQueryNode(arena, source, index)
+			case NODE_PRELUDE_SUPPORTS_QUERY:
+				return new PreludeSupportsQueryNode(arena, source, index)
+			case NODE_PRELUDE_LAYER_NAME:
+				return new PreludeLayerNameNode(arena, source, index)
+			case NODE_PRELUDE_IDENTIFIER:
+				return new PreludeIdentifierNode(arena, source, index)
+			case NODE_PRELUDE_OPERATOR:
+				return new PreludeOperatorNode(arena, source, index)
 			default:
 				// For all other types, return generic CSSNode
 				return new CSSNode(arena, source, index)
