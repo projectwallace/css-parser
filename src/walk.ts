@@ -1,5 +1,5 @@
 // AST walker - depth-first traversal
-import type { CSSNode } from './css-node'
+import type { CSSNode } from './css-node-base'
 
 type WalkCallback = (node: CSSNode, depth: number) => void
 

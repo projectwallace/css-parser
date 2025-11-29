@@ -45,7 +45,7 @@ export { PreludeImportUrlNode, PreludeImportLayerNode, PreludeImportSupportsNode
 export class CSSNode extends CSSNodeBase {
 	// Implement factory method that returns type-specific node classes
 	// Gradually expanding to cover all node types
-	static override from(arena: CSSDataArena, source: string, index: number): CSSNode {
+	static override from(arena: CSSDataArena, source: string, index: number): CSSNodeBase {
 		const type = arena.get_type(index)
 
 		// Return type-specific nodes
@@ -136,7 +136,7 @@ export class CSSNode extends CSSNodeBase {
 	}
 
 	// Override create_node_wrapper to use the factory
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): CSSNodeBase {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }
