@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'vitest'
 import { parse } from './parse'
 import { NODE_STYLE_RULE, NODE_DECLARATION, NODE_AT_RULE, NODE_SELECTOR_LIST } from './parser'
+import { AtRuleNode } from './css-node'
 
 describe('Column Tracking', () => {
 	test('should track column for single-line CSS', () => {
@@ -69,7 +70,7 @@ describe('Column Tracking', () => {
 		expect(atRule.column).toBe(1)
 
 		// Get the block, then find the nested style rule
-		const block = atRule.block!
+		const block = (atRule as AtRuleNode).block!
 		let nestedRule = block.first_child
 		while (nestedRule && nestedRule.type !== NODE_STYLE_RULE) {
 			nestedRule = nestedRule.next_sibling

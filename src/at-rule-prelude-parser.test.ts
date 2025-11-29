@@ -15,13 +15,19 @@ import {
 	NODE_PRELUDE_IMPORT_LAYER,
 	NODE_PRELUDE_IMPORT_SUPPORTS,
 } from './arena'
+import {
+	AtRuleNode,
+	PreludeMediaFeatureNode,
+	PreludeImportLayerNode,
+	PreludeSupportsQueryNode,
+} from './nodes'
 
 describe('At-Rule Prelude Parser', () => {
 	describe('@media', () => {
 		it('should parse media type', () => {
 			const css = '@media screen { }'
 			const ast = parse(css)
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 
 			expect(atRule?.type).toBe(NODE_AT_RULE)
 			expect(atRule?.name).toBe('media')
@@ -41,7 +47,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should parse media feature', () => {
 			const css = '@media (min-width: 768px) { }'
 			const ast = parse(css)
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 
 			expect(children[0].type).toBe(NODE_PRELUDE_MEDIA_QUERY)
@@ -51,17 +57,17 @@ describe('At-Rule Prelude Parser', () => {
 			expect(queryChildren.some((c) => c.type === NODE_PRELUDE_MEDIA_FEATURE)).toBe(true)
 
 			// Feature should have content
-			const feature = queryChildren.find((c) => c.type === NODE_PRELUDE_MEDIA_FEATURE)
+			const feature = queryChildren.find((c) => c.type === NODE_PRELUDE_MEDIA_FEATURE) as PreludeMediaFeatureNode
 			expect(feature?.value).toContain('min-width')
 		})
 
 		it('should trim whitespace and comments from media features', () => {
 			const css = '@media (/* comment */   min-width: 768px   /* test */) { }'
 			const ast = parse(css)
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 			const queryChildren = children[0].children
-			const feature = queryChildren.find((c) => c.type === NODE_PRELUDE_MEDIA_FEATURE)
+			const feature = queryChildren.find((c) => c.type === NODE_PRELUDE_MEDIA_FEATURE) as PreludeMediaFeatureNode
 
 			expect(feature?.value).toBe('min-width: 768px')
 		})
@@ -69,7 +75,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should parse complex media query with and operator', () => {
 			const css = '@media screen and (min-width: 768px) { }'
 			const ast = parse(css)
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 
 			expect(children[0].type).toBe(NODE_PRELUDE_MEDIA_QUERY)
@@ -84,7 +90,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should parse multiple media features', () => {
 			const css = '@media (min-width: 768px) and (max-width: 1024px) { }'
 			const ast = parse(css)
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 
 			const queryChildren = children[0].children
@@ -95,7 +101,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should parse comma-separated media queries', () => {
 			const css = '@media screen, print { }'
 			const ast = parse(css)
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 
 			// Should have 2 media query nodes
@@ -108,7 +114,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should parse unnamed container query', () => {
 			const css = '@container (min-width: 400px) { }'
 			const ast = parse(css)
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 
 			expect(atRule?.type).toBe(NODE_AT_RULE)
 			expect(atRule?.name).toBe('container')
@@ -121,7 +127,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should parse named container query', () => {
 			const css = '@container sidebar (min-width: 400px) { }'
 			const ast = parse(css)
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 
 			expect(children[0].type).toBe(NODE_PRELUDE_CONTAINER_QUERY)
@@ -137,7 +143,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should parse single feature query', () => {
 			const css = '@supports (display: flex) { }'
 			const ast = parse(css)
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 
 			expect(atRule?.type).toBe(NODE_AT_RULE)
 			expect(atRule?.name).toBe('supports')
@@ -145,7 +151,7 @@ describe('At-Rule Prelude Parser', () => {
 			const children = atRule?.children || []
 			expect(children.some((c) => c.type === NODE_PRELUDE_SUPPORTS_QUERY)).toBe(true)
 
-			const query = children.find((c) => c.type === NODE_PRELUDE_SUPPORTS_QUERY)
+			const query = children.find((c) => c.type === NODE_PRELUDE_SUPPORTS_QUERY) as PreludeSupportsQueryNode
 			expect(query?.value).toContain('display')
 			expect(query?.value).toContain('flex')
 		})
@@ -153,9 +159,9 @@ describe('At-Rule Prelude Parser', () => {
 		it('should trim whitespace and comments from supports queries', () => {
 			const css = '@supports (/* comment */   display: flex   /* test */) { }'
 			const ast = parse(css)
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
-			const query = children.find((c) => c.type === NODE_PRELUDE_SUPPORTS_QUERY)
+			const query = children.find((c) => c.type === NODE_PRELUDE_SUPPORTS_QUERY) as PreludeSupportsQueryNode
 
 			expect(query?.value).toBe('display: flex')
 		})
@@ -163,7 +169,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should parse complex supports query with operators', () => {
 			const css = '@supports (display: flex) and (gap: 1rem) { }'
 			const ast = parse(css)
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 
 			// Should have 2 queries and 1 operator
@@ -179,7 +185,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should parse single layer name', () => {
 			const css = '@layer base { }'
 			const ast = parse(css)
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 
 			expect(atRule?.type).toBe(NODE_AT_RULE)
 			expect(atRule?.name).toBe('layer')
@@ -194,7 +200,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should parse comma-separated layer names', () => {
 			const css = '@layer base, components, utilities;'
 			const ast = parse(css)
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 
 			const children = atRule?.children || []
 			expect(children.length).toBe(3)
@@ -214,7 +220,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should parse keyframe name', () => {
 			const css = '@keyframes slidein { }'
 			const ast = parse(css)
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 
 			expect(atRule?.type).toBe(NODE_AT_RULE)
 			expect(atRule?.name).toBe('keyframes')
@@ -231,7 +237,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should parse custom property name', () => {
 			const css = '@property --my-color { }'
 			const ast = parse(css)
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 
 			expect(atRule?.type).toBe(NODE_AT_RULE)
 			expect(atRule?.name).toBe('property')
@@ -248,7 +254,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should have no prelude children', () => {
 			const css = '@font-face { font-family: "MyFont"; }'
 			const ast = parse(css)
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 
 			expect(atRule?.type).toBe(NODE_AT_RULE)
 			expect(atRule?.name).toBe('font-face')
@@ -266,7 +272,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should parse preludes when enabled (default)', () => {
 			const css = '@media screen { }'
 			const ast = parse(css, { parse_atrule_preludes: true })
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 
 			expect(children.some((c) => c.type === NODE_PRELUDE_MEDIA_QUERY)).toBe(true)
@@ -275,7 +281,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should not parse preludes when disabled', () => {
 			const css = '@media screen { }'
 			const ast = parse(css, { parse_atrule_preludes: false })
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 
 			expect(children.some((c) => c.type === NODE_PRELUDE_MEDIA_QUERY)).toBe(false)
@@ -286,7 +292,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should preserve prelude text in at-rule node', () => {
 			const css = '@media screen and (min-width: 768px) { }'
 			const ast = parse(css)
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 
 			// The prelude text should still be accessible
 			expect(atRule?.prelude).toBe('screen and (min-width: 768px)')
@@ -297,7 +303,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should parse URL with url() function', () => {
 			const css = '@import url("styles.css");'
 			const ast = parse(css, { parse_atrule_preludes: true })
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 
 			expect(children.length).toBeGreaterThan(0)
@@ -308,7 +314,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should parse URL with string', () => {
 			const css = '@import "styles.css";'
 			const ast = parse(css, { parse_atrule_preludes: true })
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 
 			expect(children.length).toBeGreaterThan(0)
@@ -319,76 +325,76 @@ describe('At-Rule Prelude Parser', () => {
 		it('should parse with anonymous layer', () => {
 			const css = '@import url("styles.css") layer;'
 			const ast = parse(css, { parse_atrule_preludes: true })
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 
 			expect(children.length).toBe(2)
 			expect(children[0].type).toBe(NODE_PRELUDE_IMPORT_URL)
 			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_LAYER)
 			expect(children[1].text).toBe('layer')
-			expect(children[1].name).toBe('')
+			expect((children[1] as PreludeImportLayerNode).name).toBe('')
 		})
 
 		it('should parse with anonymous LAYER', () => {
 			const css = '@import url("styles.css") LAYER;'
 			const ast = parse(css, { parse_atrule_preludes: true })
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 
 			expect(children.length).toBe(2)
 			expect(children[0].type).toBe(NODE_PRELUDE_IMPORT_URL)
 			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_LAYER)
 			expect(children[1].text).toBe('LAYER')
-			expect(children[1].name).toBe('')
+			expect((children[1] as PreludeImportLayerNode).name).toBe('')
 		})
 
 		it('should parse with named layer', () => {
 			const css = '@import url("styles.css") layer(utilities);'
 			const ast = parse(css, { parse_atrule_preludes: true })
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 
 			expect(children.length).toBe(2)
 			expect(children[0].type).toBe(NODE_PRELUDE_IMPORT_URL)
 			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_LAYER)
 			expect(children[1].text).toBe('layer(utilities)')
-			expect(children[1].name).toBe('utilities')
+			expect((children[1] as PreludeImportLayerNode).name).toBe('utilities')
 		})
 
 		it('should trim whitespace from layer names', () => {
 			const css = '@import url("styles.css") layer(   utilities   );'
 			const ast = parse(css, { parse_atrule_preludes: true })
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 
 			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_LAYER)
-			expect(children[1].name).toBe('utilities')
+			expect((children[1] as PreludeImportLayerNode).name).toBe('utilities')
 		})
 
 		it('should trim comments from layer names', () => {
 			const css = '@import url("styles.css") layer(/* comment */utilities/* test */);'
 			const ast = parse(css, { parse_atrule_preludes: true })
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 
 			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_LAYER)
-			expect(children[1].name).toBe('utilities')
+			expect((children[1] as PreludeImportLayerNode).name).toBe('utilities')
 		})
 
 		it('should trim whitespace and comments from dotted layer names', () => {
 			const css = '@import url("foo.css") layer(/* test */named.nested     );'
 			const ast = parse(css, { parse_atrule_preludes: true })
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 
 			expect(children[1].type).toBe(NODE_PRELUDE_IMPORT_LAYER)
-			expect(children[1].name).toBe('named.nested')
+			expect((children[1] as PreludeImportLayerNode).name).toBe('named.nested')
 		})
 
 		it('should parse with supports query', () => {
 			const css = '@import url("styles.css") supports(display: grid);'
 			const ast = parse(css, { parse_atrule_preludes: true })
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 
 			expect(children.length).toBe(2)
@@ -400,7 +406,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should parse with media query', () => {
 			const css = '@import url("styles.css") screen;'
 			const ast = parse(css, { parse_atrule_preludes: true })
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 
 			expect(children.length).toBe(2)
@@ -411,7 +417,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should parse with media feature', () => {
 			const css = '@import url("styles.css") (min-width: 768px);'
 			const ast = parse(css, { parse_atrule_preludes: true })
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 
 			expect(children.length).toBe(2)
@@ -422,7 +428,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should parse with combined media query', () => {
 			const css = '@import url("styles.css") screen and (min-width: 768px);'
 			const ast = parse(css, { parse_atrule_preludes: true })
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 
 			expect(children.length).toBe(2)
@@ -433,7 +439,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should parse with layer and media query', () => {
 			const css = '@import url("styles.css") layer(base) screen;'
 			const ast = parse(css, { parse_atrule_preludes: true })
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 
 			expect(children.length).toBe(3)
@@ -445,7 +451,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should parse with layer and supports', () => {
 			const css = '@import url("styles.css") layer(base) supports(display: grid);'
 			const ast = parse(css, { parse_atrule_preludes: true })
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 
 			expect(children.length).toBe(3)
@@ -457,7 +463,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should parse with supports and media query', () => {
 			const css = '@import url("styles.css") supports(display: grid) screen;'
 			const ast = parse(css, { parse_atrule_preludes: true })
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 
 			expect(children.length).toBe(3)
@@ -469,7 +475,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should parse with all features combined', () => {
 			const css = '@import url("styles.css") layer(base) supports(display: grid) screen and (min-width: 768px);'
 			const ast = parse(css, { parse_atrule_preludes: true })
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 
 			expect(children.length).toBe(4)
@@ -482,7 +488,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should parse with complex supports condition', () => {
 			const css = '@import url("styles.css") supports((display: grid) and (gap: 1rem));'
 			const ast = parse(css, { parse_atrule_preludes: true })
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 			const children = atRule?.children || []
 
 			expect(children.length).toBe(2)
@@ -494,7 +500,7 @@ describe('At-Rule Prelude Parser', () => {
 		it('should preserve prelude text', () => {
 			const css = '@import url("styles.css") layer(base) screen;'
 			const ast = parse(css)
-			const atRule = ast.first_child
+			const atRule = ast.first_child as AtRuleNode
 
 			expect(atRule?.prelude).toBe('url("styles.css") layer(base) screen')
 		})

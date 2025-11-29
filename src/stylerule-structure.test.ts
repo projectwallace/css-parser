@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'vitest'
 import { Parser } from './parser'
 import { NODE_STYLE_RULE, NODE_SELECTOR_LIST, NODE_DECLARATION, NODE_AT_RULE } from './arena'
+import { BlockNode } from './css-node'
 
 describe('StyleRule Structure', () => {
 	test('should have selector list as first child, followed by declarations', () => {
@@ -231,7 +232,7 @@ describe('StyleRule Structure', () => {
 		// Rule should have selector list + empty block
 		const block = rule.first_child!.next_sibling
 		expect(block).not.toBeNull()
-		expect(block!.is_empty).toBe(true)
+		expect((block as BlockNode)!.is_empty).toBe(true)
 	})
 
 	test('block children should be correctly linked via next_sibling with declarations only', () => {

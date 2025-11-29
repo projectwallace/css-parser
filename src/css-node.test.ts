@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'vitest'
 import { Parser } from './parser'
 import { NODE_DECLARATION, NODE_SELECTOR_LIST, NODE_STYLE_RULE, NODE_AT_RULE } from './arena'
+import { StyleRuleNode, AtRuleNode, PreludeMediaFeatureNode, DeclarationNode } from './nodes'
 
 describe('CSSNode', () => {
 	describe('iteration', () => {
@@ -9,7 +10,7 @@ describe('CSSNode', () => {
 			const parser = new Parser(source, { parse_selectors: false, parse_values: false })
 			const root = parser.parse()
 
-			const rule = root.first_child!
+			const rule = root.first_child as StyleRuleNode
 			const block = rule.block!
 			const types: number[] = []
 
@@ -36,7 +37,7 @@ describe('CSSNode', () => {
 			const parser = new Parser(source, { parse_selectors: false, parse_values: false, parse_atrule_preludes: false })
 			const root = parser.parse()
 
-			const media = root.first_child!
+			const media = root.first_child as AtRuleNode
 			const block = media.block!
 			const children = Array.from(block)
 
@@ -53,7 +54,7 @@ describe('CSSNode', () => {
 			})
 			const root = parser.parse()
 
-			const importRule = root.first_child!
+			const importRule = root.first_child as AtRuleNode
 			const children = [...importRule]
 
 			expect(children).toHaveLength(0)
@@ -65,7 +66,7 @@ describe('CSSNode', () => {
 			const source = '@media (min-width: 768px) { body { color: red; } }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const media = root.first_child!
+			const media = root.first_child as AtRuleNode
 
 			expect(media.type).toBe(NODE_AT_RULE)
 			expect(media.has_prelude).toBe(true)
@@ -76,7 +77,7 @@ describe('CSSNode', () => {
 			const source = '@supports (display: grid) { .grid { display: grid; } }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const supports = root.first_child!
+			const supports = root.first_child as AtRuleNode
 
 			expect(supports.type).toBe(NODE_AT_RULE)
 			expect(supports.has_prelude).toBe(true)
@@ -87,7 +88,7 @@ describe('CSSNode', () => {
 			const source = '@layer utilities { .btn { padding: 1rem; } }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const layer = root.first_child!
+			const layer = root.first_child as AtRuleNode
 
 			expect(layer.type).toBe(NODE_AT_RULE)
 			expect(layer.has_prelude).toBe(true)
@@ -98,7 +99,7 @@ describe('CSSNode', () => {
 			const source = '@layer { .btn { padding: 1rem; } }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const layer = root.first_child!
+			const layer = root.first_child as AtRuleNode
 
 			expect(layer.type).toBe(NODE_AT_RULE)
 			expect(layer.has_prelude).toBe(false)
@@ -109,7 +110,7 @@ describe('CSSNode', () => {
 			const source = '@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const keyframes = root.first_child!
+			const keyframes = root.first_child as AtRuleNode
 
 			expect(keyframes.type).toBe(NODE_AT_RULE)
 			expect(keyframes.has_prelude).toBe(true)
@@ -120,7 +121,7 @@ describe('CSSNode', () => {
 			const source = '@font-face { font-family: "Custom"; src: url("font.woff2"); }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const fontFace = root.first_child!
+			const fontFace = root.first_child as AtRuleNode
 
 			expect(fontFace.type).toBe(NODE_AT_RULE)
 			expect(fontFace.has_prelude).toBe(false)
@@ -131,7 +132,7 @@ describe('CSSNode', () => {
 			const source = '@page { margin: 1in; }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const page = root.first_child!
+			const page = root.first_child as AtRuleNode
 
 			expect(page.type).toBe(NODE_AT_RULE)
 			expect(page.has_prelude).toBe(false)
@@ -142,7 +143,7 @@ describe('CSSNode', () => {
 			const source = '@import url("styles.css") layer(base) supports(display: flex);'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const importRule = root.first_child!
+			const importRule = root.first_child as AtRuleNode
 
 			expect(importRule.type).toBe(NODE_AT_RULE)
 			expect(importRule.has_prelude).toBe(true)
@@ -153,7 +154,7 @@ describe('CSSNode', () => {
 			const source = '@media (min-width: 768px) { body { color: red; } }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const media = root.first_child!
+			const media = root.first_child as AtRuleNode
 
 			// has_prelude should be faster than prelude !== null
 			// because it doesn't allocate a string
@@ -165,10 +166,10 @@ describe('CSSNode', () => {
 			const source = 'body { color: red; }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const rule = root.first_child!
+			const rule = root.first_child as StyleRuleNode
 			const selector = rule.first_child!
 			const block = selector.next_sibling!
-			const declaration = block.first_child!
+			const declaration = block.first_child as DeclarationNode
 
 			// Rules and selectors don't use value field
 			expect(rule.has_prelude).toBe(false)
@@ -186,7 +187,7 @@ describe('CSSNode', () => {
 			const source = 'body { color: red; }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const rule = root.first_child!
+			const rule = root.first_child as StyleRuleNode
 
 			expect(rule.type).toBe(NODE_STYLE_RULE)
 			expect(rule.has_block).toBe(true)
@@ -196,7 +197,7 @@ describe('CSSNode', () => {
 			const source = 'body { }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const rule = root.first_child!
+			const rule = root.first_child as StyleRuleNode
 
 			expect(rule.type).toBe(NODE_STYLE_RULE)
 			expect(rule.has_block).toBe(true)
@@ -206,7 +207,7 @@ describe('CSSNode', () => {
 			const source = '@media (min-width: 768px) { body { color: red; } }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const media = root.first_child!
+			const media = root.first_child as AtRuleNode
 
 			expect(media.type).toBe(NODE_AT_RULE)
 			expect(media.has_block).toBe(true)
@@ -216,7 +217,7 @@ describe('CSSNode', () => {
 			const source = '@supports (display: grid) { .grid { display: grid; } }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const supports = root.first_child!
+			const supports = root.first_child as AtRuleNode
 
 			expect(supports.type).toBe(NODE_AT_RULE)
 			expect(supports.has_block).toBe(true)
@@ -226,7 +227,7 @@ describe('CSSNode', () => {
 			const source = '@layer utilities { .btn { padding: 1rem; } }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const layer = root.first_child!
+			const layer = root.first_child as AtRuleNode
 
 			expect(layer.type).toBe(NODE_AT_RULE)
 			expect(layer.has_block).toBe(true)
@@ -236,7 +237,7 @@ describe('CSSNode', () => {
 			const source = '@layer { .btn { padding: 1rem; } }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const layer = root.first_child!
+			const layer = root.first_child as AtRuleNode
 
 			expect(layer.type).toBe(NODE_AT_RULE)
 			expect(layer.has_block).toBe(true)
@@ -246,7 +247,7 @@ describe('CSSNode', () => {
 			const source = '@font-face { font-family: "Custom"; src: url("font.woff2"); }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const fontFace = root.first_child!
+			const fontFace = root.first_child as AtRuleNode
 
 			expect(fontFace.type).toBe(NODE_AT_RULE)
 			expect(fontFace.has_block).toBe(true)
@@ -256,7 +257,7 @@ describe('CSSNode', () => {
 			const source = '@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const keyframes = root.first_child!
+			const keyframes = root.first_child as AtRuleNode
 
 			expect(keyframes.type).toBe(NODE_AT_RULE)
 			expect(keyframes.has_block).toBe(true)
@@ -266,7 +267,7 @@ describe('CSSNode', () => {
 			const source = '@import url("styles.css");'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const importRule = root.first_child!
+			const importRule = root.first_child as AtRuleNode
 
 			expect(importRule.type).toBe(NODE_AT_RULE)
 			expect(importRule.has_block).toBe(false)
@@ -276,7 +277,7 @@ describe('CSSNode', () => {
 			const source = '@import url("styles.css") layer(base) supports(display: flex);'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const importRule = root.first_child!
+			const importRule = root.first_child as AtRuleNode
 
 			expect(importRule.type).toBe(NODE_AT_RULE)
 			expect(importRule.has_block).toBe(false)
@@ -291,7 +292,7 @@ describe('CSSNode', () => {
 			`
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const importRule = root.first_child!
+			const importRule = root.first_child as AtRuleNode
 			const layerRule = importRule.next_sibling!
 
 			// @import has children (preludes) but no block
@@ -307,7 +308,7 @@ describe('CSSNode', () => {
 			const source = 'body { color: red; }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const rule = root.first_child!
+			const rule = root.first_child as StyleRuleNode
 			const selector = rule.first_child!
 			const declaration = selector.next_sibling!
 
@@ -345,7 +346,7 @@ describe('CSSNode', () => {
 			const source = 'body { color: red; margin: 0; }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const rule = root.first_child!
+			const rule = root.first_child as StyleRuleNode
 
 			expect(rule.type).toBe(NODE_STYLE_RULE)
 			expect(rule.has_declarations).toBe(true)
@@ -355,7 +356,7 @@ describe('CSSNode', () => {
 			const source = 'body { }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const rule = root.first_child!
+			const rule = root.first_child as StyleRuleNode
 
 			expect(rule.type).toBe(NODE_STYLE_RULE)
 			expect(rule.has_declarations).toBe(false)
@@ -365,7 +366,7 @@ describe('CSSNode', () => {
 			const source = 'body { .nested { color: red; } }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const rule = root.first_child!
+			const rule = root.first_child as StyleRuleNode
 
 			expect(rule.type).toBe(NODE_STYLE_RULE)
 			expect(rule.has_declarations).toBe(false)
@@ -375,7 +376,7 @@ describe('CSSNode', () => {
 			const source = 'body { color: blue; .nested { margin: 0; } }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const rule = root.first_child!
+			const rule = root.first_child as StyleRuleNode
 
 			expect(rule.type).toBe(NODE_STYLE_RULE)
 			expect(rule.has_declarations).toBe(true)
@@ -385,7 +386,7 @@ describe('CSSNode', () => {
 			const source = '@media screen { body { color: red; } }'
 			const parser = new Parser(source)
 			const root = parser.parse()
-			const media = root.first_child!
+			const media = root.first_child as AtRuleNode
 
 			expect(media.type).toBe(NODE_AT_RULE)
 			expect(media.has_declarations).toBe(false)
