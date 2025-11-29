@@ -2,14 +2,14 @@
 
 **Branch**: `tree-structure`
 **Status**: In Progress
-**Progress**: 8/25 batches completed
+**Progress**: 9/25 batches completed
 
 ---
 
 ## Quick Reference
 
-**Current Batch**: Batch 9 - Implement StyleRuleNode
-**Next Steps**: See [Batch 9](#batch-9-implement-stylerulenode) below
+**Current Batch**: Batch 10 - Implement SelectorNode
+**Next Steps**: See [Batch 10](#batch-10-implement-selectornode) below
 
 ---
 
@@ -26,7 +26,7 @@
 - [x] **Batch 6**: Implement BlockNode (15 min) ✅
 - [x] **Batch 7**: Implement DeclarationNode (20 min) ✅
 - [x] **Batch 8**: Implement AtRuleNode (20 min) ✅
-- [ ] **Batch 9**: Implement StyleRuleNode (20 min)
+- [x] **Batch 9**: Implement StyleRuleNode (20 min) ✅
 - [ ] **Batch 10**: Implement SelectorNode (10 min)
 
 ### Phase 3: Value Nodes

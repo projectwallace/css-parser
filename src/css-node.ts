@@ -3,12 +3,13 @@
 // Will be replaced by type-specific classes in future batches
 import { CSSNode as CSSNodeBase } from './css-node-base'
 import type { CSSDataArena } from './arena'
-import { NODE_STYLESHEET, NODE_COMMENT, NODE_BLOCK, NODE_DECLARATION, NODE_AT_RULE } from './arena'
+import { NODE_STYLESHEET, NODE_COMMENT, NODE_BLOCK, NODE_DECLARATION, NODE_AT_RULE, NODE_STYLE_RULE } from './arena'
 import { StylesheetNode } from './nodes/stylesheet-node'
 import { CommentNode } from './nodes/comment-node'
 import { BlockNode } from './nodes/block-node'
 import { DeclarationNode } from './nodes/declaration-node'
 import { AtRuleNode } from './nodes/at-rule-node'
+import { StyleRuleNode } from './nodes/style-rule-node'
 
 // Re-export CSSNodeType from base
 export type { CSSNodeType } from './css-node-base'
@@ -19,6 +20,7 @@ export { CommentNode } from './nodes/comment-node'
 export { BlockNode } from './nodes/block-node'
 export { DeclarationNode } from './nodes/declaration-node'
 export { AtRuleNode } from './nodes/at-rule-node'
+export { StyleRuleNode } from './nodes/style-rule-node'
 
 export class CSSNode extends CSSNodeBase {
 	// Implement factory method that returns type-specific node classes
@@ -38,6 +40,8 @@ export class CSSNode extends CSSNodeBase {
 				return new DeclarationNode(arena, source, index)
 			case NODE_AT_RULE:
 				return new AtRuleNode(arena, source, index)
+			case NODE_STYLE_RULE:
+				return new StyleRuleNode(arena, source, index)
 			default:
 				// For all other types, return generic CSSNode
 				return new CSSNode(arena, source, index)
