@@ -2,9 +2,10 @@
 // Represents container query and supports query components
 import { CSSNode as CSSNodeBase } from '../css-node-base'
 import { CSSNode } from '../css-node'
+import type { AnyNode } from '../types'
 
 // Forward declarations for child types
-export type PreludeComponentNode = CSSNode
+export type PreludeComponentNode = AnyNode
 
 /**
  * PreludeContainerQueryNode - Represents a container query
@@ -20,7 +21,7 @@ export class PreludeContainerQueryNode extends CSSNodeBase {
 		return super.children as PreludeComponentNode[]
 	}
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }
@@ -52,7 +53,7 @@ export class PreludeSupportsQueryNode extends CSSNodeBase {
 		return super.children as PreludeComponentNode[]
 	}
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }
@@ -78,7 +79,7 @@ export class PreludeLayerNameNode extends CSSNodeBase {
 		return this.text.includes('.')
 	}
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }
@@ -94,7 +95,7 @@ export class PreludeLayerNameNode extends CSSNodeBase {
 export class PreludeIdentifierNode extends CSSNodeBase {
 	// Leaf node - the identifier is available via 'text'
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }
@@ -109,7 +110,7 @@ export class PreludeIdentifierNode extends CSSNodeBase {
 export class PreludeOperatorNode extends CSSNodeBase {
 	// Leaf node - the operator is available via 'text'
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }

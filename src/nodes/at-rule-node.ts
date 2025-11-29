@@ -2,10 +2,11 @@
 import { CSSNode as CSSNodeBase } from '../css-node-base'
 import { CSSNode } from '../css-node'
 import { FLAG_HAS_BLOCK, NODE_BLOCK } from '../arena'
+import type { AnyNode } from '../types'
 
 // Forward declarations for child types
-export type PreludeNode = CSSNode
-export type BlockNode = CSSNode
+export type PreludeNode = AnyNode
+export type BlockNode = AnyNode
 
 export class AtRuleNode extends CSSNodeBase {
 	// Get prelude nodes (children before the block, if any)
@@ -83,7 +84,7 @@ export class AtRuleNode extends CSSNodeBase {
 		return null
 	}
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }

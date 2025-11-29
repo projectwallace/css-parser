@@ -2,6 +2,7 @@
 // These selectors have specific names/identifiers
 import { CSSNode as CSSNodeBase } from '../css-node-base'
 import { CSSNode } from '../css-node'
+import type { AnyNode } from '../types'
 
 /**
  * SelectorClassNode - Class selector
@@ -16,7 +17,7 @@ export class SelectorClassNode extends CSSNodeBase {
 		return text.startsWith('.') ? text.slice(1) : text
 	}
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }
@@ -34,7 +35,7 @@ export class SelectorIdNode extends CSSNodeBase {
 		return text.startsWith('#') ? text.slice(1) : text
 	}
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }
@@ -47,7 +48,7 @@ export class SelectorLangNode extends CSSNodeBase {
 	// Leaf node - the language code
 	// The language code is available via 'text'
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }

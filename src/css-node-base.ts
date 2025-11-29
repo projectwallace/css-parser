@@ -164,7 +164,7 @@ export abstract class CSSNode {
 	}
 
 	// Helper to create node wrappers - can be overridden by subclasses
-	protected create_node_wrapper(index: number): CSSNode {
+	protected create_node_wrapper(index: number): AnyNode {
 		// Create instance of the same class type
 		return new (this.constructor as any)(this.arena, this.source, index)
 	}

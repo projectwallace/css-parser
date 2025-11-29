@@ -2,9 +2,10 @@
 // Represents An+B expressions in pseudo-class selectors
 import { CSSNode as CSSNodeBase } from '../css-node-base'
 import { CSSNode } from '../css-node'
+import type { AnyNode } from '../types'
 
 // Forward declaration for selector types
-export type SelectorComponentNode = CSSNode
+export type SelectorComponentNode = AnyNode
 
 /**
  * SelectorNthNode - An+B expression
@@ -87,7 +88,7 @@ export class SelectorNthNode extends CSSNodeBase {
 		return a === 'odd' || a === 'even'
 	}
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }
@@ -170,7 +171,7 @@ export class SelectorNthOfNode extends CSSNodeBase {
 		return super.children as SelectorComponentNode[]
 	}
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }

@@ -11,6 +11,7 @@ import {
 	ATTR_OPERATOR_DOLLAR_EQUAL,
 	ATTR_OPERATOR_STAR_EQUAL,
 } from '../arena'
+import type { AnyNode } from '../types'
 
 // Mapping of operator constants to their string representation
 const ATTR_OPERATOR_STRINGS: Record<number, string> = {
@@ -115,7 +116,7 @@ export class SelectorAttributeNode extends CSSNodeBase {
 		return null
 	}
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }

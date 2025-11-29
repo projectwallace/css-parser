@@ -2,10 +2,11 @@
 import { CSSNode as CSSNodeBase } from '../css-node-base'
 import { CSSNode } from '../css-node'
 import { FLAG_HAS_BLOCK, FLAG_HAS_DECLARATIONS, NODE_BLOCK } from '../arena'
+import type { AnyNode } from '../types'
 
 // Forward declarations for child types
-export type SelectorListNode = CSSNode
-export type BlockNode = CSSNode
+export type SelectorListNode = AnyNode
+export type BlockNode = AnyNode
 
 export class StyleRuleNode extends CSSNodeBase {
 	// Get selector list (always first child of style rule)
@@ -57,7 +58,7 @@ export class StyleRuleNode extends CSSNodeBase {
 		return null
 	}
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }

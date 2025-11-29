@@ -3,9 +3,10 @@
 import { CSSNode as CSSNodeBase } from '../css-node-base'
 import { CSSNode } from '../css-node'
 import { FLAG_VENDOR_PREFIXED } from '../arena'
+import type { AnyNode } from '../types'
 
 // Forward declaration for child types
-export type SelectorComponentNode = CSSNode
+export type SelectorComponentNode = AnyNode
 
 /**
  * SelectorPseudoClassNode - Pseudo-class selector
@@ -54,7 +55,7 @@ export class SelectorPseudoClassNode extends CSSNodeBase {
 		return this.isVendorPrefixed
 	}
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }
@@ -92,7 +93,7 @@ export class SelectorPseudoElementNode extends CSSNodeBase {
 		return this.isVendorPrefixed
 	}
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }

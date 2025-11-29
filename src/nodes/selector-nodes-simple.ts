@@ -2,9 +2,10 @@
 // These are the basic building blocks of CSS selectors
 import { CSSNode as CSSNodeBase } from '../css-node-base'
 import { CSSNode } from '../css-node'
+import type { AnyNode } from '../types'
 
 // Forward declaration for selector component types
-export type SelectorComponentNode = CSSNode
+export type SelectorComponentNode = AnyNode
 
 /**
  * SelectorListNode - Comma-separated list of selectors
@@ -17,7 +18,7 @@ export class SelectorListNode extends CSSNodeBase {
 		return super.children as SelectorComponentNode[]
 	}
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }
@@ -30,7 +31,7 @@ export class SelectorTypeNode extends CSSNodeBase {
 	// Leaf node - no additional properties
 	// The element name is available via 'text'
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }
@@ -43,7 +44,7 @@ export class SelectorUniversalNode extends CSSNodeBase {
 	// Leaf node - always represents "*"
 	// The text is available via 'text'
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }
@@ -56,7 +57,7 @@ export class SelectorNestingNode extends CSSNodeBase {
 	// Leaf node - always represents "&"
 	// The text is available via 'text'
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }
@@ -69,7 +70,7 @@ export class SelectorCombinatorNode extends CSSNodeBase {
 	// Leaf node - the combinator symbol
 	// The combinator is available via 'text'
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }

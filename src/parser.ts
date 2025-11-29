@@ -14,7 +14,7 @@ import {
 	FLAG_VENDOR_PREFIXED,
 	FLAG_HAS_DECLARATIONS,
 } from './arena'
-import { CSSNode } from './css-node'
+import { CSSNode, StylesheetNode } from './css-node'
 import { ValueParser } from './value-parser'
 import { SelectorParser } from './selector-parser'
 import { AtRulePreludeParser } from './at-rule-prelude-parser'
@@ -100,7 +100,7 @@ export class Parser {
 	}
 
 	// Parse the entire stylesheet and return the root CSSNode
-	parse(): CSSNode {
+	parse(): StylesheetNode {
 		// Start by getting the first token
 		this.next_token()
 
@@ -124,7 +124,7 @@ export class Parser {
 		}
 
 		// Return wrapped node
-		return CSSNode.from(this.arena, this.source, stylesheet)
+		return CSSNode.from(this.arena, this.source, stylesheet) as StylesheetNode
 	}
 
 	// Parse a rule (style rule or at-rule)

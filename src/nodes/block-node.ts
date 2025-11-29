@@ -2,12 +2,13 @@
 import { CSSNode as CSSNodeBase } from '../css-node-base'
 import { CSSNode } from '../css-node'
 import { NODE_COMMENT } from '../arena'
+import type { AnyNode } from '../types'
 
 // Forward declarations for child types
-export type DeclarationNode = CSSNode
-export type StyleRuleNode = CSSNode
-export type AtRuleNode = CSSNode
-export type CommentNode = CSSNode
+export type DeclarationNode = AnyNode
+export type StyleRuleNode = AnyNode
+export type AtRuleNode = AnyNode
+export type CommentNode = AnyNode
 
 export class BlockNode extends CSSNodeBase {
 	// Override children with typed return
@@ -34,7 +35,7 @@ export class BlockNode extends CSSNodeBase {
 		return this.isEmpty
 	}
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }

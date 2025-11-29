@@ -3,6 +3,7 @@
 // Will be replaced by type-specific classes in future batches
 import { CSSNode as CSSNodeBase } from './css-node-base'
 import type { CSSDataArena } from './arena'
+import type { AnyNode } from './types'
 import { NODE_STYLESHEET, NODE_COMMENT, NODE_BLOCK, NODE_DECLARATION, NODE_AT_RULE, NODE_STYLE_RULE, NODE_SELECTOR, NODE_VALUE_KEYWORD, NODE_VALUE_STRING, NODE_VALUE_COLOR, NODE_VALUE_OPERATOR, NODE_VALUE_NUMBER, NODE_VALUE_DIMENSION, NODE_VALUE_FUNCTION, NODE_SELECTOR_LIST, NODE_SELECTOR_TYPE, NODE_SELECTOR_UNIVERSAL, NODE_SELECTOR_NESTING, NODE_SELECTOR_COMBINATOR, NODE_SELECTOR_CLASS, NODE_SELECTOR_ID, NODE_SELECTOR_LANG, NODE_SELECTOR_ATTRIBUTE, NODE_SELECTOR_PSEUDO_CLASS, NODE_SELECTOR_PSEUDO_ELEMENT, NODE_SELECTOR_NTH, NODE_SELECTOR_NTH_OF, NODE_PRELUDE_MEDIA_QUERY, NODE_PRELUDE_MEDIA_FEATURE, NODE_PRELUDE_MEDIA_TYPE, NODE_PRELUDE_CONTAINER_QUERY, NODE_PRELUDE_SUPPORTS_QUERY, NODE_PRELUDE_LAYER_NAME, NODE_PRELUDE_IDENTIFIER, NODE_PRELUDE_OPERATOR, NODE_PRELUDE_IMPORT_URL, NODE_PRELUDE_IMPORT_LAYER, NODE_PRELUDE_IMPORT_SUPPORTS } from './arena'
 import { StylesheetNode } from './nodes/stylesheet-node'
 import { CommentNode } from './nodes/comment-node'
@@ -45,7 +46,7 @@ export { PreludeImportUrlNode, PreludeImportLayerNode, PreludeImportSupportsNode
 export class CSSNode extends CSSNodeBase {
 	// Implement factory method that returns type-specific node classes
 	// Gradually expanding to cover all node types
-	static override from(arena: CSSDataArena, source: string, index: number): CSSNodeBase {
+	static override from(arena: CSSDataArena, source: string, index: number): AnyNode {
 		const type = arena.get_type(index)
 
 		// Return type-specific nodes
@@ -131,12 +132,12 @@ export class CSSNode extends CSSNodeBase {
 				return new PreludeImportSupportsNode(arena, source, index)
 			default:
 				// For all other types, return generic CSSNode
-				return new CSSNode(arena, source, index)
+				return new CSSNode(arena, source, index) as any
 		}
 	}
 
 	// Override create_node_wrapper to use the factory
-	protected override create_node_wrapper(index: number): CSSNodeBase {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }

@@ -2,9 +2,10 @@
 import { CSSNode as CSSNodeBase } from '../css-node-base'
 import { CSSNode } from '../css-node'
 import { FLAG_IMPORTANT, FLAG_VENDOR_PREFIXED } from '../arena'
+import type { AnyNode } from '../types'
 
 // Forward declarations for child types (value nodes)
-export type ValueNode = CSSNode
+export type ValueNode = AnyNode
 
 export class DeclarationNode extends CSSNodeBase {
 	// Get the property name (e.g., "color", "display")
@@ -69,7 +70,7 @@ export class DeclarationNode extends CSSNodeBase {
 		return count
 	}
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }

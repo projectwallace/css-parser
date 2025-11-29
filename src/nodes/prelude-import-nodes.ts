@@ -2,9 +2,10 @@
 // Represents components of @import at-rule preludes
 import { CSSNode as CSSNodeBase } from '../css-node-base'
 import { CSSNode } from '../css-node'
+import type { AnyNode } from '../types'
 
 // Forward declarations for child types
-export type ImportComponentNode = CSSNode
+export type ImportComponentNode = AnyNode
 
 /**
  * PreludeImportUrlNode - Represents the URL in an @import statement
@@ -43,7 +44,7 @@ export class PreludeImportUrlNode extends CSSNodeBase {
 		return this.text.trim().startsWith('url(')
 	}
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }
@@ -86,7 +87,7 @@ export class PreludeImportLayerNode extends CSSNodeBase {
 		return this.layer_name === null
 	}
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }
@@ -112,11 +113,11 @@ export class PreludeImportSupportsNode extends CSSNodeBase {
 	}
 
 	// Override children for complex supports conditions
-	override get children(): CSSNode[] {
+	override get children(): AnyNode[] {
 		return super.children
 	}
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }

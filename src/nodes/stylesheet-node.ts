@@ -2,12 +2,13 @@
 import { CSSNode as CSSNodeBase } from '../css-node-base'
 import { CSSNode } from '../css-node'
 import type { CSSDataArena } from '../arena'
+import type { AnyNode } from '../types'
 
 // Forward declarations for child types (will be implemented in future batches)
-// For now, these are all CSSNode, but will become specific types later
-export type StyleRuleNode = CSSNode
-export type AtRuleNode = CSSNode
-export type CommentNode = CSSNode
+// For now, these are all AnyNode, but will become specific types later
+export type StyleRuleNode = AnyNode
+export type AtRuleNode = AnyNode
+export type CommentNode = AnyNode
 
 export class StylesheetNode extends CSSNodeBase {
 	constructor(arena: CSSDataArena, source: string, index: number) {
@@ -20,7 +21,7 @@ export class StylesheetNode extends CSSNodeBase {
 		return super.children as (StyleRuleNode | AtRuleNode | CommentNode)[]
 	}
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }

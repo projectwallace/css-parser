@@ -2,6 +2,7 @@
 // These nodes represent parsed values in CSS declarations
 import { CSSNode as CSSNodeBase } from '../css-node-base'
 import { CSSNode } from '../css-node'
+import type { AnyNode } from '../types'
 
 /**
  * ValueKeywordNode - Represents a keyword value (identifier)
@@ -11,7 +12,7 @@ export class ValueKeywordNode extends CSSNodeBase {
 	// Keyword nodes are leaf nodes with no additional properties
 	// The keyword text is available via the inherited 'text' property
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }
@@ -34,7 +35,7 @@ export class ValueStringNode extends CSSNodeBase {
 		return text
 	}
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }
@@ -53,7 +54,7 @@ export class ValueColorNode extends CSSNodeBase {
 		return text.startsWith('#') ? text.slice(1) : text
 	}
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }
@@ -66,7 +67,7 @@ export class ValueOperatorNode extends CSSNodeBase {
 	// Operator nodes are leaf nodes
 	// The operator symbol is available via 'text'
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }
@@ -83,7 +84,7 @@ export class ValueNumberNode extends CSSNodeBase {
 		return parseFloat(this.text)
 	}
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }
@@ -120,7 +121,7 @@ export class ValueDimensionNode extends CSSNodeBase {
 		return text.slice(i)
 	}
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }
@@ -139,11 +140,11 @@ export class ValueFunctionNode extends CSSNodeBase {
 
 	// Override children to return typed value nodes
 	// Function arguments are value nodes
-	override get children(): CSSNode[] {
+	override get children(): AnyNode[] {
 		return super.children
 	}
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }

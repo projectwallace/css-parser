@@ -2,9 +2,10 @@
 // Represents media query components in @media at-rules
 import { CSSNode as CSSNodeBase } from '../css-node-base'
 import { CSSNode } from '../css-node'
+import type { AnyNode } from '../types'
 
 // Forward declarations for child types
-export type MediaComponentNode = CSSNode
+export type MediaComponentNode = AnyNode
 
 /**
  * PreludeMediaQueryNode - Represents a single media query
@@ -22,7 +23,7 @@ export class PreludeMediaQueryNode extends CSSNodeBase {
 		return super.children as MediaComponentNode[]
 	}
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }
@@ -87,11 +88,11 @@ export class PreludeMediaFeatureNode extends CSSNodeBase {
 	}
 
 	// Override children for range syntax values
-	override get children(): CSSNode[] {
+	override get children(): AnyNode[] {
 		return super.children
 	}
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }
@@ -107,7 +108,7 @@ export class PreludeMediaFeatureNode extends CSSNodeBase {
 export class PreludeMediaTypeNode extends CSSNodeBase {
 	// Leaf node - the media type is available via 'text'
 
-	protected override create_node_wrapper(index: number): CSSNode {
+	protected override create_node_wrapper(index: number): AnyNode {
 		return CSSNode.from(this.arena, this.source, index)
 	}
 }
