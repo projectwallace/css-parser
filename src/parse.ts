@@ -28,7 +28,8 @@ import {
 	TOKEN_DELIM,
 	TOKEN_AT_KEYWORD,
 } from './token-types'
-import { trim_boundaries, is_vendor_prefixed } from './string-utils'
+import { is_vendor_prefixed } from './string-utils'
+import { trim_boundaries } from './parse-utils'
 
 export interface ParserOptions {
 	skip_comments?: boolean

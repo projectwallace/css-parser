@@ -39,8 +39,9 @@ import {
 	TOKEN_WHITESPACE,
 	TOKEN_STRING,
 } from './token-types'
+import { skip_whitespace_forward, skip_whitespace_and_comments_forward, skip_whitespace_and_comments_backward } from './parse-utils'
 import {
-	is_whitespace as is_whitespace_char,
+	is_whitespace,
 	is_vendor_prefixed,
 	CHAR_PLUS,
 	CHAR_TILDE,
@@ -53,7 +54,6 @@ import {
 	CHAR_PIPE,
 	CHAR_DOLLAR,
 	CHAR_CARET,
-	CHAR_FORWARD_SLASH,
 	CHAR_SINGLE_QUOTE,
 	CHAR_DOUBLE_QUOTE,
 	CHAR_COLON,
@@ -365,7 +365,7 @@ export class SelectorParser {
 		// Skip whitespace and check for combinator
 		while (this.lexer.pos < this.selector_end) {
 			let ch = this.source.charCodeAt(this.lexer.pos)
-			if (is_whitespace_char(ch)) {
+			if (is_whitespace(ch)) {
 				has_whitespace = true
 				this.lexer.pos++
 			} else {
@@ -392,7 +392,7 @@ export class SelectorParser {
 			this.lexer.pos = whitespace_start
 			while (this.lexer.pos < this.selector_end) {
 				let ch = this.source.charCodeAt(this.lexer.pos)
-				if (is_whitespace_char(ch)) {
+				if (is_whitespace(ch)) {
 					this.lexer.pos++
 				} else {
 					break
@@ -474,52 +474,10 @@ export class SelectorParser {
 	// Parse attribute content to extract name, operator, and value
 	private parse_attribute_content(node: number, start: number, end: number): void {
 		// Skip leading whitespace and comments
-		while (start < end) {
-			let ch = this.source.charCodeAt(start)
-			if (is_whitespace_char(ch)) {
-				start++
-				continue
-			}
-			// Skip comments /*...*/
-			if (ch === CHAR_FORWARD_SLASH && start + 1 < end && this.source.charCodeAt(start + 1) === CHAR_ASTERISK) {
-				start += 2 // Skip /*
-				while (start < end) {
-					if (
-						this.source.charCodeAt(start) === CHAR_ASTERISK &&
-						start + 1 < end &&
-						this.source.charCodeAt(start + 1) === CHAR_FORWARD_SLASH
-					) {
-						start += 2 // Skip */
-						break
-					}
-					start++
-				}
-				continue
-			}
-			break
-		}
+		start = skip_whitespace_and_comments_forward(this.source, start, end)
 
 		// Skip trailing whitespace and comments
-		while (end > start) {
-			let ch = this.source.charCodeAt(end - 1)
-			if (is_whitespace_char(ch)) {
-				end--
-				continue
-			}
-			// Skip comments /*...*/
-			if (ch === CHAR_FORWARD_SLASH && end >= 2 && this.source.charCodeAt(end - 2) === CHAR_ASTERISK) {
-				// Find start of comment
-				let pos = end - 2
-				while (pos > start && !(this.source.charCodeAt(pos) === CHAR_FORWARD_SLASH && this.source.charCodeAt(pos + 1) === CHAR_ASTERISK)) {
-					pos--
-				}
-				if (pos > start) {
-					end = pos
-					continue
-				}
-			}
-			break
-		}
+		end = skip_whitespace_and_comments_backward(this.source, end, start)
 
 		if (start >= end) return
 
@@ -534,7 +492,7 @@ export class SelectorParser {
 		while (name_end < end) {
 			let ch = this.source.charCodeAt(name_end)
 			if (
-				is_whitespace_char(ch) ||
+				is_whitespace(ch) ||
 				ch === CHAR_EQUALS /* = */ ||
 				ch === CHAR_TILDE /* ~ */ ||
 				ch === CHAR_PIPE /* | */ ||
@@ -554,27 +512,7 @@ export class SelectorParser {
 		}
 
 		// Skip whitespace and comments after name
-		let pos = name_end
-		while (pos < end) {
-			let ch = this.source.charCodeAt(pos)
-			if (is_whitespace_char(ch)) {
-				pos++
-				continue
-			}
-			// Skip comments
-			if (ch === CHAR_FORWARD_SLASH && pos + 1 < end && this.source.charCodeAt(pos + 1) === CHAR_ASTERISK) {
-				pos += 2
-				while (pos < end) {
-					if (this.source.charCodeAt(pos) === CHAR_ASTERISK && pos + 1 < end && this.source.charCodeAt(pos + 1) === CHAR_FORWARD_SLASH) {
-						pos += 2
-						break
-					}
-					pos++
-				}
-				continue
-			}
-			break
-		}
+		let pos = skip_whitespace_and_comments_forward(this.source, name_end, end)
 
 		if (pos >= end) {
 			// No operator, just [attr]
@@ -616,27 +554,7 @@ export class SelectorParser {
 		}
 
 		// Skip whitespace and comments after operator
-		pos = operator_end
-		while (pos < end) {
-			let ch = this.source.charCodeAt(pos)
-			if (is_whitespace_char(ch)) {
-				pos++
-				continue
-			}
-			// Skip comments
-			if (ch === CHAR_FORWARD_SLASH && pos + 1 < end && this.source.charCodeAt(pos + 1) === CHAR_ASTERISK) {
-				pos += 2
-				while (pos < end) {
-					if (this.source.charCodeAt(pos) === CHAR_ASTERISK && pos + 1 < end && this.source.charCodeAt(pos + 1) === CHAR_FORWARD_SLASH) {
-						pos += 2
-						break
-					}
-					pos++
-				}
-				continue
-			}
-			break
-		}
+		pos = skip_whitespace_and_comments_forward(this.source, operator_end, end)
 
 		if (pos >= end) {
 			// No value after operator
@@ -671,7 +589,7 @@ export class SelectorParser {
 			// Unquoted identifier
 			while (pos < end) {
 				let c = this.source.charCodeAt(pos)
-				if (is_whitespace_char(c)) {
+				if (is_whitespace(c)) {
 					break
 				}
 				pos++
@@ -924,9 +842,7 @@ export class SelectorParser {
 			// Parse selector list after "of"
 			let selector_start = of_index + 2 // skip "of"
 			// Skip whitespace
-			while (selector_start < end && is_whitespace_char(this.source.charCodeAt(selector_start))) {
-				selector_start++
-			}
+			selector_start = skip_whitespace_forward(this.source, selector_start, end)
 
 			// Save current state
 			let saved_selector_end = this.selector_end
@@ -975,8 +891,8 @@ export class SelectorParser {
 		for (let i = start; i < end - 1; i++) {
 			if (this.source.charCodeAt(i) === 0x6f /* o */ && this.source.charCodeAt(i + 1) === 0x66 /* f */) {
 				// Check it's a word boundary
-				let before_ok = i === start || is_whitespace_char(this.source.charCodeAt(i - 1))
-				let after_ok = i + 2 >= end || is_whitespace_char(this.source.charCodeAt(i + 2))
+				let before_ok = i === start || is_whitespace(this.source.charCodeAt(i - 1))
+				let after_ok = i + 2 >= end || is_whitespace(this.source.charCodeAt(i + 2))
 
 				if (before_ok && after_ok) {
 					return i
@@ -1050,13 +966,7 @@ export class SelectorParser {
 
 	// Helper to skip whitespace
 	private skip_whitespace(): void {
-		while (this.lexer.pos < this.selector_end) {
-			let ch = this.source.charCodeAt(this.lexer.pos)
-			if (is_whitespace_char(ch)) {
-				this.lexer.pos++
-			}
-			break
-		}
+		this.lexer.pos = skip_whitespace_forward(this.source, this.lexer.pos, this.selector_end)
 	}
 }
 

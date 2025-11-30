@@ -7,7 +7,8 @@
 import { Lexer } from './lexer'
 import { NODE_SELECTOR_NTH, CSSDataArena } from './arena'
 import { TOKEN_IDENT, TOKEN_NUMBER, TOKEN_DIMENSION, TOKEN_DELIM, type TokenType } from './token-types'
-import { CHAR_MINUS_HYPHEN, CHAR_PLUS, is_whitespace as is_whitespace_char } from './string-utils'
+import { CHAR_MINUS_HYPHEN, CHAR_PLUS } from './string-utils'
+import { skip_whitespace_forward } from './parse-utils'
 import { CSSNode } from './css-node'
 
 export class ANplusBParser {
@@ -272,13 +273,7 @@ export class ANplusBParser {
 	}
 
 	private skip_whitespace(): void {
-		while (this.lexer.pos < this.expr_end) {
-			const ch = this.source.charCodeAt(this.lexer.pos)
-			if (is_whitespace_char(ch)) {
-				this.lexer.pos++
-			}
-			break
-		}
+		this.lexer.pos = skip_whitespace_forward(this.source, this.lexer.pos, this.expr_end)
 	}
 
 	private create_anplusb_node(

@@ -46,7 +46,8 @@ import {
 	FLAG_HAS_DECLARATIONS,
 } from './arena'
 
-import { CHAR_MINUS_HYPHEN, CHAR_PLUS, is_whitespace, parse_dimension } from './string-utils'
+import { CHAR_MINUS_HYPHEN, CHAR_PLUS, is_whitespace } from './string-utils'
+import { parse_dimension } from './parse-utils'
 
 // Node type constants (numeric for performance)
 export type CSSNodeType =

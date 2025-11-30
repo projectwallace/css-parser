@@ -1,5 +1,15 @@
 import { describe, it, expect } from 'vitest'
-import { is_whitespace, trim_boundaries, str_equals, is_vendor_prefixed, CHAR_SPACE, CHAR_TAB, CHAR_NEWLINE, CHAR_CARRIAGE_RETURN, CHAR_FORM_FEED } from './string-utils'
+import {
+	is_whitespace,
+	str_equals,
+	is_vendor_prefixed,
+	CHAR_SPACE,
+	CHAR_TAB,
+	CHAR_NEWLINE,
+	CHAR_CARRIAGE_RETURN,
+	CHAR_FORM_FEED,
+} from './string-utils'
+import { trim_boundaries } from './parse-utils'
 
 describe('string-utils', () => {
 	describe('is_whitespace', () => {
