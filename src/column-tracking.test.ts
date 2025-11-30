@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { parse } from './parse'
-import { NODE_STYLE_RULE, NODE_DECLARATION, NODE_AT_RULE, NODE_SELECTOR_LIST } from './parser'
+import { NODE_STYLE_RULE, NODE_DECLARATION, NODE_AT_RULE, NODE_SELECTOR_LIST } from './parse'
 
 describe('Column Tracking', () => {
 	test('should track column for single-line CSS', () => {

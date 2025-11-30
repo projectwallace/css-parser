@@ -167,7 +167,8 @@ export class CSSNode {
 	}
 
 	// Check if this declaration has !important
-	get is_important(): boolean {
+	get is_important(): boolean | null {
+		if (this.type !== NODE_DECLARATION) return null
 		return this.arena.has_flag(this.index, FLAG_IMPORTANT)
 	}
 
@@ -229,9 +230,7 @@ export class CSSNode {
 	// Check if this block is empty (no declarations or rules, only comments allowed)
 	get is_empty(): boolean {
 		// Only valid on block nodes
-		if (this.type !== NODE_BLOCK) {
-			return false
-		}
+		if (this.type !== NODE_BLOCK) return false
 
 		// Empty if no children, or all children are comments
 		let child = this.first_child

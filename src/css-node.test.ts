@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest'
-import { Parser } from './parser'
-import { NODE_DECLARATION, NODE_SELECTOR_LIST, NODE_STYLE_RULE, NODE_AT_RULE } from './arena'
+import { Parser } from './parse'
+import { NODE_DECLARATION, NODE_STYLE_RULE, NODE_AT_RULE } from './arena'
 
 describe('CSSNode', () => {
 	describe('iteration', () => {

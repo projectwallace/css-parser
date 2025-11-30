@@ -8,7 +8,7 @@ export { tokenize } from './tokenize'
 export { walk, walk_enter_leave } from './walk'
 
 // Advanced/class-based API
-export { type ParserOptions } from './parser'
+export { type ParserOptions } from './parse'
 
 // Types
 export { CSSNode, type CSSNodeType } from './css-node'
@@ -62,7 +62,7 @@ export {
 	NODE_PRELUDE_IMPORT_LAYER,
 	NODE_PRELUDE_IMPORT_SUPPORTS,
 	FLAG_IMPORTANT,
-} from './parser'
+} from './parse'
 export {
 	TOKEN_IDENT,
 	TOKEN_FUNCTION,

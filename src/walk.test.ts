@@ -10,7 +10,7 @@ import {
 	NODE_VALUE_KEYWORD,
 	NODE_VALUE_NUMBER,
 	NODE_VALUE_DIMENSION,
-} from './parser'
+} from './parse'
 import { walk, walk_enter_leave } from './walk'
 
 describe('walk', () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { Parser } from './parser'
+import { Parser } from './parse'
 import { NODE_SELECTOR_LIST, NODE_DECLARATION, NODE_VALUE_KEYWORD } from './arena'
 
 describe('Parser Options', () => {
