@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { ANplusBParser } from './anplusb-parser'
+import { ANplusBParser } from './parse-anplusb'
 import { CSSDataArena, NODE_SELECTOR_NTH } from './arena'
 import { CSSNode } from './css-node'
 

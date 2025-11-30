@@ -16,8 +16,8 @@ import {
 } from './arena'
 import { CSSNode } from './css-node'
 import { ValueParser } from './value-parser'
-import { SelectorParser } from './selector-parser'
-import { AtRulePreludeParser } from './at-rule-prelude-parser'
+import { SelectorParser } from './parse-selector'
+import { AtRulePreludeParser } from './parse-atrule-prelude'
 import {
 	TOKEN_EOF,
 	TOKEN_LEFT_BRACE,
