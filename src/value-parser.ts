@@ -100,20 +100,20 @@ export class ValueParser {
 
 		switch (token_type) {
 			case TOKEN_IDENT:
-				return this.create_keyword_node(start, end)
+				return this.create_node(NODE_VALUE_KEYWORD, start, end)
 
 			case TOKEN_NUMBER:
-				return this.create_number_node(start, end)
+				return this.create_node(NODE_VALUE_NUMBER, start, end)
 
 			case TOKEN_PERCENTAGE:
 			case TOKEN_DIMENSION:
-				return this.create_dimension_node(start, end)
+				return this.create_node(NODE_VALUE_DIMENSION, start, end)
 
 			case TOKEN_STRING:
-				return this.create_string_node(start, end)
+				return this.create_node(NODE_VALUE_STRING, start, end)
 
 			case TOKEN_HASH:
-				return this.create_color_node(start, end)
+				return this.create_node(NODE_VALUE_COLOR, start, end)
 
 			case TOKEN_FUNCTION:
 				return this.parse_function_node(start, end)
@@ -122,7 +122,7 @@ export class ValueParser {
 				return this.parse_operator_node(start, end)
 
 			case TOKEN_COMMA:
-				return this.create_operator_node(start, end)
+				return this.create_node(NODE_VALUE_OPERATOR, start, end)
 
 			default:
 				// Unknown token type, skip it
@@ -130,49 +130,9 @@ export class ValueParser {
 		}
 	}
 
-	private create_keyword_node(start: number, end: number): number {
+	private create_node(node_type: number, start: number, end: number): number {
 		let node = this.arena.create_node()
-		this.arena.set_type(node, NODE_VALUE_KEYWORD)
-		this.arena.set_start_offset(node, start)
-		this.arena.set_length(node, end - start)
-		this.arena.set_content_start(node, start)
-		this.arena.set_content_length(node, end - start)
-		return node
-	}
-
-	private create_number_node(start: number, end: number): number {
-		let node = this.arena.create_node()
-		this.arena.set_type(node, NODE_VALUE_NUMBER)
-		this.arena.set_start_offset(node, start)
-		this.arena.set_length(node, end - start)
-		this.arena.set_content_start(node, start)
-		this.arena.set_content_length(node, end - start)
-		return node
-	}
-
-	private create_dimension_node(start: number, end: number): number {
-		let node = this.arena.create_node()
-		this.arena.set_type(node, NODE_VALUE_DIMENSION)
-		this.arena.set_start_offset(node, start)
-		this.arena.set_length(node, end - start)
-		this.arena.set_content_start(node, start)
-		this.arena.set_content_length(node, end - start)
-		return node
-	}
-
-	private create_string_node(start: number, end: number): number {
-		let node = this.arena.create_node()
-		this.arena.set_type(node, NODE_VALUE_STRING)
-		this.arena.set_start_offset(node, start)
-		this.arena.set_length(node, end - start)
-		this.arena.set_content_start(node, start)
-		this.arena.set_content_length(node, end - start)
-		return node
-	}
-
-	private create_color_node(start: number, end: number): number {
-		let node = this.arena.create_node()
-		this.arena.set_type(node, NODE_VALUE_COLOR)
+		this.arena.set_type(node, node_type)
 		this.arena.set_start_offset(node, start)
 		this.arena.set_length(node, end - start)
 		this.arena.set_content_start(node, start)
@@ -181,13 +141,7 @@ export class ValueParser {
 	}
 
 	private create_operator_node(start: number, end: number): number {
-		let node = this.arena.create_node()
-		this.arena.set_type(node, NODE_VALUE_OPERATOR)
-		this.arena.set_start_offset(node, start)
-		this.arena.set_length(node, end - start)
-		this.arena.set_content_start(node, start)
-		this.arena.set_content_length(node, end - start)
-		return node
+		return this.create_node(NODE_VALUE_OPERATOR, start, end)
 	}
 
 	private parse_operator_node(start: number, end: number): number | null {
