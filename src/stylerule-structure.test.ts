@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { Parser } from './parser'
+import { Parser } from './parse'
 import { NODE_STYLE_RULE, NODE_SELECTOR_LIST, NODE_DECLARATION, NODE_AT_RULE } from './arena'
 
 describe('StyleRule Structure', () => {
@@ -105,10 +105,10 @@ describe('StyleRule Structure', () => {
 			'body { color: red; }',
 			'div { margin: 0; padding: 10px; }',
 			'h1 { color: blue; .nested { margin: 0; } }',
-			'p { font-size: 16px; @media print { display: none; } }'
+			'p { font-size: 16px; @media print { display: none; } }',
 		]
 
-		testCases.forEach(source => {
+		testCases.forEach((source) => {
 			const parser = new Parser(source)
 			const root = parser.parse()
 			const rule = root.first_child!

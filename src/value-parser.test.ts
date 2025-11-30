@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { Parser } from './parser'
+import { Parser } from './parse'
 import {
 	NODE_VALUE_KEYWORD,
 	NODE_VALUE_NUMBER,

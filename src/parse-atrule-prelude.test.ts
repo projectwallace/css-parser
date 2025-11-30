@@ -1,6 +1,6 @@
 import { describe, it, test, expect } from 'vitest'
 import { parse } from './parse'
-import { parse_atrule_prelude, AtRulePreludeParser } from './parse-atrule-prelude'
+import { parse_atrule_prelude } from './parse-atrule-prelude'
 import {
 	NODE_AT_RULE,
 	NODE_BLOCK,
@@ -186,7 +186,7 @@ describe('At-Rule Prelude Parser', () => {
 			expect(atRule?.name).toBe('layer')
 
 			// Filter out block node to get only prelude children
-			const children = atRule?.children.filter(c => c.type !== NODE_BLOCK) || []
+			const children = atRule?.children.filter((c) => c.type !== NODE_BLOCK) || []
 			expect(children.length).toBe(1)
 			expect(children[0].type).toBe(NODE_PRELUDE_LAYER_NAME)
 			expect(children[0].text).toBe('base')
@@ -221,7 +221,7 @@ describe('At-Rule Prelude Parser', () => {
 			expect(atRule?.name).toBe('keyframes')
 
 			// Filter out block node to get only prelude children
-			const children = atRule?.children.filter(c => c.type !== NODE_BLOCK) || []
+			const children = atRule?.children.filter((c) => c.type !== NODE_BLOCK) || []
 			expect(children.length).toBe(1)
 			expect(children[0].type).toBe(NODE_PRELUDE_IDENTIFIER)
 			expect(children[0].text).toBe('slidein')
@@ -238,7 +238,7 @@ describe('At-Rule Prelude Parser', () => {
 			expect(atRule?.name).toBe('property')
 
 			// Filter out block node to get only prelude children
-			const children = atRule?.children.filter(c => c.type !== NODE_BLOCK) || []
+			const children = atRule?.children.filter((c) => c.type !== NODE_BLOCK) || []
 			expect(children.length).toBe(1)
 			expect(children[0].type).toBe(NODE_PRELUDE_IDENTIFIER)
 			expect(children[0].text).toBe('--my-color')
