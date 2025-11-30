@@ -46,7 +46,7 @@ import {
 	FLAG_HAS_DECLARATIONS,
 } from './arena'
 
-import { parse_dimension } from './string-utils'
+import { CHAR_MINUS_HYPHEN, CHAR_PLUS, is_whitespace, parse_dimension } from './string-utils'
 
 // Node type constants (numeric for performance)
 export type CSSNodeType =
@@ -359,12 +359,12 @@ export class CSSNode {
 		let check_pos = start - 1
 		while (check_pos >= 0) {
 			let ch = this.source.charCodeAt(check_pos)
-			if (ch === 0x20 /* space */ || ch === 0x09 /* tab */ || ch === 0x0a /* \n */ || ch === 0x0d /* \r */) {
+			if (is_whitespace(ch)) {
 				check_pos--
 				continue
 			}
 			// Found non-whitespace
-			if (ch === 0x2d /* - */) {
+			if (ch === CHAR_MINUS_HYPHEN /* - */) {
 				// Prepend - to value
 				value = '-' + value
 			}
@@ -373,7 +373,7 @@ export class CSSNode {
 		}
 
 		// Strip leading + if present in the token itself
-		if (value.charCodeAt(0) === 0x2b /* + */) {
+		if (value.charCodeAt(0) === CHAR_PLUS) {
 			return value.substring(1)
 		}
 		return value

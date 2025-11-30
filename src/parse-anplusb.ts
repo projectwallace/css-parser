@@ -7,7 +7,7 @@
 import { Lexer } from './lexer'
 import { NODE_SELECTOR_NTH, CSSDataArena } from './arena'
 import { TOKEN_IDENT, TOKEN_NUMBER, TOKEN_DIMENSION, TOKEN_DELIM, type TokenType } from './token-types'
-import { is_whitespace as is_whitespace_char } from './string-utils'
+import { CHAR_MINUS_HYPHEN, CHAR_PLUS, is_whitespace as is_whitespace_char } from './string-utils'
 import { CSSNode } from './css-node'
 
 export class ANplusBParser {
@@ -67,11 +67,11 @@ export class ANplusBParser {
 			const second_char = this.lexer.token_end > this.lexer.token_start + 1 ? this.source.charCodeAt(this.lexer.token_start + 1) : 0
 
 			// -n, -n+3, -n-5
-			if (first_char === 0x2d /* - */ && second_char === 0x6e /* n */) {
+			if (first_char === CHAR_MINUS_HYPHEN /* - */ && second_char === 0x6e /* n */) {
 				// Check for attached -n-digit pattern
 				if (this.lexer.token_end > this.lexer.token_start + 2) {
 					const third_char = this.source.charCodeAt(this.lexer.token_start + 2)
-					if (third_char === 0x2d /* - */) {
+					if (third_char === CHAR_MINUS_HYPHEN /* - */) {
 						// -n-5 pattern
 						a = '-n'
 						a_start = this.lexer.token_start
@@ -102,7 +102,7 @@ export class ANplusBParser {
 				// Check for attached n-digit pattern
 				if (this.lexer.token_end > this.lexer.token_start + 1) {
 					const second_char = this.source.charCodeAt(this.lexer.token_start + 1)
-					if (second_char === 0x2d /* - */) {
+					if (second_char === CHAR_MINUS_HYPHEN /* - */) {
 						// n-5 pattern
 						a = 'n'
 						a_start = this.lexer.token_start
@@ -133,7 +133,7 @@ export class ANplusBParser {
 		}
 
 		// Handle +n pattern
-		if (this.lexer.token_type === TOKEN_DELIM && this.source.charCodeAt(this.lexer.token_start) === 0x2b /* + */) {
+		if (this.lexer.token_type === TOKEN_DELIM && this.source.charCodeAt(this.lexer.token_start) === CHAR_PLUS) {
 			// Look ahead for 'n'
 			const saved_pos = this.lexer.pos
 			this.lexer.next_token_fast(true)
@@ -151,7 +151,7 @@ export class ANplusBParser {
 					// Check for attached n-digit pattern
 					if (this.lexer.token_end > this.lexer.token_start + 1) {
 						const second_char = this.source.charCodeAt(this.lexer.token_start + 1)
-						if (second_char === 0x2d /* - */) {
+						if (second_char === CHAR_MINUS_HYPHEN) {
 							// +n-5 pattern
 							b = this.source.substring(this.lexer.token_start + 1, this.lexer.token_end)
 							b_start = this.lexer.token_start + 1
@@ -189,7 +189,7 @@ export class ANplusBParser {
 					const remainder = token_text.substring(n_index + 1)
 
 					// n-5 or n+5 pattern in dimension
-					if (remainder.charCodeAt(0) === 0x2d /* - */) {
+					if (remainder.charCodeAt(0) === CHAR_MINUS_HYPHEN /* - */) {
 						b = remainder
 						b_start = this.lexer.token_start + n_index + 1
 						b_end = this.lexer.token_end
@@ -236,8 +236,8 @@ export class ANplusBParser {
 		if (this.lexer.token_type === TOKEN_DELIM) {
 			const ch = this.source.charCodeAt(this.lexer.token_start)
 
-			if (ch === 0x2b /* + */ || ch === 0x2d /* - */) {
-				const sign = ch === 0x2d ? '-' : ''
+			if (ch === CHAR_PLUS || ch === CHAR_MINUS_HYPHEN) {
+				const sign = ch === CHAR_MINUS_HYPHEN ? '-' : ''
 				this.skip_whitespace()
 
 				this.lexer.next_token_fast(true)
@@ -245,7 +245,7 @@ export class ANplusBParser {
 				if ((this.lexer.token_type as TokenType) === TOKEN_NUMBER) {
 					let num_text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
 					// Remove leading + if present
-					if (num_text.charCodeAt(0) === 0x2b /* + */) {
+					if (num_text.charCodeAt(0) === CHAR_PLUS) {
 						num_text = num_text.substring(1)
 					}
 					return sign === '-' ? sign + num_text : num_text
@@ -259,9 +259,9 @@ export class ANplusBParser {
 			const first_char = num_text.charCodeAt(0)
 
 			// If it starts with + or -, it's a signed number
-			if (first_char === 0x2b /* + */ || first_char === 0x2d /* - */) {
+			if (first_char === CHAR_PLUS || first_char === CHAR_MINUS_HYPHEN) {
 				// Remove leading + if present
-				if (first_char === 0x2b) {
+				if (first_char === CHAR_PLUS) {
 					num_text = num_text.substring(1)
 				}
 				return num_text
@@ -276,9 +276,8 @@ export class ANplusBParser {
 			const ch = this.source.charCodeAt(this.lexer.pos)
 			if (is_whitespace_char(ch)) {
 				this.lexer.pos++
-			} else {
-				break
 			}
+			break
 		}
 	}
 

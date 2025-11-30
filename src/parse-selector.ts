@@ -39,7 +39,25 @@ import {
 	TOKEN_WHITESPACE,
 	TOKEN_STRING,
 } from './token-types'
-import { is_whitespace as is_whitespace_char, is_vendor_prefixed } from './string-utils'
+import {
+	is_whitespace as is_whitespace_char,
+	is_vendor_prefixed,
+	CHAR_PLUS,
+	CHAR_TILDE,
+	CHAR_GREATER_THAN,
+	CHAR_PERIOD,
+	CHAR_ASTERISK,
+	CHAR_AMPERSAND,
+	is_combinator,
+	CHAR_EQUALS,
+	CHAR_PIPE,
+	CHAR_DOLLAR,
+	CHAR_CARET,
+	CHAR_FORWARD_SLASH,
+	CHAR_SINGLE_QUOTE,
+	CHAR_DOUBLE_QUOTE,
+	CHAR_COLON,
+} from './string-utils'
 import { ANplusBParser } from './parse-anplusb'
 import { CSSNode } from './css-node'
 
@@ -166,7 +184,7 @@ export class SelectorParser {
 			// Check if token is a combinator
 			if (token_type === TOKEN_DELIM) {
 				let ch = this.source.charCodeAt(this.lexer.token_start)
-				if (ch === 0x3e || ch === 0x2b || ch === 0x7e) {
+				if (ch === CHAR_GREATER_THAN || ch === CHAR_PLUS || ch === CHAR_TILDE) {
 					// Found leading combinator (>, +, ~) - this is a relative selector
 					let combinator = this.create_combinator(this.lexer.token_start, this.lexer.token_end)
 					components.push(combinator)
@@ -304,13 +322,13 @@ export class SelectorParser {
 			case TOKEN_DELIM:
 				// Could be: . (class), * (universal), & (nesting)
 				let ch = this.source.charCodeAt(start)
-				if (ch === 0x2e) {
+				if (ch === CHAR_PERIOD) {
 					// . - class selector
 					return this.parse_class_selector(start)
-				} else if (ch === 0x2a) {
+				} else if (ch === CHAR_ASTERISK) {
 					// * - universal selector
 					return this.create_universal_selector(start, end)
-				} else if (ch === 0x26) {
+				} else if (ch === CHAR_AMPERSAND) {
 					// & - nesting selector
 					return this.create_nesting_selector(start, end)
 				}
@@ -362,7 +380,7 @@ export class SelectorParser {
 		// Check for explicit combinators
 		if (this.lexer.token_type === TOKEN_DELIM) {
 			let ch = this.source.charCodeAt(this.lexer.token_start)
-			if (ch === 0x3e || ch === 0x2b || ch === 0x7e) {
+			if (is_combinator(ch)) {
 				// > + ~ (combinator text excludes leading whitespace)
 				return this.create_combinator(this.lexer.token_start, this.lexer.token_end)
 			}
@@ -463,10 +481,14 @@ export class SelectorParser {
 				continue
 			}
 			// Skip comments /*...*/
-			if (ch === 0x2f /* / */ && start + 1 < end && this.source.charCodeAt(start + 1) === 0x2a /* * */) {
+			if (ch === CHAR_FORWARD_SLASH && start + 1 < end && this.source.charCodeAt(start + 1) === CHAR_ASTERISK) {
 				start += 2 // Skip /*
 				while (start < end) {
-					if (this.source.charCodeAt(start) === 0x2a && start + 1 < end && this.source.charCodeAt(start + 1) === 0x2f) {
+					if (
+						this.source.charCodeAt(start) === CHAR_ASTERISK &&
+						start + 1 < end &&
+						this.source.charCodeAt(start + 1) === CHAR_FORWARD_SLASH
+					) {
 						start += 2 // Skip */
 						break
 					}
@@ -485,10 +507,10 @@ export class SelectorParser {
 				continue
 			}
 			// Skip comments /*...*/
-			if (ch === 0x2f && end >= 2 && this.source.charCodeAt(end - 2) === 0x2a) {
+			if (ch === CHAR_FORWARD_SLASH && end >= 2 && this.source.charCodeAt(end - 2) === CHAR_ASTERISK) {
 				// Find start of comment
 				let pos = end - 2
-				while (pos > start && !(this.source.charCodeAt(pos) === 0x2f && this.source.charCodeAt(pos + 1) === 0x2a)) {
+				while (pos > start && !(this.source.charCodeAt(pos) === CHAR_FORWARD_SLASH && this.source.charCodeAt(pos + 1) === CHAR_ASTERISK)) {
 					pos--
 				}
 				if (pos > start) {
@@ -513,12 +535,12 @@ export class SelectorParser {
 			let ch = this.source.charCodeAt(name_end)
 			if (
 				is_whitespace_char(ch) ||
-				ch === 0x3d /* = */ ||
-				ch === 0x7e /* ~ */ ||
-				ch === 0x7c /* | */ ||
-				ch === 0x5e /* ^ */ ||
-				ch === 0x24 /* $ */ ||
-				ch === 0x2a /* * */
+				ch === CHAR_EQUALS /* = */ ||
+				ch === CHAR_TILDE /* ~ */ ||
+				ch === CHAR_PIPE /* | */ ||
+				ch === CHAR_CARET /* ^ */ ||
+				ch === CHAR_DOLLAR /* $ */ ||
+				ch === CHAR_ASTERISK /* * */
 			) {
 				break
 			}
@@ -540,10 +562,10 @@ export class SelectorParser {
 				continue
 			}
 			// Skip comments
-			if (ch === 0x2f && pos + 1 < end && this.source.charCodeAt(pos + 1) === 0x2a) {
+			if (ch === CHAR_FORWARD_SLASH && pos + 1 < end && this.source.charCodeAt(pos + 1) === CHAR_ASTERISK) {
 				pos += 2
 				while (pos < end) {
-					if (this.source.charCodeAt(pos) === 0x2a && pos + 1 < end && this.source.charCodeAt(pos + 1) === 0x2f) {
+					if (this.source.charCodeAt(pos) === CHAR_ASTERISK && pos + 1 < end && this.source.charCodeAt(pos + 1) === CHAR_FORWARD_SLASH) {
 						pos += 2
 						break
 					}
@@ -563,27 +585,27 @@ export class SelectorParser {
 		// Parse operator
 		let ch1 = this.source.charCodeAt(pos)
 
-		if (ch1 === 0x3d) {
+		if (ch1 === CHAR_EQUALS) {
 			// =
 			operator_end = pos + 1
 			this.arena.set_attr_operator(node, ATTR_OPERATOR_EQUAL)
-		} else if (ch1 === 0x7e && pos + 1 < end && this.source.charCodeAt(pos + 1) === 0x3d) {
+		} else if (ch1 === CHAR_TILDE && pos + 1 < end && this.source.charCodeAt(pos + 1) === CHAR_EQUALS) {
 			// ~=
 			operator_end = pos + 2
 			this.arena.set_attr_operator(node, ATTR_OPERATOR_TILDE_EQUAL)
-		} else if (ch1 === 0x7c && pos + 1 < end && this.source.charCodeAt(pos + 1) === 0x3d) {
+		} else if (ch1 === CHAR_PIPE && pos + 1 < end && this.source.charCodeAt(pos + 1) === CHAR_EQUALS) {
 			// |=
 			operator_end = pos + 2
 			this.arena.set_attr_operator(node, ATTR_OPERATOR_PIPE_EQUAL)
-		} else if (ch1 === 0x5e && pos + 1 < end && this.source.charCodeAt(pos + 1) === 0x3d) {
+		} else if (ch1 === CHAR_CARET && pos + 1 < end && this.source.charCodeAt(pos + 1) === CHAR_EQUALS) {
 			// ^=
 			operator_end = pos + 2
 			this.arena.set_attr_operator(node, ATTR_OPERATOR_CARET_EQUAL)
-		} else if (ch1 === 0x24 && pos + 1 < end && this.source.charCodeAt(pos + 1) === 0x3d) {
+		} else if (ch1 === CHAR_DOLLAR && pos + 1 < end && this.source.charCodeAt(pos + 1) === CHAR_EQUALS) {
 			// $=
 			operator_end = pos + 2
 			this.arena.set_attr_operator(node, ATTR_OPERATOR_DOLLAR_EQUAL)
-		} else if (ch1 === 0x2a && pos + 1 < end && this.source.charCodeAt(pos + 1) === 0x3d) {
+		} else if (ch1 === CHAR_ASTERISK && pos + 1 < end && this.source.charCodeAt(pos + 1) === CHAR_EQUALS) {
 			// *=
 			operator_end = pos + 2
 			this.arena.set_attr_operator(node, ATTR_OPERATOR_STAR_EQUAL)
@@ -602,10 +624,10 @@ export class SelectorParser {
 				continue
 			}
 			// Skip comments
-			if (ch === 0x2f && pos + 1 < end && this.source.charCodeAt(pos + 1) === 0x2a) {
+			if (ch === CHAR_FORWARD_SLASH && pos + 1 < end && this.source.charCodeAt(pos + 1) === CHAR_ASTERISK) {
 				pos += 2
 				while (pos < end) {
-					if (this.source.charCodeAt(pos) === 0x2a && pos + 1 < end && this.source.charCodeAt(pos + 1) === 0x2f) {
+					if (this.source.charCodeAt(pos) === CHAR_ASTERISK && pos + 1 < end && this.source.charCodeAt(pos + 1) === CHAR_FORWARD_SLASH) {
 						pos += 2
 						break
 					}
@@ -625,7 +647,7 @@ export class SelectorParser {
 		value_start = pos
 		let ch = this.source.charCodeAt(pos)
 
-		if (ch === 0x22 || ch === 0x27) {
+		if (ch === CHAR_SINGLE_QUOTE || ch === CHAR_DOUBLE_QUOTE) {
 			// " or '
 			// Quoted string - find matching quote
 			let quote = ch
@@ -673,7 +695,7 @@ export class SelectorParser {
 
 		// Check for double colon (::)
 		let is_pseudo_element = false
-		if (this.lexer.pos < this.selector_end && this.source.charCodeAt(this.lexer.pos) === 0x3a) {
+		if (this.lexer.pos < this.selector_end && this.source.charCodeAt(this.lexer.pos) === CHAR_COLON) {
 			is_pseudo_element = true
 			this.lexer.pos++ // skip second colon
 		}
@@ -1032,9 +1054,8 @@ export class SelectorParser {
 			let ch = this.source.charCodeAt(this.lexer.pos)
 			if (is_whitespace_char(ch)) {
 				this.lexer.pos++
-			} else {
-				break
 			}
+			break
 		}
 	}
 }

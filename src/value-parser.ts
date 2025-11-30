@@ -24,13 +24,7 @@ import {
 	TOKEN_LEFT_PAREN,
 	TOKEN_RIGHT_PAREN,
 } from './token-types'
-import { is_whitespace } from './string-utils'
-
-// Operator character codes
-const CH_PLUS = 0x2b
-const CH_MINUS = 0x2d
-const CH_ASTERISK = 0x2a
-const CH_SLASH = 0x2f
+import { is_whitespace, CHAR_MINUS_HYPHEN, CHAR_PLUS, CHAR_ASTERISK, CHAR_FORWARD_SLASH } from './string-utils'
 
 export class ValueParser {
 	private lexer: Lexer
@@ -199,7 +193,7 @@ export class ValueParser {
 	private parse_operator_node(start: number, end: number): number | null {
 		// Only create operator nodes for specific delimiters: + - * /
 		let ch = this.source.charCodeAt(start)
-		if (ch === CH_PLUS || ch === CH_MINUS || ch === CH_ASTERISK || ch === CH_SLASH) {
+		if (ch === CHAR_PLUS || ch === CHAR_MINUS_HYPHEN || ch === CHAR_ASTERISK || ch === CHAR_FORWARD_SLASH) {
 			return this.create_operator_node(start, end)
 		}
 		// Other delimiters are ignored for now

@@ -26,7 +26,7 @@ import {
 	TOKEN_FUNCTION,
 	type TokenType,
 } from './token-types'
-import { trim_boundaries, str_equals, CHAR_SPACE, CHAR_TAB, CHAR_NEWLINE, CHAR_CARRIAGE_RETURN, CHAR_FORM_FEED } from './string-utils'
+import { trim_boundaries, str_equals, is_whitespace } from './string-utils'
 import { CSSNode } from './css-node'
 
 export class AtRulePreludeParser {
@@ -630,7 +630,7 @@ export class AtRulePreludeParser {
 	private skip_whitespace(): void {
 		while (this.lexer.pos < this.prelude_end) {
 			let ch = this.source.charCodeAt(this.lexer.pos)
-			if (ch !== CHAR_SPACE && ch !== CHAR_TAB && ch !== CHAR_NEWLINE && ch !== CHAR_CARRIAGE_RETURN && ch !== CHAR_FORM_FEED) {
+			if (!is_whitespace(ch)) {
 				break
 			}
 			this.lexer.pos++

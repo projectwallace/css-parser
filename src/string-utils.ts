@@ -2,21 +2,39 @@
 
 // Character constants (exported for use in parsers)
 export const CHAR_SPACE = 0x20 // ' '
-export const CHAR_TAB = 0x09 // '\t'
-export const CHAR_NEWLINE = 0x0a // '\n'
-export const CHAR_CARRIAGE_RETURN = 0x0d // '\r'
-export const CHAR_FORM_FEED = 0x0c // '\f'
+export const CHAR_TAB = 0x09 // \t
+export const CHAR_NEWLINE = 0x0a // \n
+export const CHAR_CARRIAGE_RETURN = 0x0d // \r
+export const CHAR_FORM_FEED = 0x0c // \f
 export const CHAR_FORWARD_SLASH = 0x2f // '/'
-export const CHAR_ASTERISK = 0x2a // '*'
-export const CHAR_MINUS_HYPHEN = 0x2d // '-'
-export const CHAR_SINGLE_QUOTE = 0x27 // '''
-export const CHAR_DOUBLE_QUOTE = 0x22 // '"'
+export const CHAR_ASTERISK = 0x2a // *
+export const CHAR_MINUS_HYPHEN = 0x2d // -
+export const CHAR_SINGLE_QUOTE = 0x27 // '
+export const CHAR_DOUBLE_QUOTE = 0x22 // "
+export const CHAR_PLUS = 0x2b // +
+export const CHAR_PERIOD = 0x2e // .
+export const CHAR_TILDE = 0x7e // ~
+export const CHAR_GREATER_THAN = 0x3e // >
+export const CHAR_AMPERSAND = 0x26 // &
+export const CHAR_EQUALS = 0x3d // =
+export const CHAR_PIPE = 0x7c // |
+export const CHAR_DOLLAR = 0x24 // $
+export const CHAR_CARET = 0x5e // ^
+export const CHAR_COLON = 0x3a // :
 
 /**
  * Check if a character code is whitespace (space, tab, newline, CR, or FF)
  */
 export function is_whitespace(ch: number): boolean {
 	return ch === CHAR_SPACE || ch === CHAR_TAB || ch === CHAR_NEWLINE || ch === CHAR_CARRIAGE_RETURN || ch === CHAR_FORM_FEED
+}
+
+export function is_combinator(ch: number): boolean {
+	return ch === CHAR_GREATER_THAN || ch === CHAR_PLUS || ch == CHAR_TILDE
+}
+
+export function is_digit(ch: number): boolean {
+	return ch >= 0x30 && ch <= 0x39 // 0-9
 }
 
 /**
@@ -106,7 +124,7 @@ export function str_equals(a: string, b: string): boolean {
 		let cb = b.charCodeAt(i)
 
 		// normalize ASCII uppercase A-Z → a-z
-		if (cb >= 65 && cb <= 90) cb |= 32
+		cb |= 32
 
 		if (ca !== cb) {
 			return false
@@ -179,19 +197,20 @@ export function parse_dimension(text: string): { value: number; unit: string } {
 		let ch = text.charCodeAt(i)
 
 		// Check for e/E (scientific notation)
-		if (ch === 0x65 || ch === 0x45) { // e or E
+		if (ch === 0x65 || ch === 0x45) {
+			// e or E
 			// Only allow e/E if followed by digit or sign+digit
 			if (i + 1 < text.length) {
 				let nextCh = text.charCodeAt(i + 1)
 				// Check if next is digit
-				if (nextCh >= 0x30 && nextCh <= 0x39) {
+				if (is_digit(nextCh)) {
 					numEnd = i + 1
 					continue
 				}
 				// Check if next is sign followed by digit
 				if ((nextCh === 0x2b || nextCh === 0x2d) && i + 2 < text.length) {
 					let afterSign = text.charCodeAt(i + 2)
-					if (afterSign >= 0x30 && afterSign <= 0x39) {
+					if (is_digit(afterSign)) {
 						numEnd = i + 1
 						continue
 					}
@@ -202,12 +221,7 @@ export function parse_dimension(text: string): { value: number; unit: string } {
 		}
 
 		// Allow digits, dot, minus, plus
-		if (
-			(ch >= 0x30 && ch <= 0x39) || // 0-9
-			ch === 0x2e || // .
-			ch === 0x2d || // -
-			ch === 0x2b // +
-		) {
+		if (is_digit(ch) || ch === CHAR_PERIOD || ch === CHAR_MINUS_HYPHEN || ch === CHAR_PLUS) {
 			numEnd = i + 1
 		} else {
 			break
