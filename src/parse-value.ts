@@ -1,7 +1,7 @@
 // Value Parser - Parses CSS declaration values into structured AST nodes
 import { Lexer } from './lexer'
-import type { CSSDataArena } from './arena'
 import {
+	CSSDataArena,
 	NODE_VALUE_KEYWORD,
 	NODE_VALUE_NUMBER,
 	NODE_VALUE_DIMENSION,
@@ -25,6 +25,7 @@ import {
 	TOKEN_RIGHT_PAREN,
 } from './token-types'
 import { is_whitespace, CHAR_MINUS_HYPHEN, CHAR_PLUS, CHAR_ASTERISK, CHAR_FORWARD_SLASH } from './string-utils'
+import { CSSNode } from './css-node'
 
 export class ValueParser {
 	private lexer: Lexer
@@ -215,4 +216,23 @@ export class ValueParser {
 
 		return node
 	}
+}
+
+/**
+ * Parse a CSS declaration value string and return an array of value AST nodes
+ * @param value_string - The CSS value to parse (e.g., "1px solid red")
+ * @returns An array of CSSNode objects representing the parsed value
+ */
+export function parse_value(value_string: string): CSSNode[] {
+	// Create an arena for the value nodes
+	const arena = new CSSDataArena(CSSDataArena.capacity_for_source(value_string.length))
+
+	// Create value parser
+	const value_parser = new ValueParser(arena, value_string)
+
+	// Parse the entire source as a value
+	const node_indices = value_parser.parse_value(0, value_string.length)
+
+	// Wrap each node index in a CSSNode
+	return node_indices.map((index) => new CSSNode(arena, value_string, index))
 }

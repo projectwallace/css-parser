@@ -3,11 +3,11 @@ import { NODE_AT_RULE, NODE_STYLE_RULE, NODE_STYLESHEET } from '../../dist/index
 
 describe('Package exports', () => {
 	test('should export main exports from main entry', async () => {
-		let { CSSNode, walk, walk_enter_leave, parse, parse_atrule_prelude, parse_selector } = await import('../../dist/index.js')
+		let { CSSNode, walk, traverse, parse, parse_atrule_prelude, parse_selector } = await import('../../dist/index.js')
 
 		expect(typeof CSSNode).toBe('function')
 		expect(typeof walk).toBe('function')
-		expect(typeof walk_enter_leave).toBe('function')
+		expect(typeof traverse).toBe('function')
 		expect(typeof parse_atrule_prelude).toBe('function')
 		expect(typeof parse_selector).toBe('function')
 		expect(typeof parse).toBe('function')

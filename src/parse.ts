@@ -15,7 +15,7 @@ import {
 	FLAG_HAS_DECLARATIONS,
 } from './arena'
 import { CSSNode } from './css-node'
-import { ValueParser } from './value-parser'
+import { ValueParser } from './parse-value'
 import { SelectorParser } from './parse-selector'
 import { AtRulePreludeParser } from './parse-atrule-prelude'
 import {
