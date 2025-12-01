@@ -11,7 +11,7 @@ import {
 	NODE_VALUE_NUMBER,
 	NODE_VALUE_DIMENSION,
 } from './parse'
-import { walk, walk_enter_leave } from './walk'
+import { walk, traverse } from './walk'
 
 describe('walk', () => {
 	it('should visit single node', () => {
@@ -286,7 +286,7 @@ describe('walk enter/leave', () => {
 		const enter: number[] = []
 		const leave: number[] = []
 
-		walk_enter_leave(root, {
+		traverse(root, {
 			enter(node) {
 				enter.push(node.type)
 			},
@@ -302,7 +302,7 @@ describe('walk enter/leave', () => {
 	test('only enter', () => {
 		const enter: number[] = []
 
-		walk_enter_leave(root, {
+		traverse(root, {
 			enter(node) {
 				enter.push(node.type)
 			},
@@ -314,7 +314,7 @@ describe('walk enter/leave', () => {
 	test('only leave', () => {
 		const leave: number[] = []
 
-		walk_enter_leave(root, {
+		traverse(root, {
 			leave(node) {
 				leave.push(node.type)
 			},
@@ -324,6 +324,6 @@ describe('walk enter/leave', () => {
 	})
 
 	test('neither', () => {
-		expect(() => walk_enter_leave(root)).not.toThrow()
+		expect(() => traverse(root)).not.toThrow()
 	})
 })

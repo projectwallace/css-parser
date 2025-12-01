@@ -34,14 +34,14 @@ interface WalkEnterLeaveOptions {
  * @param node - The root node to start walking from
  * @param options - Object with optional enter and leave callback functions
  */
-export function walk_enter_leave(node: CSSNode, { enter = NOOP, leave = NOOP }: WalkEnterLeaveOptions = {}) {
+export function traverse(node: CSSNode, { enter = NOOP, leave = NOOP }: WalkEnterLeaveOptions = {}) {
 	// Call enter callback before processing children
 	enter(node)
 
 	// Recursively walk children
 	let child = node.first_child
 	while (child) {
-		walk_enter_leave(child, { enter, leave })
+		traverse(child, { enter, leave })
 		child = child.next_sibling
 	}
 
