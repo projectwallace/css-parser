@@ -13,6 +13,7 @@ export { type ParserOptions } from './parse'
 
 // Types
 export { CSSNode, type CSSNodeType } from './css-node'
+export type { LexerPosition } from './lexer'
 
 export {
 	ATTR_OPERATOR_NONE,

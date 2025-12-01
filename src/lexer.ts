@@ -57,6 +57,17 @@ const CHAR_UPPERCASE_E = 0x45 // E
 const CHAR_CARRIAGE_RETURN = 0x0d // \r
 const CHAR_LINE_FEED = 0x0a // \n
 
+export interface LexerPosition {
+	pos: number
+	line: number
+	column: number
+	token_type: TokenType
+	token_start: number
+	token_end: number
+	token_line: number
+	token_column: number
+}
+
 export class Lexer {
 	source: string
 	pos: number
@@ -541,5 +552,37 @@ export class Lexer {
 			line: this.token_line,
 			column: this.token_column,
 		}
+	}
+
+	/**
+	 * Save complete lexer state for backtracking
+	 * @returns Object containing all lexer state
+	 */
+	save_position(): LexerPosition {
+		return {
+			pos: this.pos,
+			line: this.line,
+			column: this.column,
+			token_type: this.token_type,
+			token_start: this.token_start,
+			token_end: this.token_end,
+			token_line: this.token_line,
+			token_column: this.token_column,
+		}
+	}
+
+	/**
+	 * Restore lexer state from saved position
+	 * @param saved The saved position to restore
+	 */
+	restore_position(saved: LexerPosition): void {
+		this.pos = saved.pos
+		this.line = saved.line
+		this.column = saved.column
+		this.token_type = saved.token_type
+		this.token_start = saved.token_start
+		this.token_end = saved.token_end
+		this.token_line = saved.token_line
+		this.token_column = saved.token_column
 	}
 }

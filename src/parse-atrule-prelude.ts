@@ -506,9 +506,7 @@ export class AtRulePreludeParser {
 	// Parse import layer: layer or layer(name)
 	private parse_import_layer(): number | null {
 		// Peek at next token
-		let saved_pos = this.lexer.pos
-		let saved_line = this.lexer.line
-		let saved_column = this.lexer.column
+		const saved = this.lexer.save_position()
 
 		this.next_token()
 
@@ -569,18 +567,14 @@ export class AtRulePreludeParser {
 		}
 
 		// Not a layer, restore position
-		this.lexer.pos = saved_pos
-		this.lexer.line = saved_line
-		this.lexer.column = saved_column
+		this.lexer.restore_position(saved)
 		return null
 	}
 
 	// Parse import supports: supports(condition)
 	private parse_import_supports(): number | null {
 		// Peek at next token
-		let saved_pos = this.lexer.pos
-		let saved_line = this.lexer.line
-		let saved_column = this.lexer.column
+		const saved = this.lexer.save_position()
 
 		this.next_token()
 
@@ -621,9 +615,7 @@ export class AtRulePreludeParser {
 		}
 
 		// Not supports(), restore position
-		this.lexer.pos = saved_pos
-		this.lexer.line = saved_line
-		this.lexer.column = saved_column
+		this.lexer.restore_position(saved)
 		return null
 	}
 
@@ -634,16 +626,12 @@ export class AtRulePreludeParser {
 
 	// Helper: Peek at next token type without consuming
 	private peek_token_type(): number {
-		let saved_pos = this.lexer.pos
-		let saved_line = this.lexer.line
-		let saved_column = this.lexer.column
+		const saved = this.lexer.save_position()
 
 		this.next_token()
 		let type = this.lexer.token_type
 
-		this.lexer.pos = saved_pos
-		this.lexer.line = saved_line
-		this.lexer.column = saved_column
+		this.lexer.restore_position(saved)
 
 		return type
 	}
