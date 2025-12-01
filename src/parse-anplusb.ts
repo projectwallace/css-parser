@@ -136,7 +136,7 @@ export class ANplusBParser {
 		// Handle +n pattern
 		if (this.lexer.token_type === TOKEN_DELIM && this.source.charCodeAt(this.lexer.token_start) === CHAR_PLUS) {
 			// Look ahead for 'n'
-			const saved_pos = this.lexer.pos
+			const saved = this.lexer.save_position()
 			this.lexer.next_token_fast(true)
 
 			if ((this.lexer.token_type as TokenType) === TOKEN_IDENT) {
@@ -146,7 +146,7 @@ export class ANplusBParser {
 				if (first_char === 0x6e /* n */) {
 					// Store +n as authored (including the +)
 					a = '+n'
-					a_start = saved_pos - 1 // Position of the + delim
+					a_start = saved.pos - 1 // Position of the + delim
 					a_end = this.lexer.token_start + 1
 
 					// Check for attached n-digit pattern
@@ -171,7 +171,7 @@ export class ANplusBParser {
 				}
 			}
 
-			this.lexer.pos = saved_pos
+			this.lexer.restore_position(saved)
 		}
 
 		// Handle dimension tokens: 2n, 3n+1, -5n-2

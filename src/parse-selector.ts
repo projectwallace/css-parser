@@ -174,9 +174,7 @@ export class SelectorParser {
 
 		// Check for leading combinator (relative selector) if allowed
 		if (allow_relative && this.lexer.pos < this.selector_end) {
-			let saved_pos = this.lexer.pos
-			let saved_line = this.lexer.line
-			let saved_column = this.lexer.column
+			const saved = this.lexer.save_position()
 
 			this.lexer.next_token_fast(false)
 			let token_type = this.lexer.token_type
@@ -192,15 +190,11 @@ export class SelectorParser {
 					// Continue to parse the rest normally
 				} else {
 					// Not a combinator, restore position
-					this.lexer.pos = saved_pos
-					this.lexer.line = saved_line
-					this.lexer.column = saved_column
+					this.lexer.restore_position(saved)
 				}
 			} else {
 				// Not a delimiter, restore position
-				this.lexer.pos = saved_pos
-				this.lexer.line = saved_line
-				this.lexer.column = saved_column
+				this.lexer.restore_position(saved)
 			}
 		}
 
@@ -225,9 +219,7 @@ export class SelectorParser {
 			}
 
 			// Peek ahead for comma or end
-			let saved_pos = this.lexer.pos
-			let saved_line = this.lexer.line
-			let saved_column = this.lexer.column
+			const saved = this.lexer.save_position()
 			this.skip_whitespace()
 			if (this.lexer.pos >= this.selector_end) break
 
@@ -235,15 +227,11 @@ export class SelectorParser {
 			let token_type = this.lexer.token_type
 			if (token_type === TOKEN_COMMA || this.lexer.pos >= this.selector_end) {
 				// Reset position for comma handling
-				this.lexer.pos = saved_pos
-				this.lexer.line = saved_line
-				this.lexer.column = saved_column
+				this.lexer.restore_position(saved)
 				break
 			}
 			// Reset for next iteration
-			this.lexer.pos = saved_pos
-			this.lexer.line = saved_line
-			this.lexer.column = saved_column
+			this.lexer.restore_position(saved)
 			break
 		}
 
@@ -271,9 +259,7 @@ export class SelectorParser {
 
 		while (this.lexer.pos < this.selector_end) {
 			// Save lexer state before getting token
-			let saved_pos = this.lexer.pos
-			let saved_line = this.lexer.line
-			let saved_column = this.lexer.column
+			const saved = this.lexer.save_position()
 			this.lexer.next_token_fast(false)
 
 			if (this.lexer.token_start >= this.selector_end) break
@@ -286,9 +272,7 @@ export class SelectorParser {
 				parts.push(part)
 			} else {
 				// Not a simple selector part, restore lexer state and break
-				this.lexer.pos = saved_pos
-				this.lexer.line = saved_line
-				this.lexer.column = saved_column
+				this.lexer.restore_position(saved)
 				break
 			}
 		}
@@ -409,17 +393,13 @@ export class SelectorParser {
 	// Parse class selector (.classname)
 	private parse_class_selector(dot_pos: number): number | null {
 		// Save lexer state for potential restoration
-		let saved_pos = this.lexer.pos
-		let saved_line = this.lexer.line
-		let saved_column = this.lexer.column
+		const saved = this.lexer.save_position()
 
 		// Next token should be identifier
 		this.lexer.next_token_fast(false)
 		if (this.lexer.token_type !== TOKEN_IDENT) {
 			// Restore lexer state and return null
-			this.lexer.pos = saved_pos
-			this.lexer.line = saved_line
-			this.lexer.column = saved_column
+			this.lexer.restore_position(saved)
 			return null
 		}
 
@@ -607,9 +587,7 @@ export class SelectorParser {
 	// Parse pseudo-class or pseudo-element (:hover, ::before)
 	private parse_pseudo(start: number): number | null {
 		// Save lexer state for potential restoration
-		let saved_pos = this.lexer.pos
-		let saved_line = this.lexer.line
-		let saved_column = this.lexer.column
+		const saved = this.lexer.save_position()
 
 		// Check for double colon (::)
 		let is_pseudo_element = false
@@ -643,9 +621,7 @@ export class SelectorParser {
 		}
 
 		// Restore lexer state and return null
-		this.lexer.pos = saved_pos
-		this.lexer.line = saved_line
-		this.lexer.column = saved_column
+		this.lexer.restore_position(saved)
 		return null
 	}
 
@@ -716,9 +692,7 @@ export class SelectorParser {
 				// Parse as selector (for :is(), :where(), :has(), etc.)
 				// Save current lexer state and selector_end
 				let saved_selector_end = this.selector_end
-				let saved_pos = this.lexer.pos
-				let saved_line = this.lexer.line
-				let saved_column = this.lexer.column
+				const saved = this.lexer.save_position()
 
 				// Recursively parse the content as a selector
 				// Only :has() accepts relative selectors (starting with combinator)
@@ -727,9 +701,7 @@ export class SelectorParser {
 
 				// Restore lexer state and selector_end
 				this.selector_end = saved_selector_end
-				this.lexer.pos = saved_pos
-				this.lexer.line = saved_line
-				this.lexer.column = saved_column
+				this.lexer.restore_position(saved)
 
 				// Add as child if parsed successfully
 				if (child_selector !== null) {
@@ -759,9 +731,7 @@ export class SelectorParser {
 	private parse_lang_identifiers(start: number, end: number, parent_node: number): void {
 		// Save current lexer state
 		let saved_selector_end = this.selector_end
-		let saved_pos = this.lexer.pos
-		let saved_line = this.lexer.line
-		let saved_column = this.lexer.column
+		const saved = this.lexer.save_position()
 
 		// Set lexer to parse this range
 		this.lexer.pos = start
@@ -822,9 +792,7 @@ export class SelectorParser {
 
 		// Restore lexer state
 		this.selector_end = saved_selector_end
-		this.lexer.pos = saved_pos
-		this.lexer.line = saved_line
-		this.lexer.column = saved_column
+		this.lexer.restore_position(saved)
 	}
 
 	// Parse An+B expression for nth-* pseudo-classes
@@ -846,9 +814,7 @@ export class SelectorParser {
 
 			// Save current state
 			let saved_selector_end = this.selector_end
-			let saved_pos = this.lexer.pos
-			let saved_line = this.lexer.line
-			let saved_column = this.lexer.column
+			const saved = this.lexer.save_position()
 
 			// Parse selector list
 			this.selector_end = end
@@ -857,9 +823,7 @@ export class SelectorParser {
 
 			// Restore state
 			this.selector_end = saved_selector_end
-			this.lexer.pos = saved_pos
-			this.lexer.line = saved_line
-			this.lexer.column = saved_column
+			this.lexer.restore_position(saved)
 
 			// Create NTH_OF wrapper
 			let of_node = this.arena.create_node()
