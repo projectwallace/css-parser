@@ -45,7 +45,7 @@ function parse(source: string, options?: ParserOptions): CSSNode
 - `has_error` - Whether node has syntax error
 - `has_prelude` - Whether at-rule has a prelude
 - `has_block` - Whether rule has a `{ }` block
-- `has_children` - Whether node has child nodes
+- `has_children` - Whether node has child nodes (for pseudo-class/pseudo-element functions, returns `true` even if empty to indicate function syntax)
 - `block` - Block node containing declarations/nested rules (for style rules and at-rules with blocks)
 - `is_empty` - Whether block has no declarations or rules (only comments allowed)
 - `first_child` - First child node or `null`
@@ -436,6 +436,38 @@ import {
 - `NODE_PRELUDE_IMPORT_URL` (38) - Import URL
 - `NODE_PRELUDE_IMPORT_LAYER` (39) - Import layer
 - `NODE_PRELUDE_IMPORT_SUPPORTS` (40) - Import supports condition
+
+## Pseudo-Class Function Syntax Detection
+
+For formatters and tools that need to reconstruct CSS, the parser distinguishes between pseudo-classes that use function syntax (with parentheses) and those that don't:
+
+- `:hover` → `has_children = false` (no function syntax)
+- `:lang()` → `has_children = true` (function syntax, even though empty)
+- `:lang(en)` → `has_children = true` (function syntax with content)
+
+The `has_children` property on pseudo-class and pseudo-element nodes returns `true` if:
+1. The node has actual child nodes (parsed content), OR
+2. The node uses function syntax (has parentheses), indicated by the `FLAG_HAS_PARENS` flag
+
+This allows formatters to correctly reconstruct selectors:
+- `:hover` → no parentheses needed
+- `:lang()` → parentheses needed (even though empty)
+
+### Example
+
+```javascript
+import { parse_selector } from '@projectwallace/css-parser'
+
+// Function syntax (with parentheses) - even if empty
+const ast1 = parse_selector(':lang()')
+const pseudoClass1 = ast1.first_child.first_child
+console.log(pseudoClass1.has_children) // true - indicates function syntax
+
+// Regular pseudo-class (no parentheses)
+const ast2 = parse_selector(':hover')
+const pseudoClass2 = ast2.first_child.first_child
+console.log(pseudoClass2.has_children) // false - no function syntax
+```
 
 ## Attribute Selector Constants
 

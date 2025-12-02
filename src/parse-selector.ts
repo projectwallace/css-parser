@@ -16,6 +16,7 @@ import {
 	NODE_SELECTOR_NTH_OF,
 	NODE_SELECTOR_LANG,
 	FLAG_VENDOR_PREFIXED,
+	FLAG_HAS_PARENS,
 	ATTR_OPERATOR_NONE,
 	ATTR_OPERATOR_EQUAL,
 	ATTR_OPERATOR_TILDE_EQUAL,
@@ -692,6 +693,11 @@ export class SelectorParser {
 		// Content is the function name (without colons and parentheses)
 		this.arena.set_content_start(node, func_name_start)
 		this.arena.set_content_length(node, func_name_end - func_name_start)
+
+		// Set FLAG_HAS_PARENS to indicate this is a function syntax (even if empty)
+		// This allows formatters to distinguish :lang() from :hover
+		this.arena.set_flag(node, FLAG_HAS_PARENS)
+
 		// Check for vendor prefix and set flag if detected
 		if (is_vendor_prefixed(this.source, func_name_start, func_name_end)) {
 			this.arena.set_flag(node, FLAG_VENDOR_PREFIXED)
