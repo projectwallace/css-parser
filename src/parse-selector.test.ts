@@ -1460,6 +1460,21 @@ describe('parse_selector()', () => {
 		expect(result.has_children).toBe(true)
 	})
 
+	test('should parse unknown pseudo-class without parens', () => {
+		let root = parse_selector(':hello')
+		let pseudo = root.first_child?.first_child
+		expect(pseudo?.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+		expect(pseudo?.has_children).toBe(false)
+	})
+
+	test('should parse unknown pseudo-class with empty parens', () => {
+		let root = parse_selector(':hello()')
+		let pseudo = root.first_child?.first_child
+		expect(pseudo?.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+		expect(pseudo?.has_children).toBe(true)
+		expect(pseudo?.children.length).toBe(0)
+	})
+
 	test('should parse attribute selector', () => {
 		const result = parse_selector('[href^="https"]')
 

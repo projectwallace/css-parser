@@ -323,6 +323,7 @@ export class CSSNode {
 		// For pseudo-class/pseudo-element nodes, check if they have function syntax
 		if (this.type === NODE_SELECTOR_PSEUDO_CLASS || this.type === NODE_SELECTOR_PSEUDO_ELEMENT) {
 			// If FLAG_HAS_PARENS is set, return true even if no actual children
+			// This indicates that `()` is there but contains no children which can be caught by checking `.children.length`
 			if (this.arena.has_flag(this.index, FLAG_HAS_PARENS)) {
 				return true
 			}
