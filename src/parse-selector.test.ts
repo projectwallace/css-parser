@@ -1,6 +1,6 @@
 import { describe, it, expect, test } from 'vitest'
 import { SelectorParser, parse_selector } from './parse-selector'
-import { CSSDataArena } from './arena'
+import { ATTR_OPERATOR_EQUAL, CSSDataArena } from './arena'
 import {
 	NODE_SELECTOR,
 	NODE_SELECTOR_LIST,
@@ -536,6 +536,21 @@ describe('SelectorParser', () => {
 			expect(getNodeText(arena, source, child)).toBe('[type="text" i]')
 			expect(getNodeContent(arena, source, child)).toBe('type')
 			expect(arena.get_attr_flags(child)).toBe(ATTR_FLAG_CASE_INSENSITIVE)
+		})
+
+		it('should parse attribute with case-insensitive flag', () => {
+			const root = parse_selector('[type="text" i]')
+
+			expect(root).not.toBeNull()
+			if (!root) return
+
+			expect(root.type).toBe(NODE_SELECTOR_LIST)
+			let selector = root.first_child!
+			expect(selector.type).toBe(NODE_SELECTOR)
+			let attr = selector.first_child!
+			expect(attr.type).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(attr.attr_flags).toBe(ATTR_FLAG_CASE_INSENSITIVE)
+			expect(attr.attr_operator).toBe(ATTR_OPERATOR_EQUAL)
 		})
 
 		it('should parse attribute with case-sensitive flag', () => {
