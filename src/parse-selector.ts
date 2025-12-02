@@ -23,6 +23,9 @@ import {
 	ATTR_OPERATOR_CARET_EQUAL,
 	ATTR_OPERATOR_DOLLAR_EQUAL,
 	ATTR_OPERATOR_STAR_EQUAL,
+	ATTR_FLAG_NONE,
+	ATTR_FLAG_CASE_INSENSITIVE,
+	ATTR_FLAG_CASE_SENSITIVE,
 } from './arena'
 import {
 	TOKEN_IDENT,
@@ -497,6 +500,7 @@ export class SelectorParser {
 		if (pos >= end) {
 			// No operator, just [attr]
 			this.arena.set_attr_operator(node, ATTR_OPERATOR_NONE)
+			this.arena.set_attr_flags(node, ATTR_FLAG_NONE)
 			return
 		}
 
@@ -530,6 +534,7 @@ export class SelectorParser {
 		} else {
 			// No valid operator
 			this.arena.set_attr_operator(node, ATTR_OPERATOR_NONE)
+			this.arena.set_attr_flags(node, ATTR_FLAG_NONE)
 			return
 		}
 
@@ -538,6 +543,7 @@ export class SelectorParser {
 
 		if (pos >= end) {
 			// No value after operator
+			this.arena.set_attr_flags(node, ATTR_FLAG_NONE)
 			return
 		}
 
@@ -581,6 +587,24 @@ export class SelectorParser {
 		if (value_end > value_start) {
 			this.arena.set_value_start(node, value_start)
 			this.arena.set_value_length(node, value_end - value_start)
+		}
+
+		// Check for attribute flags (i or s) after the value
+		// Skip whitespace and comments after value
+		pos = skip_whitespace_and_comments_forward(this.source, value_end, end)
+
+		if (pos < end) {
+			let flag_ch = this.source.charCodeAt(pos)
+			// Check for 'i' (case-insensitive) or 's' (case-sensitive)
+			if (flag_ch === 0x69 /* i */ || flag_ch === 0x49 /* I */) {
+				this.arena.set_attr_flags(node, ATTR_FLAG_CASE_INSENSITIVE)
+			} else if (flag_ch === 0x73 /* s */ || flag_ch === 0x53 /* S */) {
+				this.arena.set_attr_flags(node, ATTR_FLAG_CASE_SENSITIVE)
+			} else {
+				this.arena.set_attr_flags(node, ATTR_FLAG_NONE)
+			}
+		} else {
+			this.arena.set_attr_flags(node, ATTR_FLAG_NONE)
 		}
 	}
 
