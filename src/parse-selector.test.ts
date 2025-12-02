@@ -16,6 +16,9 @@ import {
 	NODE_SELECTOR_NTH,
 	NODE_SELECTOR_NTH_OF,
 	NODE_SELECTOR_LANG,
+	ATTR_FLAG_NONE,
+	ATTR_FLAG_CASE_INSENSITIVE,
+	ATTR_FLAG_CASE_SENSITIVE,
 } from './arena'
 
 // Tests using the exported parse_selector() function
@@ -519,6 +522,99 @@ describe('SelectorParser', () => {
 			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
 			// Content now stores just the attribute name
 			expect(getNodeContent(arena, source, child)).toBe('data-test')
+		})
+
+		it('should parse attribute with case-insensitive flag', () => {
+			const { arena, rootNode, source } = parseSelectorInternal('[type="text" i]')
+
+			expect(rootNode).not.toBeNull()
+			if (!rootNode) return
+
+			const selectorWrapper = arena.get_first_child(rootNode)
+			const child = arena.get_first_child(selectorWrapper)
+			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(getNodeText(arena, source, child)).toBe('[type="text" i]')
+			expect(getNodeContent(arena, source, child)).toBe('type')
+			expect(arena.get_attr_flags(child)).toBe(ATTR_FLAG_CASE_INSENSITIVE)
+		})
+
+		it('should parse attribute with case-sensitive flag', () => {
+			const { arena, rootNode, source } = parseSelectorInternal('[type="text" s]')
+
+			expect(rootNode).not.toBeNull()
+			if (!rootNode) return
+
+			const selectorWrapper = arena.get_first_child(rootNode)
+			const child = arena.get_first_child(selectorWrapper)
+			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(getNodeText(arena, source, child)).toBe('[type="text" s]')
+			expect(getNodeContent(arena, source, child)).toBe('type')
+			expect(arena.get_attr_flags(child)).toBe(ATTR_FLAG_CASE_SENSITIVE)
+		})
+
+		it('should parse attribute with uppercase case-insensitive flag', () => {
+			const { arena, rootNode, source } = parseSelectorInternal('[type="text" I]')
+
+			expect(rootNode).not.toBeNull()
+			if (!rootNode) return
+
+			const selectorWrapper = arena.get_first_child(rootNode)
+			const child = arena.get_first_child(selectorWrapper)
+			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(arena.get_attr_flags(child)).toBe(ATTR_FLAG_CASE_INSENSITIVE)
+		})
+
+		it('should parse attribute with whitespace before flag', () => {
+			const { arena, rootNode, source } = parseSelectorInternal('[type="text"   i]')
+
+			expect(rootNode).not.toBeNull()
+			if (!rootNode) return
+
+			const selectorWrapper = arena.get_first_child(rootNode)
+			const child = arena.get_first_child(selectorWrapper)
+			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(arena.get_attr_flags(child)).toBe(ATTR_FLAG_CASE_INSENSITIVE)
+		})
+
+		it('should parse attribute without flag', () => {
+			const { arena, rootNode, source } = parseSelectorInternal('[type="text"]')
+
+			expect(rootNode).not.toBeNull()
+			if (!rootNode) return
+
+			const selectorWrapper = arena.get_first_child(rootNode)
+			const child = arena.get_first_child(selectorWrapper)
+			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(arena.get_attr_flags(child)).toBe(ATTR_FLAG_NONE)
+		})
+
+		it('should handle flag with various operators', () => {
+			// Test with ^= operator
+			const test1 = parseSelectorInternal('[class^="btn" i]')
+			if (!test1.rootNode) throw new Error('Expected rootNode')
+			const wrapper1 = test1.arena.get_first_child(test1.rootNode)
+			if (!wrapper1) throw new Error('Expected wrapper1')
+			const child1 = test1.arena.get_first_child(wrapper1)
+			if (!child1) throw new Error('Expected child1')
+			expect(test1.arena.get_attr_flags(child1)).toBe(ATTR_FLAG_CASE_INSENSITIVE)
+
+			// Test with $= operator
+			const test2 = parseSelectorInternal('[class$="btn" s]')
+			if (!test2.rootNode) throw new Error('Expected rootNode')
+			const wrapper2 = test2.arena.get_first_child(test2.rootNode)
+			if (!wrapper2) throw new Error('Expected wrapper2')
+			const child2 = test2.arena.get_first_child(wrapper2)
+			if (!child2) throw new Error('Expected child2')
+			expect(test2.arena.get_attr_flags(child2)).toBe(ATTR_FLAG_CASE_SENSITIVE)
+
+			// Test with ~= operator
+			const test3 = parseSelectorInternal('[class~="active" i]')
+			if (!test3.rootNode) throw new Error('Expected rootNode')
+			const wrapper3 = test3.arena.get_first_child(test3.rootNode)
+			if (!wrapper3) throw new Error('Expected wrapper3')
+			const child3 = test3.arena.get_first_child(wrapper3)
+			if (!child3) throw new Error('Expected child3')
+			expect(test3.arena.get_attr_flags(child3)).toBe(ATTR_FLAG_CASE_INSENSITIVE)
 		})
 	})
 

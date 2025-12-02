@@ -85,6 +85,11 @@ export const ATTR_OPERATOR_CARET_EQUAL = 4 // [attr^=value]
 export const ATTR_OPERATOR_DOLLAR_EQUAL = 5 // [attr$=value]
 export const ATTR_OPERATOR_STAR_EQUAL = 6 // [attr*=value]
 
+// Attribute selector flag constants (stored in 1 byte at offset 3)
+export const ATTR_FLAG_NONE = 0 // No flag
+export const ATTR_FLAG_CASE_INSENSITIVE = 1 // [attr=value i]
+export const ATTR_FLAG_CASE_SENSITIVE = 2 // [attr=value s]
+
 export class CSSDataArena {
 	private buffer: ArrayBuffer
 	private view: DataView
@@ -168,6 +173,11 @@ export class CSSDataArena {
 		return this.view.getUint8(this.node_offset(node_index) + 2)
 	}
 
+	// Read attribute flags (for NODE_SELECTOR_ATTRIBUTE)
+	get_attr_flags(node_index: number): number {
+		return this.view.getUint8(this.node_offset(node_index) + 3)
+	}
+
 	// Read first child index (0 = no children)
 	get_first_child(node_index: number): number {
 		return this.view.getUint32(this.node_offset(node_index) + 20, true)
@@ -238,6 +248,11 @@ export class CSSDataArena {
 	// Write attribute operator (for NODE_SELECTOR_ATTRIBUTE)
 	set_attr_operator(node_index: number, operator: number): void {
 		this.view.setUint8(this.node_offset(node_index) + 2, operator)
+	}
+
+	// Write attribute flags (for NODE_SELECTOR_ATTRIBUTE)
+	set_attr_flags(node_index: number, flags: number): void {
+		this.view.setUint8(this.node_offset(node_index) + 3, flags)
 	}
 
 	// Write first child index

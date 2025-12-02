@@ -436,3 +436,45 @@ import {
 - `NODE_PRELUDE_IMPORT_URL` (38) - Import URL
 - `NODE_PRELUDE_IMPORT_LAYER` (39) - Import layer
 - `NODE_PRELUDE_IMPORT_SUPPORTS` (40) - Import supports condition
+
+## Attribute Selector Constants
+
+### Attribute Selector Operators
+
+Use these constants with the `node.attr_operator` property to identify the operator in attribute selectors:
+
+- `ATTR_OPERATOR_NONE` (0) - No operator (e.g., `[disabled]`)
+- `ATTR_OPERATOR_EQUAL` (1) - Exact match (e.g., `[type="text"]`)
+- `ATTR_OPERATOR_TILDE_EQUAL` (2) - Whitespace-separated list contains (e.g., `[class~="active"]`)
+- `ATTR_OPERATOR_PIPE_EQUAL` (3) - Starts with or is followed by hyphen (e.g., `[lang|="en"]`)
+- `ATTR_OPERATOR_CARET_EQUAL` (4) - Starts with (e.g., `[href^="https"]`)
+- `ATTR_OPERATOR_DOLLAR_EQUAL` (5) - Ends with (e.g., `[href$=".pdf"]`)
+- `ATTR_OPERATOR_STAR_EQUAL` (6) - Contains substring (e.g., `[href*="example"]`)
+
+### Attribute Selector Flags
+
+Use these constants with the `node.attr_flags` property to identify case sensitivity flags in attribute selectors:
+
+- `ATTR_FLAG_NONE` (0) - No flag specified (default case sensitivity)
+- `ATTR_FLAG_CASE_INSENSITIVE` (1) - Case-insensitive matching (e.g., `[type="text" i]`)
+- `ATTR_FLAG_CASE_SENSITIVE` (2) - Case-sensitive matching (e.g., `[type="text" s]`)
+
+#### Example
+
+```javascript
+import {
+  parse_selector,
+  NODE_SELECTOR_ATTRIBUTE,
+  ATTR_OPERATOR_EQUAL,
+  ATTR_FLAG_CASE_INSENSITIVE
+} from '@projectwallace/css-parser'
+
+const ast = parse_selector('[type="text" i]')
+
+for (let node of ast) {
+  if (node.type === NODE_SELECTOR_ATTRIBUTE) {
+    console.log(node.attr_operator === ATTR_OPERATOR_EQUAL) // true
+    console.log(node.attr_flags === ATTR_FLAG_CASE_INSENSITIVE) // true
+  }
+}
+```

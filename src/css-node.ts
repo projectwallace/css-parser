@@ -161,6 +161,12 @@ export class CSSNode {
 		return this.arena.get_attr_operator(this.index)
 	}
 
+	// Get the attribute flags (for attribute selectors: i, s)
+	// Returns one of the ATTR_FLAG_* constants
+	get attr_flags(): number {
+		return this.arena.get_attr_flags(this.index)
+	}
+
 	// Get the unit for dimension nodes (e.g., "px" from "100px", "%" from "50%")
 	get unit(): string | null {
 		if (this.type !== NODE_VALUE_DIMENSION) return null
