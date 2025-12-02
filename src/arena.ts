@@ -75,6 +75,7 @@ export const FLAG_LENGTH_OVERFLOW = 1 << 2 // Node > 65k chars
 export const FLAG_HAS_BLOCK = 1 << 3 // Has { } block (for style rules and at-rules)
 export const FLAG_VENDOR_PREFIXED = 1 << 4 // Has vendor prefix (-webkit-, -moz-, -ms-, -o-)
 export const FLAG_HAS_DECLARATIONS = 1 << 5 // Has declarations (for style rules)
+export const FLAG_HAS_PARENS = 1 << 6 // Has parentheses syntax (for pseudo-class/pseudo-element functions)
 
 // Attribute selector operator constants (stored in 1 byte at offset 2)
 export const ATTR_OPERATOR_NONE = 0 // [attr]

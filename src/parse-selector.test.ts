@@ -415,6 +415,72 @@ describe('SelectorParser', () => {
 		})
 	})
 
+	describe('Pseudo-class function syntax detection (has_children)', () => {
+		it('should indicate :lang() has function syntax even when empty', () => {
+			const root = parse_selector(':lang()')
+			const pseudoClass = root.first_child!.first_child!
+			expect(pseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(pseudoClass.name).toBe('lang')
+			expect(pseudoClass.has_children).toBe(true) // Function syntax, even if empty
+		})
+
+		it('should indicate :lang(en) has function syntax with children', () => {
+			const root = parse_selector(':lang(en)')
+			const pseudoClass = root.first_child!.first_child!
+			expect(pseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(pseudoClass.name).toBe('lang')
+			expect(pseudoClass.has_children).toBe(true) // Function syntax with content
+		})
+
+		it('should indicate :hover has no function syntax', () => {
+			const root = parse_selector(':hover')
+			const pseudoClass = root.first_child!.first_child!
+			expect(pseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(pseudoClass.name).toBe('hover')
+			expect(pseudoClass.has_children).toBe(false) // Not a function
+		})
+
+		it('should indicate :is() has function syntax even when empty', () => {
+			const root = parse_selector(':is()')
+			const pseudoClass = root.first_child!.first_child!
+			expect(pseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(pseudoClass.name).toBe('is')
+			expect(pseudoClass.has_children).toBe(true) // Function syntax, even if empty
+		})
+
+		it('should indicate :has() has function syntax even when empty', () => {
+			const root = parse_selector(':has()')
+			const pseudoClass = root.first_child!.first_child!
+			expect(pseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(pseudoClass.name).toBe('has')
+			expect(pseudoClass.has_children).toBe(true) // Function syntax, even if empty
+		})
+
+		it('should indicate :nth-child() has function syntax even when empty', () => {
+			const root = parse_selector(':nth-child()')
+			const pseudoClass = root.first_child!.first_child!
+			expect(pseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(pseudoClass.name).toBe('nth-child')
+			expect(pseudoClass.has_children).toBe(true) // Function syntax, even if empty
+		})
+
+		it('should indicate ::before has no function syntax', () => {
+			const root = parse_selector('::before')
+			const pseudoElement = root.first_child!.first_child!
+			expect(pseudoElement.type).toBe(NODE_SELECTOR_PSEUDO_ELEMENT)
+			expect(pseudoElement.name).toBe('before')
+			expect(pseudoElement.has_children).toBe(false) // Not a function
+		})
+
+		it('should indicate ::slotted() has function syntax even when empty', () => {
+			const root = parse_selector('::slotted()')
+			const pseudoElement = root.first_child!.first_child!
+			expect(pseudoElement.type).toBe(NODE_SELECTOR_PSEUDO_ELEMENT)
+			expect(pseudoElement.name).toBe('slotted')
+			expect(pseudoElement.has_children).toBe(true) // Function syntax, even if empty
+		})
+	})
+
 	describe('Attribute selectors', () => {
 		it('should parse simple attribute selector', () => {
 			const { arena, rootNode, source } = parseSelectorInternal('[disabled]')
@@ -943,7 +1009,7 @@ describe('SelectorParser', () => {
 
 			expect(has.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
 			expect(has.text).toBe(':has()')
-			expect(has.has_children).toBe(false)
+			expect(has.has_children).toBe(true) // Has function syntax (parentheses)
 		})
 
 		it('should parse nesting with ampersand', () => {
@@ -1392,6 +1458,21 @@ describe('parse_selector()', () => {
 		expect(result.type).toBe(NODE_SELECTOR_LIST)
 		expect(result.text).toBe(':nth-child(2n+1)')
 		expect(result.has_children).toBe(true)
+	})
+
+	test('should parse unknown pseudo-class without parens', () => {
+		let root = parse_selector(':hello')
+		let pseudo = root.first_child?.first_child
+		expect(pseudo?.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+		expect(pseudo?.has_children).toBe(false)
+	})
+
+	test('should parse unknown pseudo-class with empty parens', () => {
+		let root = parse_selector(':hello()')
+		let pseudo = root.first_child?.first_child
+		expect(pseudo?.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+		expect(pseudo?.has_children).toBe(true)
+		expect(pseudo?.children.length).toBe(0)
 	})
 
 	test('should parse attribute selector', () => {

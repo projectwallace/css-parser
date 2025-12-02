@@ -44,6 +44,7 @@ import {
 	FLAG_HAS_BLOCK,
 	FLAG_VENDOR_PREFIXED,
 	FLAG_HAS_DECLARATIONS,
+	FLAG_HAS_PARENS,
 } from './arena'
 
 import { CHAR_MINUS_HYPHEN, CHAR_PLUS, is_whitespace } from './string-utils'
@@ -316,7 +317,17 @@ export class CSSNode {
 	}
 
 	// Check if this node has children
+	// For pseudo-class/pseudo-element functions, returns true if FLAG_HAS_PARENS is set
+	// This allows formatters to distinguish :lang() from :hover
 	get has_children(): boolean {
+		// For pseudo-class/pseudo-element nodes, check if they have function syntax
+		if (this.type === NODE_SELECTOR_PSEUDO_CLASS || this.type === NODE_SELECTOR_PSEUDO_ELEMENT) {
+			// If FLAG_HAS_PARENS is set, return true even if no actual children
+			// This indicates that `()` is there but contains no children which can be caught by checking `.children.length`
+			if (this.arena.has_flag(this.index, FLAG_HAS_PARENS)) {
+				return true
+			}
+		}
 		return this.arena.has_children(this.index)
 	}
 
