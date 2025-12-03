@@ -48,7 +48,7 @@ describe('parse_selector() function', () => {
 		const classNode = firstSelector?.first_child
 
 		expect(classNode?.type).toBe(NODE_SELECTOR_CLASS)
-		expect(classNode?.name).toBe('my-class')
+		expect(classNode?.name).toBe('.my-class')
 	})
 
 	it('should parse ID selector', () => {
@@ -57,7 +57,7 @@ describe('parse_selector() function', () => {
 		const idNode = firstSelector?.first_child
 
 		expect(idNode?.type).toBe(NODE_SELECTOR_ID)
-		expect(idNode?.name).toBe('my-id')
+		expect(idNode?.name).toBe('#my-id')
 	})
 
 	it('should parse compound selector', () => {
@@ -167,7 +167,7 @@ describe('SelectorParser', () => {
 			const child = arena.get_first_child(selectorWrapper)
 			expect(arena.get_type(child)).toBe(NODE_SELECTOR_CLASS)
 			expect(getNodeText(arena, source, child)).toBe('.my-class')
-			expect(getNodeContent(arena, source, child)).toBe('my-class')
+			expect(getNodeContent(arena, source, child)).toBe('.my-class')
 		})
 
 		it('should parse ID selector', () => {
@@ -185,7 +185,7 @@ describe('SelectorParser', () => {
 			const child = arena.get_first_child(selectorWrapper)
 			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ID)
 			expect(getNodeText(arena, source, child)).toBe('#my-id')
-			expect(getNodeContent(arena, source, child)).toBe('my-id')
+			expect(getNodeContent(arena, source, child)).toBe('#my-id')
 		})
 
 		it('should parse universal selector', () => {
@@ -243,7 +243,7 @@ describe('SelectorParser', () => {
 			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_TYPE)
 			expect(getNodeText(arena, source, children[0])).toBe('div')
 			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_CLASS)
-			expect(getNodeContent(arena, source, children[1])).toBe('container')
+			expect(getNodeContent(arena, source, children[1])).toBe('.container')
 		})
 
 		it('should parse element with ID', () => {
@@ -260,7 +260,7 @@ describe('SelectorParser', () => {
 			expect(children).toHaveLength(2)
 			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_TYPE)
 			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_ID)
-			expect(getNodeContent(arena, source, children[1])).toBe('app')
+			expect(getNodeContent(arena, source, children[1])).toBe('#app')
 		})
 
 		it('should parse element with multiple classes', () => {
@@ -274,11 +274,11 @@ describe('SelectorParser', () => {
 			expect(children).toHaveLength(4)
 			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_TYPE)
 			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_CLASS)
-			expect(getNodeContent(arena, source, children[1])).toBe('foo')
+			expect(getNodeContent(arena, source, children[1])).toBe('.foo')
 			expect(arena.get_type(children[2])).toBe(NODE_SELECTOR_CLASS)
-			expect(getNodeContent(arena, source, children[2])).toBe('bar')
+			expect(getNodeContent(arena, source, children[2])).toBe('.bar')
 			expect(arena.get_type(children[3])).toBe(NODE_SELECTOR_CLASS)
-			expect(getNodeContent(arena, source, children[3])).toBe('baz')
+			expect(getNodeContent(arena, source, children[3])).toBe('.baz')
 		})
 
 		it('should parse complex compound selector', () => {
@@ -293,9 +293,9 @@ describe('SelectorParser', () => {
 			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_TYPE)
 			expect(getNodeText(arena, source, children[0])).toBe('div')
 			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_CLASS)
-			expect(getNodeContent(arena, source, children[1])).toBe('container')
+			expect(getNodeContent(arena, source, children[1])).toBe('.container')
 			expect(arena.get_type(children[2])).toBe(NODE_SELECTOR_ID)
-			expect(getNodeContent(arena, source, children[2])).toBe('app')
+			expect(getNodeContent(arena, source, children[2])).toBe('#app')
 		})
 	})
 
@@ -634,7 +634,7 @@ describe('SelectorParser', () => {
 		})
 
 		it('should parse attribute with uppercase case-insensitive flag', () => {
-			const { arena, rootNode, source } = parseSelectorInternal('[type="text" I]')
+			const { arena, rootNode } = parseSelectorInternal('[type="text" I]')
 
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
@@ -646,7 +646,7 @@ describe('SelectorParser', () => {
 		})
 
 		it('should parse attribute with whitespace before flag', () => {
-			const { arena, rootNode, source } = parseSelectorInternal('[type="text"   i]')
+			const { arena, rootNode } = parseSelectorInternal('[type="text"   i]')
 
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
@@ -658,7 +658,7 @@ describe('SelectorParser', () => {
 		})
 
 		it('should parse attribute without flag', () => {
-			const { arena, rootNode, source } = parseSelectorInternal('[type="text"]')
+			const { arena, rootNode } = parseSelectorInternal('[type="text"]')
 
 			expect(rootNode).not.toBeNull()
 			if (!rootNode) return
@@ -1274,7 +1274,7 @@ describe('SelectorParser', () => {
 
 			const child = arena.get_first_child(selectorWrapper)
 			expect(arena.get_type(child)).toBe(NODE_SELECTOR_CLASS)
-			expect(getNodeContent(arena, source, child)).toBe('my-class-123')
+			expect(getNodeContent(arena, source, child)).toBe('.my-class-123')
 		})
 
 		it('should parse hyphenated element names', () => {
@@ -1310,7 +1310,7 @@ describe('SelectorParser', () => {
 
 			const child = arena.get_first_child(selectorWrapper)
 			expect(arena.get_type(child)).toBe(NODE_SELECTOR_CLASS)
-			expect(getNodeContent(arena, source, child)).toBe('block__element--modifier')
+			expect(getNodeContent(arena, source, child)).toBe('.block__element--modifier')
 		})
 
 		it('should parse Bootstrap-style selector', () => {
