@@ -103,18 +103,13 @@ export class SelectorParser {
 
 		while (this.lexer.pos < this.selector_end) {
 			let selector_start = this.lexer.pos
-			let selector_line = this.lexer.line
-			let selector_column = this.lexer.column
+			// let selector_line = this.lexer.line
+			// let selector_column = this.lexer.column
 
 			let complex_selector = this.parse_complex_selector(allow_relative)
 			if (complex_selector !== null) {
 				// Wrap the complex selector (chain of components) in a NODE_SELECTOR
-				let selector_wrapper = this.arena.create_node()
-				this.arena.set_type(selector_wrapper, NODE_SELECTOR)
-				this.arena.set_start_offset(selector_wrapper, selector_start)
-				this.arena.set_length(selector_wrapper, this.lexer.pos - selector_start)
-				this.arena.set_start_line(selector_wrapper, selector_line)
-				this.arena.set_start_column(selector_wrapper, selector_column)
+				let selector_wrapper = this.create_node(NODE_SELECTOR, selector_start, this.lexer.pos)
 
 				// Find the last component in the chain
 				let last_component = complex_selector
@@ -189,7 +184,7 @@ export class SelectorParser {
 				let ch = this.source.charCodeAt(this.lexer.token_start)
 				if (ch === CHAR_GREATER_THAN || ch === CHAR_PLUS || ch === CHAR_TILDE) {
 					// Found leading combinator (>, +, ~) - this is a relative selector
-					let combinator = this.create_combinator(this.lexer.token_start, this.lexer.token_end)
+					let combinator = this.create_node(NODE_SELECTOR_COMBINATOR, this.lexer.token_start, this.lexer.token_end)
 					components.push(combinator)
 					this.skip_whitespace()
 					// Continue to parse the rest normally
@@ -302,11 +297,11 @@ export class SelectorParser {
 		switch (token_type) {
 			case TOKEN_IDENT:
 				// Type selector: div, span, p
-				return this.create_type_selector(start, end)
+				return this.create_node(NODE_SELECTOR_TYPE, start, end)
 
 			case TOKEN_HASH:
 				// ID selector: #id
-				return this.create_id_selector(start, end)
+				return this.create_node(NODE_SELECTOR_ID, start, end)
 
 			case TOKEN_DELIM:
 				// Could be: . (class), * (universal), & (nesting)
@@ -316,10 +311,10 @@ export class SelectorParser {
 					return this.parse_class_selector(start)
 				} else if (ch === CHAR_ASTERISK) {
 					// * - universal selector
-					return this.create_universal_selector(start, end)
+					return this.create_node(NODE_SELECTOR_UNIVERSAL, start, end)
 				} else if (ch === CHAR_AMPERSAND) {
 					// & - nesting selector
-					return this.create_nesting_selector(start, end)
+					return this.create_node(NODE_SELECTOR_NESTING, start, end)
 				}
 				// Other delimiters signal end of selector
 				return null
@@ -371,7 +366,7 @@ export class SelectorParser {
 			let ch = this.source.charCodeAt(this.lexer.token_start)
 			if (is_combinator(ch)) {
 				// > + ~ (combinator text excludes leading whitespace)
-				return this.create_combinator(this.lexer.token_start, this.lexer.token_end)
+				return this.create_node(NODE_SELECTOR_COMBINATOR, this.lexer.token_start, this.lexer.token_end)
 			}
 		}
 
@@ -387,7 +382,7 @@ export class SelectorParser {
 					break
 				}
 			}
-			return this.create_combinator(whitespace_start, this.lexer.pos)
+			return this.create_node(NODE_SELECTOR_COMBINATOR, whitespace_start, this.lexer.pos)
 		}
 
 		// No combinator found, reset position
@@ -408,16 +403,7 @@ export class SelectorParser {
 			return null
 		}
 
-		let node = this.arena.create_node()
-		this.arena.set_type(node, NODE_SELECTOR_CLASS)
-		this.arena.set_start_offset(node, dot_pos)
-		this.arena.set_length(node, this.lexer.token_end - dot_pos)
-		this.arena.set_start_line(node, this.lexer.line)
-		this.arena.set_start_column(node, this.lexer.column)
-		// Content is the class name (without the dot)
-		this.arena.set_content_start(node, this.lexer.token_start)
-		this.arena.set_content_length(node, this.lexer.token_end - this.lexer.token_start)
-		return node
+		return this.create_node(NODE_SELECTOR_CLASS, dot_pos, this.lexer.token_end)
 	}
 
 	// Parse attribute selector ([attr], [attr=value], etc.)
@@ -443,12 +429,7 @@ export class SelectorParser {
 			}
 		}
 
-		let node = this.arena.create_node()
-		this.arena.set_type(node, NODE_SELECTOR_ATTRIBUTE)
-		this.arena.set_start_offset(node, start)
-		this.arena.set_length(node, end - start)
-		this.arena.set_start_line(node, this.lexer.line)
-		this.arena.set_start_column(node, this.lexer.column)
+		let node = this.create_node(NODE_SELECTOR_ATTRIBUTE, start, end)
 
 		// Parse the content inside brackets to extract name, operator, and value
 		this.parse_attribute_content(node, content_start, content_end)
@@ -627,12 +608,12 @@ export class SelectorParser {
 
 		let token_type = this.lexer.token_type
 		if (token_type === TOKEN_IDENT) {
-			let node = this.arena.create_node()
-			this.arena.set_type(node, is_pseudo_element ? NODE_SELECTOR_PSEUDO_ELEMENT : NODE_SELECTOR_PSEUDO_CLASS)
-			this.arena.set_start_offset(node, start)
-			this.arena.set_length(node, this.lexer.token_end - start)
-			this.arena.set_start_line(node, this.lexer.line)
-			this.arena.set_start_column(node, this.lexer.column)
+			let node = this.create_node(
+				is_pseudo_element ? NODE_SELECTOR_PSEUDO_ELEMENT : NODE_SELECTOR_PSEUDO_CLASS,
+				start,
+				this.lexer.token_end,
+			)
+
 			// Content is the pseudo name (without colons)
 			this.arena.set_content_start(node, this.lexer.token_start)
 			this.arena.set_content_length(node, this.lexer.token_end - this.lexer.token_start)
@@ -685,12 +666,7 @@ export class SelectorParser {
 			}
 		}
 
-		let node = this.arena.create_node()
-		this.arena.set_type(node, is_pseudo_element ? NODE_SELECTOR_PSEUDO_ELEMENT : NODE_SELECTOR_PSEUDO_CLASS)
-		this.arena.set_start_offset(node, start)
-		this.arena.set_length(node, end - start)
-		this.arena.set_start_line(node, this.lexer.line)
-		this.arena.set_start_column(node, this.lexer.column)
+		let node = this.create_node(is_pseudo_element ? NODE_SELECTOR_PSEUDO_ELEMENT : NODE_SELECTOR_PSEUDO_CLASS, start, end)
 		// Content is the function name (without colons and parentheses)
 		this.arena.set_content_start(node, func_name_start)
 		this.arena.set_content_length(node, func_name_end - func_name_start)
@@ -790,12 +766,7 @@ export class SelectorParser {
 			// Accept both strings and identifiers
 			if (token_type === TOKEN_STRING || token_type === TOKEN_IDENT) {
 				// Create language identifier node
-				let lang_node = this.arena.create_node()
-				this.arena.set_type(lang_node, NODE_SELECTOR_LANG)
-				this.arena.set_start_offset(lang_node, token_start)
-				this.arena.set_length(lang_node, token_end - token_start)
-				this.arena.set_start_line(lang_node, this.lexer.line)
-				this.arena.set_start_column(lang_node, this.lexer.column)
+				let lang_node = this.create_node(NODE_SELECTOR_LANG, token_start, token_end)
 
 				// Link as child of :lang() pseudo-class
 				if (first_child === null) {
@@ -897,59 +868,9 @@ export class SelectorParser {
 		return -1
 	}
 
-	// Create simple selector nodes
-	private create_type_selector(start: number, end: number): number {
+	private create_node(type: number, start: number, end: number): number {
 		let node = this.arena.create_node()
-		this.arena.set_type(node, NODE_SELECTOR_TYPE)
-		this.arena.set_start_offset(node, start)
-		this.arena.set_length(node, end - start)
-		this.arena.set_start_line(node, this.lexer.line)
-		this.arena.set_start_column(node, this.lexer.column)
-		this.arena.set_content_start(node, start)
-		this.arena.set_content_length(node, end - start)
-		return node
-	}
-
-	private create_id_selector(start: number, end: number): number {
-		let node = this.arena.create_node()
-		this.arena.set_type(node, NODE_SELECTOR_ID)
-		this.arena.set_start_offset(node, start)
-		this.arena.set_length(node, end - start)
-		this.arena.set_start_line(node, this.lexer.line)
-		this.arena.set_start_column(node, this.lexer.column)
-		// Content is the ID name (without the #)
-		this.arena.set_content_start(node, start + 1)
-		this.arena.set_content_length(node, end - start - 1)
-		return node
-	}
-
-	private create_universal_selector(start: number, end: number): number {
-		let node = this.arena.create_node()
-		this.arena.set_type(node, NODE_SELECTOR_UNIVERSAL)
-		this.arena.set_start_offset(node, start)
-		this.arena.set_length(node, end - start)
-		this.arena.set_start_line(node, this.lexer.line)
-		this.arena.set_start_column(node, this.lexer.column)
-		this.arena.set_content_start(node, start)
-		this.arena.set_content_length(node, end - start)
-		return node
-	}
-
-	private create_nesting_selector(start: number, end: number): number {
-		let node = this.arena.create_node()
-		this.arena.set_type(node, NODE_SELECTOR_NESTING)
-		this.arena.set_start_offset(node, start)
-		this.arena.set_length(node, end - start)
-		this.arena.set_start_line(node, this.lexer.line)
-		this.arena.set_start_column(node, this.lexer.column)
-		this.arena.set_content_start(node, start)
-		this.arena.set_content_length(node, end - start)
-		return node
-	}
-
-	private create_combinator(start: number, end: number): number {
-		let node = this.arena.create_node()
-		this.arena.set_type(node, NODE_SELECTOR_COMBINATOR)
+		this.arena.set_type(node, type)
 		this.arena.set_start_offset(node, start)
 		this.arena.set_length(node, end - start)
 		this.arena.set_start_line(node, this.lexer.line)

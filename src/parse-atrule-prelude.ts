@@ -97,6 +97,16 @@ export class AtRulePreludeParser {
 		return nodes
 	}
 
+	private create_node(type: number, start: number, end: number): number {
+		let node = this.arena.create_node()
+		this.arena.set_type(node, type)
+		this.arena.set_start_offset(node, start)
+		this.arena.set_length(node, end - start)
+		this.arena.set_start_line(node, this.lexer.token_line)
+		this.arena.set_start_column(node, this.lexer.token_column)
+		return node
+	}
+
 	private is_and_or_not(str: string): boolean {
 		if (str.length > 3 || str.length < 2) return false
 		return str_equals('and', str) || str_equals('or', str) || str_equals('not', str)
@@ -152,20 +162,11 @@ export class AtRulePreludeParser {
 
 				if (this.is_and_or_not(text)) {
 					// Logical operator
-					let op = this.arena.create_node()
-					this.arena.set_type(op, NODE_PRELUDE_OPERATOR)
-					this.arena.set_start_offset(op, this.lexer.token_start)
-					this.arena.set_length(op, this.lexer.token_end - this.lexer.token_start)
-					this.arena.set_start_line(op, this.lexer.token_line)
+					let op = this.create_node(NODE_PRELUDE_OPERATOR, this.lexer.token_start, this.lexer.token_end)
 					components.push(op)
 				} else {
 					// Media type: screen, print, all
-					let media_type = this.arena.create_node()
-					this.arena.set_type(media_type, NODE_PRELUDE_MEDIA_TYPE)
-					this.arena.set_start_offset(media_type, this.lexer.token_start)
-					this.arena.set_length(media_type, this.lexer.token_end - this.lexer.token_start)
-					this.arena.set_start_line(media_type, this.lexer.token_line)
-					this.arena.set_start_column(media_type, this.lexer.token_column)
+					let media_type = this.create_node(NODE_PRELUDE_MEDIA_TYPE, this.lexer.token_start, this.lexer.token_end)
 					components.push(media_type)
 				}
 			} else {
@@ -177,11 +178,7 @@ export class AtRulePreludeParser {
 		if (components.length === 0) return null
 
 		// Create media query node
-		let query_node = this.arena.create_node()
-		this.arena.set_type(query_node, NODE_PRELUDE_MEDIA_QUERY)
-		this.arena.set_start_offset(query_node, query_start)
-		this.arena.set_length(query_node, this.lexer.pos - query_start)
-		this.arena.set_start_line(query_node, query_line)
+		let query_node = this.create_node(NODE_PRELUDE_MEDIA_QUERY, query_start, this.lexer.pos)
 
 		// Append components as children
 		for (let component of components) {
@@ -216,11 +213,7 @@ export class AtRulePreludeParser {
 		let feature_end = this.lexer.token_end // After ')'
 
 		// Create media feature node
-		let feature = this.arena.create_node()
-		this.arena.set_type(feature, NODE_PRELUDE_MEDIA_FEATURE)
-		this.arena.set_start_offset(feature, feature_start)
-		this.arena.set_length(feature, feature_end - feature_start)
-		this.arena.set_start_line(feature, feature_line)
+		let feature = this.create_node(NODE_PRELUDE_MEDIA_FEATURE, feature_start, feature_end)
 
 		// Store feature content (without parentheses) in value fields, trimmed
 		let trimmed = trim_boundaries(this.source, content_start, content_end)
@@ -261,19 +254,11 @@ export class AtRulePreludeParser {
 
 				if (this.is_and_or_not(text)) {
 					// Logical operator
-					let op = this.arena.create_node()
-					this.arena.set_type(op, NODE_PRELUDE_OPERATOR)
-					this.arena.set_start_offset(op, this.lexer.token_start)
-					this.arena.set_length(op, this.lexer.token_end - this.lexer.token_start)
-					this.arena.set_start_line(op, this.lexer.token_line)
+					let op = this.create_node(NODE_PRELUDE_OPERATOR, this.lexer.token_start, this.lexer.token_end)
 					components.push(op)
 				} else {
 					// Container name or other identifier
-					let name = this.arena.create_node()
-					this.arena.set_type(name, NODE_PRELUDE_IDENTIFIER)
-					this.arena.set_start_offset(name, this.lexer.token_start)
-					this.arena.set_length(name, this.lexer.token_end - this.lexer.token_start)
-					this.arena.set_start_line(name, this.lexer.token_line)
+					let name = this.create_node(NODE_PRELUDE_IDENTIFIER, this.lexer.token_start, this.lexer.token_end)
 					components.push(name)
 				}
 			}
@@ -282,11 +267,7 @@ export class AtRulePreludeParser {
 		if (components.length === 0) return []
 
 		// Create container query node
-		let query_node = this.arena.create_node()
-		this.arena.set_type(query_node, NODE_PRELUDE_CONTAINER_QUERY)
-		this.arena.set_start_offset(query_node, query_start)
-		this.arena.set_length(query_node, this.lexer.pos - query_start)
-		this.arena.set_start_line(query_node, query_line)
+		let query_node = this.create_node(NODE_PRELUDE_CONTAINER_QUERY, query_start, this.lexer.pos)
 
 		// Append components as children
 		for (let component of components) {
@@ -332,11 +313,7 @@ export class AtRulePreludeParser {
 					let feature_end = this.lexer.token_end
 
 					// Create supports query node
-					let query = this.arena.create_node()
-					this.arena.set_type(query, NODE_PRELUDE_SUPPORTS_QUERY)
-					this.arena.set_start_offset(query, feature_start)
-					this.arena.set_length(query, feature_end - feature_start)
-					this.arena.set_start_line(query, feature_line)
+					let query = this.create_node(NODE_PRELUDE_SUPPORTS_QUERY, feature_start, feature_end)
 
 					// Store query content in value fields, trimmed
 					let trimmed = trim_boundaries(this.source, content_start, content_end)
@@ -353,11 +330,7 @@ export class AtRulePreludeParser {
 				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
 
 				if (this.is_and_or_not(text)) {
-					let op = this.arena.create_node()
-					this.arena.set_type(op, NODE_PRELUDE_OPERATOR)
-					this.arena.set_start_offset(op, this.lexer.token_start)
-					this.arena.set_length(op, this.lexer.token_end - this.lexer.token_start)
-					this.arena.set_start_line(op, this.lexer.token_line)
+					let op = this.create_node(NODE_PRELUDE_OPERATOR, this.lexer.token_start, this.lexer.token_end)
 					nodes.push(op)
 				}
 			}
@@ -379,11 +352,7 @@ export class AtRulePreludeParser {
 			let token_type = this.lexer.token_type
 			if (token_type === TOKEN_IDENT) {
 				// Layer name
-				let layer = this.arena.create_node()
-				this.arena.set_type(layer, NODE_PRELUDE_LAYER_NAME)
-				this.arena.set_start_offset(layer, this.lexer.token_start)
-				this.arena.set_length(layer, this.lexer.token_end - this.lexer.token_start)
-				this.arena.set_start_line(layer, this.lexer.token_line)
+				let layer = this.create_node(NODE_PRELUDE_LAYER_NAME, this.lexer.token_start, this.lexer.token_end)
 				nodes.push(layer)
 			} else if (token_type === TOKEN_COMMA) {
 				// Skip comma separator
@@ -407,11 +376,7 @@ export class AtRulePreludeParser {
 		if (this.lexer.token_type !== TOKEN_IDENT) return []
 
 		// Create identifier node
-		let ident = this.arena.create_node()
-		this.arena.set_type(ident, NODE_PRELUDE_IDENTIFIER)
-		this.arena.set_start_offset(ident, this.lexer.token_start)
-		this.arena.set_length(ident, this.lexer.token_end - this.lexer.token_start)
-		this.arena.set_start_line(ident, this.lexer.token_line)
+		let ident = this.create_node(NODE_PRELUDE_IDENTIFIER, this.lexer.token_start, this.lexer.token_end)
 
 		return [ident]
 	}
@@ -494,12 +459,7 @@ export class AtRulePreludeParser {
 		}
 
 		// Create URL node
-		let url_node = this.arena.create_node()
-		this.arena.set_type(url_node, NODE_PRELUDE_IMPORT_URL)
-		this.arena.set_start_offset(url_node, url_start)
-		this.arena.set_length(url_node, url_end - url_start)
-		this.arena.set_start_line(url_node, url_line)
-
+		let url_node = this.create_node(NODE_PRELUDE_IMPORT_URL, url_start, url_end)
 		return url_node
 	}
 
@@ -547,11 +507,7 @@ export class AtRulePreludeParser {
 				}
 
 				// Create layer node
-				let layer_node = this.arena.create_node()
-				this.arena.set_type(layer_node, NODE_PRELUDE_IMPORT_LAYER)
-				this.arena.set_start_offset(layer_node, layer_start)
-				this.arena.set_length(layer_node, layer_end - layer_start)
-				this.arena.set_start_line(layer_node, layer_line)
+				let layer_node = this.create_node(NODE_PRELUDE_IMPORT_LAYER, layer_start, layer_end)
 
 				// Store the layer name (content inside parentheses), trimmed
 				if (content_length > 0) {
@@ -604,11 +560,7 @@ export class AtRulePreludeParser {
 				}
 
 				// Create supports node
-				let supports_node = this.arena.create_node()
-				this.arena.set_type(supports_node, NODE_PRELUDE_IMPORT_SUPPORTS)
-				this.arena.set_start_offset(supports_node, supports_start)
-				this.arena.set_length(supports_node, supports_end - supports_start)
-				this.arena.set_start_line(supports_node, supports_line)
+				let supports_node = this.create_node(NODE_PRELUDE_IMPORT_SUPPORTS, supports_start, supports_end)
 
 				return supports_node
 			}
