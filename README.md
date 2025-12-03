@@ -15,7 +15,6 @@ This parser was heavily influenced by [CSSTree](https://github.com/csstree/csstr
 - **Error recovery** - Continues parsing on malformed CSS
 - **Comment preservation** - Comments stored as first-class AST nodes
 - **Location tracking** - Line, column, offset, and length for all nodes
-- **Built-in vendor prefix detection** - Automatic detection of `-webkit-`, `-moz-`, etc. for selectors, values, properties and more
 
 ## Installation
 
@@ -59,9 +58,9 @@ for (const rule of ast) {
 
 ## Performance
 
-- **Tiny install size**
+- **Small install size** (~200kB)
 - **Zero allocations during parsing** - all memory allocated upfront based on real world heuristics, which also helps prevent garbage collection running often
-- **Cache-friendly data layout** - contiguous memory for sequential access powered by concepts or Data Oriented Design
+- **Cache-friendly data layout** - contiguous memory for sequential access powered by concepts of Data Oriented Design
 - **First-class comment and location support** - while still being performant because analysis requires constant access to lines and columns
 - **No syntax validation** - focusing only on the raw data we can skip expensive syntax files and MDN data syncs
 
@@ -72,6 +71,7 @@ See [API.md](./API.md) for complete documentation of all parser functions and op
 ## Non-goals
 
 - **No syntax validation** - this parser does not try to validate your CSS structure. Everything can be anything
+- **No custom syntax support** - we're leaving the era of CSS preprocessors so we only focus on CSS
 
 ## License
 
