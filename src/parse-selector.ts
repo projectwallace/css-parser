@@ -81,7 +81,7 @@ export class SelectorParser {
 
 	// Parse a selector range into selector nodes
 	// Always returns a NODE_SELECTOR_LIST with selector components as children
-	parse_selector(start: number, end: number, line: number = 1, column: number = 1, allow_relative: boolean = false): number | null {
+	parse_selector(start: number, end: number, line: number = 1, column: number = 1, allow_relative: boolean = true): number | null {
 		this.selector_end = end
 
 		// Position lexer at selector start
@@ -95,7 +95,7 @@ export class SelectorParser {
 	}
 
 	// Parse comma-separated selectors
-	private parse_selector_list(allow_relative: boolean = false): number | null {
+	private parse_selector_list(allow_relative: boolean = true): number | null {
 		let selectors: number[] = []
 		let list_start = this.lexer.pos
 		let list_line = this.lexer.line
@@ -170,7 +170,8 @@ export class SelectorParser {
 
 	// Parse a complex selector (with combinators)
 	// e.g., "div.class > p + span"
-	private parse_complex_selector(allow_relative: boolean = false): number | null {
+	// Also supports CSS Nesting relaxed syntax: "> a", "~ span", etc.
+	private parse_complex_selector(allow_relative: boolean = true): number | null {
 		let components: number[] = []
 
 		// Skip leading whitespace
