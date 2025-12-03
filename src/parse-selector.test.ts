@@ -1070,6 +1070,166 @@ describe('SelectorParser', () => {
 		})
 	})
 
+	describe('Relaxed nesting (CSS Nesting Module Level 1)', () => {
+		it('should parse selector starting with child combinator', () => {
+			const { arena, rootNode, source } = parseSelectorInternal('> a')
+
+			expect(rootNode).not.toBeNull()
+			if (!rootNode) return
+
+			// Should have one selector
+			const selectorWrappers = getChildren(arena, source, rootNode)
+			expect(selectorWrappers).toHaveLength(1)
+
+			// The selector should have 2 children: combinator (>) and type selector (a)
+			const selectorWrapper = selectorWrappers[0]
+			const children = getChildren(arena, source, selectorWrapper)
+			expect(children).toHaveLength(2)
+			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(getNodeText(arena, source, children[0]).trim()).toBe('>')
+			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_TYPE)
+			expect(getNodeText(arena, source, children[1])).toBe('a')
+		})
+
+		it('should parse selector starting with next-sibling combinator', () => {
+			const { arena, rootNode, source } = parseSelectorInternal('+ div')
+
+			expect(rootNode).not.toBeNull()
+			if (!rootNode) return
+
+			const selectorWrappers = getChildren(arena, source, rootNode)
+			expect(selectorWrappers).toHaveLength(1)
+
+			const selectorWrapper = selectorWrappers[0]
+			const children = getChildren(arena, source, selectorWrapper)
+			expect(children).toHaveLength(2)
+			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(getNodeText(arena, source, children[0]).trim()).toBe('+')
+			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_TYPE)
+			expect(getNodeText(arena, source, children[1])).toBe('div')
+		})
+
+		it('should parse selector starting with subsequent-sibling combinator', () => {
+			const { arena, rootNode, source } = parseSelectorInternal('~ span')
+
+			expect(rootNode).not.toBeNull()
+			if (!rootNode) return
+
+			const selectorWrappers = getChildren(arena, source, rootNode)
+			expect(selectorWrappers).toHaveLength(1)
+
+			const selectorWrapper = selectorWrappers[0]
+			const children = getChildren(arena, source, selectorWrapper)
+			expect(children).toHaveLength(2)
+			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(getNodeText(arena, source, children[0]).trim()).toBe('~')
+			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_TYPE)
+			expect(getNodeText(arena, source, children[1])).toBe('span')
+		})
+
+		it('should parse complex selector after leading combinator', () => {
+			const { arena, rootNode, source } = parseSelectorInternal('> a.link#nav[href]:hover')
+
+			expect(rootNode).not.toBeNull()
+			if (!rootNode) return
+
+			const selectorWrappers = getChildren(arena, source, rootNode)
+			expect(selectorWrappers).toHaveLength(1)
+
+			const selectorWrapper = selectorWrappers[0]
+			const children = getChildren(arena, source, selectorWrapper)
+
+			// Should have: combinator (>), type (a), class (.link), id (#nav), attribute ([href]), pseudo-class (:hover)
+			expect(children.length).toBeGreaterThanOrEqual(6)
+			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(getNodeText(arena, source, children[0]).trim()).toBe('>')
+			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_TYPE)
+			expect(getNodeText(arena, source, children[1])).toBe('a')
+			expect(arena.get_type(children[2])).toBe(NODE_SELECTOR_CLASS)
+			expect(getNodeText(arena, source, children[2])).toBe('.link')
+			expect(arena.get_type(children[3])).toBe(NODE_SELECTOR_ID)
+			expect(getNodeText(arena, source, children[3])).toBe('#nav')
+			expect(arena.get_type(children[4])).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(arena.get_type(children[5])).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+		})
+
+		it('should parse multiple selectors with leading combinators', () => {
+			const { arena, rootNode, source } = parseSelectorInternal('> a, ~ span, + div')
+
+			expect(rootNode).not.toBeNull()
+			if (!rootNode) return
+
+			// Should have three selectors
+			const selectorWrappers = getChildren(arena, source, rootNode)
+			expect(selectorWrappers).toHaveLength(3)
+
+			// First selector: > a
+			let children = getChildren(arena, source, selectorWrappers[0])
+			expect(children).toHaveLength(2)
+			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(getNodeText(arena, source, children[0]).trim()).toBe('>')
+			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_TYPE)
+			expect(getNodeText(arena, source, children[1])).toBe('a')
+
+			// Second selector: ~ span
+			children = getChildren(arena, source, selectorWrappers[1])
+			expect(children).toHaveLength(2)
+			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(getNodeText(arena, source, children[0]).trim()).toBe('~')
+			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_TYPE)
+			expect(getNodeText(arena, source, children[1])).toBe('span')
+
+			// Third selector: + div
+			children = getChildren(arena, source, selectorWrappers[2])
+			expect(children).toHaveLength(2)
+			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(getNodeText(arena, source, children[0]).trim()).toBe('+')
+			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_TYPE)
+			expect(getNodeText(arena, source, children[1])).toBe('div')
+		})
+
+		it('should parse leading combinator with whitespace', () => {
+			const { arena, rootNode, source } = parseSelectorInternal('>   a')
+
+			expect(rootNode).not.toBeNull()
+			if (!rootNode) return
+
+			const selectorWrappers = getChildren(arena, source, rootNode)
+			expect(selectorWrappers).toHaveLength(1)
+
+			const selectorWrapper = selectorWrappers[0]
+			const children = getChildren(arena, source, selectorWrapper)
+			expect(children).toHaveLength(2)
+			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(getNodeText(arena, source, children[0]).trim()).toBe('>')
+			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_TYPE)
+			expect(getNodeText(arena, source, children[1])).toBe('a')
+		})
+
+		it('should parse selector with both leading and middle combinators', () => {
+			const { arena, rootNode, source } = parseSelectorInternal('> div span')
+
+			expect(rootNode).not.toBeNull()
+			if (!rootNode) return
+
+			const selectorWrappers = getChildren(arena, source, rootNode)
+			expect(selectorWrappers).toHaveLength(1)
+
+			const selectorWrapper = selectorWrappers[0]
+			const children = getChildren(arena, source, selectorWrapper)
+
+			// Should have: combinator (>), type (div), combinator (descendant), type (span)
+			expect(children).toHaveLength(4)
+			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(getNodeText(arena, source, children[0]).trim()).toBe('>')
+			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_TYPE)
+			expect(getNodeText(arena, source, children[1])).toBe('div')
+			expect(arena.get_type(children[2])).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(arena.get_type(children[3])).toBe(NODE_SELECTOR_TYPE)
+			expect(getNodeText(arena, source, children[3])).toBe('span')
+		})
+	})
+
 	describe('Edge cases', () => {
 		it('should parse selector with multiple spaces', () => {
 			const { arena, rootNode, source } = parseSelectorInternal('div    p')

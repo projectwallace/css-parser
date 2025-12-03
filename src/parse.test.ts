@@ -603,6 +603,128 @@ describe('Parser', () => {
 
 			expect(body.type).toBe(NODE_STYLE_RULE)
 		})
+
+	describe('Relaxed nesting (CSS Nesting Module Level 1)', () => {
+		test('should parse nested rule with leading child combinator', () => {
+			let source = '.parent { > a { color: red; } }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let parent = root.first_child!
+			expect(parent.type).toBe(NODE_STYLE_RULE)
+
+			let [_selector, block] = parent.children
+			let nested_rule = block.first_child!
+			expect(nested_rule.type).toBe(NODE_STYLE_RULE)
+
+			let nested_selector = nested_rule.first_child!
+			expect(nested_selector.text).toBe('> a')
+			// Verify selector has children (was parsed, not left empty)
+			expect(nested_selector.has_children).toBe(true)
+		})
+
+		test('should parse nested rule with leading next-sibling combinator', () => {
+			let source = '.parent { + span { color: blue; } }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let parent = root.first_child!
+			let [_selector, block] = parent.children
+			let nested_rule = block.first_child!
+			expect(nested_rule.type).toBe(NODE_STYLE_RULE)
+
+			let nested_selector = nested_rule.first_child!
+			expect(nested_selector.text).toBe('+ span')
+			expect(nested_selector.has_children).toBe(true)
+		})
+
+		test('should parse nested rule with leading subsequent-sibling combinator', () => {
+			let source = '.parent { ~ div { color: green; } }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let parent = root.first_child!
+			let [_selector, block] = parent.children
+			let nested_rule = block.first_child!
+			expect(nested_rule.type).toBe(NODE_STYLE_RULE)
+
+			let nested_selector = nested_rule.first_child!
+			expect(nested_selector.text).toBe('~ div')
+			expect(nested_selector.has_children).toBe(true)
+		})
+
+		test('should parse multiple nested rules with different leading combinators', () => {
+			let source = '.parent { > a { color: red; } ~ span { color: blue; } + div { color: green; } }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let parent = root.first_child!
+			let [_selector, block] = parent.children
+			let [rule1, rule2, rule3] = block.children
+
+			expect(rule1.type).toBe(NODE_STYLE_RULE)
+			expect(rule1.first_child!.text).toBe('> a')
+			expect(rule1.first_child!.has_children).toBe(true)
+
+			expect(rule2.type).toBe(NODE_STYLE_RULE)
+			expect(rule2.first_child!.text).toBe('~ span')
+			expect(rule2.first_child!.has_children).toBe(true)
+
+			expect(rule3.type).toBe(NODE_STYLE_RULE)
+			expect(rule3.first_child!.text).toBe('+ div')
+			expect(rule3.first_child!.has_children).toBe(true)
+		})
+
+		test('should parse complex selector after leading combinator', () => {
+			let source = '.parent { > a.link#nav[href]:hover { color: red; } }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let parent = root.first_child!
+			let [_selector, block] = parent.children
+			let nested_rule = block.first_child!
+
+			let nested_selector = nested_rule.first_child!
+			expect(nested_selector.text).toBe('> a.link#nav[href]:hover')
+			expect(nested_selector.has_children).toBe(true)
+		})
+
+		test('should parse deeply nested rules with leading combinators', () => {
+			let source = '.a { > .b { > .c { color: red; } } }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let a = root.first_child!
+			let [_selector_a, block_a] = a.children
+			let b = block_a.first_child!
+			expect(b.type).toBe(NODE_STYLE_RULE)
+			expect(b.first_child!.text).toBe('> .b')
+			expect(b.first_child!.has_children).toBe(true)
+
+			let [_selector_b, block_b] = b.children
+			let c = block_b.first_child!
+			expect(c.type).toBe(NODE_STYLE_RULE)
+			expect(c.first_child!.text).toBe('> .c')
+			expect(c.first_child!.has_children).toBe(true)
+		})
+
+		test('should parse mixed nested rules with and without leading combinators', () => {
+			let source = '.parent { .normal { } > .combinator { } }'
+			let parser = new Parser(source)
+			let root = parser.parse()
+
+			let parent = root.first_child!
+			let [_selector, block] = parent.children
+			let [normal, combinator] = block.children
+
+			expect(normal.type).toBe(NODE_STYLE_RULE)
+			expect(normal.first_child!.text).toBe('.normal')
+
+			expect(combinator.type).toBe(NODE_STYLE_RULE)
+			expect(combinator.first_child!.text).toBe('> .combinator')
+			expect(combinator.first_child!.has_children).toBe(true)
+		})
+	})
 	})
 
 	describe('@keyframes parsing', () => {
