@@ -7,6 +7,8 @@
 
 Built for speed and efficiency, this parser handles large CSS files with minimal memory overhead and blazing-fast parse times. Designed with a data-oriented architecture using a single contiguous memory arena for zero allocations during parsing.
 
+This parser was heavily influenced by [CSSTree](https://github.com/csstree/csstree), one of the most robust CSS parsers available. Some of the parsing mechanics are taken from CSSTree, as well as some of the performance mechanics, but a lot of things are very different which is why this isn't a direct fork.
+
 ## Features
 
 - **Modern CSS support** - CSS Nesting, `:is()`, `:where()`, `:has()`, `@layer`, `@container`
@@ -62,8 +64,6 @@ for (const rule of ast) {
 - **Cache-friendly data layout** - contiguous memory for sequential access powered by concepts or Data Oriented Design
 - **First-class comment and location support** - while still being performant because analysis requires constant access to lines and columns
 - **No syntax validation** - focusing only on the raw data we can skip expensive syntax files and MDN data syncs
-
-This parser was heavily influenced by [CSSTree](https://github.com/csstree/csstree), one of the most robust CSS parsers available.
 
 ## Documentation
 
