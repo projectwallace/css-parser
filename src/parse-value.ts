@@ -9,6 +9,7 @@ import {
 	NODE_VALUE_COLOR,
 	NODE_VALUE_FUNCTION,
 	NODE_VALUE_OPERATOR,
+	NODE_VALUE_PARENTHESIS,
 } from './arena'
 import {
 	TOKEN_IDENT,
@@ -125,6 +126,9 @@ export class ValueParser {
 			case TOKEN_COMMA:
 				return this.create_node(NODE_VALUE_OPERATOR, start, end)
 
+			case TOKEN_LEFT_PAREN:
+				return this.parse_parenthesis_node(start, end)
+
 			default:
 				// Unknown token type, skip it
 				return null
@@ -167,10 +171,80 @@ export class ValueParser {
 		this.arena.set_content_start(node, start)
 		this.arena.set_content_length(node, name_end - start)
 
+		// Get function name to check for special handling
+		let func_name = this.source.substring(start, name_end).toLowerCase()
+
+		// Special handling for url() and src() functions with unquoted content:
+		// Don't parse contents to preserve URLs with dots, base64, inline SVGs, etc.
+		// Users can extract the full URL from the function's text property
+		// Note: Quoted urls like url("...") or url('...') parse normally
+		if (func_name === 'url' || func_name === 'src') {
+			// Peek at the next token to see if it's a string
+			// If it's a string, parse normally. Otherwise, skip parsing children.
+			let save_pos = this.lexer.save_position()
+			this.lexer.next_token_fast(false)
+
+			// Skip whitespace
+			while (this.is_whitespace_token() && this.lexer.pos < this.value_end) {
+				this.lexer.next_token_fast(false)
+			}
+
+			let first_token_type = this.lexer.token_type
+
+			// Restore lexer position
+			this.lexer.restore_position(save_pos)
+
+			// If the first non-whitespace token is a string, parse normally
+			if (first_token_type === TOKEN_STRING) {
+				// Fall through to normal parsing below
+			} else {
+				// Unquoted URL - don't parse children
+				// Note: We can't rely on value_end because URLs may contain semicolons
+				// that confuse the declaration parser (e.g., data:image/png;base64,...)
+				// So we consume tokens until we find the matching ')' regardless of value_end
+				let paren_depth = 1
+				let func_end = end
+				let content_start = end // Position after 'url('
+				let content_end = end
+
+				// Just consume tokens until we find the matching ')'
+				// Don't create child nodes
+				while (paren_depth > 0) {
+					this.lexer.next_token_fast(false)
+
+					let token_type = this.lexer.token_type
+					if (token_type === TOKEN_EOF) break
+
+					// Track parentheses depth
+					if (token_type === TOKEN_LEFT_PAREN || token_type === TOKEN_FUNCTION) {
+						paren_depth++
+					} else if (token_type === TOKEN_RIGHT_PAREN) {
+						paren_depth--
+						if (paren_depth === 0) {
+							content_end = this.lexer.token_start // Position of ')'
+							func_end = this.lexer.token_end
+							break
+						}
+					}
+				}
+
+				// Set function total length (includes opening and closing parens)
+				this.arena.set_length(node, func_end - start)
+
+				// Set value to the content between parentheses (accessible via node.value)
+				this.arena.set_value_start(node, content_start)
+				this.arena.set_value_length(node, content_end - content_start)
+
+				return node
+			}
+		}
+
 		// Parse function arguments (everything until matching ')')
 		let args: number[] = []
 		let paren_depth = 1
 		let func_end = end
+		let content_start = end // Position after function name and '('
+		let content_end = end
 
 		while (this.lexer.pos < this.value_end && paren_depth > 0) {
 			this.lexer.next_token_fast(false)
@@ -185,6 +259,7 @@ export class ValueParser {
 			} else if (token_type === TOKEN_RIGHT_PAREN) {
 				paren_depth--
 				if (paren_depth === 0) {
+					content_end = this.lexer.token_start // Position of ')'
 					func_end = this.lexer.token_end
 					break
 				}
@@ -203,6 +278,10 @@ export class ValueParser {
 		// Set function total length
 		this.arena.set_length(node, func_end - start)
 
+		// Set value to the content between parentheses (accessible via node.value)
+		this.arena.set_value_start(node, content_start)
+		this.arena.set_value_length(node, content_end - content_start)
+
 		// Link arguments as children
 		if (args.length > 0) {
 			this.arena.set_first_child(node, args[0])
@@ -211,6 +290,64 @@ export class ValueParser {
 			// Chain arguments as siblings
 			for (let i = 0; i < args.length - 1; i++) {
 				this.arena.set_next_sibling(args[i], args[i + 1])
+			}
+		}
+
+		return node
+	}
+
+	private parse_parenthesis_node(start: number, end: number): number {
+		// Create parenthesis node
+		let node = this.arena.create_node()
+		this.arena.set_type(node, NODE_VALUE_PARENTHESIS)
+		this.arena.set_start_offset(node, start)
+
+		// Parse parenthesized content (everything until matching ')')
+		let children: number[] = []
+		let paren_depth = 1
+		let paren_end = end
+
+		while (this.lexer.pos < this.value_end && paren_depth > 0) {
+			this.lexer.next_token_fast(false)
+
+			let token_type = this.lexer.token_type
+			if (token_type === TOKEN_EOF) break
+			if (this.lexer.token_start >= this.value_end) break
+
+			// Check for closing paren BEFORE parsing child nodes
+			// This is important because child nodes (like nested parentheses or functions)
+			// will consume tokens including closing parens
+			if (token_type === TOKEN_RIGHT_PAREN) {
+				paren_depth--
+				if (paren_depth === 0) {
+					paren_end = this.lexer.token_end
+					break
+				}
+			}
+
+			// Skip whitespace
+			if (this.is_whitespace_token()) continue
+
+			// Parse child node
+			// Note: We don't track paren_depth for LEFT_PAREN or TOKEN_FUNCTION here
+			// because parse_value_node() will recursively handle them
+			let child_node = this.parse_value_node()
+			if (child_node !== null) {
+				children.push(child_node)
+			}
+		}
+
+		// Set parenthesis total length (includes opening and closing parens)
+		this.arena.set_length(node, paren_end - start)
+
+		// Link children as siblings
+		if (children.length > 0) {
+			this.arena.set_first_child(node, children[0])
+			this.arena.set_last_child(node, children[children.length - 1])
+
+			// Chain children as siblings
+			for (let i = 0; i < children.length - 1; i++) {
+				this.arena.set_next_sibling(children[i], children[i + 1])
 			}
 		}
 
