@@ -39,6 +39,7 @@ export const NODE_VALUE_STRING = 13 // quoted string: "hello", 'world'
 export const NODE_VALUE_COLOR = 14 // hex color: #fff, #ff0000
 export const NODE_VALUE_FUNCTION = 15 // function: calc(), var(), url()
 export const NODE_VALUE_OPERATOR = 16 // operator: +, -, *, /, comma
+export const NODE_VALUE_PARENTHESIS = 17 // parenthesized expression: (100% - 50px)
 
 // Selector node type constants (for detailed selector parsing)
 export const NODE_SELECTOR_LIST = 20 // comma-separated selectors
