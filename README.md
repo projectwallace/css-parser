@@ -13,8 +13,8 @@ This parser was heavily influenced by [CSSTree](https://github.com/csstree/csstr
 
 - **Modern CSS support** - CSS Nesting, `:is()`, `:where()`, `:has()`, `@layer`, `@container`
 - **Error recovery** - Continues parsing on malformed CSS
-- **Comment preservation** - Comments stored as first-class AST nodes
 - **Location tracking** - Line, column, offset, and length for all nodes
+- **Performance** - Low memory usage and excellent parsing speed
 
 ## Installation
 
