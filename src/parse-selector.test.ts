@@ -1739,4 +1739,241 @@ describe('parse_selector()', () => {
 		expect(result.has_children).toBe(true)
 		expect(result.children.length).toBeGreaterThan(0)
 	})
+
+	describe('Namespace selectors', () => {
+		test('should parse ns|* (namespace with universal selector)', () => {
+			const result = parse_selector('ns|*')
+
+			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.text).toBe('ns|*')
+
+			const selector = result.first_child
+			expect(selector?.type).toBe(NODE_SELECTOR)
+			expect(selector?.text).toBe('ns|*')
+
+			const universal = selector?.first_child
+			expect(universal?.type).toBe(NODE_SELECTOR_UNIVERSAL)
+			expect(universal?.text).toBe('ns|*')
+			expect(universal?.name).toBe('ns')
+		})
+
+		test('should parse ns|div (namespace with type selector)', () => {
+			const result = parse_selector('ns|div')
+
+			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.text).toBe('ns|div')
+
+			const selector = result.first_child
+			expect(selector?.type).toBe(NODE_SELECTOR)
+
+			const typeSelector = selector?.first_child
+			expect(typeSelector?.type).toBe(NODE_SELECTOR_TYPE)
+			expect(typeSelector?.text).toBe('ns|div')
+			expect(typeSelector?.name).toBe('ns')
+		})
+
+		test('should parse *|* (any namespace with universal selector)', () => {
+			const result = parse_selector('*|*')
+
+			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.text).toBe('*|*')
+
+			const selector = result.first_child
+			const universal = selector?.first_child
+			expect(universal?.type).toBe(NODE_SELECTOR_UNIVERSAL)
+			expect(universal?.text).toBe('*|*')
+			expect(universal?.name).toBe('*')
+		})
+
+		test('should parse *|div (any namespace with type selector)', () => {
+			const result = parse_selector('*|div')
+
+			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.text).toBe('*|div')
+
+			const selector = result.first_child
+			const typeSelector = selector?.first_child
+			expect(typeSelector?.type).toBe(NODE_SELECTOR_TYPE)
+			expect(typeSelector?.text).toBe('*|div')
+			expect(typeSelector?.name).toBe('*')
+		})
+
+		test('should parse |* (empty namespace with universal selector)', () => {
+			const result = parse_selector('|*')
+
+			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.text).toBe('|*')
+
+			const selector = result.first_child
+			const universal = selector?.first_child
+			expect(universal?.type).toBe(NODE_SELECTOR_UNIVERSAL)
+			expect(universal?.text).toBe('|*')
+			// Empty namespace should result in empty name
+			expect(universal?.name).toBe('|')
+		})
+
+		test('should parse |div (empty namespace with type selector)', () => {
+			const result = parse_selector('|div')
+
+			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.text).toBe('|div')
+
+			const selector = result.first_child
+			const typeSelector = selector?.first_child
+			expect(typeSelector?.type).toBe(NODE_SELECTOR_TYPE)
+			expect(typeSelector?.text).toBe('|div')
+			// Empty namespace should result in empty name
+			expect(typeSelector?.name).toBe('|')
+		})
+
+		test('should parse namespace selector with class', () => {
+			const result = parse_selector('ns|div.class')
+
+			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.text).toBe('ns|div.class')
+
+			const selector = result.first_child
+			const children = selector?.children || []
+			expect(children.length).toBe(2)
+			expect(children[0].type).toBe(NODE_SELECTOR_TYPE)
+			expect(children[0].text).toBe('ns|div')
+			expect(children[0].name).toBe('ns')
+			expect(children[1].type).toBe(NODE_SELECTOR_CLASS)
+		})
+
+		test('should parse namespace selector with ID', () => {
+			const result = parse_selector('ns|*#id')
+
+			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.text).toBe('ns|*#id')
+
+			const selector = result.first_child
+			const children = selector?.children || []
+			expect(children.length).toBe(2)
+			expect(children[0].type).toBe(NODE_SELECTOR_UNIVERSAL)
+			expect(children[0].text).toBe('ns|*')
+			expect(children[1].type).toBe(NODE_SELECTOR_ID)
+		})
+
+		test('should parse namespace selector in complex selector', () => {
+			const result = parse_selector('ns|div > *|span')
+
+			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.text).toBe('ns|div > *|span')
+
+			const selector = result.first_child
+			const children = selector?.children || []
+			expect(children.length).toBe(3) // div, >, span
+			expect(children[0].type).toBe(NODE_SELECTOR_TYPE)
+			expect(children[0].text).toBe('ns|div')
+			expect(children[1].type).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(children[2].type).toBe(NODE_SELECTOR_TYPE)
+			expect(children[2].text).toBe('*|span')
+		})
+
+		test('should parse namespace selector in selector list', () => {
+			const result = parse_selector('ns|div, |span, *|p')
+
+			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.text).toBe('ns|div, |span, *|p')
+
+			const selectors = result.children
+			expect(selectors.length).toBe(3)
+
+			const firstType = selectors[0].first_child
+			expect(firstType?.type).toBe(NODE_SELECTOR_TYPE)
+			expect(firstType?.text).toBe('ns|div')
+			expect(firstType?.name).toBe('ns')
+
+			const secondType = selectors[1].first_child
+			expect(secondType?.type).toBe(NODE_SELECTOR_TYPE)
+			expect(secondType?.text).toBe('|span')
+			expect(secondType?.name).toBe('|')
+
+			const thirdType = selectors[2].first_child
+			expect(thirdType?.type).toBe(NODE_SELECTOR_TYPE)
+			expect(thirdType?.text).toBe('*|p')
+			expect(thirdType?.name).toBe('*')
+		})
+
+		test('should parse namespace selector with attribute', () => {
+			const result = parse_selector('ns|div[attr="value"]')
+
+			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.text).toBe('ns|div[attr="value"]')
+
+			const selector = result.first_child
+			const children = selector?.children || []
+			expect(children.length).toBe(2)
+			expect(children[0].type).toBe(NODE_SELECTOR_TYPE)
+			expect(children[0].name).toBe('ns')
+			expect(children[1].type).toBe(NODE_SELECTOR_ATTRIBUTE)
+		})
+
+		test('should parse namespace selector with pseudo-class', () => {
+			const result = parse_selector('ns|a:hover')
+
+			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.text).toBe('ns|a:hover')
+
+			const selector = result.first_child
+			const children = selector?.children || []
+			expect(children.length).toBe(2)
+			expect(children[0].type).toBe(NODE_SELECTOR_TYPE)
+			expect(children[0].name).toBe('ns')
+			expect(children[1].type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+		})
+
+		test('should parse namespace with various identifiers', () => {
+			const result = parse_selector('svg|rect')
+
+			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.text).toBe('svg|rect')
+
+			const selector = result.first_child
+			const typeSelector = selector?.first_child
+			expect(typeSelector?.type).toBe(NODE_SELECTOR_TYPE)
+			expect(typeSelector?.text).toBe('svg|rect')
+			expect(typeSelector?.name).toBe('svg')
+		})
+
+		test('should parse long namespace identifier', () => {
+			const result = parse_selector('myNamespace|element')
+
+			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.text).toBe('myNamespace|element')
+
+			const selector = result.first_child
+			const typeSelector = selector?.first_child
+			expect(typeSelector?.type).toBe(NODE_SELECTOR_TYPE)
+			expect(typeSelector?.name).toBe('myNamespace')
+		})
+
+		test('should handle namespace in nested pseudo-class', () => {
+			const result = parse_selector(':is(ns|div, *|span)')
+
+			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.text).toBe(':is(ns|div, *|span)')
+
+			const selector = result.first_child
+			const pseudo = selector?.first_child
+			expect(pseudo?.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(pseudo?.name).toBe('is')
+
+			// The content should contain namespace selectors
+			const nestedList = pseudo?.first_child
+			expect(nestedList?.type).toBe(NODE_SELECTOR_LIST)
+
+			const nestedSelectors = nestedList?.children || []
+			expect(nestedSelectors.length).toBe(2)
+
+			const firstNestedType = nestedSelectors[0].first_child
+			expect(firstNestedType?.type).toBe(NODE_SELECTOR_TYPE)
+			expect(firstNestedType?.text).toBe('ns|div')
+
+			const secondNestedType = nestedSelectors[1].first_child
+			expect(secondNestedType?.type).toBe(NODE_SELECTOR_TYPE)
+			expect(secondNestedType?.text).toBe('*|span')
+		})
+	})
 })
