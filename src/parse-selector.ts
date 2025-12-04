@@ -296,25 +296,29 @@ export class SelectorParser {
 
 		switch (token_type) {
 			case TOKEN_IDENT:
-				// Type selector: div, span, p
-				return this.create_node(NODE_SELECTOR_TYPE, start, end)
+				// Could be a type selector or namespace prefix
+				// Check if followed by | (namespace separator)
+				return this.parse_type_or_namespace_selector(start, end)
 
 			case TOKEN_HASH:
 				// ID selector: #id
 				return this.create_node(NODE_SELECTOR_ID, start, end)
 
 			case TOKEN_DELIM:
-				// Could be: . (class), * (universal), & (nesting)
+				// Could be: . (class), * (universal), & (nesting), | (namespace)
 				let ch = this.source.charCodeAt(start)
 				if (ch === CHAR_PERIOD) {
 					// . - class selector
 					return this.parse_class_selector(start)
 				} else if (ch === CHAR_ASTERISK) {
-					// * - universal selector
-					return this.create_node(NODE_SELECTOR_UNIVERSAL, start, end)
+					// * - could be universal selector or namespace prefix (*|)
+					return this.parse_universal_or_namespace_selector(start, end)
 				} else if (ch === CHAR_AMPERSAND) {
 					// & - nesting selector
 					return this.create_node(NODE_SELECTOR_NESTING, start, end)
+				} else if (ch === CHAR_PIPE) {
+					// | - empty namespace prefix (|E or |*)
+					return this.parse_empty_namespace_selector(start)
 				}
 				// Other delimiters signal end of selector
 				return null
@@ -339,6 +343,78 @@ export class SelectorParser {
 			default:
 				return null
 		}
+	}
+
+	// Parse the local part after | in a namespace selector (E or *)
+	// Returns the node type (TYPE or UNIVERSAL) or null if invalid
+	private parse_namespace_local_part(
+		selector_start: number,
+		namespace_start: number,
+		namespace_length: number,
+	): number | null {
+		const saved = this.lexer.save_position()
+		this.lexer.next_token_fast(false)
+
+		let node_type: number
+		if (this.lexer.token_type === TOKEN_IDENT) {
+			// ns|type
+			node_type = NODE_SELECTOR_TYPE
+		} else if (
+			this.lexer.token_type === TOKEN_DELIM &&
+			this.source.charCodeAt(this.lexer.token_start) === CHAR_ASTERISK
+		) {
+			// ns|*
+			node_type = NODE_SELECTOR_UNIVERSAL
+		} else {
+			// Invalid - restore position
+			this.lexer.restore_position(saved)
+			return null
+		}
+
+		let node = this.create_node(node_type, selector_start, this.lexer.token_end)
+		// Store namespace in content fields
+		this.arena.set_content_start(node, namespace_start)
+		this.arena.set_content_length(node, namespace_length)
+		return node
+	}
+
+	// Parse type selector or namespace selector (ns|E or ns|*)
+	// Called when we've seen an IDENT token
+	private parse_type_or_namespace_selector(start: number, end: number): number | null {
+		// Check if followed by | (namespace separator)
+		if (this.lexer.pos < this.selector_end && this.source.charCodeAt(this.lexer.pos) === CHAR_PIPE) {
+			this.lexer.pos++ // skip |
+			let node = this.parse_namespace_local_part(start, start, end - start)
+			if (node !== null) return node
+			// Invalid - restore and treat as regular type selector
+			this.lexer.pos = end
+		}
+
+		// Regular type selector (no namespace)
+		return this.create_node(NODE_SELECTOR_TYPE, start, end)
+	}
+
+	// Parse universal selector or namespace selector (*|E or *|*)
+	// Called when we've seen a * DELIM token
+	private parse_universal_or_namespace_selector(start: number, end: number): number | null {
+		// Check if followed by | (any-namespace prefix)
+		if (this.lexer.pos < this.selector_end && this.source.charCodeAt(this.lexer.pos) === CHAR_PIPE) {
+			this.lexer.pos++ // skip |
+			let node = this.parse_namespace_local_part(start, start, end - start)
+			if (node !== null) return node
+			// Invalid - restore and treat as regular universal selector
+			this.lexer.pos = end
+		}
+
+		// Regular universal selector (no namespace)
+		return this.create_node(NODE_SELECTOR_UNIVERSAL, start, end)
+	}
+
+	// Parse empty namespace selector (|E or |*)
+	// Called when we've seen a | DELIM token at the start
+	private parse_empty_namespace_selector(start: number): number | null {
+		// The | character is the namespace indicator (length = 1)
+		return this.parse_namespace_local_part(start, start, 1)
 	}
 
 	// Parse combinator (>, +, ~, or descendant space)
