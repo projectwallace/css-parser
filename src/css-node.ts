@@ -51,6 +51,49 @@ import {
 import { CHAR_MINUS_HYPHEN, CHAR_PLUS, is_whitespace } from './string-utils'
 import { parse_dimension } from './parse-utils'
 
+// Type name lookup table - maps numeric type to human-readable string
+export const TYPE_NAMES: Record<number, string> = {
+	[NODE_STYLESHEET]: 'stylesheet',
+	[NODE_STYLE_RULE]: 'rule',
+	[NODE_AT_RULE]: 'atrule',
+	[NODE_DECLARATION]: 'declaration',
+	[NODE_SELECTOR]: 'selector',
+	[NODE_COMMENT]: 'comment',
+	[NODE_BLOCK]: 'block',
+	[NODE_VALUE_KEYWORD]: 'keyword',
+	[NODE_VALUE_NUMBER]: 'number',
+	[NODE_VALUE_DIMENSION]: 'dimension',
+	[NODE_VALUE_STRING]: 'string',
+	[NODE_VALUE_COLOR]: 'color',
+	[NODE_VALUE_FUNCTION]: 'function',
+	[NODE_VALUE_OPERATOR]: 'operator',
+	[NODE_VALUE_PARENTHESIS]: 'parenthesis',
+	[NODE_SELECTOR_LIST]: 'selectorlist',
+	[NODE_SELECTOR_TYPE]: 'type-selector',
+	[NODE_SELECTOR_CLASS]: 'class-selector',
+	[NODE_SELECTOR_ID]: 'id-selector',
+	[NODE_SELECTOR_ATTRIBUTE]: 'attribute-selector',
+	[NODE_SELECTOR_PSEUDO_CLASS]: 'pseudoclass-selector',
+	[NODE_SELECTOR_PSEUDO_ELEMENT]: 'pseudoelement-selector',
+	[NODE_SELECTOR_COMBINATOR]: 'selector-combinator',
+	[NODE_SELECTOR_UNIVERSAL]: 'universal-selector',
+	[NODE_SELECTOR_NESTING]: 'nesting-selector',
+	[NODE_SELECTOR_NTH]: 'nth-selector',
+	[NODE_SELECTOR_NTH_OF]: 'nth-of-selector',
+	[NODE_SELECTOR_LANG]: 'lang-selector',
+	[NODE_PRELUDE_MEDIA_QUERY]: 'media-query',
+	[NODE_PRELUDE_MEDIA_FEATURE]: 'media-feature',
+	[NODE_PRELUDE_MEDIA_TYPE]: 'media-type',
+	[NODE_PRELUDE_CONTAINER_QUERY]: 'container-query',
+	[NODE_PRELUDE_SUPPORTS_QUERY]: 'supports-query',
+	[NODE_PRELUDE_LAYER_NAME]: 'layer-name',
+	[NODE_PRELUDE_IDENTIFIER]: 'identifier',
+	[NODE_PRELUDE_OPERATOR]: 'operator',
+	[NODE_PRELUDE_IMPORT_URL]: 'import-url',
+	[NODE_PRELUDE_IMPORT_LAYER]: 'import-layer',
+	[NODE_PRELUDE_IMPORT_SUPPORTS]: 'import-supports',
+} as const
+
 // Node type constants (numeric for performance)
 export type CSSNodeType =
 	| typeof NODE_STYLESHEET
@@ -112,6 +155,11 @@ export class CSSNode {
 	// Get node type as number (for performance)
 	get type(): CSSNodeType {
 		return this.arena.get_type(this.index) as CSSNodeType
+	}
+
+	// Get node type as human-readable string
+	get type_name(): string {
+		return TYPE_NAMES[this.type] || 'unknown'
 	}
 
 	// Get the full text of this node from source
