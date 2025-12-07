@@ -391,4 +391,231 @@ describe('CSSNode', () => {
 			expect(media.has_declarations).toBe(false)
 		})
 	})
+
+	describe('type_name property', () => {
+		test('should return stylesheet for root node', () => {
+			const source = 'body { color: red; }'
+			const parser = new Parser(source)
+			const root = parser.parse()
+
+			expect(root.type_name).toBe('stylesheet')
+		})
+
+		test('should return style_rule for style rules', () => {
+			const source = 'body { color: red; }'
+			const parser = new Parser(source)
+			const root = parser.parse()
+			const rule = root.first_child!
+
+			expect(rule.type_name).toBe('rule')
+		})
+
+		test('should return declaration for declarations', () => {
+			const source = 'body { color: red; }'
+			const parser = new Parser(source)
+			const root = parser.parse()
+			const rule = root.first_child!
+			const block = rule.block!
+			const decl = block.first_child!
+
+			expect(decl.type_name).toBe('declaration')
+		})
+
+		test('should return at_rule for at-rules', () => {
+			const source = '@media screen { body { color: red; } }'
+			const parser = new Parser(source)
+			const root = parser.parse()
+			const media = root.first_child!
+
+			expect(media.type_name).toBe('atrule')
+		})
+
+		test('should return selector_list for selector lists', () => {
+			const source = 'body { color: red; }'
+			const parser = new Parser(source)
+			const root = parser.parse()
+			const rule = root.first_child!
+			const selectorList = rule.first_child!
+
+			expect(selectorList.type_name).toBe('selectorlist')
+		})
+
+		test('should return selector_type for type selectors', () => {
+			const source = 'div { color: red; }'
+			const parser = new Parser(source)
+			const root = parser.parse()
+			const rule = root.first_child!
+			const selectorList = rule.first_child!
+			const selector = selectorList.first_child!
+			const typeSelector = selector.first_child!
+
+			expect(typeSelector.type_name).toBe('type-selector')
+		})
+
+		test('should return selector_class for class selectors', () => {
+			const source = '.foo { color: red; }'
+			const parser = new Parser(source)
+			const root = parser.parse()
+			const rule = root.first_child!
+			const selectorList = rule.first_child!
+			const selector = selectorList.first_child!
+			const classSelector = selector.first_child!
+
+			expect(classSelector.type_name).toBe('class-selector')
+		})
+
+		test('should return selector_id for ID selectors', () => {
+			const source = '#bar { color: red; }'
+			const parser = new Parser(source)
+			const root = parser.parse()
+			const rule = root.first_child!
+			const selectorList = rule.first_child!
+			const selector = selectorList.first_child!
+			const idSelector = selector.first_child!
+
+			expect(idSelector.type_name).toBe('id-selector')
+		})
+
+		test('should return selector_universal for universal selectors', () => {
+			const source = '* { color: red; }'
+			const parser = new Parser(source)
+			const root = parser.parse()
+			const rule = root.first_child!
+			const selectorList = rule.first_child!
+			const selector = selectorList.first_child!
+			const universalSelector = selector.first_child!
+
+			expect(universalSelector.type_name).toBe('universal-selector')
+		})
+
+		test('should return selector_attribute for attribute selectors', () => {
+			const source = '[href] { color: red; }'
+			const parser = new Parser(source)
+			const root = parser.parse()
+			const rule = root.first_child!
+			const selectorList = rule.first_child!
+			const selector = selectorList.first_child!
+			const attrSelector = selector.first_child!
+
+			expect(attrSelector.type_name).toBe('attribute-selector')
+		})
+
+		test('should return selector_pseudo_class for pseudo-class selectors', () => {
+			const source = ':hover { color: red; }'
+			const parser = new Parser(source)
+			const root = parser.parse()
+			const rule = root.first_child!
+			const selectorList = rule.first_child!
+			const selector = selectorList.first_child!
+			const pseudoClass = selector.first_child!
+
+			expect(pseudoClass.type_name).toBe('pseudoclass-selector')
+		})
+
+		test('should return selector_pseudo_element for pseudo-element selectors', () => {
+			const source = '::before { color: red; }'
+			const parser = new Parser(source)
+			const root = parser.parse()
+			const rule = root.first_child!
+			const selectorList = rule.first_child!
+			const selector = selectorList.first_child!
+			const pseudoElement = selector.first_child!
+
+			expect(pseudoElement.type_name).toBe('pseudoelement-selector')
+		})
+
+		test('should return selector_combinator for combinators', () => {
+			const source = 'div > span { color: red; }'
+			const parser = new Parser(source)
+			const root = parser.parse()
+			const rule = root.first_child!
+			const selectorList = rule.first_child!
+			const selector = selectorList.first_child!
+			const combinator = selector.first_child!.next_sibling!
+
+			expect(combinator.type_name).toBe('selector-combinator')
+		})
+
+		test('should return value_keyword for keyword values', () => {
+			const source = 'body { color: red; }'
+			const parser = new Parser(source)
+			const root = parser.parse()
+			const rule = root.first_child!
+			const block = rule.block!
+			const decl = block.first_child!
+			const value = decl.first_child!
+
+			expect(value.type_name).toBe('keyword')
+		})
+
+		test('should return value_number for numeric values', () => {
+			const source = 'body { opacity: 0.5; }'
+			const parser = new Parser(source)
+			const root = parser.parse()
+			const rule = root.first_child!
+			const block = rule.block!
+			const decl = block.first_child!
+			const value = decl.first_child!
+
+			expect(value.type_name).toBe('number')
+		})
+
+		test('should return value_dimension for dimension values', () => {
+			const source = 'body { width: 100px; }'
+			const parser = new Parser(source)
+			const root = parser.parse()
+			const rule = root.first_child!
+			const block = rule.block!
+			const decl = block.first_child!
+			const value = decl.first_child!
+
+			expect(value.type_name).toBe('dimension')
+		})
+
+		test('should return value_string for string values', () => {
+			const source = 'body { content: "hello"; }'
+			const parser = new Parser(source)
+			const root = parser.parse()
+			const rule = root.first_child!
+			const block = rule.block!
+			const decl = block.first_child!
+			const value = decl.first_child!
+
+			expect(value.type_name).toBe('string')
+		})
+
+		test('should return value_color for color values', () => {
+			const source = 'body { color: #ff0000; }'
+			const parser = new Parser(source)
+			const root = parser.parse()
+			const rule = root.first_child!
+			const block = rule.block!
+			const decl = block.first_child!
+			const value = decl.first_child!
+
+			expect(value.type_name).toBe('color')
+		})
+
+		test('should return value_function for function values', () => {
+			const source = 'body { width: calc(100% - 20px); }'
+			const parser = new Parser(source)
+			const root = parser.parse()
+			const rule = root.first_child!
+			const block = rule.block!
+			const decl = block.first_child!
+			const value = decl.first_child!
+
+			expect(value.type_name).toBe('function')
+		})
+
+		test('should return prelude_media_query for media query preludes', () => {
+			const source = '@media screen and (min-width: 768px) { body { color: red; } }'
+			const parser = new Parser(source)
+			const root = parser.parse()
+			const media = root.first_child!
+			const prelude = media.first_child!
+
+			expect(prelude.type_name).toBe('media-query')
+		})
+	})
 })

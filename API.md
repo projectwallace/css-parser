@@ -32,6 +32,7 @@ function parse(source: string, options?: ParserOptions): CSSNode
 `CSSNode` - Root stylesheet node with the following properties:
 
 - `type` - Node type constant (e.g., `NODE_STYLESHEET`, `NODE_STYLE_RULE`)
+- `type_name` - Human-readable type name (e.g., `'stylesheet'`, `'style_rule'`)
 - `text` - Full text of the node from source
 - `name` - Property name, at-rule name, or layer name
 - `property` - Alias for `name` (for declarations)
@@ -257,6 +258,41 @@ const nestedRule = parentBlock.first_child
 
 console.log(nestedRule.type) // NODE_STYLE_RULE
 console.log(nestedRule.block.is_empty) // false
+```
+
+### Example 8: Using type_name for Debugging
+
+The `type_name` property provides human-readable type names for easier debugging:
+
+```typescript
+import { parse, TYPE_NAMES } from '@projectwallace/css-parser'
+
+const ast = parse('.foo { color: red; }')
+
+// Using type_name directly on nodes
+for (let node of ast) {
+  console.log(`${node.type_name}: ${node.text}`)
+}
+// Output:
+// style_rule: .foo { color: red; }
+// selector_list: .foo
+// selector_class: .foo
+// block: color: red
+// declaration: color: red
+// value_keyword: red
+
+// Useful for logging and error messages
+const rule = ast.first_child
+console.log(`Processing ${rule.type_name}`) // "Processing style_rule"
+
+// TYPE_NAMES export for custom type checking
+import { NODE_DECLARATION } from '@projectwallace/css-parser'
+console.log(TYPE_NAMES[NODE_DECLARATION]) // 'declaration'
+
+// Compare strings instead of numeric constants
+if (node.type_name === 'declaration') {
+  console.log(`Property: ${node.property}, Value: ${node.value}`)
+}
 ```
 
 ---
