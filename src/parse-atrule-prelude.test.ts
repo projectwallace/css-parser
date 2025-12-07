@@ -707,4 +707,275 @@ describe('parse_atrule_prelude()', () => {
 			expect(result.length).toBeGreaterThan(0)
 		})
 	})
+
+	describe('length property correctness (regression tests for commit 5c6e2cd)', () => {
+		describe('At-rule prelude length', () => {
+			test('@media prelude length should match text', () => {
+				const css = '@media screen { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+
+				expect(atRule?.prelude).toBe('screen')
+				expect(atRule?.prelude?.length).toBe(6)
+			})
+
+			test('@media with feature prelude length', () => {
+				const css = '@media (min-width: 768px) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+
+				expect(atRule?.prelude).toBe('(min-width: 768px)')
+				expect(atRule?.prelude?.length).toBe(18)
+			})
+
+			test('@media complex prelude length', () => {
+				const css = '@media screen and (min-width: 768px) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+
+				expect(atRule?.prelude).toBe('screen and (min-width: 768px)')
+				expect(atRule?.prelude?.length).toBe(29)
+			})
+
+			test('@container prelude length', () => {
+				const css = '@container (min-width: 768px) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+
+				expect(atRule?.prelude).toBe('(min-width: 768px)')
+				expect(atRule?.prelude?.length).toBe(18)
+			})
+
+			test('@container with name prelude length', () => {
+				const css = '@container sidebar (min-width: 400px) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+
+				expect(atRule?.prelude).toBe('sidebar (min-width: 400px)')
+				expect(atRule?.prelude?.length).toBe(26)
+			})
+
+			test('@supports prelude length', () => {
+				const css = '@supports (display: flex) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+
+				expect(atRule?.prelude).toBe('(display: flex)')
+				expect(atRule?.prelude?.length).toBe(15)
+			})
+
+			test('@supports complex prelude length', () => {
+				const css = '@supports (display: flex) and (color: red) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+
+				expect(atRule?.prelude).toBe('(display: flex) and (color: red)')
+				expect(atRule?.prelude?.length).toBe(32)
+			})
+
+			test('@layer single name prelude length', () => {
+				const css = '@layer utilities { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+
+				expect(atRule?.prelude).toBe('utilities')
+				expect(atRule?.prelude?.length).toBe(9)
+			})
+
+			test('@layer multiple names prelude length', () => {
+				const css = '@layer base, components, utilities { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+
+				expect(atRule?.prelude).toBe('base, components, utilities')
+				expect(atRule?.prelude?.length).toBe(27)
+			})
+
+			test('@import url prelude length', () => {
+				const css = '@import url("styles.css") screen;'
+				const ast = parse(css)
+				const atRule = ast.first_child
+
+				expect(atRule?.prelude).toBe('url("styles.css") screen')
+				expect(atRule?.prelude?.length).toBe(24)
+			})
+
+			test('@import with layer prelude length', () => {
+				const css = '@import "styles.css" layer(utilities);'
+				const ast = parse(css)
+				const atRule = ast.first_child
+
+				expect(atRule?.prelude).toBe('"styles.css" layer(utilities)')
+				expect(atRule?.prelude?.length).toBe(29)
+			})
+
+			test('@import with supports prelude length', () => {
+				const css = '@import url("styles.css") supports(display: flex);'
+				const ast = parse(css)
+				const atRule = ast.first_child
+
+				expect(atRule?.prelude).toBe('url("styles.css") supports(display: flex)')
+				expect(atRule?.prelude?.length).toBe(41)
+			})
+
+			test('@import complex prelude length', () => {
+				const css = '@import url("a.css") layer(utilities) supports(display: flex) screen;'
+				const ast = parse(css)
+				const atRule = ast.first_child
+
+				expect(atRule?.prelude).toBe('url("a.css") layer(utilities) supports(display: flex) screen')
+				expect(atRule?.prelude?.length).toBe(60)
+			})
+		})
+
+		describe('Prelude child node text length', () => {
+			test('media query node text length', () => {
+				const css = '@media screen and (min-width: 768px) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+				const children = atRule?.children || []
+
+				// First child should be media query
+				const mediaQuery = children[0]
+				expect(mediaQuery.type).toBe(NODE_PRELUDE_MEDIA_QUERY)
+				expect(mediaQuery.text).toBe('screen and (min-width: 768px)')
+				expect(mediaQuery.text.length).toBe(29)
+			})
+
+			test('media type node text length', () => {
+				const css = '@media screen { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+				const children = atRule?.children || []
+				const mediaQuery = children[0]
+				const queryChildren = mediaQuery?.children || []
+
+				const mediaType = queryChildren.find((c) => c.type === NODE_PRELUDE_MEDIA_TYPE)
+				expect(mediaType?.text).toBe('screen')
+				expect(mediaType?.text.length).toBe(6)
+			})
+
+			test('media feature node text length', () => {
+				const css = '@media (min-width: 768px) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+				const children = atRule?.children || []
+				const mediaQuery = children[0]
+				const queryChildren = mediaQuery?.children || []
+
+				const mediaFeature = queryChildren.find((c) => c.type === NODE_PRELUDE_MEDIA_FEATURE)
+				expect(mediaFeature?.text).toBe('(min-width: 768px)')
+				expect(mediaFeature?.text.length).toBe(18)
+			})
+
+			test('container query node text length', () => {
+				const css = '@container sidebar (min-width: 400px) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+				const children = atRule?.children || []
+
+				const containerQuery = children.find((c) => c.type === NODE_PRELUDE_CONTAINER_QUERY)
+				expect(containerQuery?.text).toBe('sidebar (min-width: 400px)')
+				expect(containerQuery?.text.length).toBe(26)
+			})
+
+			test('supports query node text length', () => {
+				const css = '@supports (display: flex) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+				const children = atRule?.children || []
+
+				const supportsQuery = children.find((c) => c.type === NODE_PRELUDE_SUPPORTS_QUERY)
+				expect(supportsQuery?.text).toBe('(display: flex)')
+				expect(supportsQuery?.text.length).toBe(15)
+			})
+
+			test('layer name node text length', () => {
+				const css = '@layer utilities { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+				const children = atRule?.children || []
+
+				const layerName = children.find((c) => c.type === NODE_PRELUDE_LAYER_NAME)
+				expect(layerName?.text).toBe('utilities')
+				expect(layerName?.text.length).toBe(9)
+			})
+
+			test('import url node text length', () => {
+				const css = '@import url("styles.css") screen;'
+				const ast = parse(css)
+				const atRule = ast.first_child
+				const children = atRule?.children || []
+
+				const importUrl = children.find((c) => c.type === NODE_PRELUDE_IMPORT_URL)
+				expect(importUrl?.text).toBe('url("styles.css")')
+				expect(importUrl?.text.length).toBe(17)
+			})
+
+			test('import layer node text length', () => {
+				const css = '@import "styles.css" layer(utilities);'
+				const ast = parse(css)
+				const atRule = ast.first_child
+				const children = atRule?.children || []
+
+				const importLayer = children.find((c) => c.type === NODE_PRELUDE_IMPORT_LAYER)
+				expect(importLayer?.text).toBe('layer(utilities)')
+				expect(importLayer?.text.length).toBe(16)
+			})
+
+			test('import supports node text length', () => {
+				const css = '@import url("a.css") supports(display: flex);'
+				const ast = parse(css)
+				const atRule = ast.first_child
+				const children = atRule?.children || []
+
+				const importSupports = children.find((c) => c.type === NODE_PRELUDE_IMPORT_SUPPORTS)
+				expect(importSupports?.text).toBe('supports(display: flex)')
+				expect(importSupports?.text.length).toBe(23)
+			})
+
+			test('operator node text length', () => {
+				const css = '@media screen and (min-width: 768px) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+				const children = atRule?.children || []
+				const mediaQuery = children[0]
+				const queryChildren = mediaQuery?.children || []
+
+				const operator = queryChildren.find((c) => c.type === NODE_PRELUDE_OPERATOR)
+				expect(operator?.text).toBe('and')
+				expect(operator?.text.length).toBe(3)
+			})
+		})
+
+		describe('Edge cases and whitespace handling', () => {
+			test('@media with extra whitespace prelude length', () => {
+				const css = '@media  screen   and   (min-width: 768px)  { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+
+				// Whitespace is trimmed from start/end but preserved internally
+				expect(atRule?.prelude).toBe('screen   and   (min-width: 768px)')
+				expect(atRule?.prelude?.length).toBe(33)
+			})
+
+			test('@layer with whitespace around commas', () => {
+				const css = '@layer base , components , utilities { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+
+				expect(atRule?.prelude).toBe('base , components , utilities')
+				expect(atRule?.prelude?.length).toBe(29)
+			})
+
+			test('@import with newlines prelude length', () => {
+				const css = '@import url("styles.css")\n  screen;'
+				const ast = parse(css)
+				const atRule = ast.first_child
+
+				expect(atRule?.prelude).toBe('url("styles.css")\n  screen')
+				expect(atRule?.prelude?.length).toBe(26)
+			})
+		})
+	})
 })

@@ -528,8 +528,8 @@ export class Parser {
 			// Consume '}' (block excludes closing brace, but at-rule includes it)
 			if (this.peek_type() === TOKEN_RIGHT_BRACE) {
 				let block_end = this.lexer.token_start // Position of '}' (not included in block)
-				this.next_token()
 				last_end = this.lexer.token_end // Position after '}' (included in at-rule)
+				this.next_token()
 
 				// Set block length (excludes closing brace)
 				this.arena.set_length(block_node, block_end - block_start)
