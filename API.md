@@ -64,7 +64,6 @@ function parse(source: string, options?: ParserOptions): CSSNode
 - `is_compound` - Whether selector has no combinators (for NODE_SELECTOR)
 - `first_compound_text` - Text of first compound selector (for NODE_SELECTOR)
 - `clone(options?)` - Clone node as a mutable plain object with children as arrays
-- `toPlainObject(options?)` - Alias for `clone()` - convert node to plain object
 
 ### Example 1: Basic Parsing
 

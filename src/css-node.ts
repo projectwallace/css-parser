@@ -669,10 +669,10 @@ export class CSSNode {
 			plain.prelude = this.prelude
 		}
 
-		// 5. Extract flags (only if true)
+		// 5. Extract flags
 		if (this.type === NODE_DECLARATION) plain.is_important = this.is_important
-		if (this.is_vendor_prefixed) plain.is_vendor_prefixed = true
-		if (this.has_error) plain.has_error = true
+		plain.is_vendor_prefixed = this.is_vendor_prefixed
+		plain.has_error = this.has_error
 
 		// 6. Extract selector-specific properties
 		if (this.type === NODE_SELECTOR_ATTRIBUTE) {
@@ -680,8 +680,8 @@ export class CSSNode {
 			plain.attr_flags = this.attr_flags
 		}
 		if (this.type === NODE_SELECTOR_NTH || this.type === NODE_SELECTOR_NTH_OF) {
-			if (this.nth_a !== null) plain.nth_a = this.nth_a
-			if (this.nth_b !== null) plain.nth_b = this.nth_b
+			plain.nth_a = this.nth_a
+			plain.nth_b = this.nth_b
 		}
 
 		// 7. Include location if requested
