@@ -481,4 +481,95 @@ export class CSSNode {
 
 		return null
 	}
+
+	// --- Compound Selector Helpers (for NODE_SELECTOR) ---
+
+	// Iterator over first compound selector parts (zero allocation)
+	// Yields parts before the first combinator
+	*compound_parts(): IterableIterator<CSSNode> {
+		if (this.type !== NODE_SELECTOR) return
+
+		let child = this.first_child
+		while (child) {
+			if (child.type === NODE_SELECTOR_COMBINATOR) break
+			yield child
+			child = child.next_sibling
+		}
+	}
+
+	// Get first compound selector as array
+	// Returns array of parts before first combinator
+	get first_compound(): CSSNode[] {
+		if (this.type !== NODE_SELECTOR) return []
+
+		let result: CSSNode[] = []
+		let child = this.first_child
+		while (child) {
+			if (child.type === NODE_SELECTOR_COMBINATOR) break
+			result.push(child)
+			child = child.next_sibling
+		}
+		return result
+	}
+
+	// Split selector into compound selectors
+	// Returns array of compound arrays split by combinators
+	get all_compounds(): CSSNode[][] {
+		if (this.type !== NODE_SELECTOR) return []
+
+		let compounds: CSSNode[][] = []
+		let current_compound: CSSNode[] = []
+
+		let child = this.first_child
+		while (child) {
+			if (child.type === NODE_SELECTOR_COMBINATOR) {
+				if (current_compound.length > 0) {
+					compounds.push(current_compound)
+					current_compound = []
+				}
+			} else {
+				current_compound.push(child)
+			}
+			child = child.next_sibling
+		}
+
+		if (current_compound.length > 0) {
+			compounds.push(current_compound)
+		}
+
+		return compounds
+	}
+
+	// Check if selector is compound (no combinators)
+	get is_compound(): boolean {
+		if (this.type !== NODE_SELECTOR) return false
+
+		let child = this.first_child
+		while (child) {
+			if (child.type === NODE_SELECTOR_COMBINATOR) return false
+			child = child.next_sibling
+		}
+		return true
+	}
+
+	// Get text of first compound selector (no node allocation)
+	get first_compound_text(): string {
+		if (this.type !== NODE_SELECTOR) return ''
+
+		let start = -1
+		let end = -1
+
+		let child = this.first_child
+		while (child) {
+			if (child.type === NODE_SELECTOR_COMBINATOR) break
+
+			if (start === -1) start = child.offset
+			end = child.offset + child.length
+
+			child = child.next_sibling
+		}
+
+		if (start === -1) return ''
+		return this.source.substring(start, end)
+	}
 }
