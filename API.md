@@ -63,6 +63,7 @@ function parse(source: string, options?: ParserOptions): CSSNode
 - `all_compounds` - Array of compound arrays split by combinators (for NODE_SELECTOR)
 - `is_compound` - Whether selector has no combinators (for NODE_SELECTOR)
 - `first_compound_text` - Text of first compound selector (for NODE_SELECTOR)
+- `clone(options?)` - Clone node as a mutable plain object with children as arrays
 
 ### Example 1: Basic Parsing
 
@@ -281,7 +282,7 @@ const ast = parse('.foo { color: red; }')
 
 // Using type_name directly on nodes
 for (let node of ast) {
-  console.log(`${node.type_name}: ${node.text}`)
+	console.log(`${node.type_name}: ${node.text}`)
 }
 // Output:
 // style_rule: .foo { color: red; }
@@ -301,7 +302,7 @@ console.log(TYPE_NAMES[NODE_DECLARATION]) // 'declaration'
 
 // Compare strings instead of numeric constants
 if (node.type_name === 'declaration') {
-  console.log(`Property: ${node.property}, Value: ${node.value}`)
+	console.log(`Property: ${node.property}, Value: ${node.value}`)
 }
 ```
 
@@ -327,14 +328,14 @@ const nthOf = nthPseudo.first_child // NODE_SELECTOR_NTH_OF
 
 // Direct access to formula
 console.log(nthOf.nth.type === NODE_SELECTOR_NTH) // true
-console.log(nthOf.nth.nth_a)  // "2n"
-console.log(nthOf.nth.nth_b)  // "+1"
+console.log(nthOf.nth.nth_a) // "2n"
+console.log(nthOf.nth.nth_b) // "+1"
 
 // Direct access to selector list from :nth-child(of)
-console.log(nthOf.selector.text)  // ".foo"
+console.log(nthOf.selector.text) // ".foo"
 
 // Or use the unified helper on the pseudo-class
-console.log(nthPseudo.selector_list.text)  // ".foo"
+console.log(nthPseudo.selector_list.text) // ".foo"
 ```
 
 **Before (nested loops required):**
@@ -343,18 +344,18 @@ console.log(nthPseudo.selector_list.text)  // ".foo"
 // Had to manually traverse to find selector list
 let child = pseudo.first_child
 while (child) {
-    if (child.type === NODE_SELECTOR_NTH_OF) {
-        let inner = child.first_child
-        while (inner) {
-            if (inner.type === NODE_SELECTOR_LIST) {
-                processSelectors(inner)
-                break
-            }
-            inner = inner.next_sibling
-        }
-        break
-    }
-    child = child.next_sibling
+	if (child.type === NODE_SELECTOR_NTH_OF) {
+		let inner = child.first_child
+		while (inner) {
+			if (inner.type === NODE_SELECTOR_LIST) {
+				processSelectors(inner)
+				break
+			}
+			inner = inner.next_sibling
+		}
+		break
+	}
+	child = child.next_sibling
 }
 ```
 
@@ -363,7 +364,7 @@ while (child) {
 ```typescript
 // Simple and clear
 if (pseudo.selector_list) {
-    processSelectors(pseudo.selector_list)
+	processSelectors(pseudo.selector_list)
 }
 ```
 
@@ -380,9 +381,9 @@ const selector = root.first_child
 // Hot path: Calculate specificity (zero allocations)
 let [id, cls, type] = [0, 0, 0]
 for (let part of selector.compound_parts()) {
-    if (part.type === NODE_SELECTOR_ID) id++
-    else if (part.type === NODE_SELECTOR_CLASS) cls++
-    else if (part.type === NODE_SELECTOR_TYPE) type++
+	if (part.type === NODE_SELECTOR_ID) id++
+	else if (part.type === NODE_SELECTOR_CLASS) cls++
+	else if (part.type === NODE_SELECTOR_TYPE) type++
 }
 console.log('Specificity:', [id, cls, type]) // [1, 1, 1]
 
@@ -398,7 +399,7 @@ console.log('Compounds:', all.length) // 3
 // [[div, .container, #app], [p, .text], [span]]
 
 for (let compound of all) {
-    console.log('Compound:', compound.map(n => n.text).join(''))
+	console.log('Compound:', compound.map((n) => n.text).join(''))
 }
 // Output:
 // Compound: div.container#app
@@ -416,12 +417,12 @@ console.log('First text:', selector.first_compound_text) // "div.container#app"
 const compoundParts = []
 let selectorPart = selector.first_child
 while (selectorPart) {
-    if (selectorPart.type === NODE_SELECTOR_COMBINATOR) break
-    compoundParts.push(selectorPart)
-    selectorPart = selectorPart.next_sibling
+	if (selectorPart.type === NODE_SELECTOR_COMBINATOR) break
+	compoundParts.push(selectorPart)
+	selectorPart = selectorPart.next_sibling
 }
 // Then... REPARSING! ❌
-const text = compoundParts.map(n => n.text).join('')
+const text = compoundParts.map((n) => n.text).join('')
 const result = parse_selector(text) // Expensive!
 ```
 
@@ -434,10 +435,68 @@ for (let part of selector.compound_parts()) { ... } // Zero allocations
 ```
 
 **Performance Benefits**:
+
 - `compound_parts()` iterator: 0 allocations, lazy evaluation
 - `first_compound`: Small array allocation (~40-200 bytes typical)
 - **10-20x faster** than reparsing approach
 - All operations O(n) where n = number of child nodes
+
+### Example 11: Node Cloning
+
+Convert arena-backed immutable nodes into mutable plain JavaScript objects for manipulation:
+
+```typescript
+import { parse } from '@projectwallace/css-parser'
+
+const ast = parse('div { margin: 10px 20px; padding: 5px; }')
+const rule = ast.first_child
+const block = rule.block
+const marginDecl = block.first_child
+
+// Shallow clone (no children)
+const shallow = marginDecl.clone({ deep: false })
+console.log(shallow.type) // NODE_DECLARATION
+console.log(shallow.type_name) // "declaration"
+console.log(shallow.property) // "margin"
+console.log(shallow.children) // [] (empty array)
+
+// Deep clone (includes all children)
+const deep = marginDecl.clone({ deep: true })
+console.log(deep.children.length) // 2 (dimension nodes)
+console.log(deep.children[0].value) // 10
+console.log(deep.children[0].unit) // "px"
+console.log(deep.children[1].value) // 20
+
+// Clone with location information
+const withLocation = marginDecl.clone({ locations: true })
+console.log(withLocation.line) // 1
+console.log(withLocation.column) // 6
+console.log(withLocation.offset) // 6
+
+// Cloned objects are mutable
+const clone = marginDecl.clone()
+clone.value = '0'
+clone.children.push({ type: 99, text: 'test', children: [] })
+// Original node unchanged ✅
+```
+
+**Use Cases**:
+
+- Convert nodes to plain objects for modification
+- Create synthetic AST nodes for tools
+- Extract and manipulate selector parts
+- Build custom transformations
+
+**Options**:
+
+- `deep?: boolean` (default: `true`) - Recursively clone children
+- `locations?: boolean` (default: `false`) - Include line/column/offset/length
+
+**Return Type**: Plain object with:
+
+- All node properties extracted (including `type_name`)
+- `children` as array (no linked lists)
+- Mutable - can be freely modified
 
 ---
 
@@ -626,10 +685,12 @@ For formatters and tools that need to reconstruct CSS, the parser distinguishes 
 - `:lang(en)` → `has_children = true` (function syntax with content)
 
 The `has_children` property on pseudo-class and pseudo-element nodes returns `true` if:
+
 1. The node has actual child nodes (parsed content), OR
 2. The node uses function syntax (has parentheses), indicated by the `FLAG_HAS_PARENS` flag
 
 This allows formatters to correctly reconstruct selectors:
+
 - `:hover` → no parentheses needed
 - `:lang()` → parentheses needed (even though empty)
 
@@ -674,19 +735,14 @@ Use these constants with the `node.attr_flags` property to identify case sensiti
 #### Example
 
 ```javascript
-import {
-  parse_selector,
-  NODE_SELECTOR_ATTRIBUTE,
-  ATTR_OPERATOR_EQUAL,
-  ATTR_FLAG_CASE_INSENSITIVE
-} from '@projectwallace/css-parser'
+import { parse_selector, NODE_SELECTOR_ATTRIBUTE, ATTR_OPERATOR_EQUAL, ATTR_FLAG_CASE_INSENSITIVE } from '@projectwallace/css-parser'
 
 const ast = parse_selector('[type="text" i]')
 
 for (let node of ast) {
-  if (node.type === NODE_SELECTOR_ATTRIBUTE) {
-    console.log(node.attr_operator === ATTR_OPERATOR_EQUAL) // true
-    console.log(node.attr_flags === ATTR_FLAG_CASE_INSENSITIVE) // true
-  }
+	if (node.type === NODE_SELECTOR_ATTRIBUTE) {
+		console.log(node.attr_operator === ATTR_OPERATOR_EQUAL) // true
+		console.log(node.attr_flags === ATTR_FLAG_CASE_INSENSITIVE) // true
+	}
 }
 ```

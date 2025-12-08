@@ -12,7 +12,7 @@ export { walk, traverse } from './walk'
 export { type ParserOptions } from './parse'
 
 // Types
-export { CSSNode, type CSSNodeType, TYPE_NAMES } from './css-node'
+export { CSSNode, type CSSNodeType, TYPE_NAMES, type CloneOptions, type PlainCSSNode } from './css-node'
 export type { LexerPosition } from './lexer'
 
 export {
