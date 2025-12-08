@@ -468,7 +468,7 @@ console.log(deep.children[0].unit) // "px"
 console.log(deep.children[1].value) // 20
 
 // Clone with location information
-const withLocation = marginDecl.clone({ includeLocation: true })
+const withLocation = marginDecl.clone({ locations: true })
 console.log(withLocation.line) // 1
 console.log(withLocation.column) // 6
 console.log(withLocation.offset) // 6
@@ -490,7 +490,7 @@ clone.children.push({ type: 99, text: 'test', children: [] })
 **Options**:
 
 - `deep?: boolean` (default: `true`) - Recursively clone children
-- `includeLocation?: boolean` (default: `false`) - Include line/column/offset/length
+- `locations?: boolean` (default: `false`) - Include line/column/offset/length
 
 **Return Type**: Plain object with:
 
