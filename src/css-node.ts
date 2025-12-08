@@ -486,7 +486,7 @@ export class CSSNode {
 
 	// Iterator over first compound selector parts (zero allocation)
 	// Yields parts before the first combinator
-	*compound_parts(): Iterator<CSSNode> {
+	*compound_parts(): IterableIterator<CSSNode> {
 		if (this.type !== NODE_SELECTOR) return
 
 		let child = this.first_child

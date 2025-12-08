@@ -775,7 +775,7 @@ describe('CSSNode', () => {
 		describe('compound_parts() iterator', () => {
 			test('yields parts before first combinator', () => {
 				const result = parse_selector('div.foo#bar > p')
-				const selector = result.first_child
+				const selector = result.first_child!
 
 				const parts = Array.from(selector.compound_parts())
 				expect(parts.length).toBe(3)
@@ -786,10 +786,10 @@ describe('CSSNode', () => {
 
 			test('zero allocations for iteration', () => {
 				const result = parse_selector('div.foo > p')
-				const selector = result.first_child
+				const selector = result.first_child!
 
 				let count = 0
-				for (let part of selector.compound_parts()) {
+				for (const _part of selector.compound_parts()) {
 					count++
 				}
 				expect(count).toBe(2)
@@ -805,7 +805,7 @@ describe('CSSNode', () => {
 
 			test('works with all parts when no combinator', () => {
 				const result = parse_selector('div.foo#bar')
-				const selector = result.first_child
+				const selector = result.first_child!
 
 				const parts = Array.from(selector.compound_parts())
 				expect(parts.length).toBe(3)
@@ -813,7 +813,7 @@ describe('CSSNode', () => {
 
 			test('handles leading combinator (CSS Nesting)', () => {
 				const result = parse_selector('> p')
-				const selector = result.first_child
+				const selector = result.first_child!
 
 				const parts = Array.from(selector.compound_parts())
 				expect(parts.length).toBe(0) // No parts before combinator
@@ -821,7 +821,7 @@ describe('CSSNode', () => {
 
 			test('works with pseudo-classes', () => {
 				const result = parse_selector('a.link:hover > p')
-				const selector = result.first_child
+				const selector = result.first_child!
 
 				const parts = Array.from(selector.compound_parts())
 				expect(parts.length).toBe(3)
@@ -834,7 +834,7 @@ describe('CSSNode', () => {
 		describe('first_compound property', () => {
 			test('returns array of parts before combinator', () => {
 				const result = parse_selector('div.foo#bar > p')
-				const selector = result.first_child
+				const selector = result.first_child!
 
 				const compound = selector.first_compound
 				expect(compound.length).toBe(3)
@@ -845,7 +845,7 @@ describe('CSSNode', () => {
 
 			test('returns all parts when no combinators', () => {
 				const result = parse_selector('div.foo#bar')
-				const selector = result.first_child
+				const selector = result.first_child!
 
 				const compound = selector.first_compound
 				expect(compound.length).toBe(3)
@@ -858,7 +858,7 @@ describe('CSSNode', () => {
 
 			test('handles attribute selectors', () => {
 				const result = parse_selector('input[type="text"]:focus + label')
-				const selector = result.first_child
+				const selector = result.first_child!
 
 				const compound = selector.first_compound
 				expect(compound.length).toBe(3)
@@ -869,7 +869,7 @@ describe('CSSNode', () => {
 
 			test('handles leading combinator', () => {
 				const result = parse_selector('> div')
-				const selector = result.first_child
+				const selector = result.first_child!
 
 				const compound = selector.first_compound
 				expect(compound.length).toBe(0)
@@ -879,7 +879,7 @@ describe('CSSNode', () => {
 		describe('all_compounds property', () => {
 			test('splits by combinators', () => {
 				const result = parse_selector('div.foo > p.bar + span')
-				const selector = result.first_child
+				const selector = result.first_child!
 
 				const compounds = selector.all_compounds
 				expect(compounds.length).toBe(3)
@@ -890,7 +890,7 @@ describe('CSSNode', () => {
 
 			test('handles single compound (no combinators)', () => {
 				const result = parse_selector('div.foo#bar')
-				const selector = result.first_child
+				const selector = result.first_child!
 
 				const compounds = selector.all_compounds
 				expect(compounds.length).toBe(1)
@@ -899,7 +899,7 @@ describe('CSSNode', () => {
 
 			test('handles leading combinator', () => {
 				const result = parse_selector('> p')
-				const selector = result.first_child
+				const selector = result.first_child!
 
 				const compounds = selector.all_compounds
 				expect(compounds.length).toBe(1)
@@ -909,7 +909,7 @@ describe('CSSNode', () => {
 
 			test('handles multiple combinators', () => {
 				const result = parse_selector('a > b + c ~ d')
-				const selector = result.first_child
+				const selector = result.first_child!
 
 				const compounds = selector.all_compounds
 				expect(compounds.length).toBe(4)
@@ -921,7 +921,7 @@ describe('CSSNode', () => {
 
 			test('handles descendant combinator (space)', () => {
 				const result = parse_selector('div p span')
-				const selector = result.first_child
+				const selector = result.first_child!
 
 				const compounds = selector.all_compounds
 				expect(compounds.length).toBe(3)
@@ -936,19 +936,19 @@ describe('CSSNode', () => {
 		describe('is_compound property', () => {
 			test('true when no combinators', () => {
 				const result = parse_selector('div.foo#bar')
-				const selector = result.first_child
+				const selector = result.first_child!
 				expect(selector.is_compound).toBe(true)
 			})
 
 			test('false when has combinators', () => {
 				const result = parse_selector('div > p')
-				const selector = result.first_child
+				const selector = result.first_child!
 				expect(selector.is_compound).toBe(false)
 			})
 
 			test('false when has leading combinator', () => {
 				const result = parse_selector('> div')
-				const selector = result.first_child
+				const selector = result.first_child!
 				expect(selector.is_compound).toBe(false)
 			})
 
@@ -959,7 +959,7 @@ describe('CSSNode', () => {
 
 			test('true for single type selector', () => {
 				const result = parse_selector('div')
-				const selector = result.first_child
+				const selector = result.first_child!
 				expect(selector.is_compound).toBe(true)
 			})
 		})
@@ -967,13 +967,13 @@ describe('CSSNode', () => {
 		describe('first_compound_text property', () => {
 			test('returns text before combinator', () => {
 				const result = parse_selector('div.foo#bar > p')
-				const selector = result.first_child
+				const selector = result.first_child!
 				expect(selector.first_compound_text).toBe('div.foo#bar')
 			})
 
 			test('returns full text when no combinators', () => {
 				const result = parse_selector('div.foo#bar')
-				const selector = result.first_child
+				const selector = result.first_child!
 				expect(selector.first_compound_text).toBe('div.foo#bar')
 			})
 
@@ -984,13 +984,13 @@ describe('CSSNode', () => {
 
 			test('returns empty string for leading combinator', () => {
 				const result = parse_selector('> div')
-				const selector = result.first_child
+				const selector = result.first_child!
 				expect(selector.first_compound_text).toBe('')
 			})
 
 			test('handles complex selectors', () => {
 				const result = parse_selector('input[type="text"]:focus::placeholder + label')
-				const selector = result.first_child
+				const selector = result.first_child!
 				expect(selector.first_compound_text).toBe('input[type="text"]:focus::placeholder')
 			})
 		})
@@ -999,14 +999,15 @@ describe('CSSNode', () => {
 			test('handles :host(#foo.bar baz) nested selector', () => {
 				const result = parse_selector(':host(#foo.bar baz)')
 				const selector = result.first_child
-				const pseudo = selector.first_child
-				const innerList = pseudo.selector_list
-				const innerSel = innerList.first_child
+				expect(selector).not.toBeNull()
+				const pseudo = selector!.first_child
+				const innerList = pseudo?.selector_list
+				const innerSel = innerList?.first_child
 
-				const compound = innerSel.first_compound
-				expect(compound.length).toBe(2)
-				expect(compound[0].text).toBe('#foo')
-				expect(compound[1].text).toBe('.bar')
+				const compound = innerSel?.first_compound
+				expect(compound?.length).toBe(2)
+				expect(compound?.[0]?.text).toBe('#foo')
+				expect(compound?.[1]?.text).toBe('.bar')
 			})
 
 			test('handles empty selector', () => {
@@ -1021,8 +1022,9 @@ describe('CSSNode', () => {
 			test('handles universal selector with combinator', () => {
 				const result = parse_selector('* > div')
 				const selector = result.first_child
+				expect(selector).not.toBeNull()
 
-				const compounds = selector.all_compounds
+				const compounds = selector!.all_compounds
 				expect(compounds.length).toBe(2)
 				expect(compounds[0][0].text).toBe('*')
 				expect(compounds[1][0].text).toBe('div')
@@ -1030,7 +1032,7 @@ describe('CSSNode', () => {
 
 			test('handles nesting selector with combinator', () => {
 				const result = parse_selector('& > div')
-				const selector = result.first_child
+				const selector = result.first_child!
 
 				const compounds = selector.all_compounds
 				expect(compounds.length).toBe(2)
