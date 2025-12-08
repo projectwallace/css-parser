@@ -136,6 +136,53 @@ export type CSSNodeType =
 	| typeof NODE_PRELUDE_IMPORT_LAYER
 	| typeof NODE_PRELUDE_IMPORT_SUPPORTS
 
+// Options for cloning nodes
+export interface CloneOptions {
+	/**
+	 * Recursively clone all children
+	 * @default true
+	 */
+	deep?: boolean
+	/**
+	 * Include location information (line, column, offset, length)
+	 * @default false
+	 */
+	locations?: boolean
+}
+
+// Plain object representation of a CSSNode
+export type PlainCSSNode = {
+	// Core properties (always present)
+	type: number
+	type_name: string
+	text: string
+	children: PlainCSSNode[]
+
+	// Optional properties (only when meaningful)
+	name?: string
+	property?: string
+	value?: string | number | null
+	unit?: string
+	prelude?: string
+
+	// Flags (only when true)
+	is_important?: boolean
+	is_vendor_prefixed?: boolean
+	has_error?: boolean
+
+	// Selector-specific
+	attr_operator?: number
+	attr_flags?: number
+	nth_a?: string | null
+	nth_b?: string | null
+
+	// Location (only when locations: true)
+	line?: number
+	column?: number
+	offset?: number
+	length?: number
+}
+
 export class CSSNode {
 	private arena: CSSDataArena
 	private source: string
@@ -571,5 +618,87 @@ export class CSSNode {
 
 		if (start === -1) return ''
 		return this.source.substring(start, end)
+	}
+
+	// --- Node Cloning ---
+
+	/**
+	 * Clone this node as a mutable plain JavaScript object
+	 *
+	 * Extracts all properties from the arena into a plain object with children as an array.
+	 * The resulting object can be freely modified.
+	 *
+	 * @param options - Cloning configuration
+	 * @param options.deep - Recursively clone children (default: true)
+	 * @param options.locations - Include line/column/offset/length (default: false)
+	 * @returns Plain object with children as array
+	 *
+	 * @example
+	 * const ast = parse('div { color: red; }')
+	 * const decl = ast.first_child.block.first_child
+	 * const plain = decl.clone()
+	 *
+	 * // Access children as array
+	 * plain.children.length
+	 * plain.children[0]
+	 * plain.children.push(newChild)
+	 */
+	clone(options: CloneOptions = {}): PlainCSSNode {
+		const { deep = true, locations = false } = options
+
+		// 1. Create plain object with base properties
+		let plain: any = {
+			type: this.type,
+			type_name: this.type_name,
+			text: this.text,
+			children: [],
+		}
+
+		// 2. Extract type-specific properties (only if meaningful)
+		if (this.name) plain.name = this.name
+		if (this.type === NODE_DECLARATION) plain.property = this.name
+
+		// 3. Handle value types
+		if (this.value !== undefined && this.value !== null) {
+			plain.value = this.value
+			if (this.unit) plain.unit = this.unit
+		}
+
+		// 4. Extract prelude for at-rules
+		if (this.type === NODE_AT_RULE && this.prelude) {
+			plain.prelude = this.prelude
+		}
+
+		// 5. Extract flags (only if true)
+		if (this.type === NODE_DECLARATION) plain.is_important = this.is_important
+		if (this.is_vendor_prefixed) plain.is_vendor_prefixed = true
+		if (this.has_error) plain.has_error = true
+
+		// 6. Extract selector-specific properties
+		if (this.type === NODE_SELECTOR_ATTRIBUTE) {
+			plain.attr_operator = this.attr_operator
+			plain.attr_flags = this.attr_flags
+		}
+		if (this.type === NODE_SELECTOR_NTH || this.type === NODE_SELECTOR_NTH_OF) {
+			if (this.nth_a !== null) plain.nth_a = this.nth_a
+			if (this.nth_b !== null) plain.nth_b = this.nth_b
+		}
+
+		// 7. Include location if requested
+		if (locations) {
+			plain.line = this.line
+			plain.column = this.column
+			plain.offset = this.offset
+			plain.length = this.length
+		}
+
+		// 8. Deep clone children - just push to array!
+		if (deep) {
+			for (let child of this.children) {
+				plain.children.push(child.clone({ deep: true, locations }))
+			}
+		}
+
+		return plain
 	}
 }

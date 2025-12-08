@@ -1,14 +1,17 @@
 import { describe, test, expect } from 'vitest'
-import { Parser } from './parse'
+import { Parser, parse } from './parse'
 import { parse_selector } from './parse-selector'
 import {
 	NODE_DECLARATION,
 	NODE_STYLE_RULE,
 	NODE_AT_RULE,
 	NODE_SELECTOR_NTH,
-	NODE_SELECTOR_NTH_OF,
 	NODE_SELECTOR_LIST,
 	NODE_SELECTOR_PSEUDO_CLASS,
+	NODE_VALUE_DIMENSION,
+	NODE_VALUE_NUMBER,
+	NODE_VALUE_FUNCTION,
+	NODE_SELECTOR_ATTRIBUTE,
 } from './arena'
 
 describe('CSSNode', () => {
@@ -1038,6 +1041,232 @@ describe('CSSNode', () => {
 				expect(compounds.length).toBe(2)
 				expect(compounds[0][0].text).toBe('&')
 				expect(compounds[1][0].text).toBe('div')
+			})
+		})
+	})
+
+	describe('Node cloning', () => {
+		describe('clone() method', () => {
+			test('creates plain object with core properties', () => {
+				const ast = parse('div { color: red; }', { parse_values: false, parse_selectors: false })
+				const rule = ast.first_child!
+				const block = rule.block!
+				const decl = block.first_child!
+
+				const clone = decl.clone({ deep: false })
+
+				expect(clone.type).toBe(NODE_DECLARATION)
+				expect(clone.type_name).toBe('declaration')
+				expect(clone.text).toBe('color: red;')
+				expect(clone.name).toBe('color')
+				expect(clone.property).toBe('color')
+				expect(clone.value).toBe('red')
+				expect(clone.children).toEqual([])
+			})
+
+			test('shallow clone has empty children array', () => {
+				const ast = parse('div { margin: 10px 20px; }')
+				const decl = ast.first_child!.block!.first_child!
+
+				const shallow = decl.clone({ deep: false })
+
+				expect(shallow.children).toEqual([])
+				expect(shallow.type).toBe(NODE_DECLARATION)
+			})
+
+			test('deep clone includes children as array', () => {
+				const ast = parse('div { margin: 10px 20px; }')
+				const decl = ast.first_child!.block!.first_child!
+
+				const deep = decl.clone()
+
+				expect(deep.children.length).toBe(2)
+				expect(deep.children[0].type).toBe(NODE_VALUE_DIMENSION)
+				expect(deep.children[0].value).toBe(10)
+				expect(deep.children[0].unit).toBe('px')
+				expect(deep.children[1].value).toBe(20)
+				expect(deep.children[1].unit).toBe('px')
+			})
+
+			test('collects multiple children correctly', () => {
+				const ast = parse('div { margin: 10px 20px 30px 40px; }')
+				const decl = ast.first_child!.block!.first_child!
+
+				const clone = decl.clone()
+
+				expect(clone.children.length).toBe(4)
+				expect(clone.children[0].value).toBe(10)
+				expect(clone.children[1].value).toBe(20)
+				expect(clone.children[2].value).toBe(30)
+				expect(clone.children[3].value).toBe(40)
+			})
+
+			test('handles nested children', () => {
+				const ast = parse('div { margin: calc(10px + 20px); }')
+				const decl = ast.first_child!.block!.first_child!
+
+				const clone = decl.clone()
+
+				expect(clone.children.length).toBe(1)
+				expect(clone.children[0].type).toBe(NODE_VALUE_FUNCTION)
+				expect(clone.children[0].name).toBe('calc')
+				// Function should have nested children
+				expect(clone.children[0].children.length).toBeGreaterThan(0)
+			})
+		})
+
+		describe('Type-specific properties', () => {
+			test('extracts declaration properties', () => {
+				const ast = parse('div { color: red !important; }', { parse_values: false })
+				const decl = ast.first_child!.block!.first_child!
+
+				const clone = decl.clone({ deep: false })
+
+				expect(clone.type).toBe(NODE_DECLARATION)
+				expect(clone.type_name).toBe('declaration')
+				expect(clone.property).toBe('color')
+				expect(clone.name).toBe('color')
+				expect(clone.value).toBe('red')
+				expect(clone.is_important).toBe(true)
+			})
+
+			test('extracts at-rule properties', () => {
+				const ast = parse('@media screen { }', { parse_atrule_preludes: false })
+				const atrule = ast.first_child!
+
+				const clone = atrule.clone({ deep: false })
+
+				expect(clone.type).toBe(NODE_AT_RULE)
+				expect(clone.type_name).toBe('atrule')
+				expect(clone.name).toBe('media')
+				expect(clone.prelude).toBe('screen')
+			})
+
+			test('extracts dimension value with unit', () => {
+				const ast = parse('div { width: 100px; }')
+				const decl = ast.first_child!.block!.first_child!
+				const dimension = decl.first_child!
+
+				const clone = dimension.clone({ deep: false })
+
+				expect(clone.type).toBe(NODE_VALUE_DIMENSION)
+				expect(clone.type_name).toBe('dimension')
+				expect(clone.value).toBe(100)
+				expect(clone.unit).toBe('px')
+			})
+
+			test('extracts number value', () => {
+				const ast = parse('div { opacity: 0.5; }')
+				const decl = ast.first_child!.block!.first_child!
+				const number = decl.first_child!
+
+				const clone = number.clone({ deep: false })
+
+				expect(clone.type).toBe(NODE_VALUE_NUMBER)
+				expect(clone.value).toBe(0.5)
+				expect(clone.unit).toBeUndefined()
+			})
+
+			test('extracts selector attribute properties', () => {
+				const ast = parse_selector('[data-foo="bar"]')
+				const selector = ast.first_child!
+				const attribute = selector.first_child!
+
+				const clone = attribute.clone({ deep: false })
+
+				expect(clone.type).toBe(NODE_SELECTOR_ATTRIBUTE)
+				expect(clone.type_name).toBe('attribute-selector')
+				expect(clone.attr_operator).toBeDefined()
+				expect(clone.attr_flags).toBeDefined()
+			})
+
+			test('extracts nth selector properties', () => {
+				const ast = parse_selector(':nth-child(2n+1)')
+				const selector = ast.first_child!
+				const pseudo = selector.first_child!
+				const nth = pseudo.first_child!
+
+				const clone = nth.clone({ deep: false })
+
+				expect(clone.type).toBe(NODE_SELECTOR_NTH)
+				expect(clone.nth_a).toBe('2n')
+				expect(clone.nth_b).toBe('+1')
+			})
+		})
+
+		describe('Flags', () => {
+			test('includes is_important flag when true', () => {
+				const ast = parse('div { color: red !important; }', { parse_values: false })
+				const decl = ast.first_child!.block!.first_child!
+
+				const clone = decl.clone()
+
+				expect(clone.is_important).toBe(true)
+			})
+
+			test('is_important is false', () => {
+				const ast = parse('div { color: red; }')
+				const decl = ast.first_child!.block!.first_child!
+
+				const clone = decl.clone()
+
+				expect(clone.is_important).toBe(false)
+			})
+
+			test('omits is_important when not a declaration', () => {
+				const ast = parse('div { color: red; }')
+				const rule = ast.first_child!
+
+				const clone = rule.clone()
+
+				expect(clone.is_important).toBeUndefined()
+			})
+
+			test('includes is_vendor_prefixed flag', () => {
+				const ast = parse('div { -webkit-transform: rotate(45deg); }', { parse_values: false })
+				const decl = ast.first_child!.block!.first_child!
+
+				const clone = decl.clone()
+
+				expect(clone.is_vendor_prefixed).toBe(true)
+			})
+		})
+
+		describe('Location information', () => {
+			test('omits location by default', () => {
+				const ast = parse('div { color: red; }', { parse_values: false })
+				const decl = ast.first_child!.block!.first_child!
+
+				const clone = decl.clone()
+
+				expect(clone.line).toBeUndefined()
+				expect(clone.column).toBeUndefined()
+				expect(clone.offset).toBeUndefined()
+				expect(clone.length).toBeUndefined()
+			})
+
+			test('includes location when requested', () => {
+				const ast = parse('div { color: red; }', { parse_values: false })
+				const decl = ast.first_child!.block!.first_child!
+
+				const clone = decl.clone({ locations: true })
+
+				expect(clone.line).toBeDefined()
+				expect(clone.column).toBeDefined()
+				expect(clone.offset).toBeDefined()
+				expect(clone.length).toBeDefined()
+			})
+
+			test('includes location in deep cloned children', () => {
+				const ast = parse('div { margin: 10px 20px; }')
+				const decl = ast.first_child!.block!.first_child!
+
+				const clone = decl.clone({ locations: true })
+
+				expect(clone.children[0].line).toBeDefined()
+				expect(clone.children[0].column).toBeDefined()
+				expect(clone.children[1].line).toBeDefined()
+				expect(clone.children[1].column).toBeDefined()
 			})
 		})
 	})
