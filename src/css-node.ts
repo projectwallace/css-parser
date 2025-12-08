@@ -413,7 +413,7 @@ export class CSSNode {
 		return this.source.substring(start, start + len)
 	}
 
-	// Get the 'b' coefficient from An+B expression (e.g., "1" from "2n+1")
+	// Get the 'b' coefficient from An+B expression (e.g., "+1" from "2n+1")
 	get nth_b(): string | null {
 		if (this.type !== NODE_SELECTOR_NTH) return null
 
@@ -422,7 +422,7 @@ export class CSSNode {
 		let start = this.arena.get_value_start(this.index)
 		let value = this.source.substring(start, start + len)
 
-		// Check if there's a - sign before this position (handling "2n - 1" with spaces)
+		// Check if there's a - or + sign before this position (handling "2n - 1" or "2n + 1" with spaces)
 		// Look backwards for a - or + sign, skipping whitespace
 		let check_pos = start - 1
 		while (check_pos >= 0) {
@@ -435,15 +435,52 @@ export class CSSNode {
 			if (ch === CHAR_MINUS_HYPHEN /* - */) {
 				// Prepend - to value
 				value = '-' + value
+			} else if (ch === CHAR_PLUS /* + */) {
+				// Prepend + to value
+				value = '+' + value
 			}
-			// Note: + signs are implicit, so we don't prepend them
 			break
 		}
 
-		// Strip leading + if present in the token itself
-		if (value.charCodeAt(0) === CHAR_PLUS) {
-			return value.substring(1)
-		}
 		return value
+	}
+
+	// --- Pseudo-Class Nth-Of Helpers (for NODE_SELECTOR_NTH_OF) ---
+
+	// Get the An+B formula node from :nth-child(2n+1 of .foo)
+	get nth(): CSSNode | null {
+		if (this.type !== NODE_SELECTOR_NTH_OF) return null
+		return this.first_child // First child is always NODE_SELECTOR_NTH
+	}
+
+	// Get the selector list from :nth-child(2n+1 of .foo)
+	get selector(): CSSNode | null {
+		if (this.type !== NODE_SELECTOR_NTH_OF) return null
+		let first = this.first_child
+		return first ? first.next_sibling : null // Second child is NODE_SELECTOR_LIST
+	}
+
+	// --- Pseudo-Class Selector List Helper ---
+
+	// Get selector list from pseudo-class functions
+	// Works for :is(.a), :not(.b), :has(.c), :where(.d), :nth-child(2n of .e)
+	get selector_list(): CSSNode | null {
+		if (this.type !== NODE_SELECTOR_PSEUDO_CLASS) return null
+
+		let child = this.first_child
+		if (!child) return null
+
+		// For simple cases (:is, :not, :where, :has), first_child is the selector list
+		if (child.type === NODE_SELECTOR_LIST) {
+			return child
+		}
+
+		// For :nth-child(of) cases, need to look inside NODE_SELECTOR_NTH_OF
+		if (child.type === NODE_SELECTOR_NTH_OF) {
+			// Use the convenience getter we just added
+			return child.selector
+		}
+
+		return null
 	}
 }

@@ -1394,7 +1394,7 @@ describe('SelectorParser', () => {
 			const anplusb = nth_child.first_child!
 			expect(anplusb.type).toBe(NODE_SELECTOR_NTH)
 			expect(anplusb.nth_a).toBe('2n')
-			expect(anplusb.nth_b).toBe('1')
+			expect(anplusb.nth_b).toBe('+1')
 			expect(anplusb.text).toBe('2n+1')
 		})
 
