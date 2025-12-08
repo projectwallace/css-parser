@@ -770,4 +770,273 @@ describe('CSSNode', () => {
 			})
 		})
 	})
+
+	describe('Compound selector helpers', () => {
+		describe('compound_parts() iterator', () => {
+			test('yields parts before first combinator', () => {
+				const result = parse_selector('div.foo#bar > p')
+				const selector = result.first_child
+
+				const parts = Array.from(selector.compound_parts())
+				expect(parts.length).toBe(3)
+				expect(parts[0].text).toBe('div')
+				expect(parts[1].text).toBe('.foo')
+				expect(parts[2].text).toBe('#bar')
+			})
+
+			test('zero allocations for iteration', () => {
+				const result = parse_selector('div.foo > p')
+				const selector = result.first_child
+
+				let count = 0
+				for (let part of selector.compound_parts()) {
+					count++
+				}
+				expect(count).toBe(2)
+			})
+
+			test('returns empty for wrong type', () => {
+				const result = parse_selector('div')
+				const list = result // NODE_SELECTOR_LIST
+
+				const parts = Array.from(list.compound_parts())
+				expect(parts.length).toBe(0)
+			})
+
+			test('works with all parts when no combinator', () => {
+				const result = parse_selector('div.foo#bar')
+				const selector = result.first_child
+
+				const parts = Array.from(selector.compound_parts())
+				expect(parts.length).toBe(3)
+			})
+
+			test('handles leading combinator (CSS Nesting)', () => {
+				const result = parse_selector('> p')
+				const selector = result.first_child
+
+				const parts = Array.from(selector.compound_parts())
+				expect(parts.length).toBe(0) // No parts before combinator
+			})
+
+			test('works with pseudo-classes', () => {
+				const result = parse_selector('a.link:hover > p')
+				const selector = result.first_child
+
+				const parts = Array.from(selector.compound_parts())
+				expect(parts.length).toBe(3)
+				expect(parts[0].text).toBe('a')
+				expect(parts[1].text).toBe('.link')
+				expect(parts[2].text).toBe(':hover')
+			})
+		})
+
+		describe('first_compound property', () => {
+			test('returns array of parts before combinator', () => {
+				const result = parse_selector('div.foo#bar > p')
+				const selector = result.first_child
+
+				const compound = selector.first_compound
+				expect(compound.length).toBe(3)
+				expect(compound[0].text).toBe('div')
+				expect(compound[1].text).toBe('.foo')
+				expect(compound[2].text).toBe('#bar')
+			})
+
+			test('returns all parts when no combinators', () => {
+				const result = parse_selector('div.foo#bar')
+				const selector = result.first_child
+
+				const compound = selector.first_compound
+				expect(compound.length).toBe(3)
+			})
+
+			test('returns empty array for wrong type', () => {
+				const result = parse_selector('div')
+				expect(result.first_compound).toEqual([])
+			})
+
+			test('handles attribute selectors', () => {
+				const result = parse_selector('input[type="text"]:focus + label')
+				const selector = result.first_child
+
+				const compound = selector.first_compound
+				expect(compound.length).toBe(3)
+				expect(compound[0].text).toBe('input')
+				expect(compound[1].text).toBe('[type="text"]')
+				expect(compound[2].text).toBe(':focus')
+			})
+
+			test('handles leading combinator', () => {
+				const result = parse_selector('> div')
+				const selector = result.first_child
+
+				const compound = selector.first_compound
+				expect(compound.length).toBe(0)
+			})
+		})
+
+		describe('all_compounds property', () => {
+			test('splits by combinators', () => {
+				const result = parse_selector('div.foo > p.bar + span')
+				const selector = result.first_child
+
+				const compounds = selector.all_compounds
+				expect(compounds.length).toBe(3)
+				expect(compounds[0].length).toBe(2) // div, .foo
+				expect(compounds[1].length).toBe(2) // p, .bar
+				expect(compounds[2].length).toBe(1) // span
+			})
+
+			test('handles single compound (no combinators)', () => {
+				const result = parse_selector('div.foo#bar')
+				const selector = result.first_child
+
+				const compounds = selector.all_compounds
+				expect(compounds.length).toBe(1)
+				expect(compounds[0].length).toBe(3)
+			})
+
+			test('handles leading combinator', () => {
+				const result = parse_selector('> p')
+				const selector = result.first_child
+
+				const compounds = selector.all_compounds
+				expect(compounds.length).toBe(1)
+				expect(compounds[0].length).toBe(1)
+				expect(compounds[0][0].text).toBe('p')
+			})
+
+			test('handles multiple combinators', () => {
+				const result = parse_selector('a > b + c ~ d')
+				const selector = result.first_child
+
+				const compounds = selector.all_compounds
+				expect(compounds.length).toBe(4)
+				expect(compounds[0][0].text).toBe('a')
+				expect(compounds[1][0].text).toBe('b')
+				expect(compounds[2][0].text).toBe('c')
+				expect(compounds[3][0].text).toBe('d')
+			})
+
+			test('handles descendant combinator (space)', () => {
+				const result = parse_selector('div p span')
+				const selector = result.first_child
+
+				const compounds = selector.all_compounds
+				expect(compounds.length).toBe(3)
+			})
+
+			test('returns empty array for wrong type', () => {
+				const result = parse_selector('div')
+				expect(result.all_compounds).toEqual([])
+			})
+		})
+
+		describe('is_compound property', () => {
+			test('true when no combinators', () => {
+				const result = parse_selector('div.foo#bar')
+				const selector = result.first_child
+				expect(selector.is_compound).toBe(true)
+			})
+
+			test('false when has combinators', () => {
+				const result = parse_selector('div > p')
+				const selector = result.first_child
+				expect(selector.is_compound).toBe(false)
+			})
+
+			test('false when has leading combinator', () => {
+				const result = parse_selector('> div')
+				const selector = result.first_child
+				expect(selector.is_compound).toBe(false)
+			})
+
+			test('false for wrong type', () => {
+				const result = parse_selector('div')
+				expect(result.is_compound).toBe(false) // NODE_SELECTOR_LIST
+			})
+
+			test('true for single type selector', () => {
+				const result = parse_selector('div')
+				const selector = result.first_child
+				expect(selector.is_compound).toBe(true)
+			})
+		})
+
+		describe('first_compound_text property', () => {
+			test('returns text before combinator', () => {
+				const result = parse_selector('div.foo#bar > p')
+				const selector = result.first_child
+				expect(selector.first_compound_text).toBe('div.foo#bar')
+			})
+
+			test('returns full text when no combinators', () => {
+				const result = parse_selector('div.foo#bar')
+				const selector = result.first_child
+				expect(selector.first_compound_text).toBe('div.foo#bar')
+			})
+
+			test('returns empty string for wrong type', () => {
+				const result = parse_selector('div')
+				expect(result.first_compound_text).toBe('')
+			})
+
+			test('returns empty string for leading combinator', () => {
+				const result = parse_selector('> div')
+				const selector = result.first_child
+				expect(selector.first_compound_text).toBe('')
+			})
+
+			test('handles complex selectors', () => {
+				const result = parse_selector('input[type="text"]:focus::placeholder + label')
+				const selector = result.first_child
+				expect(selector.first_compound_text).toBe('input[type="text"]:focus::placeholder')
+			})
+		})
+
+		describe('edge cases', () => {
+			test('handles :host(#foo.bar baz) nested selector', () => {
+				const result = parse_selector(':host(#foo.bar baz)')
+				const selector = result.first_child
+				const pseudo = selector.first_child
+				const innerList = pseudo.selector_list
+				const innerSel = innerList.first_child
+
+				const compound = innerSel.first_compound
+				expect(compound.length).toBe(2)
+				expect(compound[0].text).toBe('#foo')
+				expect(compound[1].text).toBe('.bar')
+			})
+
+			test('handles empty selector', () => {
+				const result = parse_selector('')
+				const selector = result.first_child
+				if (selector) {
+					expect(selector.first_compound).toEqual([])
+					expect(selector.all_compounds).toEqual([])
+				}
+			})
+
+			test('handles universal selector with combinator', () => {
+				const result = parse_selector('* > div')
+				const selector = result.first_child
+
+				const compounds = selector.all_compounds
+				expect(compounds.length).toBe(2)
+				expect(compounds[0][0].text).toBe('*')
+				expect(compounds[1][0].text).toBe('div')
+			})
+
+			test('handles nesting selector with combinator', () => {
+				const result = parse_selector('& > div')
+				const selector = result.first_child
+
+				const compounds = selector.all_compounds
+				expect(compounds.length).toBe(2)
+				expect(compounds[0][0].text).toBe('&')
+				expect(compounds[1][0].text).toBe('div')
+			})
+		})
+	})
 })
