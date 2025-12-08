@@ -432,11 +432,9 @@ export class CSSNode {
 				continue
 			}
 			// Found non-whitespace
-			if (ch === CHAR_MINUS_HYPHEN /* - */) {
-				// Prepend - to value
+			if (ch === CHAR_MINUS_HYPHEN) {
 				value = '-' + value
-			} else if (ch === CHAR_PLUS /* + */) {
-				// Prepend + to value
+			} else if (ch === CHAR_PLUS) {
 				value = '+' + value
 			}
 			break
