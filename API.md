@@ -53,6 +53,11 @@ function parse(source: string, options?: ParserOptions): CSSNode
 - `next_sibling` - Next sibling node or `null`
 - `children` - Array of all child nodes
 - `values` - Array of value nodes (for declarations)
+- `selector_list` - Selector list from pseudo-classes like `:is()`, `:not()`, `:has()`, `:where()`, or `:nth-child(of)`
+- `nth` - An+B formula node from `:nth-child(of)` wrapper (for NODE_SELECTOR_NTH_OF nodes)
+- `selector` - Selector list from `:nth-child(of)` wrapper (for NODE_SELECTOR_NTH_OF nodes)
+- `nth_a` - The 'a' coefficient from An+B expressions like `2n` from `:nth-child(2n+1)`
+- `nth_b` - The 'b' coefficient from An+B expressions like `+1` from `:nth-child(2n+1)`
 
 ### Example 1: Basic Parsing
 
@@ -292,6 +297,68 @@ console.log(TYPE_NAMES[NODE_DECLARATION]) // 'declaration'
 // Compare strings instead of numeric constants
 if (node.type_name === 'declaration') {
   console.log(`Property: ${node.property}, Value: ${node.value}`)
+}
+```
+
+### Example 9: Accessing Nested Selectors in Pseudo-Classes
+
+Convenience properties simplify access to nested selector data:
+
+```typescript
+import { parse_selector, NODE_SELECTOR_LIST, NODE_SELECTOR_NTH } from '@projectwallace/css-parser'
+
+// Simple pseudo-classes with selectors
+const isSelector = parse_selector(':is(.foo, #bar)')
+const pseudo = isSelector.first_child?.first_child
+
+// Direct access to selector list
+console.log(pseudo.selector_list.text) // ".foo, #bar"
+console.log(pseudo.selector_list.type === NODE_SELECTOR_LIST) // true
+
+// Complex pseudo-classes with An+B notation
+const nthSelector = parse_selector(':nth-child(2n+1 of .foo)')
+const nthPseudo = nthSelector.first_child?.first_child
+const nthOf = nthPseudo.first_child // NODE_SELECTOR_NTH_OF
+
+// Direct access to formula
+console.log(nthOf.nth.type === NODE_SELECTOR_NTH) // true
+console.log(nthOf.nth.nth_a)  // "2n"
+console.log(nthOf.nth.nth_b)  // "+1"
+
+// Direct access to selector list from :nth-child(of)
+console.log(nthOf.selector.text)  // ".foo"
+
+// Or use the unified helper on the pseudo-class
+console.log(nthPseudo.selector_list.text)  // ".foo"
+```
+
+**Before (nested loops required):**
+
+```typescript
+// Had to manually traverse to find selector list
+let child = pseudo.first_child
+while (child) {
+    if (child.type === NODE_SELECTOR_NTH_OF) {
+        let inner = child.first_child
+        while (inner) {
+            if (inner.type === NODE_SELECTOR_LIST) {
+                processSelectors(inner)
+                break
+            }
+            inner = inner.next_sibling
+        }
+        break
+    }
+    child = child.next_sibling
+}
+```
+
+**After (direct property access):**
+
+```typescript
+// Simple and clear
+if (pseudo.selector_list) {
+    processSelectors(pseudo.selector_list)
 }
 ```
 

@@ -127,28 +127,28 @@ describe('ANplusBParser', () => {
 			const node = parse_anplusb('2n+1')!
 			expect(node).not.toBeNull()
 			expect(node.nth_a).toBe('2n')
-			expect(node.nth_b).toBe('1')
+			expect(node.nth_b).toBe('+1')
 		})
 
 		it('should parse 3n+5', () => {
 			const node = parse_anplusb('3n+5')!
 			expect(node).not.toBeNull()
 			expect(node.nth_a).toBe('3n')
-			expect(node.nth_b).toBe('5')
+			expect(node.nth_b).toBe('+5')
 		})
 
 		it('should parse n+0', () => {
 			const node = parse_anplusb('n+0')!
 			expect(node).not.toBeNull()
 			expect(node.nth_a).toBe('n')
-			expect(node.nth_b).toBe('0')
+			expect(node.nth_b).toBe('+0')
 		})
 
 		it('should parse -n+3', () => {
 			const node = parse_anplusb('-n+3')!
 			expect(node).not.toBeNull()
 			expect(node.nth_a).toBe('-n')
-			expect(node.nth_b).toBe('3')
+			expect(node.nth_b).toBe('+3')
 		})
 	})
 
@@ -194,7 +194,7 @@ describe('ANplusBParser', () => {
 			const node = parse_anplusb('2n + 1')!
 			expect(node).not.toBeNull()
 			expect(node.nth_a).toBe('2n')
-			expect(node.nth_b).toBe('1')
+			expect(node.nth_b).toBe('+1')
 		})
 
 		it('should parse 2n - 1 with spaces', () => {
@@ -208,21 +208,21 @@ describe('ANplusBParser', () => {
 			const node = parse_anplusb('n + 5')!
 			expect(node).not.toBeNull()
 			expect(node.nth_a).toBe('n')
-			expect(node.nth_b).toBe('5')
+			expect(node.nth_b).toBe('+5')
 		})
 
 		it('should handle leading whitespace', () => {
 			const node = parse_anplusb('  2n+1')!
 			expect(node).not.toBeNull()
 			expect(node.nth_a).toBe('2n')
-			expect(node.nth_b).toBe('1')
+			expect(node.nth_b).toBe('+1')
 		})
 
 		it('should handle trailing whitespace', () => {
 			const node = parse_anplusb('2n+1  ')!
 			expect(node).not.toBeNull()
 			expect(node.nth_a).toBe('2n')
-			expect(node.nth_b).toBe('1')
+			expect(node.nth_b).toBe('+1')
 		})
 	})
 
@@ -231,14 +231,14 @@ describe('ANplusBParser', () => {
 			const node = parse_anplusb('+0n+0')!
 			expect(node).not.toBeNull()
 			expect(node.nth_a).toBe('+0n')
-			expect(node.nth_b).toBe('0')
+			expect(node.nth_b).toBe('+0')
 		})
 
 		it('should parse large coefficients', () => {
 			const node = parse_anplusb('100n+50')!
 			expect(node).not.toBeNull()
 			expect(node.nth_a).toBe('100n')
-			expect(node.nth_b).toBe('50')
+			expect(node.nth_b).toBe('+50')
 		})
 	})
 })

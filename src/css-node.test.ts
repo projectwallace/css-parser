@@ -1,6 +1,15 @@
 import { describe, test, expect } from 'vitest'
 import { Parser } from './parse'
-import { NODE_DECLARATION, NODE_STYLE_RULE, NODE_AT_RULE } from './arena'
+import { parse_selector } from './parse-selector'
+import {
+	NODE_DECLARATION,
+	NODE_STYLE_RULE,
+	NODE_AT_RULE,
+	NODE_SELECTOR_NTH,
+	NODE_SELECTOR_NTH_OF,
+	NODE_SELECTOR_LIST,
+	NODE_SELECTOR_PSEUDO_CLASS,
+} from './arena'
 
 describe('CSSNode', () => {
 	describe('iteration', () => {
@@ -616,6 +625,149 @@ describe('CSSNode', () => {
 			const prelude = media.first_child!
 
 			expect(prelude.type_name).toBe('media-query')
+		})
+	})
+
+	describe('Pseudo-class convenience properties', () => {
+		describe('nth_of helpers (NODE_SELECTOR_NTH_OF)', () => {
+			test('nth property returns An+B formula node', () => {
+				const result = parse_selector(':nth-child(2n+1 of .foo)')
+				const selector = result.first_child
+				const pseudo = selector?.first_child // Get pseudo-class
+				const nthOf = pseudo?.first_child // NODE_SELECTOR_NTH_OF
+
+				expect(nthOf?.nth).not.toBeNull()
+				expect(nthOf?.nth?.type).toBe(NODE_SELECTOR_NTH)
+				expect(nthOf?.nth?.nth_a).toBe('2n')
+				expect(nthOf?.nth?.nth_b).toBe('+1')
+			})
+
+			test('selector property returns selector list', () => {
+				const result = parse_selector(':nth-child(2n of .foo, #bar)')
+				const selector = result.first_child
+				const pseudo = selector?.first_child
+				const nthOf = pseudo?.first_child
+
+				expect(nthOf?.selector).not.toBeNull()
+				expect(nthOf?.selector?.type).toBe(NODE_SELECTOR_LIST)
+				expect(nthOf?.selector?.text).toBe('.foo, #bar')
+			})
+
+			test('returns null for wrong node types', () => {
+				const result = parse_selector('.foo')
+				const selector = result.first_child
+				const classNode = selector?.first_child
+
+				expect(classNode?.nth).toBeNull()
+				expect(classNode?.selector).toBeNull()
+			})
+
+			test('works with :nth-last-child', () => {
+				const result = parse_selector(':nth-last-child(odd of .item)')
+				const selector = result.first_child
+				const pseudo = selector?.first_child
+				const nthOf = pseudo?.first_child
+
+				expect(nthOf?.nth).not.toBeNull()
+				expect(nthOf?.nth?.nth_a).toBe('odd')
+				expect(nthOf?.selector).not.toBeNull()
+				expect(nthOf?.selector?.text).toBe('.item')
+			})
+
+			test('works with :nth-of-type', () => {
+				const result = parse_selector(':nth-of-type(3n of .special)')
+				const selector = result.first_child
+				const pseudo = selector?.first_child
+				const nthOf = pseudo?.first_child
+
+				expect(nthOf?.nth).not.toBeNull()
+				expect(nthOf?.nth?.nth_a).toBe('3n')
+				expect(nthOf?.selector?.text).toBe('.special')
+			})
+
+			test('works with :nth-last-of-type', () => {
+				const result = parse_selector(':nth-last-of-type(even of div)')
+				const selector = result.first_child
+				const pseudo = selector?.first_child
+				const nthOf = pseudo?.first_child
+
+				expect(nthOf?.nth?.nth_a).toBe('even')
+				expect(nthOf?.selector?.text).toBe('div')
+			})
+		})
+
+		describe('selector_list helper (NODE_SELECTOR_PSEUDO_CLASS)', () => {
+			test('returns selector list for :is()', () => {
+				const result = parse_selector(':is(.foo, #bar)')
+				const selector = result.first_child
+				const pseudo = selector?.first_child
+
+				expect(pseudo?.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+				expect(pseudo?.selector_list).not.toBeNull()
+				expect(pseudo?.selector_list?.type).toBe(NODE_SELECTOR_LIST)
+				expect(pseudo?.selector_list?.text).toBe('.foo, #bar')
+			})
+
+			test('returns selector list for :nth-child(of)', () => {
+				const result = parse_selector(':nth-child(2n of .foo)')
+				const selector = result.first_child
+				const pseudo = selector?.first_child
+
+				expect(pseudo?.selector_list).not.toBeNull()
+				expect(pseudo?.selector_list?.text).toBe('.foo')
+			})
+
+			test('returns null for pseudo-classes without selectors', () => {
+				const result = parse_selector(':hover')
+				const selector = result.first_child
+				const pseudo = selector?.first_child
+
+				expect(pseudo?.selector_list).toBeNull()
+			})
+
+			test('returns null for :nth-child without "of"', () => {
+				const result = parse_selector(':nth-child(2n)')
+				const selector = result.first_child
+				const pseudo = selector?.first_child
+
+				expect(pseudo?.selector_list).toBeNull()
+			})
+
+			test('works with :not()', () => {
+				const result = parse_selector(':not(.excluded)')
+				const selector = result.first_child
+				const pseudo = selector?.first_child
+
+				expect(pseudo?.selector_list).not.toBeNull()
+				expect(pseudo?.selector_list?.text).toBe('.excluded')
+			})
+
+			test('works with :has()', () => {
+				const result = parse_selector(':has(> .child)')
+				const selector = result.first_child
+				const pseudo = selector?.first_child
+
+				expect(pseudo?.selector_list).not.toBeNull()
+				expect(pseudo?.selector_list?.text).toBe('> .child')
+			})
+
+			test('works with :where()', () => {
+				const result = parse_selector(':where(article, section)')
+				const selector = result.first_child
+				const pseudo = selector?.first_child
+
+				expect(pseudo?.selector_list).not.toBeNull()
+				expect(pseudo?.selector_list?.text).toBe('article, section')
+			})
+
+			test('complex :nth-child with multiple selectors', () => {
+				const result = parse_selector(':nth-child(3n+2 of .item, .element, #special)')
+				const selector = result.first_child
+				const pseudo = selector?.first_child
+
+				expect(pseudo?.selector_list).not.toBeNull()
+				expect(pseudo?.selector_list?.text).toBe('.item, .element, #special')
+			})
 		})
 	})
 })
