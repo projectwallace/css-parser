@@ -30,7 +30,7 @@ export function is_whitespace(ch: number): boolean {
 }
 
 export function is_combinator(ch: number): boolean {
-	return ch === CHAR_GREATER_THAN || ch === CHAR_PLUS || ch == CHAR_TILDE
+	return ch === CHAR_GREATER_THAN || ch === CHAR_PLUS || ch === CHAR_TILDE
 }
 
 export function is_digit(ch: number): boolean {
@@ -101,6 +101,11 @@ export function is_vendor_prefixed(source: string, start: number, end: number): 
 
 	// Must have another hyphen after the vendor name
 	// This identifies: -webkit-, -moz-, -ms-, -o-
-	let secondHyphenPos = source.indexOf('-', start + 2)
-	return secondHyphenPos !== -1 && secondHyphenPos < end
+	// Use bounded loop instead of unbounded indexOf() to only search within the range
+	for (let i = start + 2; i < end; i++) {
+		if (source.charCodeAt(i) === CHAR_MINUS_HYPHEN) {
+			return true
+		}
+	}
+	return false
 }
