@@ -65,7 +65,7 @@ export class ValueParser {
 			if (token_type === TOKEN_EOF) break
 
 			// Skip whitespace tokens (they're separators, not value nodes)
-			if (this.is_whitespace_token()) {
+			if (this.is_whitespace_inline()) {
 				continue
 			}
 
@@ -79,16 +79,11 @@ export class ValueParser {
 		return nodes
 	}
 
-	private is_whitespace_token(): boolean {
-		// Whitespace is implicit between tokens, we don't create nodes for it
-		let start = this.lexer.token_start
-		let end = this.lexer.token_end
-		if (start >= end) return false
-
-		// Check if all characters are whitespace
-		for (let i = start; i < end; i++) {
-			let ch = this.source.charCodeAt(i)
-			if (!is_whitespace(ch)) {
+	// Helper to check if token is all whitespace (inline for hot paths)
+	private is_whitespace_inline(): boolean {
+		if (this.lexer.token_start >= this.lexer.token_end) return false
+		for (let i = this.lexer.token_start; i < this.lexer.token_end; i++) {
+			if (!is_whitespace(this.source.charCodeAt(i))) {
 				return false
 			}
 		}
@@ -139,9 +134,10 @@ export class ValueParser {
 		let node = this.arena.create_node()
 		this.arena.set_type(node, node_type)
 		this.arena.set_start_offset(node, start)
-		this.arena.set_length(node, end - start)
-		this.arena.set_content_start(node, start)
-		this.arena.set_content_length(node, end - start)
+		let length = end - start
+		this.arena.set_length(node, length)
+		// Skip set_content_start since it would compute delta = start - start = 0 (already zero-initialized)
+		this.arena.set_content_length(node, length)
 		return node
 	}
 
@@ -185,7 +181,7 @@ export class ValueParser {
 			this.lexer.next_token_fast(false)
 
 			// Skip whitespace
-			while (this.is_whitespace_token() && this.lexer.pos < this.value_end) {
+			while (this.is_whitespace_inline() && this.lexer.pos < this.value_end) {
 				this.lexer.next_token_fast(false)
 			}
 
@@ -266,7 +262,7 @@ export class ValueParser {
 			}
 
 			// Skip whitespace
-			if (this.is_whitespace_token()) continue
+			if (this.is_whitespace_inline()) continue
 
 			// Parse argument node
 			let arg_node = this.parse_value_node()
@@ -326,7 +322,7 @@ export class ValueParser {
 			}
 
 			// Skip whitespace
-			if (this.is_whitespace_token()) continue
+			if (this.is_whitespace_inline()) continue
 
 			// Parse child node
 			// Note: We don't track paren_depth for LEFT_PAREN or TOKEN_FUNCTION here

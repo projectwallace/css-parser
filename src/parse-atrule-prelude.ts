@@ -89,8 +89,11 @@ export class AtRulePreludeParser {
 
 			// Skip comma separator
 			this.skip_whitespace()
-			if (this.peek_token_type() === TOKEN_COMMA) {
-				this.next_token() // consume comma
+			const saved = this.lexer.save_position()
+			this.next_token()
+			if (this.lexer.token_type !== TOKEN_COMMA) {
+				// Not a comma, restore position
+				this.lexer.restore_position(saved)
 			}
 		}
 
@@ -108,14 +111,14 @@ export class AtRulePreludeParser {
 	}
 
 	private is_and_or_not(str: string): boolean {
-		if (str.length > 3 || str.length < 2) return false
+		// All logical operators are 2-3 chars: "and" (3), "or" (2), "not" (3)
+		// The str_equals calls will quickly reject strings of other lengths
 		return str_equals('and', str) || str_equals('or', str) || str_equals('not', str)
 	}
 
 	// Parse a single media query: screen and (min-width: 768px)
 	private parse_single_media_query(): number | null {
 		let query_start = this.lexer.pos
-		let query_line = this.lexer.line
 
 		// Skip whitespace
 		this.skip_whitespace()
@@ -191,7 +194,6 @@ export class AtRulePreludeParser {
 	// Parse media feature: (min-width: 768px)
 	private parse_media_feature(): number | null {
 		let feature_start = this.lexer.token_start // '(' position
-		let feature_line = this.lexer.token_line
 
 		// Find matching right paren
 		let depth = 1
@@ -229,7 +231,6 @@ export class AtRulePreludeParser {
 	private parse_container_query(): number[] {
 		let nodes: number[] = []
 		let query_start = this.lexer.pos
-		let query_line = this.lexer.line
 
 		// Parse components (identifiers, operators, features)
 		let components: number[] = []
@@ -292,7 +293,6 @@ export class AtRulePreludeParser {
 			// Feature query: (property: value)
 			if (token_type === TOKEN_LEFT_PAREN) {
 				let feature_start = this.lexer.token_start
-				let feature_line = this.lexer.token_line
 
 				// Find matching right paren
 				let depth = 1
@@ -438,7 +438,6 @@ export class AtRulePreludeParser {
 		// For url() function, we need to consume all tokens until the closing paren
 		let url_start = this.lexer.token_start
 		let url_end = this.lexer.token_end
-		let url_line = this.lexer.token_line
 
 		if (this.lexer.token_type === TOKEN_FUNCTION) {
 			// It's url( ... we need to find the matching )
@@ -481,7 +480,6 @@ export class AtRulePreludeParser {
 			if (str_equals('layer', text)) {
 				let layer_start = this.lexer.token_start
 				let layer_end = this.lexer.token_end
-				let layer_line = this.lexer.token_line
 				let content_start = 0
 				let content_length = 0
 
@@ -539,7 +537,6 @@ export class AtRulePreludeParser {
 			let text = this.source.substring(this.lexer.token_start, this.lexer.token_end - 1) // -1 to exclude '('
 			if (str_equals('supports', text)) {
 				let supports_start = this.lexer.token_start
-				let supports_line = this.lexer.token_line
 
 				// Find matching closing parenthesis
 				let paren_depth = 1

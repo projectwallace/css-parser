@@ -61,6 +61,10 @@ import {
 	CHAR_SINGLE_QUOTE,
 	CHAR_DOUBLE_QUOTE,
 	CHAR_COLON,
+	CHAR_CARRIAGE_RETURN,
+	CHAR_FORM_FEED,
+	CHAR_NEWLINE,
+	CHAR_SPACE,
 } from './string-utils'
 import { ANplusBParser } from './parse-anplusb'
 import { CSSNode } from './css-node'
@@ -113,8 +117,10 @@ export class SelectorParser {
 
 				// Find the last component in the chain
 				let last_component = complex_selector
-				while (this.arena.get_next_sibling(last_component) !== 0) {
-					last_component = this.arena.get_next_sibling(last_component)
+				let next_sibling = this.arena.get_next_sibling(last_component)
+				while (next_sibling !== 0) {
+					last_component = next_sibling
+					next_sibling = this.arena.get_next_sibling(last_component)
 				}
 
 				// Set the complex selector chain as children
@@ -199,8 +205,6 @@ export class SelectorParser {
 		}
 
 		while (this.lexer.pos < this.selector_end) {
-			if (this.lexer.pos >= this.selector_end) break
-
 			// Parse compound selector first
 			let compound = this.parse_compound_selector()
 			if (compound !== null) {
@@ -347,11 +351,7 @@ export class SelectorParser {
 
 	// Parse the local part after | in a namespace selector (E or *)
 	// Returns the node type (TYPE or UNIVERSAL) or null if invalid
-	private parse_namespace_local_part(
-		selector_start: number,
-		namespace_start: number,
-		namespace_length: number,
-	): number | null {
+	private parse_namespace_local_part(selector_start: number, namespace_start: number, namespace_length: number): number | null {
 		const saved = this.lexer.save_position()
 		this.lexer.next_token_fast(false)
 
@@ -359,10 +359,7 @@ export class SelectorParser {
 		if (this.lexer.token_type === TOKEN_IDENT) {
 			// ns|type
 			node_type = NODE_SELECTOR_TYPE
-		} else if (
-			this.lexer.token_type === TOKEN_DELIM &&
-			this.source.charCodeAt(this.lexer.token_start) === CHAR_ASTERISK
-		) {
+		} else if (this.lexer.token_type === TOKEN_DELIM && this.source.charCodeAt(this.lexer.token_start) === CHAR_ASTERISK) {
 			// ns|*
 			node_type = NODE_SELECTOR_UNIVERSAL
 		} else {
@@ -425,7 +422,8 @@ export class SelectorParser {
 		// Skip whitespace and check for combinator
 		while (this.lexer.pos < this.selector_end) {
 			let ch = this.source.charCodeAt(this.lexer.pos)
-			if (is_whitespace(ch)) {
+			// no calling is_whitespace() because of function call overhead
+			if (ch === CHAR_SPACE || ch === CHAR_NEWLINE || ch === CHAR_CARRIAGE_RETURN || ch === CHAR_FORM_FEED) {
 				has_whitespace = true
 				this.lexer.pos++
 			} else {
@@ -452,7 +450,8 @@ export class SelectorParser {
 			this.lexer.pos = whitespace_start
 			while (this.lexer.pos < this.selector_end) {
 				let ch = this.source.charCodeAt(this.lexer.pos)
-				if (is_whitespace(ch)) {
+				// no calling is_whitespace() because of function call overhead
+				if (ch === CHAR_SPACE || ch === CHAR_NEWLINE || ch === CHAR_CARRIAGE_RETURN || ch === CHAR_FORM_FEED) {
 					this.lexer.pos++
 				} else {
 					break
@@ -565,28 +564,29 @@ export class SelectorParser {
 
 		// Parse operator
 		let ch1 = this.source.charCodeAt(pos)
+		let ch2 = pos + 1 < end ? this.source.charCodeAt(pos + 1) : 0 // Cache second character to avoid repeated calls
 
 		if (ch1 === CHAR_EQUALS) {
 			// =
 			operator_end = pos + 1
 			this.arena.set_attr_operator(node, ATTR_OPERATOR_EQUAL)
-		} else if (ch1 === CHAR_TILDE && pos + 1 < end && this.source.charCodeAt(pos + 1) === CHAR_EQUALS) {
+		} else if (ch1 === CHAR_TILDE && ch2 === CHAR_EQUALS) {
 			// ~=
 			operator_end = pos + 2
 			this.arena.set_attr_operator(node, ATTR_OPERATOR_TILDE_EQUAL)
-		} else if (ch1 === CHAR_PIPE && pos + 1 < end && this.source.charCodeAt(pos + 1) === CHAR_EQUALS) {
+		} else if (ch1 === CHAR_PIPE && ch2 === CHAR_EQUALS) {
 			// |=
 			operator_end = pos + 2
 			this.arena.set_attr_operator(node, ATTR_OPERATOR_PIPE_EQUAL)
-		} else if (ch1 === CHAR_CARET && pos + 1 < end && this.source.charCodeAt(pos + 1) === CHAR_EQUALS) {
+		} else if (ch1 === CHAR_CARET && ch2 === CHAR_EQUALS) {
 			// ^=
 			operator_end = pos + 2
 			this.arena.set_attr_operator(node, ATTR_OPERATOR_CARET_EQUAL)
-		} else if (ch1 === CHAR_DOLLAR && pos + 1 < end && this.source.charCodeAt(pos + 1) === CHAR_EQUALS) {
+		} else if (ch1 === CHAR_DOLLAR && ch2 === CHAR_EQUALS) {
 			// $=
 			operator_end = pos + 2
 			this.arena.set_attr_operator(node, ATTR_OPERATOR_DOLLAR_EQUAL)
-		} else if (ch1 === CHAR_ASTERISK && pos + 1 < end && this.source.charCodeAt(pos + 1) === CHAR_EQUALS) {
+		} else if (ch1 === CHAR_ASTERISK && ch2 === CHAR_EQUALS) {
 			// *=
 			operator_end = pos + 2
 			this.arena.set_attr_operator(node, ATTR_OPERATOR_STAR_EQUAL)

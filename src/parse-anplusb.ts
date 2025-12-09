@@ -33,7 +33,6 @@ export class ANplusBParser {
 		this.lexer.pos = start
 		this.lexer.line = line
 
-		let a: string | null = null
 		let b: string | null = null
 		let a_start = start
 		let a_end = start
@@ -56,11 +55,9 @@ export class ANplusBParser {
 			const text = this.source.substring(this.lexer.token_start, this.lexer.token_end).toLowerCase()
 
 			if (text === 'odd' || text === 'even') {
-				// Store the keyword as authored
-				a = this.source.substring(this.lexer.token_start, this.lexer.token_end)
 				a_start = this.lexer.token_start
 				a_end = this.lexer.token_end
-				return this.create_anplusb_node(node_start, a, null, a_start, a_end, 0, 0)
+				return this.create_anplusb_node(node_start, a_start, a_end, 0, 0)
 			}
 
 			// Check if it's 'n', '-n', or starts with 'n'
@@ -74,18 +71,15 @@ export class ANplusBParser {
 					const third_char = this.source.charCodeAt(this.lexer.token_start + 2)
 					if (third_char === CHAR_MINUS_HYPHEN /* - */) {
 						// -n-5 pattern
-						a = '-n'
 						a_start = this.lexer.token_start
 						a_end = this.lexer.token_start + 2
 						b = this.source.substring(this.lexer.token_start + 2, this.lexer.token_end)
 						b_start = this.lexer.token_start + 2
 						b_end = this.lexer.token_end
-						return this.create_anplusb_node(node_start, a, b, a_start, a_end, b_start, b_end)
+						return this.create_anplusb_node(node_start, a_start, a_end, b_start, b_end)
 					}
 				}
 
-				// Store -n as authored
-				a = '-n'
 				a_start = this.lexer.token_start
 				a_end = this.lexer.token_start + 2
 
@@ -95,7 +89,7 @@ export class ANplusBParser {
 					b_start = this.lexer.token_start
 					b_end = this.lexer.token_end
 				}
-				return this.create_anplusb_node(node_start, a, b, a_start, a_end, b_start, b_end)
+				return this.create_anplusb_node(node_start, a_start, a_end, b !== null ? b_start : 0, b !== null ? b_end : 0)
 			}
 
 			// n, n+3, n-5
@@ -105,18 +99,16 @@ export class ANplusBParser {
 					const second_char = this.source.charCodeAt(this.lexer.token_start + 1)
 					if (second_char === CHAR_MINUS_HYPHEN /* - */) {
 						// n-5 pattern
-						a = 'n'
+						// a = 'n'
 						a_start = this.lexer.token_start
 						a_end = this.lexer.token_start + 1
 						b = this.source.substring(this.lexer.token_start + 1, this.lexer.token_end)
 						b_start = this.lexer.token_start + 1
 						b_end = this.lexer.token_end
-						return this.create_anplusb_node(node_start, a, b, a_start, a_end, b_start, b_end)
+						return this.create_anplusb_node(node_start, a_start, a_end, b_start, b_end)
 					}
 				}
 
-				// Store n as authored
-				a = 'n'
 				a_start = this.lexer.token_start
 				a_end = this.lexer.token_start + 1
 
@@ -126,7 +118,7 @@ export class ANplusBParser {
 					b_start = this.lexer.token_start
 					b_end = this.lexer.token_end
 				}
-				return this.create_anplusb_node(node_start, a, b, a_start, a_end, b_start, b_end)
+				return this.create_anplusb_node(node_start, a_start, a_end, b !== null ? b_start : 0, b !== null ? b_end : 0)
 			}
 
 			// Not a valid An+B pattern
@@ -144,8 +136,6 @@ export class ANplusBParser {
 				const first_char = text.charCodeAt(0)
 
 				if (first_char === 0x6e /* n */) {
-					// Store +n as authored (including the +)
-					a = '+n'
 					a_start = saved.pos - 1 // Position of the + delim
 					a_end = this.lexer.token_start + 1
 
@@ -157,7 +147,7 @@ export class ANplusBParser {
 							b = this.source.substring(this.lexer.token_start + 1, this.lexer.token_end)
 							b_start = this.lexer.token_start + 1
 							b_end = this.lexer.token_end
-							return this.create_anplusb_node(node_start, a, b, a_start, a_end, b_start, b_end)
+							return this.create_anplusb_node(node_start, a_start, a_end, b_start, b_end)
 						}
 					}
 
@@ -167,7 +157,7 @@ export class ANplusBParser {
 						b_start = this.lexer.token_start
 						b_end = this.lexer.token_end
 					}
-					return this.create_anplusb_node(node_start, a, b, a_start, a_end, b_start, b_end)
+					return this.create_anplusb_node(node_start, a_start, a_end, b !== null ? b_start : 0, b !== null ? b_end : 0)
 				}
 			}
 
@@ -180,8 +170,6 @@ export class ANplusBParser {
 			const n_index = token_text.toLowerCase().indexOf('n')
 
 			if (n_index !== -1) {
-				// Store 'a' coefficient including the 'n'
-				a = token_text.substring(0, n_index + 1)
 				a_start = this.lexer.token_start
 				a_end = this.lexer.token_start + n_index + 1
 
@@ -194,7 +182,7 @@ export class ANplusBParser {
 						b = remainder
 						b_start = this.lexer.token_start + n_index + 1
 						b_end = this.lexer.token_end
-						return this.create_anplusb_node(node_start, a, b, a_start, a_end, b_start, b_end)
+						return this.create_anplusb_node(node_start, a_start, a_end, b_start, b_end)
 					}
 				}
 
@@ -204,7 +192,7 @@ export class ANplusBParser {
 					b_start = this.lexer.token_start
 					b_end = this.lexer.token_end
 				}
-				return this.create_anplusb_node(node_start, a, b, a_start, a_end, b_start, b_end)
+				return this.create_anplusb_node(node_start, a_start, a_end, b_start, b_end)
 			}
 		}
 
@@ -214,7 +202,7 @@ export class ANplusBParser {
 			b = num_text
 			b_start = this.lexer.token_start
 			b_end = this.lexer.token_end
-			return this.create_anplusb_node(node_start, a, b, a_start, a_end, b_start, b_end)
+			return this.create_anplusb_node(node_start, 0, 0, b_start, b_end)
 		}
 
 		return null
@@ -278,8 +266,6 @@ export class ANplusBParser {
 
 	private create_anplusb_node(
 		start: number,
-		a: string | null,
-		b: string | null,
 		a_start: number,
 		a_end: number,
 		b_start: number,
@@ -291,14 +277,14 @@ export class ANplusBParser {
 		this.arena.set_length(node, this.lexer.pos - start)
 		this.arena.set_start_line(node, this.lexer.line)
 
-		// Store 'a' coefficient in content fields
-		if (a !== null) {
+		// Store 'a' coefficient in content fields if it exists (length > 0)
+		if (a_end > a_start) {
 			this.arena.set_content_start(node, a_start)
 			this.arena.set_content_length(node, a_end - a_start)
 		}
 
-		// Store 'b' coefficient in value fields
-		if (b !== null) {
+		// Store 'b' coefficient in value fields if it exists (length > 0)
+		if (b_end > b_start) {
 			this.arena.set_value_start(node, b_start)
 			this.arena.set_value_length(node, b_end - b_start)
 		}

@@ -14,7 +14,7 @@ import { CHAR_ASTERISK, CHAR_FORWARD_SLASH, is_whitespace, is_digit, CHAR_MINUS_
  */
 export function parse_dimension(text: string): { value: number; unit: string } {
 	// Find where the numeric part ends
-	let numEnd = 0
+	let num_end = 0
 	for (let i = 0; i < text.length; i++) {
 		let ch = text.charCodeAt(i)
 
@@ -23,17 +23,17 @@ export function parse_dimension(text: string): { value: number; unit: string } {
 			// e or E
 			// Only allow e/E if followed by digit or sign+digit
 			if (i + 1 < text.length) {
-				let nextCh = text.charCodeAt(i + 1)
+				let next_ch = text.charCodeAt(i + 1)
 				// Check if next is digit
-				if (is_digit(nextCh)) {
-					numEnd = i + 1
+				if (is_digit(next_ch)) {
+					num_end = i + 1
 					continue
 				}
 				// Check if next is sign followed by digit
-				if ((nextCh === 0x2b || nextCh === 0x2d) && i + 2 < text.length) {
+				if ((next_ch === 0x2b || next_ch === 0x2d) && i + 2 < text.length) {
 					let afterSign = text.charCodeAt(i + 2)
 					if (is_digit(afterSign)) {
-						numEnd = i + 1
+						num_end = i + 1
 						continue
 					}
 				}
@@ -44,15 +44,15 @@ export function parse_dimension(text: string): { value: number; unit: string } {
 
 		// Allow digits, dot, minus, plus
 		if (is_digit(ch) || ch === CHAR_PERIOD || ch === CHAR_MINUS_HYPHEN || ch === CHAR_PLUS) {
-			numEnd = i + 1
+			num_end = i + 1
 		} else {
 			break
 		}
 	}
 
-	let numStr = text.substring(0, numEnd)
-	let unit = text.substring(numEnd)
-	let value = numStr ? parseFloat(numStr) : 0
+	let num_str = text.substring(0, num_end)
+	let unit = text.substring(num_end)
+	let value = num_str ? parseFloat(num_str) : 0
 
 	return { value, unit }
 }
