@@ -1,6 +1,6 @@
 // CSS Data Arena - Single contiguous ArrayBuffer for all AST nodes
 //
-// Each node occupies 44 bytes with the following layout:
+// Each node occupies 40 bytes with the following layout:
 // Offset | Size | Field
 // -------|------|-------------
 //   0    |  1   | type
@@ -9,18 +9,18 @@
 //   4    |  4   | startOffset
 //   8    |  2   | length
 //  10    |  2   | (padding)
-//  12    |  4   | contentStart (property name / at-rule name)
-//  16    |  2   | contentLength
-//  18    |  2   | (padding)
+//  12    |  2   | contentStartDelta (property name / at-rule name, relative to startOffset)
+//  14    |  2   | contentLength
+//  16    |  2   | valueStartDelta (declaration value / at-rule prelude, relative to startOffset)
+//  18    |  2   | valueLength
 //  20    |  4   | firstChild
 //  24    |  4   | lastChild
 //  28    |  4   | nextSibling
 //  32    |  4   | startLine
-//  36    |  4   | valueStart (declaration value / at-rule prelude)
-//  40    |  2   | valueLength
-//  42    |  2   | (padding)
+//  36    |  2   | (padding)
+//  38    |  2   | (padding)
 
-let BYTES_PER_NODE = 44
+let BYTES_PER_NODE = 40
 
 // Node type constants
 export const NODE_STYLESHEET = 1
@@ -138,14 +138,16 @@ export class CSSDataArena {
 		return this.view.getUint16(this.node_offset(node_index) + 8, true)
 	}
 
-	// Read content start offset
+	// Read content start offset (computed from startOffset + delta)
 	get_content_start(node_index: number): number {
-		return this.view.getUint32(this.node_offset(node_index) + 12, true)
+		const startOffset = this.get_start_offset(node_index)
+		const delta = this.view.getUint16(this.node_offset(node_index) + 12, true)
+		return startOffset + delta
 	}
 
 	// Read content length
 	get_content_length(node_index: number): number {
-		return this.view.getUint16(this.node_offset(node_index) + 16, true)
+		return this.view.getUint16(this.node_offset(node_index) + 14, true)
 	}
 
 	// Read first child index (0 = no children)
@@ -168,14 +170,16 @@ export class CSSDataArena {
 		return this.view.getUint32(this.node_offset(node_index) + 32, true)
 	}
 
-	// Read value start offset (declaration value / at-rule prelude)
+	// Read value start offset (computed from startOffset + delta)
 	get_value_start(node_index: number): number {
-		return this.view.getUint32(this.node_offset(node_index) + 36, true)
+		const startOffset = this.get_start_offset(node_index)
+		const delta = this.view.getUint16(this.node_offset(node_index) + 16, true)
+		return startOffset + delta
 	}
 
 	// Read value length
 	get_value_length(node_index: number): number {
-		return this.view.getUint16(this.node_offset(node_index) + 40, true)
+		return this.view.getUint16(this.node_offset(node_index) + 18, true)
 	}
 
 	// --- Write Methods ---
@@ -200,14 +204,16 @@ export class CSSDataArena {
 		this.view.setUint16(this.node_offset(node_index) + 8, length, true)
 	}
 
-	// Write content start offset
+	// Write content start offset (stores delta from startOffset)
 	set_content_start(node_index: number, offset: number): void {
-		this.view.setUint32(this.node_offset(node_index) + 12, offset, true)
+		const startOffset = this.get_start_offset(node_index)
+		const delta = offset - startOffset
+		this.view.setUint16(this.node_offset(node_index) + 12, delta, true)
 	}
 
 	// Write content length
 	set_content_length(node_index: number, length: number): void {
-		this.view.setUint16(this.node_offset(node_index) + 16, length, true)
+		this.view.setUint16(this.node_offset(node_index) + 14, length, true)
 	}
 
 	// Write first child index
@@ -230,14 +236,16 @@ export class CSSDataArena {
 		this.view.setUint32(this.node_offset(node_index) + 32, line, true)
 	}
 
-	// Write value start offset (declaration value / at-rule prelude)
+	// Write value start offset (stores delta from startOffset)
 	set_value_start(node_index: number, offset: number): void {
-		this.view.setUint32(this.node_offset(node_index) + 36, offset, true)
+		const startOffset = this.get_start_offset(node_index)
+		const delta = offset - startOffset
+		this.view.setUint16(this.node_offset(node_index) + 16, delta, true)
 	}
 
 	// Write value length
 	set_value_length(node_index: number, length: number): void {
-		this.view.setUint16(this.node_offset(node_index) + 40, length, true)
+		this.view.setUint16(this.node_offset(node_index) + 18, length, true)
 	}
 
 	// --- Node Creation ---
