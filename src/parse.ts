@@ -400,9 +400,9 @@ export class Parser {
 		let at_rule_column = this.lexer.token_column
 
 		// Extract at-rule name (skip the '@')
-		let at_rule_name = this.source.substring(this.lexer.token_start + 1, this.lexer.token_end)
 		let name_start = this.lexer.token_start + 1
-		let name_length = at_rule_name.length
+		let name_length = this.lexer.token_end - name_start
+		let at_rule_name = this.source.substring(name_start, this.lexer.token_end)
 
 		this.next_token() // consume @keyword
 
@@ -422,7 +422,9 @@ export class Parser {
 		let prelude_end = prelude_start
 
 		// Parse prelude (everything before '{' or ';')
-		while (!this.is_eof() && this.peek_type() !== TOKEN_LEFT_BRACE && this.peek_type() !== TOKEN_SEMICOLON) {
+		while (!this.is_eof()) {
+			let token_type = this.peek_type()
+			if (token_type === TOKEN_LEFT_BRACE || token_type === TOKEN_SEMICOLON) break
 			prelude_end = this.lexer.token_end
 			this.next_token()
 		}
