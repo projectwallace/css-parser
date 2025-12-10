@@ -4,7 +4,9 @@
 		"declaration": true,
 		"emitDeclarationOnly": true,
 		"noEmit": false,
-		"outDir": "./dist"
+		"outDir": "./dist",
+		"rootDir": "./src"
 	},
+	"include": ["src/**/*.ts"],
 	"exclude": ["node_modules", "dist", "**/*.test.ts", "benchmark"]
 }

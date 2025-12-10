@@ -18,8 +18,9 @@ export default defineConfig({
 		minify: false,
 		rollupOptions: {
 			output: {
-				preserveModules: false,
+				preserveModules: true,
 				entryFileNames: '[name].js',
+				sourcemap: false,
 			},
 		},
 	},
