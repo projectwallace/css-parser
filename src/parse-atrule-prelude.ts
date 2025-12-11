@@ -8,7 +8,7 @@ import {
 	CONTAINER_QUERY,
 	SUPPORTS_QUERY,
 	LAYER_NAME,
-	PRELUDE_IDENTIFIER,
+	IDENTIFIER,
 	PRELUDE_OPERATOR,
 	URL,
 } from './arena'
@@ -257,7 +257,7 @@ export class AtRulePreludeParser {
 					components.push(op)
 				} else {
 					// Container name or other identifier
-					let name = this.create_node(PRELUDE_IDENTIFIER, this.lexer.token_start, this.lexer.token_end)
+					let name = this.create_node(IDENTIFIER, this.lexer.token_start, this.lexer.token_end)
 					components.push(name)
 				}
 			}
@@ -374,7 +374,7 @@ export class AtRulePreludeParser {
 		if (this.lexer.token_type !== TOKEN_IDENT) return []
 
 		// Create identifier node
-		let ident = this.create_node(PRELUDE_IDENTIFIER, this.lexer.token_start, this.lexer.token_end)
+		let ident = this.create_node(IDENTIFIER, this.lexer.token_start, this.lexer.token_end)
 
 		return [ident]
 	}

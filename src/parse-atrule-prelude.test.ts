@@ -10,7 +10,7 @@ import {
 	CONTAINER_QUERY,
 	SUPPORTS_QUERY,
 	LAYER_NAME,
-	PRELUDE_IDENTIFIER,
+	IDENTIFIER,
 	PRELUDE_OPERATOR,
 	URL,
 } from './arena'
@@ -127,7 +127,7 @@ describe('At-Rule Prelude Parser', () => {
 
 			const queryChildren = children[0].children
 			// Should have name and feature
-			expect(queryChildren.some((c) => c.type === PRELUDE_IDENTIFIER)).toBe(true)
+			expect(queryChildren.some((c) => c.type === IDENTIFIER)).toBe(true)
 			expect(queryChildren.some((c) => c.type === MEDIA_FEATURE)).toBe(true)
 		})
 	})
@@ -221,7 +221,7 @@ describe('At-Rule Prelude Parser', () => {
 			// Filter out block node to get only prelude children
 			const children = atRule?.children.filter((c) => c.type !== BLOCK) || []
 			expect(children.length).toBe(1)
-			expect(children[0].type).toBe(PRELUDE_IDENTIFIER)
+			expect(children[0].type).toBe(IDENTIFIER)
 			expect(children[0].text).toBe('slidein')
 		})
 	})
@@ -238,7 +238,7 @@ describe('At-Rule Prelude Parser', () => {
 			// Filter out block node to get only prelude children
 			const children = atRule?.children.filter((c) => c.type !== BLOCK) || []
 			expect(children.length).toBe(1)
-			expect(children[0].type).toBe(PRELUDE_IDENTIFIER)
+			expect(children[0].type).toBe(IDENTIFIER)
 			expect(children[0].text).toBe('--my-color')
 		})
 	})
@@ -256,7 +256,7 @@ describe('At-Rule Prelude Parser', () => {
 			const children = atRule?.children || []
 			if (children.length > 0) {
 				// If parse_values is enabled, there might be declaration children
-				expect(children[0].type).not.toBe(PRELUDE_IDENTIFIER)
+				expect(children[0].type).not.toBe(IDENTIFIER)
 			}
 		})
 	})
@@ -594,7 +594,7 @@ describe('parse_atrule_prelude()', () => {
 			const result = parse_atrule_prelude('keyframes', 'slide-in')
 
 			expect(result.length).toBe(1)
-			expect(result[0].type).toBe(PRELUDE_IDENTIFIER)
+			expect(result[0].type).toBe(IDENTIFIER)
 			expect(result[0].text).toBe('slide-in')
 		})
 
@@ -611,7 +611,7 @@ describe('parse_atrule_prelude()', () => {
 			const result = parse_atrule_prelude('property', '--my-color')
 
 			expect(result.length).toBe(1)
-			expect(result[0].type).toBe(PRELUDE_IDENTIFIER)
+			expect(result[0].type).toBe(IDENTIFIER)
 			expect(result[0].text).toBe('--my-color')
 		})
 	})

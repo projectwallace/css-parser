@@ -641,7 +641,7 @@ import {
 
 ### Value Node Types (10-18)
 
-- `NODE_VALUE_KEYWORD` (10) - Keyword value (e.g., `red`, `auto`)
+- `NODE_VALUE_KEYWORD` (10) - Identifier/keyword value (e.g., `red`, `auto`, `inherit`), also used in at-rule preludes (keyframe names, @property names)
 - `NODE_VALUE_NUMBER` (11) - Number value (e.g., `42`, `3.14`)
 - `NODE_VALUE_DIMENSION` (12) - Dimension value (e.g., `10px`, `2em`, `50%`)
 - `NODE_VALUE_STRING` (13) - String value (e.g., `"hello"`)
@@ -664,7 +664,7 @@ import {
 - `NODE_SELECTOR_UNIVERSAL` (28) - Universal selector (`*`)
 - `NODE_SELECTOR_NESTING` (29) - Nesting selector (`&`)
 
-### At-Rule Prelude Node Types (32-39)
+### At-Rule Prelude Node Types (32-38)
 
 - `NODE_PRELUDE_MEDIA_QUERY` (32) - Media query
 - `NODE_PRELUDE_MEDIA_FEATURE` (33) - Media feature
@@ -672,8 +672,7 @@ import {
 - `NODE_PRELUDE_CONTAINER_QUERY` (35) - Container query
 - `NODE_PRELUDE_SUPPORTS_QUERY` (36) - Supports query (used in @supports and @import)
 - `NODE_PRELUDE_LAYER_NAME` (37) - Layer name (used in @layer and @import)
-- `NODE_PRELUDE_IDENTIFIER` (38) - Generic identifier
-- `NODE_PRELUDE_OPERATOR` (39) - Logical operator (e.g., `and`, `or`)
+- `NODE_PRELUDE_OPERATOR` (38) - Logical operator (e.g., `and`, `or`)
 
 ## Pseudo-Class Function Syntax Detection
 

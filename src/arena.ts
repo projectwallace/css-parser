@@ -64,8 +64,7 @@ export const MEDIA_TYPE = 34 // media type: screen, print, all
 export const CONTAINER_QUERY = 35 // container query: sidebar (min-width: 400px)
 export const SUPPORTS_QUERY = 36 // supports query: (display: flex)
 export const LAYER_NAME = 37 // layer name: base, components
-export const PRELUDE_IDENTIFIER = 38 // generic identifier: keyframe name, property name
-export const PRELUDE_OPERATOR = 39 // logical operator: and, or, not
+export const PRELUDE_OPERATOR = 38 // logical operator: and, or, not
 
 // Flag constants (bit-packed in 1 byte)
 export const FLAG_IMPORTANT = 1 << 0 // Has !important

@@ -36,7 +36,6 @@ import {
 	CONTAINER_QUERY,
 	SUPPORTS_QUERY,
 	LAYER_NAME,
-	PRELUDE_IDENTIFIER,
 	PRELUDE_OPERATOR,
 	FLAG_IMPORTANT,
 	FLAG_HAS_ERROR,
@@ -86,7 +85,6 @@ export const TYPE_NAMES: Record<number, string> = {
 	[CONTAINER_QUERY]: 'ContainerQuery',
 	[SUPPORTS_QUERY]: 'SupportsQuery',
 	[LAYER_NAME]: 'Layer',
-	[PRELUDE_IDENTIFIER]: 'Identifier',
 	[PRELUDE_OPERATOR]: 'Operator',
 } as const
 
@@ -127,7 +125,6 @@ export type CSSNodeType =
 	| typeof CONTAINER_QUERY
 	| typeof SUPPORTS_QUERY
 	| typeof LAYER_NAME
-	| typeof PRELUDE_IDENTIFIER
 	| typeof PRELUDE_OPERATOR
 
 // Options for cloning nodes
