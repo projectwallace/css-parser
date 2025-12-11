@@ -2,16 +2,16 @@ import { describe, test, expect } from 'vitest'
 import { Parser, parse } from './parse'
 import { parse_selector } from './parse-selector'
 import {
-	NODE_DECLARATION,
-	NODE_STYLE_RULE,
-	NODE_AT_RULE,
-	NODE_SELECTOR_NTH,
-	NODE_SELECTOR_LIST,
-	NODE_SELECTOR_PSEUDO_CLASS,
-	NODE_VALUE_DIMENSION,
-	NODE_VALUE_NUMBER,
-	NODE_VALUE_FUNCTION,
-	NODE_SELECTOR_ATTRIBUTE,
+	DECLARATION,
+	STYLE_RULE,
+	AT_RULE,
+	NTH_SELECTOR,
+	SELECTOR_LIST,
+	PSEUDO_CLASS_SELECTOR,
+	DIMENSION,
+	NUMBER,
+	FUNCTION,
+	ATTRIBUTE_SELECTOR,
 } from './arena'
 
 describe('CSSNode', () => {
@@ -29,7 +29,7 @@ describe('CSSNode', () => {
 				types.push(child.type)
 			}
 
-			expect(types).toEqual([NODE_DECLARATION, NODE_DECLARATION, NODE_DECLARATION])
+			expect(types).toEqual([DECLARATION, DECLARATION, DECLARATION])
 		})
 
 		test('should work with spread operator', () => {
@@ -39,8 +39,8 @@ describe('CSSNode', () => {
 
 			const rules = [...root]
 			expect(rules).toHaveLength(2)
-			expect(rules[0].type).toBe(NODE_STYLE_RULE)
-			expect(rules[1].type).toBe(NODE_STYLE_RULE)
+			expect(rules[0].type).toBe(STYLE_RULE)
+			expect(rules[1].type).toBe(STYLE_RULE)
 		})
 
 		test('should work with Array.from', () => {
@@ -53,7 +53,7 @@ describe('CSSNode', () => {
 			const children = Array.from(block)
 
 			expect(children).toHaveLength(1)
-			expect(children[0].type).toBe(NODE_STYLE_RULE)
+			expect(children[0].type).toBe(STYLE_RULE)
 		})
 
 		test('should iterate over empty children', () => {
@@ -79,7 +79,7 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 			const media = root.first_child!
 
-			expect(media.type).toBe(NODE_AT_RULE)
+			expect(media.type).toBe(AT_RULE)
 			expect(media.has_prelude).toBe(true)
 			expect(media.prelude).toBe('(min-width: 768px)')
 		})
@@ -90,7 +90,7 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 			const supports = root.first_child!
 
-			expect(supports.type).toBe(NODE_AT_RULE)
+			expect(supports.type).toBe(AT_RULE)
 			expect(supports.has_prelude).toBe(true)
 			expect(supports.prelude).toBe('(display: grid)')
 		})
@@ -101,7 +101,7 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 			const layer = root.first_child!
 
-			expect(layer.type).toBe(NODE_AT_RULE)
+			expect(layer.type).toBe(AT_RULE)
 			expect(layer.has_prelude).toBe(true)
 			expect(layer.prelude).toBe('utilities')
 		})
@@ -112,7 +112,7 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 			const layer = root.first_child!
 
-			expect(layer.type).toBe(NODE_AT_RULE)
+			expect(layer.type).toBe(AT_RULE)
 			expect(layer.has_prelude).toBe(false)
 			expect(layer.prelude).toBeNull()
 		})
@@ -123,7 +123,7 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 			const keyframes = root.first_child!
 
-			expect(keyframes.type).toBe(NODE_AT_RULE)
+			expect(keyframes.type).toBe(AT_RULE)
 			expect(keyframes.has_prelude).toBe(true)
 			expect(keyframes.prelude).toBe('fadeIn')
 		})
@@ -134,7 +134,7 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 			const fontFace = root.first_child!
 
-			expect(fontFace.type).toBe(NODE_AT_RULE)
+			expect(fontFace.type).toBe(AT_RULE)
 			expect(fontFace.has_prelude).toBe(false)
 			expect(fontFace.prelude).toBeNull()
 		})
@@ -145,7 +145,7 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 			const page = root.first_child!
 
-			expect(page.type).toBe(NODE_AT_RULE)
+			expect(page.type).toBe(AT_RULE)
 			expect(page.has_prelude).toBe(false)
 			expect(page.prelude).toBeNull()
 		})
@@ -156,7 +156,7 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 			const importRule = root.first_child!
 
-			expect(importRule.type).toBe(NODE_AT_RULE)
+			expect(importRule.type).toBe(AT_RULE)
 			expect(importRule.has_prelude).toBe(true)
 			expect(importRule.prelude).not.toBeNull()
 		})
@@ -200,7 +200,7 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 			const rule = root.first_child!
 
-			expect(rule.type).toBe(NODE_STYLE_RULE)
+			expect(rule.type).toBe(STYLE_RULE)
 			expect(rule.has_block).toBe(true)
 		})
 
@@ -210,7 +210,7 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 			const rule = root.first_child!
 
-			expect(rule.type).toBe(NODE_STYLE_RULE)
+			expect(rule.type).toBe(STYLE_RULE)
 			expect(rule.has_block).toBe(true)
 		})
 
@@ -220,7 +220,7 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 			const media = root.first_child!
 
-			expect(media.type).toBe(NODE_AT_RULE)
+			expect(media.type).toBe(AT_RULE)
 			expect(media.has_block).toBe(true)
 		})
 
@@ -230,7 +230,7 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 			const supports = root.first_child!
 
-			expect(supports.type).toBe(NODE_AT_RULE)
+			expect(supports.type).toBe(AT_RULE)
 			expect(supports.has_block).toBe(true)
 		})
 
@@ -240,7 +240,7 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 			const layer = root.first_child!
 
-			expect(layer.type).toBe(NODE_AT_RULE)
+			expect(layer.type).toBe(AT_RULE)
 			expect(layer.has_block).toBe(true)
 		})
 
@@ -250,7 +250,7 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 			const layer = root.first_child!
 
-			expect(layer.type).toBe(NODE_AT_RULE)
+			expect(layer.type).toBe(AT_RULE)
 			expect(layer.has_block).toBe(true)
 		})
 
@@ -260,7 +260,7 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 			const fontFace = root.first_child!
 
-			expect(fontFace.type).toBe(NODE_AT_RULE)
+			expect(fontFace.type).toBe(AT_RULE)
 			expect(fontFace.has_block).toBe(true)
 		})
 
@@ -270,7 +270,7 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 			const keyframes = root.first_child!
 
-			expect(keyframes.type).toBe(NODE_AT_RULE)
+			expect(keyframes.type).toBe(AT_RULE)
 			expect(keyframes.has_block).toBe(true)
 		})
 
@@ -280,7 +280,7 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 			const importRule = root.first_child!
 
-			expect(importRule.type).toBe(NODE_AT_RULE)
+			expect(importRule.type).toBe(AT_RULE)
 			expect(importRule.has_block).toBe(false)
 		})
 
@@ -290,7 +290,7 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 			const importRule = root.first_child!
 
-			expect(importRule.type).toBe(NODE_AT_RULE)
+			expect(importRule.type).toBe(AT_RULE)
 			expect(importRule.has_block).toBe(false)
 			expect(importRule.has_children).toBe(true) // Has prelude children
 			expect(importRule.has_prelude).toBe(true)
@@ -359,7 +359,7 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 			const rule = root.first_child!
 
-			expect(rule.type).toBe(NODE_STYLE_RULE)
+			expect(rule.type).toBe(STYLE_RULE)
 			expect(rule.has_declarations).toBe(true)
 		})
 
@@ -369,7 +369,7 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 			const rule = root.first_child!
 
-			expect(rule.type).toBe(NODE_STYLE_RULE)
+			expect(rule.type).toBe(STYLE_RULE)
 			expect(rule.has_declarations).toBe(false)
 		})
 
@@ -379,7 +379,7 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 			const rule = root.first_child!
 
-			expect(rule.type).toBe(NODE_STYLE_RULE)
+			expect(rule.type).toBe(STYLE_RULE)
 			expect(rule.has_declarations).toBe(false)
 		})
 
@@ -389,7 +389,7 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 			const rule = root.first_child!
 
-			expect(rule.type).toBe(NODE_STYLE_RULE)
+			expect(rule.type).toBe(STYLE_RULE)
 			expect(rule.has_declarations).toBe(true)
 		})
 
@@ -399,7 +399,7 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 			const media = root.first_child!
 
-			expect(media.type).toBe(NODE_AT_RULE)
+			expect(media.type).toBe(AT_RULE)
 			expect(media.has_declarations).toBe(false)
 		})
 	})
@@ -410,7 +410,7 @@ describe('CSSNode', () => {
 			const parser = new Parser(source)
 			const root = parser.parse()
 
-			expect(root.type_name).toBe('stylesheet')
+			expect(root.type_name).toBe('StyleSheet')
 		})
 
 		test('should return style_rule for style rules', () => {
@@ -419,7 +419,7 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 			const rule = root.first_child!
 
-			expect(rule.type_name).toBe('rule')
+			expect(rule.type_name).toBe('Rule')
 		})
 
 		test('should return declaration for declarations', () => {
@@ -430,7 +430,7 @@ describe('CSSNode', () => {
 			const block = rule.block!
 			const decl = block.first_child!
 
-			expect(decl.type_name).toBe('declaration')
+			expect(decl.type_name).toBe('Declaration')
 		})
 
 		test('should return at_rule for at-rules', () => {
@@ -439,7 +439,7 @@ describe('CSSNode', () => {
 			const root = parser.parse()
 			const media = root.first_child!
 
-			expect(media.type_name).toBe('atrule')
+			expect(media.type_name).toBe('Atrule')
 		})
 
 		test('should return selector_list for selector lists', () => {
@@ -449,7 +449,7 @@ describe('CSSNode', () => {
 			const rule = root.first_child!
 			const selectorList = rule.first_child!
 
-			expect(selectorList.type_name).toBe('selectorlist')
+			expect(selectorList.type_name).toBe('SelectorList')
 		})
 
 		test('should return selector_type for type selectors', () => {
@@ -461,7 +461,7 @@ describe('CSSNode', () => {
 			const selector = selectorList.first_child!
 			const typeSelector = selector.first_child!
 
-			expect(typeSelector.type_name).toBe('type-selector')
+			expect(typeSelector.type_name).toBe('TypeSelector')
 		})
 
 		test('should return selector_class for class selectors', () => {
@@ -473,7 +473,7 @@ describe('CSSNode', () => {
 			const selector = selectorList.first_child!
 			const classSelector = selector.first_child!
 
-			expect(classSelector.type_name).toBe('class-selector')
+			expect(classSelector.type_name).toBe('ClassSelector')
 		})
 
 		test('should return selector_id for ID selectors', () => {
@@ -485,7 +485,7 @@ describe('CSSNode', () => {
 			const selector = selectorList.first_child!
 			const idSelector = selector.first_child!
 
-			expect(idSelector.type_name).toBe('id-selector')
+			expect(idSelector.type_name).toBe('IdSelector')
 		})
 
 		test('should return selector_universal for universal selectors', () => {
@@ -497,7 +497,7 @@ describe('CSSNode', () => {
 			const selector = selectorList.first_child!
 			const universalSelector = selector.first_child!
 
-			expect(universalSelector.type_name).toBe('universal-selector')
+			expect(universalSelector.type_name).toBe('UniversalSelector')
 		})
 
 		test('should return selector_attribute for attribute selectors', () => {
@@ -509,7 +509,7 @@ describe('CSSNode', () => {
 			const selector = selectorList.first_child!
 			const attrSelector = selector.first_child!
 
-			expect(attrSelector.type_name).toBe('attribute-selector')
+			expect(attrSelector.type_name).toBe('AttributeSelector')
 		})
 
 		test('should return selector_pseudo_class for pseudo-class selectors', () => {
@@ -521,7 +521,7 @@ describe('CSSNode', () => {
 			const selector = selectorList.first_child!
 			const pseudoClass = selector.first_child!
 
-			expect(pseudoClass.type_name).toBe('pseudoclass-selector')
+			expect(pseudoClass.type_name).toBe('PseudoClassSelector')
 		})
 
 		test('should return selector_pseudo_element for pseudo-element selectors', () => {
@@ -533,7 +533,7 @@ describe('CSSNode', () => {
 			const selector = selectorList.first_child!
 			const pseudoElement = selector.first_child!
 
-			expect(pseudoElement.type_name).toBe('pseudoelement-selector')
+			expect(pseudoElement.type_name).toBe('PseudoElementSelector')
 		})
 
 		test('should return selector_combinator for combinators', () => {
@@ -545,7 +545,7 @@ describe('CSSNode', () => {
 			const selector = selectorList.first_child!
 			const combinator = selector.first_child!.next_sibling!
 
-			expect(combinator.type_name).toBe('selector-combinator')
+			expect(combinator.type_name).toBe('Combinator')
 		})
 
 		test('should return value_keyword for keyword values', () => {
@@ -557,7 +557,7 @@ describe('CSSNode', () => {
 			const decl = block.first_child!
 			const value = decl.first_child!
 
-			expect(value.type_name).toBe('keyword')
+			expect(value.type_name).toBe('Identifier')
 		})
 
 		test('should return value_number for numeric values', () => {
@@ -569,7 +569,7 @@ describe('CSSNode', () => {
 			const decl = block.first_child!
 			const value = decl.first_child!
 
-			expect(value.type_name).toBe('number')
+			expect(value.type_name).toBe('Number')
 		})
 
 		test('should return value_dimension for dimension values', () => {
@@ -581,7 +581,7 @@ describe('CSSNode', () => {
 			const decl = block.first_child!
 			const value = decl.first_child!
 
-			expect(value.type_name).toBe('dimension')
+			expect(value.type_name).toBe('Dimension')
 		})
 
 		test('should return value_string for string values', () => {
@@ -593,7 +593,7 @@ describe('CSSNode', () => {
 			const decl = block.first_child!
 			const value = decl.first_child!
 
-			expect(value.type_name).toBe('string')
+			expect(value.type_name).toBe('String')
 		})
 
 		test('should return value_color for color values', () => {
@@ -605,7 +605,7 @@ describe('CSSNode', () => {
 			const decl = block.first_child!
 			const value = decl.first_child!
 
-			expect(value.type_name).toBe('color')
+			expect(value.type_name).toBe('Hash')
 		})
 
 		test('should return value_function for function values', () => {
@@ -617,7 +617,7 @@ describe('CSSNode', () => {
 			const decl = block.first_child!
 			const value = decl.first_child!
 
-			expect(value.type_name).toBe('function')
+			expect(value.type_name).toBe('Function')
 		})
 
 		test('should return prelude_media_query for media query preludes', () => {
@@ -627,7 +627,7 @@ describe('CSSNode', () => {
 			const media = root.first_child!
 			const prelude = media.first_child!
 
-			expect(prelude.type_name).toBe('media-query')
+			expect(prelude.type_name).toBe('MediaQuery')
 		})
 	})
 
@@ -640,7 +640,7 @@ describe('CSSNode', () => {
 				const nthOf = pseudo?.first_child // NODE_SELECTOR_NTH_OF
 
 				expect(nthOf?.nth).not.toBeNull()
-				expect(nthOf?.nth?.type).toBe(NODE_SELECTOR_NTH)
+				expect(nthOf?.nth?.type).toBe(NTH_SELECTOR)
 				expect(nthOf?.nth?.nth_a).toBe('2n')
 				expect(nthOf?.nth?.nth_b).toBe('+1')
 			})
@@ -652,7 +652,7 @@ describe('CSSNode', () => {
 				const nthOf = pseudo?.first_child
 
 				expect(nthOf?.selector).not.toBeNull()
-				expect(nthOf?.selector?.type).toBe(NODE_SELECTOR_LIST)
+				expect(nthOf?.selector?.type).toBe(SELECTOR_LIST)
 				expect(nthOf?.selector?.text).toBe('.foo, #bar')
 			})
 
@@ -705,9 +705,9 @@ describe('CSSNode', () => {
 				const selector = result.first_child
 				const pseudo = selector?.first_child
 
-				expect(pseudo?.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+				expect(pseudo?.type).toBe(PSEUDO_CLASS_SELECTOR)
 				expect(pseudo?.selector_list).not.toBeNull()
-				expect(pseudo?.selector_list?.type).toBe(NODE_SELECTOR_LIST)
+				expect(pseudo?.selector_list?.type).toBe(SELECTOR_LIST)
 				expect(pseudo?.selector_list?.text).toBe('.foo, #bar')
 			})
 
@@ -1055,8 +1055,8 @@ describe('CSSNode', () => {
 
 				const clone = decl.clone({ deep: false })
 
-				expect(clone.type).toBe(NODE_DECLARATION)
-				expect(clone.type_name).toBe('declaration')
+				expect(clone.type).toBe(DECLARATION)
+				expect(clone.type_name).toBe('Declaration')
 				expect(clone.text).toBe('color: red;')
 				expect(clone.name).toBe('color')
 				expect(clone.property).toBe('color')
@@ -1071,7 +1071,7 @@ describe('CSSNode', () => {
 				const shallow = decl.clone({ deep: false })
 
 				expect(shallow.children).toEqual([])
-				expect(shallow.type).toBe(NODE_DECLARATION)
+				expect(shallow.type).toBe(DECLARATION)
 			})
 
 			test('deep clone includes children as array', () => {
@@ -1081,7 +1081,7 @@ describe('CSSNode', () => {
 				const deep = decl.clone()
 
 				expect(deep.children.length).toBe(2)
-				expect(deep.children[0].type).toBe(NODE_VALUE_DIMENSION)
+				expect(deep.children[0].type).toBe(DIMENSION)
 				expect(deep.children[0].value).toBe(10)
 				expect(deep.children[0].unit).toBe('px')
 				expect(deep.children[1].value).toBe(20)
@@ -1108,7 +1108,7 @@ describe('CSSNode', () => {
 				const clone = decl.clone()
 
 				expect(clone.children.length).toBe(1)
-				expect(clone.children[0].type).toBe(NODE_VALUE_FUNCTION)
+				expect(clone.children[0].type).toBe(FUNCTION)
 				expect(clone.children[0].name).toBe('calc')
 				// Function should have nested children
 				expect(clone.children[0].children.length).toBeGreaterThan(0)
@@ -1122,8 +1122,8 @@ describe('CSSNode', () => {
 
 				const clone = decl.clone({ deep: false })
 
-				expect(clone.type).toBe(NODE_DECLARATION)
-				expect(clone.type_name).toBe('declaration')
+				expect(clone.type).toBe(DECLARATION)
+				expect(clone.type_name).toBe('Declaration')
 				expect(clone.property).toBe('color')
 				expect(clone.name).toBe('color')
 				expect(clone.value).toBe('red')
@@ -1136,8 +1136,8 @@ describe('CSSNode', () => {
 
 				const clone = atrule.clone({ deep: false })
 
-				expect(clone.type).toBe(NODE_AT_RULE)
-				expect(clone.type_name).toBe('atrule')
+				expect(clone.type).toBe(AT_RULE)
+				expect(clone.type_name).toBe('Atrule')
 				expect(clone.name).toBe('media')
 				expect(clone.prelude).toBe('screen')
 			})
@@ -1149,8 +1149,8 @@ describe('CSSNode', () => {
 
 				const clone = dimension.clone({ deep: false })
 
-				expect(clone.type).toBe(NODE_VALUE_DIMENSION)
-				expect(clone.type_name).toBe('dimension')
+				expect(clone.type).toBe(DIMENSION)
+				expect(clone.type_name).toBe('Dimension')
 				expect(clone.value).toBe(100)
 				expect(clone.unit).toBe('px')
 			})
@@ -1162,7 +1162,7 @@ describe('CSSNode', () => {
 
 				const clone = number.clone({ deep: false })
 
-				expect(clone.type).toBe(NODE_VALUE_NUMBER)
+				expect(clone.type).toBe(NUMBER)
 				expect(clone.value).toBe(0.5)
 				expect(clone.unit).toBeUndefined()
 			})
@@ -1174,8 +1174,8 @@ describe('CSSNode', () => {
 
 				const clone = attribute.clone({ deep: false })
 
-				expect(clone.type).toBe(NODE_SELECTOR_ATTRIBUTE)
-				expect(clone.type_name).toBe('attribute-selector')
+				expect(clone.type).toBe(ATTRIBUTE_SELECTOR)
+				expect(clone.type_name).toBe('AttributeSelector')
 				expect(clone.attr_operator).toBeDefined()
 				expect(clone.attr_flags).toBeDefined()
 			})
@@ -1188,7 +1188,7 @@ describe('CSSNode', () => {
 
 				const clone = nth.clone({ deep: false })
 
-				expect(clone.type).toBe(NODE_SELECTOR_NTH)
+				expect(clone.type).toBe(NTH_SELECTOR)
 				expect(clone.nth_a).toBe('2n')
 				expect(clone.nth_b).toBe('+1')
 			})

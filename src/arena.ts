@@ -23,51 +23,51 @@
 let BYTES_PER_NODE = 40
 
 // Node type constants
-export const NODE_STYLESHEET = 1
-export const NODE_STYLE_RULE = 2
-export const NODE_AT_RULE = 3
-export const NODE_DECLARATION = 4
-export const NODE_SELECTOR = 5
-export const NODE_COMMENT = 6
-export const NODE_BLOCK = 7 // Block container for declarations and nested rules
+export const STYLESHEET = 1
+export const STYLE_RULE = 2
+export const AT_RULE = 3
+export const DECLARATION = 4
+export const SELECTOR = 5
+export const COMMENT = 6
+export const BLOCK = 7 // Block container for declarations and nested rules
 
 // Value node type constants (for declaration values)
-export const NODE_VALUE_KEYWORD = 10 // identifier: red, auto, inherit
-export const NODE_VALUE_NUMBER = 11 // number: 42, 3.14, -5
-export const NODE_VALUE_DIMENSION = 12 // number with unit: 10px, 2em, 50%
-export const NODE_VALUE_STRING = 13 // quoted string: "hello", 'world'
-export const NODE_VALUE_COLOR = 14 // hex color: #fff, #ff0000
-export const NODE_VALUE_FUNCTION = 15 // function: calc(), var(), url()
-export const NODE_VALUE_OPERATOR = 16 // operator: +, -, *, /, comma
-export const NODE_VALUE_PARENTHESIS = 17 // parenthesized expression: (100% - 50px)
+export const IDENTIFIER = 10 // identifier: red, auto, inherit
+export const NUMBER = 11 // number: 42, 3.14, -5
+export const DIMENSION = 12 // number with unit: 10px, 2em, 50%
+export const STRING = 13 // quoted string: "hello", 'world'
+export const HEX = 14 // hex color: #fff, #ff0000
+export const FUNCTION = 15 // function: calc(), var(), url()
+export const OPERATOR = 16 // operator: +, -, *, /, comma
+export const PARENTHESIS = 17 // parenthesized expression: (100% - 50px)
 
 // Selector node type constants (for detailed selector parsing)
-export const NODE_SELECTOR_LIST = 20 // comma-separated selectors
-export const NODE_SELECTOR_TYPE = 21 // type selector: div, span, p
-export const NODE_SELECTOR_CLASS = 22 // class selector: .classname
-export const NODE_SELECTOR_ID = 23 // ID selector: #identifier
-export const NODE_SELECTOR_ATTRIBUTE = 24 // attribute selector: [attr], [attr=value]
-export const NODE_SELECTOR_PSEUDO_CLASS = 25 // pseudo-class: :hover, :nth-child()
-export const NODE_SELECTOR_PSEUDO_ELEMENT = 26 // pseudo-element: ::before, ::after
-export const NODE_SELECTOR_COMBINATOR = 27 // combinator: >, +, ~, space
-export const NODE_SELECTOR_UNIVERSAL = 28 // universal selector: *
-export const NODE_SELECTOR_NESTING = 29 // nesting selector: &
-export const NODE_SELECTOR_NTH = 30 // An+B expression: 2n+1, odd, even
-export const NODE_SELECTOR_NTH_OF = 31 // An+B with "of <selector>" syntax
-export const NODE_SELECTOR_LANG = 56 // language identifier for :lang() pseudo-class
+export const SELECTOR_LIST = 20 // comma-separated selectors
+export const TYPE_SELECTOR = 21 // type selector: div, span, p
+export const CLASS_SELECTOR = 22 // class selector: .classname
+export const ID_SELECTOR = 23 // ID selector: #identifier
+export const ATTRIBUTE_SELECTOR = 24 // attribute selector: [attr], [attr=value]
+export const PSEUDO_CLASS_SELECTOR = 25 // pseudo-class: :hover, :nth-child()
+export const PSEUDO_ELEMENT_SELECTOR = 26 // pseudo-element: ::before, ::after
+export const COMBINATOR = 27 // combinator: >, +, ~, space
+export const UNIVERSAL_SELECTOR = 28 // universal selector: *
+export const NESTING_SELECTOR = 29 // nesting selector: &
+export const NTH_SELECTOR = 30 // An+B expression: 2n+1, odd, even
+export const NTH_OF_SELECTOR = 31 // An+B with "of <selector>" syntax
+export const LANG_SELECTOR = 56 // language identifier for :lang() pseudo-class
 
 // At-rule prelude node type constants (for at-rule prelude parsing)
-export const NODE_PRELUDE_MEDIA_QUERY = 32 // media query: screen, (min-width: 768px)
-export const NODE_PRELUDE_MEDIA_FEATURE = 33 // media feature: (min-width: 768px)
-export const NODE_PRELUDE_MEDIA_TYPE = 34 // media type: screen, print, all
-export const NODE_PRELUDE_CONTAINER_QUERY = 35 // container query: sidebar (min-width: 400px)
-export const NODE_PRELUDE_SUPPORTS_QUERY = 36 // supports query: (display: flex)
-export const NODE_PRELUDE_LAYER_NAME = 37 // layer name: base, components
-export const NODE_PRELUDE_IDENTIFIER = 38 // generic identifier: keyframe name, property name
-export const NODE_PRELUDE_OPERATOR = 39 // logical operator: and, or, not
-export const NODE_PRELUDE_IMPORT_URL = 40 // import URL: url("file.css") or "file.css"
-export const NODE_PRELUDE_IMPORT_LAYER = 41 // import layer: layer or layer(name)
-export const NODE_PRELUDE_IMPORT_SUPPORTS = 42 // import supports: supports(condition)
+export const MEDIA_QUERY = 32 // media query: screen, (min-width: 768px)
+export const MEDIA_FEATURE = 33 // media feature: (min-width: 768px)
+export const MEDIA_TYPE = 34 // media type: screen, print, all
+export const CONTAINER_QUERY = 35 // container query: sidebar (min-width: 400px)
+export const SUPPORTS_QUERY = 36 // supports query: (display: flex)
+export const LAYER_NAME = 37 // layer name: base, components
+export const PRELUDE_IDENTIFIER = 38 // generic identifier: keyframe name, property name
+export const PRELUDE_OPERATOR = 39 // logical operator: and, or, not
+export const IMPORT_URL = 40 // import URL: url("file.css") or "file.css"
+export const IMPORT_LAYER = 41 // import layer: layer or layer(name)
+export const IMPORT_SUPPORTS = 42 // import supports: supports(condition)
 
 // Flag constants (bit-packed in 1 byte)
 export const FLAG_IMPORTANT = 1 << 0 // Has !important

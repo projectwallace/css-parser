@@ -5,7 +5,7 @@
 // https://github.com/csstree/csstree/blob/56afb6dd761149099cd3cdfb0a38e15e8cc0a71a/lib/syntax/node/AnPlusB.js#L106-L271
 
 import { Lexer } from './lexer'
-import { NODE_SELECTOR_NTH, CSSDataArena } from './arena'
+import { NTH_SELECTOR, CSSDataArena } from './arena'
 import { TOKEN_IDENT, TOKEN_NUMBER, TOKEN_DIMENSION, TOKEN_DELIM, type TokenType } from './token-types'
 import { CHAR_MINUS_HYPHEN, CHAR_PLUS } from './string-utils'
 import { skip_whitespace_forward } from './parse-utils'
@@ -264,15 +264,9 @@ export class ANplusBParser {
 		this.lexer.pos = skip_whitespace_forward(this.source, this.lexer.pos, this.expr_end)
 	}
 
-	private create_anplusb_node(
-		start: number,
-		a_start: number,
-		a_end: number,
-		b_start: number,
-		b_end: number,
-	): number {
+	private create_anplusb_node(start: number, a_start: number, a_end: number, b_start: number, b_end: number): number {
 		const node = this.arena.create_node()
-		this.arena.set_type(node, NODE_SELECTOR_NTH)
+		this.arena.set_type(node, NTH_SELECTOR)
 		this.arena.set_start_offset(node, start)
 		this.arena.set_length(node, this.lexer.pos - start)
 		this.arena.set_start_line(node, this.lexer.line)

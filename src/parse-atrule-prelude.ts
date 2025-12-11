@@ -2,17 +2,17 @@
 import { Lexer } from './lexer'
 import {
 	CSSDataArena,
-	NODE_PRELUDE_MEDIA_QUERY,
-	NODE_PRELUDE_MEDIA_FEATURE,
-	NODE_PRELUDE_MEDIA_TYPE,
-	NODE_PRELUDE_CONTAINER_QUERY,
-	NODE_PRELUDE_SUPPORTS_QUERY,
-	NODE_PRELUDE_LAYER_NAME,
-	NODE_PRELUDE_IDENTIFIER,
-	NODE_PRELUDE_OPERATOR,
-	NODE_PRELUDE_IMPORT_URL,
-	NODE_PRELUDE_IMPORT_LAYER,
-	NODE_PRELUDE_IMPORT_SUPPORTS,
+	MEDIA_QUERY,
+	MEDIA_FEATURE,
+	MEDIA_TYPE,
+	CONTAINER_QUERY,
+	SUPPORTS_QUERY,
+	LAYER_NAME,
+	PRELUDE_IDENTIFIER,
+	PRELUDE_OPERATOR,
+	IMPORT_URL,
+	IMPORT_LAYER,
+	IMPORT_SUPPORTS,
 } from './arena'
 import {
 	TOKEN_IDENT,
@@ -165,11 +165,11 @@ export class AtRulePreludeParser {
 
 				if (this.is_and_or_not(text)) {
 					// Logical operator
-					let op = this.create_node(NODE_PRELUDE_OPERATOR, this.lexer.token_start, this.lexer.token_end)
+					let op = this.create_node(PRELUDE_OPERATOR, this.lexer.token_start, this.lexer.token_end)
 					components.push(op)
 				} else {
 					// Media type: screen, print, all
-					let media_type = this.create_node(NODE_PRELUDE_MEDIA_TYPE, this.lexer.token_start, this.lexer.token_end)
+					let media_type = this.create_node(MEDIA_TYPE, this.lexer.token_start, this.lexer.token_end)
 					components.push(media_type)
 				}
 			} else {
@@ -181,7 +181,7 @@ export class AtRulePreludeParser {
 		if (components.length === 0) return null
 
 		// Create media query node
-		let query_node = this.create_node(NODE_PRELUDE_MEDIA_QUERY, query_start, this.lexer.pos)
+		let query_node = this.create_node(MEDIA_QUERY, query_start, this.lexer.pos)
 
 		// Append components as children
 		for (let component of components) {
@@ -215,7 +215,7 @@ export class AtRulePreludeParser {
 		let feature_end = this.lexer.token_end // After ')'
 
 		// Create media feature node
-		let feature = this.create_node(NODE_PRELUDE_MEDIA_FEATURE, feature_start, feature_end)
+		let feature = this.create_node(MEDIA_FEATURE, feature_start, feature_end)
 
 		// Store feature content (without parentheses) in value fields, trimmed
 		let trimmed = trim_boundaries(this.source, content_start, content_end)
@@ -255,11 +255,11 @@ export class AtRulePreludeParser {
 
 				if (this.is_and_or_not(text)) {
 					// Logical operator
-					let op = this.create_node(NODE_PRELUDE_OPERATOR, this.lexer.token_start, this.lexer.token_end)
+					let op = this.create_node(PRELUDE_OPERATOR, this.lexer.token_start, this.lexer.token_end)
 					components.push(op)
 				} else {
 					// Container name or other identifier
-					let name = this.create_node(NODE_PRELUDE_IDENTIFIER, this.lexer.token_start, this.lexer.token_end)
+					let name = this.create_node(PRELUDE_IDENTIFIER, this.lexer.token_start, this.lexer.token_end)
 					components.push(name)
 				}
 			}
@@ -268,7 +268,7 @@ export class AtRulePreludeParser {
 		if (components.length === 0) return []
 
 		// Create container query node
-		let query_node = this.create_node(NODE_PRELUDE_CONTAINER_QUERY, query_start, this.lexer.pos)
+		let query_node = this.create_node(CONTAINER_QUERY, query_start, this.lexer.pos)
 
 		// Append components as children
 		for (let component of components) {
@@ -313,7 +313,7 @@ export class AtRulePreludeParser {
 					let feature_end = this.lexer.token_end
 
 					// Create supports query node
-					let query = this.create_node(NODE_PRELUDE_SUPPORTS_QUERY, feature_start, feature_end)
+					let query = this.create_node(SUPPORTS_QUERY, feature_start, feature_end)
 
 					// Store query content in value fields, trimmed
 					let trimmed = trim_boundaries(this.source, content_start, content_end)
@@ -330,7 +330,7 @@ export class AtRulePreludeParser {
 				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
 
 				if (this.is_and_or_not(text)) {
-					let op = this.create_node(NODE_PRELUDE_OPERATOR, this.lexer.token_start, this.lexer.token_end)
+					let op = this.create_node(PRELUDE_OPERATOR, this.lexer.token_start, this.lexer.token_end)
 					nodes.push(op)
 				}
 			}
@@ -352,7 +352,7 @@ export class AtRulePreludeParser {
 			let token_type = this.lexer.token_type
 			if (token_type === TOKEN_IDENT) {
 				// Layer name
-				let layer = this.create_node(NODE_PRELUDE_LAYER_NAME, this.lexer.token_start, this.lexer.token_end)
+				let layer = this.create_node(LAYER_NAME, this.lexer.token_start, this.lexer.token_end)
 				nodes.push(layer)
 			} else if (token_type === TOKEN_COMMA) {
 				// Skip comma separator
@@ -376,7 +376,7 @@ export class AtRulePreludeParser {
 		if (this.lexer.token_type !== TOKEN_IDENT) return []
 
 		// Create identifier node
-		let ident = this.create_node(NODE_PRELUDE_IDENTIFIER, this.lexer.token_start, this.lexer.token_end)
+		let ident = this.create_node(PRELUDE_IDENTIFIER, this.lexer.token_start, this.lexer.token_end)
 
 		return [ident]
 	}
@@ -458,7 +458,7 @@ export class AtRulePreludeParser {
 		}
 
 		// Create URL node
-		let url_node = this.create_node(NODE_PRELUDE_IMPORT_URL, url_start, url_end)
+		let url_node = this.create_node(IMPORT_URL, url_start, url_end)
 		return url_node
 	}
 
@@ -505,7 +505,7 @@ export class AtRulePreludeParser {
 				}
 
 				// Create layer node
-				let layer_node = this.create_node(NODE_PRELUDE_IMPORT_LAYER, layer_start, layer_end)
+				let layer_node = this.create_node(IMPORT_LAYER, layer_start, layer_end)
 
 				// Store the layer name (content inside parentheses), trimmed
 				if (content_length > 0) {
@@ -557,7 +557,7 @@ export class AtRulePreludeParser {
 				}
 
 				// Create supports node
-				let supports_node = this.create_node(NODE_PRELUDE_IMPORT_SUPPORTS, supports_start, supports_end)
+				let supports_node = this.create_node(IMPORT_SUPPORTS, supports_start, supports_end)
 
 				return supports_node
 			}

@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { CSSDataArena, NODE_STYLESHEET, NODE_DECLARATION, FLAG_IMPORTANT, FLAG_HAS_ERROR } from './arena'
+import { CSSDataArena, STYLESHEET, DECLARATION, FLAG_IMPORTANT, FLAG_HAS_ERROR } from './arena'
 
 describe('CSSDataArena', () => {
 	describe('initialization', () => {
@@ -51,23 +51,23 @@ describe('CSSDataArena', () => {
 			const node2 = arena.create_node()
 
 			// Set data on existing nodes
-			arena.set_type(node1, NODE_STYLESHEET)
+			arena.set_type(node1, STYLESHEET)
 			arena.set_start_offset(node1, 100)
-			arena.set_type(node2, NODE_DECLARATION)
+			arena.set_type(node2, DECLARATION)
 			arena.set_start_offset(node2, 200)
 
 			// Trigger growth
 			const node3 = arena.create_node()
 
 			// Verify old data is preserved
-			expect(arena.get_type(node1)).toBe(NODE_STYLESHEET)
+			expect(arena.get_type(node1)).toBe(STYLESHEET)
 			expect(arena.get_start_offset(node1)).toBe(100)
-			expect(arena.get_type(node2)).toBe(NODE_DECLARATION)
+			expect(arena.get_type(node2)).toBe(DECLARATION)
 			expect(arena.get_start_offset(node2)).toBe(200)
 
 			// Verify new node can be used
-			arena.set_type(node3, NODE_STYLESHEET)
-			expect(arena.get_type(node3)).toBe(NODE_STYLESHEET)
+			arena.set_type(node3, STYLESHEET)
+			expect(arena.get_type(node3)).toBe(STYLESHEET)
 		})
 	})
 
@@ -86,8 +86,8 @@ describe('CSSDataArena', () => {
 			const arena = new CSSDataArena(10)
 			const node = arena.create_node()
 
-			arena.set_type(node, NODE_STYLESHEET)
-			expect(arena.get_type(node)).toBe(NODE_STYLESHEET)
+			arena.set_type(node, STYLESHEET)
+			expect(arena.get_type(node)).toBe(STYLESHEET)
 		})
 
 		test('should write and read node flags', () => {
@@ -102,7 +102,7 @@ describe('CSSDataArena', () => {
 			const arena = new CSSDataArena(10)
 			const node = arena.create_node()
 
-			arena.set_type(node, NODE_DECLARATION)
+			arena.set_type(node, DECLARATION)
 			arena.set_flags(node, FLAG_IMPORTANT)
 			arena.set_start_offset(node, 100)
 			arena.set_length(node, 50)
@@ -110,7 +110,7 @@ describe('CSSDataArena', () => {
 			arena.set_content_length(node, 30)
 			arena.set_start_line(node, 5)
 
-			expect(arena.get_type(node)).toBe(NODE_DECLARATION)
+			expect(arena.get_type(node)).toBe(DECLARATION)
 			expect(arena.get_flags(node)).toBe(FLAG_IMPORTANT)
 			expect(arena.get_start_offset(node)).toBe(100)
 			expect(arena.get_length(node)).toBe(50)
@@ -124,15 +124,15 @@ describe('CSSDataArena', () => {
 			const node1 = arena.create_node()
 			const node2 = arena.create_node()
 
-			arena.set_type(node1, NODE_STYLESHEET)
+			arena.set_type(node1, STYLESHEET)
 			arena.set_start_offset(node1, 0)
 
-			arena.set_type(node2, NODE_DECLARATION)
+			arena.set_type(node2, DECLARATION)
 			arena.set_start_offset(node2, 100)
 
-			expect(arena.get_type(node1)).toBe(NODE_STYLESHEET)
+			expect(arena.get_type(node1)).toBe(STYLESHEET)
 			expect(arena.get_start_offset(node1)).toBe(0)
-			expect(arena.get_type(node2)).toBe(NODE_DECLARATION)
+			expect(arena.get_type(node2)).toBe(DECLARATION)
 			expect(arena.get_start_offset(node2)).toBe(100)
 		})
 	})

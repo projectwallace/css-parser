@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { Parser } from './parse'
-import { NODE_SELECTOR_LIST, NODE_DECLARATION, NODE_VALUE_KEYWORD } from './arena'
+import { SELECTOR_LIST, DECLARATION, IDENTIFIER } from './arena'
 
 describe('Parser Options', () => {
 	const css = 'body { color: red; }'
@@ -15,15 +15,15 @@ describe('Parser Options', () => {
 			// All selectors wrapped in NODE_SELECTOR_LIST
 			const selector = rule?.first_child
 			expect(selector).not.toBeNull()
-			expect(selector?.type).toBe(NODE_SELECTOR_LIST)
+			expect(selector?.type).toBe(SELECTOR_LIST)
 
 			// Check value is parsed with detailed structure
 			const block = selector?.next_sibling
 			const declaration = block?.first_child
 			expect(declaration).not.toBeNull()
-			expect(declaration?.type).toBe(NODE_DECLARATION)
+			expect(declaration?.type).toBe(DECLARATION)
 			expect(declaration?.has_children).toBe(true)
-			expect(declaration?.first_child?.type).toBe(NODE_VALUE_KEYWORD)
+			expect(declaration?.first_child?.type).toBe(IDENTIFIER)
 		})
 
 		it('should parse values and selectors with explicit options', () => {
@@ -34,13 +34,13 @@ describe('Parser Options', () => {
 			// Check selector is parsed
 			// Simple selector (just "body") returns NODE_SELECTOR_LIST directly
 			const selector = rule?.first_child
-			expect(selector?.type).toBe(NODE_SELECTOR_LIST)
+			expect(selector?.type).toBe(SELECTOR_LIST)
 
 			// Check value is parsed
 			const block = selector?.next_sibling
 			const declaration = block?.first_child
 			expect(declaration?.has_children).toBe(true)
-			expect(declaration?.first_child?.type).toBe(NODE_VALUE_KEYWORD)
+			expect(declaration?.first_child?.type).toBe(IDENTIFIER)
 		})
 	})
 
@@ -54,13 +54,13 @@ describe('Parser Options', () => {
 			// Simple selector (just "body") returns NODE_SELECTOR_LIST directly
 			const selector = rule?.first_child
 			expect(selector).not.toBeNull()
-			expect(selector?.type).toBe(NODE_SELECTOR_LIST)
+			expect(selector?.type).toBe(SELECTOR_LIST)
 
 			// Declaration should exist but have no value children
 			const block = selector?.next_sibling
 			const declaration = block?.first_child
 			expect(declaration).not.toBeNull()
-			expect(declaration?.type).toBe(NODE_DECLARATION)
+			expect(declaration?.type).toBe(DECLARATION)
 			expect(declaration?.property).toBe('color')
 			expect(declaration?.value).toBe('red') // Raw value text still available
 			expect(declaration?.has_children).toBe(false) // No detailed value nodes
@@ -102,7 +102,7 @@ describe('Parser Options', () => {
 			// Selector should exist but be simple (just NODE_SELECTOR_LIST, no detailed structure)
 			const selector = rule?.first_child
 			expect(selector).not.toBeNull()
-			expect(selector?.type).toBe(NODE_SELECTOR_LIST)
+			expect(selector?.type).toBe(SELECTOR_LIST)
 			expect(selector?.text).toBe('body')
 			expect(selector?.has_children).toBe(false) // No detailed selector nodes
 
@@ -110,7 +110,7 @@ describe('Parser Options', () => {
 			const block = selector?.next_sibling
 			const declaration = block?.first_child
 			expect(declaration?.has_children).toBe(true)
-			expect(declaration?.first_child?.type).toBe(NODE_VALUE_KEYWORD)
+			expect(declaration?.first_child?.type).toBe(IDENTIFIER)
 		})
 
 		it('should handle complex selectors without parsing', () => {
@@ -119,7 +119,7 @@ describe('Parser Options', () => {
 			const rule = root.first_child
 			const selector = rule?.first_child
 
-			expect(selector?.type).toBe(NODE_SELECTOR_LIST)
+			expect(selector?.type).toBe(SELECTOR_LIST)
 			expect(selector?.text).toBe('div.container#app')
 			expect(selector?.has_children).toBe(false)
 		})
@@ -130,7 +130,7 @@ describe('Parser Options', () => {
 			const rule = root.first_child
 			const selector = rule?.first_child
 
-			expect(selector?.type).toBe(NODE_SELECTOR_LIST)
+			expect(selector?.type).toBe(SELECTOR_LIST)
 			expect(selector?.text).toBe('div, p, span')
 			expect(selector?.has_children).toBe(false)
 		})
@@ -144,14 +144,14 @@ describe('Parser Options', () => {
 
 			// Selector should be simple
 			const selector = rule?.first_child
-			expect(selector?.type).toBe(NODE_SELECTOR_LIST)
+			expect(selector?.type).toBe(SELECTOR_LIST)
 			expect(selector?.text).toBe('body')
 			expect(selector?.has_children).toBe(false)
 
 			// Declaration should have no value children
 			const block = selector?.next_sibling
 			const declaration = block?.first_child
-			expect(declaration?.type).toBe(NODE_DECLARATION)
+			expect(declaration?.type).toBe(DECLARATION)
 			expect(declaration?.property).toBe('color')
 			expect(declaration?.value).toBe('red')
 			expect(declaration?.has_children).toBe(false)
@@ -169,7 +169,7 @@ describe('Parser Options', () => {
 			const rule = root.first_child
 
 			const selector = rule?.first_child
-			expect(selector?.type).toBe(NODE_SELECTOR_LIST)
+			expect(selector?.type).toBe(SELECTOR_LIST)
 			expect(selector?.has_children).toBe(false)
 
 			const block = selector?.next_sibling
@@ -244,7 +244,7 @@ describe('Parser Options', () => {
 			const declaration = block?.first_child
 
 			// Should use defaults (both enabled)
-			expect(selector?.type).toBe(NODE_SELECTOR_LIST)
+			expect(selector?.type).toBe(SELECTOR_LIST)
 			expect(declaration?.has_children).toBe(true)
 		})
 
@@ -257,7 +257,7 @@ describe('Parser Options', () => {
 			const declaration = block?.first_child
 
 			// Selector should still be parsed (default true)
-			expect(selector?.type).toBe(NODE_SELECTOR_LIST)
+			expect(selector?.type).toBe(SELECTOR_LIST)
 			// Values should not be parsed (explicitly false)
 			expect(declaration?.has_children).toBe(false)
 		})

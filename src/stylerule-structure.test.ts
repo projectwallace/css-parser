@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { Parser } from './parse'
-import { NODE_STYLE_RULE, NODE_SELECTOR_LIST, NODE_DECLARATION, NODE_AT_RULE } from './arena'
+import { STYLE_RULE, SELECTOR_LIST, DECLARATION, AT_RULE } from './arena'
 
 describe('StyleRule Structure', () => {
 	test('should have selector list as first child, followed by declarations', () => {
@@ -8,11 +8,11 @@ describe('StyleRule Structure', () => {
 		const root = parser.parse()
 		const rule = root.first_child!
 
-		expect(rule.type).toBe(NODE_STYLE_RULE)
+		expect(rule.type).toBe(STYLE_RULE)
 
 		// First child must be selector list
 		const firstChild = rule.first_child!
-		expect(firstChild.type).toBe(NODE_SELECTOR_LIST)
+		expect(firstChild.type).toBe(SELECTOR_LIST)
 
 		// Second child should be block containing declarations
 		const block = firstChild.next_sibling!
@@ -20,12 +20,12 @@ describe('StyleRule Structure', () => {
 
 		// Declarations should be inside the block
 		const secondChild = block.first_child!
-		expect(secondChild.type).toBe(NODE_DECLARATION)
+		expect(secondChild.type).toBe(DECLARATION)
 
 		// Second declaration
 		const thirdChild = secondChild.next_sibling!
 		expect(thirdChild).not.toBeNull()
-		expect(thirdChild.type).toBe(NODE_DECLARATION)
+		expect(thirdChild.type).toBe(DECLARATION)
 
 		// No more children
 		expect(thirdChild.next_sibling).toBeNull()
@@ -37,7 +37,7 @@ describe('StyleRule Structure', () => {
 		const rule = root.first_child!
 		const selectorList = rule.first_child!
 
-		expect(selectorList.type).toBe(NODE_SELECTOR_LIST)
+		expect(selectorList.type).toBe(SELECTOR_LIST)
 
 		// Get all children of the selector list
 		const children = []
@@ -68,7 +68,7 @@ describe('StyleRule Structure', () => {
 		const rule = root.first_child!
 		const selectorList = rule.first_child!
 
-		expect(selectorList.type).toBe(NODE_SELECTOR_LIST)
+		expect(selectorList.type).toBe(SELECTOR_LIST)
 
 		// Collect all NODE_SELECTOR wrappers (direct children of selector list)
 		const selectors = []
@@ -114,12 +114,12 @@ describe('StyleRule Structure', () => {
 			const rule = root.first_child!
 
 			// First child must be selector list
-			expect(rule.first_child!.type).toBe(NODE_SELECTOR_LIST)
+			expect(rule.first_child!.type).toBe(SELECTOR_LIST)
 
 			// Walk through all children and verify no other selector lists
 			let child = rule.first_child!.next_sibling
 			while (child) {
-				expect(child.type).not.toBe(NODE_SELECTOR_LIST)
+				expect(child.type).not.toBe(SELECTOR_LIST)
 				child = child.next_sibling
 			}
 		})
@@ -131,20 +131,20 @@ describe('StyleRule Structure', () => {
 		const outerRule = root.first_child!
 
 		// Outer rule structure
-		expect(outerRule.type).toBe(NODE_STYLE_RULE)
-		expect(outerRule.first_child!.type).toBe(NODE_SELECTOR_LIST)
+		expect(outerRule.type).toBe(STYLE_RULE)
+		expect(outerRule.first_child!.type).toBe(SELECTOR_LIST)
 
 		// Find the nested rule (inside the block)
 		const block = outerRule.first_child!.next_sibling!
 		const nestedRule = block.first_child!
-		expect(nestedRule.type).toBe(NODE_STYLE_RULE)
+		expect(nestedRule.type).toBe(STYLE_RULE)
 
 		// Nested rule should also have selector list as first child
-		expect(nestedRule.first_child!.type).toBe(NODE_SELECTOR_LIST)
+		expect(nestedRule.first_child!.type).toBe(SELECTOR_LIST)
 
 		// Declaration comes after selector list in nested rule's block
 		const nestedBlock = nestedRule.first_child!.next_sibling!
-		expect(nestedBlock.first_child!.type).toBe(NODE_DECLARATION)
+		expect(nestedBlock.first_child!.type).toBe(DECLARATION)
 	})
 
 	test('& span should be parsed as ONE selector with 3 components', () => {
@@ -155,11 +155,11 @@ describe('StyleRule Structure', () => {
 		// Find the nested rule (& span)
 		const block = outerRule.first_child!.next_sibling!
 		const nestedRule = block.first_child!
-		expect(nestedRule.type).toBe(NODE_STYLE_RULE)
+		expect(nestedRule.type).toBe(STYLE_RULE)
 
 		// Get selector list
 		const selectorList = nestedRule.first_child!
-		expect(selectorList.type).toBe(NODE_SELECTOR_LIST)
+		expect(selectorList.type).toBe(SELECTOR_LIST)
 
 		// Count how many selectors in the list (should be 1, not 2)
 		const selectors = []
@@ -225,8 +225,8 @@ describe('StyleRule Structure', () => {
 		const root = parser.parse()
 		const rule = root.first_child!
 
-		expect(rule.type).toBe(NODE_STYLE_RULE)
-		expect(rule.first_child!.type).toBe(NODE_SELECTOR_LIST)
+		expect(rule.type).toBe(STYLE_RULE)
+		expect(rule.first_child!.type).toBe(SELECTOR_LIST)
 
 		// Rule should have selector list + empty block
 		const block = rule.first_child!.next_sibling
@@ -256,7 +256,7 @@ describe('StyleRule Structure', () => {
 
 		// Verify each child is a declaration
 		for (let i = 0; i < children.length; i++) {
-			expect(children[i].type).toBe(NODE_DECLARATION)
+			expect(children[i].type).toBe(DECLARATION)
 		}
 
 		// Verify next_sibling chain
@@ -298,11 +298,11 @@ describe('StyleRule Structure', () => {
 		expect(children.length).toBe(5)
 
 		// Verify types in order
-		expect(children[0].type).toBe(NODE_DECLARATION) // color: red
-		expect(children[1].type).toBe(NODE_STYLE_RULE) // .nested { margin: 0; }
-		expect(children[2].type).toBe(NODE_DECLARATION) // padding: 10px
-		expect(children[3].type).toBe(NODE_AT_RULE) // @media print { display: none; }
-		expect(children[4].type).toBe(NODE_DECLARATION) // font-size: 16px
+		expect(children[0].type).toBe(DECLARATION) // color: red
+		expect(children[1].type).toBe(STYLE_RULE) // .nested { margin: 0; }
+		expect(children[2].type).toBe(DECLARATION) // padding: 10px
+		expect(children[3].type).toBe(AT_RULE) // @media print { display: none; }
+		expect(children[4].type).toBe(DECLARATION) // font-size: 16px
 
 		// Verify next_sibling chain
 		for (let i = 0; i < children.length - 1; i++) {
@@ -343,7 +343,7 @@ describe('StyleRule Structure', () => {
 
 		// Verify each is a style rule
 		for (const child of children) {
-			expect(child.type).toBe(NODE_STYLE_RULE)
+			expect(child.type).toBe(STYLE_RULE)
 		}
 
 		// Verify next_sibling chain
@@ -384,7 +384,7 @@ describe('StyleRule Structure', () => {
 
 		// Verify each is an at-rule
 		for (const child of children) {
-			expect(child.type).toBe(NODE_AT_RULE)
+			expect(child.type).toBe(AT_RULE)
 		}
 
 		// Verify next_sibling chain

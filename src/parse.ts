@@ -2,12 +2,12 @@
 import { Lexer } from './lexer'
 import {
 	CSSDataArena,
-	NODE_STYLESHEET,
-	NODE_STYLE_RULE,
-	NODE_SELECTOR_LIST,
-	NODE_DECLARATION,
-	NODE_AT_RULE,
-	NODE_BLOCK,
+	STYLESHEET,
+	STYLE_RULE,
+	SELECTOR_LIST,
+	DECLARATION,
+	AT_RULE,
+	BLOCK,
 	FLAG_IMPORTANT,
 	FLAG_HAS_BLOCK,
 	FLAG_VENDOR_PREFIXED,
@@ -106,7 +106,7 @@ export class Parser {
 
 		// Create the root stylesheet node
 		let stylesheet = this.arena.create_node()
-		this.arena.set_type(stylesheet, NODE_STYLESHEET)
+		this.arena.set_type(stylesheet, STYLESHEET)
 		this.arena.set_start_offset(stylesheet, 0)
 		this.arena.set_length(stylesheet, this.source.length)
 		this.arena.set_start_line(stylesheet, 1)
@@ -152,7 +152,7 @@ export class Parser {
 
 		// Create the style rule node
 		let style_rule = this.arena.create_node()
-		this.arena.set_type(style_rule, NODE_STYLE_RULE)
+		this.arena.set_type(style_rule, STYLE_RULE)
 		this.arena.set_start_line(style_rule, rule_line)
 		this.arena.set_start_column(style_rule, rule_column)
 
@@ -176,7 +176,7 @@ export class Parser {
 		let block_line = this.lexer.token_line
 		let block_column = this.lexer.token_column
 		let block_node = this.arena.create_node()
-		this.arena.set_type(block_node, NODE_BLOCK)
+		this.arena.set_type(block_node, BLOCK)
 		this.arena.set_start_offset(block_node, block_start)
 		this.arena.set_start_line(block_node, block_line)
 		this.arena.set_start_column(block_node, block_column)
@@ -260,7 +260,7 @@ export class Parser {
 
 		// Otherwise create a simple selector list node with just text offsets
 		let selector = this.arena.create_node()
-		this.arena.set_type(selector, NODE_SELECTOR_LIST)
+		this.arena.set_type(selector, SELECTOR_LIST)
 		this.arena.set_start_line(selector, selector_line)
 		this.arena.set_start_column(selector, selector_column)
 		this.arena.set_start_offset(selector, selector_start)
@@ -296,7 +296,7 @@ export class Parser {
 
 		// Create declaration node
 		let declaration = this.arena.create_node()
-		this.arena.set_type(declaration, NODE_DECLARATION)
+		this.arena.set_type(declaration, DECLARATION)
 		this.arena.set_start_line(declaration, decl_line)
 		this.arena.set_start_column(declaration, decl_column)
 		this.arena.set_start_offset(declaration, prop_start)
@@ -408,7 +408,7 @@ export class Parser {
 
 		// Create at-rule node
 		let at_rule = this.arena.create_node()
-		this.arena.set_type(at_rule, NODE_AT_RULE)
+		this.arena.set_type(at_rule, AT_RULE)
 		this.arena.set_start_line(at_rule, at_rule_line)
 		this.arena.set_start_column(at_rule, at_rule_column)
 		this.arena.set_start_offset(at_rule, at_rule_start)
@@ -457,7 +457,7 @@ export class Parser {
 			let block_line = this.lexer.token_line
 			let block_column = this.lexer.token_column
 			let block_node = this.arena.create_node()
-			this.arena.set_type(block_node, NODE_BLOCK)
+			this.arena.set_type(block_node, BLOCK)
 			this.arena.set_start_offset(block_node, block_start)
 			this.arena.set_start_line(block_node, block_line)
 			this.arena.set_start_column(block_node, block_column)
