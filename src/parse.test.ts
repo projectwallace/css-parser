@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest'
+import { Parser, parse } from './parse'
 import {
-	Parser,
 	NODE_STYLESHEET,
 	NODE_STYLE_RULE,
 	NODE_AT_RULE,
@@ -12,8 +12,7 @@ import {
 	NODE_SELECTOR_TYPE,
 	NODE_SELECTOR_ATTRIBUTE,
 	NODE_SELECTOR_NESTING,
-	parse,
-} from './parse'
+} from './constants'
 import { ATTR_OPERATOR_PIPE_EQUAL } from './arena'
 
 describe('Parser', () => {

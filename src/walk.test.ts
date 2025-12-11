@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
+import { Parser } from './parse'
 import {
-	Parser,
 	NODE_STYLESHEET,
 	NODE_STYLE_RULE,
 	NODE_SELECTOR_LIST,
@@ -10,7 +10,7 @@ import {
 	NODE_VALUE_KEYWORD,
 	NODE_VALUE_NUMBER,
 	NODE_VALUE_DIMENSION,
-} from './parse'
+} from './constants'
 import { walk, traverse } from './walk'
 
 describe('walk', () => {

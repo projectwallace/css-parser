@@ -28,7 +28,8 @@ export {
 	ATTR_FLAG_CASE_SENSITIVE,
 } from './arena'
 
-// Constants
+// Constants - imported from dedicated constants file
+// This improves tree-shaking by avoiding the parse module if only constants are needed
 export {
 	NODE_STYLE_RULE,
 	NODE_AT_RULE,
@@ -69,7 +70,7 @@ export {
 	NODE_PRELUDE_IMPORT_LAYER,
 	NODE_PRELUDE_IMPORT_SUPPORTS,
 	FLAG_IMPORTANT,
-} from './parse'
+} from './constants'
 export {
 	TOKEN_IDENT,
 	TOKEN_FUNCTION,
