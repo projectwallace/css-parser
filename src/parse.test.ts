@@ -1,17 +1,17 @@
 import { describe, test, expect } from 'vitest'
 import { Parser, parse } from './parse'
 import {
-	NODE_STYLESHEET,
-	NODE_STYLE_RULE,
-	NODE_AT_RULE,
-	NODE_DECLARATION,
-	NODE_BLOCK,
-	NODE_SELECTOR_LIST,
-	NODE_SELECTOR,
-	NODE_SELECTOR_PSEUDO_CLASS,
-	NODE_SELECTOR_TYPE,
-	NODE_SELECTOR_ATTRIBUTE,
-	NODE_SELECTOR_NESTING,
+	STYLESHEET,
+	STYLE_RULE,
+	AT_RULE,
+	DECLARATION,
+	BLOCK,
+	SELECTOR_LIST,
+	SELECTOR,
+	PSEUDO_CLASS_SELECTOR,
+	TYPE_SELECTOR,
+	ATTRIBUTE_SELECTOR,
+	NESTING_SELECTOR,
 } from './constants'
 import { ATTR_OPERATOR_PIPE_EQUAL } from './arena'
 
@@ -31,7 +31,7 @@ describe('Parser', () => {
 			const parser = new Parser('')
 			const root = parser.parse()
 
-			expect(root.type).toBe(NODE_STYLESHEET)
+			expect(root.type).toBe(STYLESHEET)
 			expect(root.offset).toBe(0)
 			expect(root.length).toBe(0)
 			expect(root.has_children).toBe(false)
@@ -41,7 +41,7 @@ describe('Parser', () => {
 			const parser = new Parser('   \n\n   ')
 			const root = parser.parse()
 
-			expect(root.type).toBe(NODE_STYLESHEET)
+			expect(root.type).toBe(STYLESHEET)
 			expect(root.has_children).toBe(false)
 		})
 
@@ -49,7 +49,7 @@ describe('Parser', () => {
 			const parser = new Parser('/* comment */')
 			const root = parser.parse()
 
-			expect(root.type).toBe(NODE_STYLESHEET)
+			expect(root.type).toBe(STYLESHEET)
 			// TODO: Once we parse comments, verify they're added as children
 		})
 	})
@@ -62,7 +62,7 @@ describe('Parser', () => {
 			expect(root.has_children).toBe(true)
 
 			const rule = root.first_child!
-			expect(rule.type).toBe(NODE_STYLE_RULE)
+			expect(rule.type).toBe(STYLE_RULE)
 			expect(rule.offset).toBe(0)
 			expect(rule.length).toBeGreaterThan(0)
 		})
@@ -88,8 +88,8 @@ describe('Parser', () => {
 			const root = parser.parse()
 
 			const [rule1, rule2] = root.children
-			expect(rule1.type).toBe(NODE_STYLE_RULE)
-			expect(rule2.type).toBe(NODE_STYLE_RULE)
+			expect(rule1.type).toBe(STYLE_RULE)
+			expect(rule2.type).toBe(STYLE_RULE)
 			expect(rule2.next_sibling).toBe(null)
 		})
 
@@ -123,9 +123,9 @@ describe('Parser', () => {
 			const selectorlist = rule.first_child!
 			const selector = selectorlist.first_child!
 
-			expect(selector.type).toBe(NODE_SELECTOR)
-			expect(selector.children[0].type).toBe(NODE_SELECTOR_TYPE)
-			expect(selector.children[1].type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(selector.type).toBe(SELECTOR)
+			expect(selector.children[0].type).toBe(TYPE_SELECTOR)
+			expect(selector.children[1].type).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(selector.children[2]).toBeUndefined()
 			const pseudo = selector.children[1]
 			expect(pseudo.text).toBe(':has(a)')
@@ -138,9 +138,9 @@ describe('Parser', () => {
 			const rule = root.first_child!
 			const selectorlist = rule.first_child!
 			const selector = selectorlist.first_child!
-			expect(selector.type).toBe(NODE_SELECTOR)
+			expect(selector.type).toBe(SELECTOR)
 			const s = selector.children[0]
-			expect(s.type).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(s.type).toBe(ATTRIBUTE_SELECTOR)
 			expect(s.attr_operator).toEqual(ATTR_OPERATOR_PIPE_EQUAL)
 			expect(s.name).toBe('root')
 			expect(s.value).toBe('"test"')
@@ -157,7 +157,7 @@ describe('Parser', () => {
 			const [_selector, block] = rule.children
 			const declaration = block.first_child!
 
-			expect(declaration.type).toBe(NODE_DECLARATION)
+			expect(declaration.type).toBe(DECLARATION)
 			expect(declaration.is_important).toBe(false)
 		})
 
@@ -183,8 +183,8 @@ describe('Parser', () => {
 			const [_selector, block] = rule.children
 			const [decl1, decl2] = block.children
 
-			expect(decl1.type).toBe(NODE_DECLARATION)
-			expect(decl2.type).toBe(NODE_DECLARATION)
+			expect(decl1.type).toBe(DECLARATION)
+			expect(decl2.type).toBe(DECLARATION)
 			expect(decl2.next_sibling).toBe(null)
 		})
 
@@ -197,7 +197,7 @@ describe('Parser', () => {
 			const [_selector, block] = rule.children
 			const declaration = block.first_child!
 
-			expect(declaration.type).toBe(NODE_DECLARATION)
+			expect(declaration.type).toBe(DECLARATION)
 			expect(declaration.is_important).toBe(true)
 		})
 
@@ -210,7 +210,7 @@ describe('Parser', () => {
 			const [_selector, block] = rule.children
 			const declaration = block.first_child!
 
-			expect(declaration.type).toBe(NODE_DECLARATION)
+			expect(declaration.type).toBe(DECLARATION)
 			expect(declaration.is_important).toBe(true)
 		})
 
@@ -223,7 +223,7 @@ describe('Parser', () => {
 			const [_selector, block] = rule.children
 			const declaration = block.first_child!
 
-			expect(declaration.type).toBe(NODE_DECLARATION)
+			expect(declaration.type).toBe(DECLARATION)
 			expect(declaration.is_important).toBe(true)
 		})
 
@@ -236,7 +236,7 @@ describe('Parser', () => {
 			const [_selector, block] = rule.children
 			const declaration = block.first_child!
 
-			expect(declaration.type).toBe(NODE_DECLARATION)
+			expect(declaration.type).toBe(DECLARATION)
 		})
 
 		test('should parse complex declaration value', () => {
@@ -248,7 +248,7 @@ describe('Parser', () => {
 			const [_selector, block] = rule.children
 			const declaration = block.first_child!
 
-			expect(declaration.type).toBe(NODE_DECLARATION)
+			expect(declaration.type).toBe(DECLARATION)
 			expect(declaration.name).toBe('background')
 		})
 	})
@@ -261,7 +261,7 @@ describe('Parser', () => {
 				const root = parser.parse()
 
 				const atRule = root.first_child!
-				expect(atRule.type).toBe(NODE_AT_RULE)
+				expect(atRule.type).toBe(AT_RULE)
 				expect(atRule.name).toBe('import')
 				expect(atRule.has_children).toBe(false)
 				expect(atRule.length).toBe(25)
@@ -273,7 +273,7 @@ describe('Parser', () => {
 				const root = parser.parse()
 
 				const atRule = root.first_child!
-				expect(atRule.type).toBe(NODE_AT_RULE)
+				expect(atRule.type).toBe(AT_RULE)
 				expect(atRule.name).toBe('namespace')
 				expect(atRule.length).toBe(45)
 			})
@@ -286,13 +286,13 @@ describe('Parser', () => {
 				const root = parser.parse()
 
 				const media = root.first_child!
-				expect(media.type).toBe(NODE_AT_RULE)
+				expect(media.type).toBe(AT_RULE)
 				expect(media.name).toBe('MEDIA')
 				expect(media.has_children).toBe(true)
 				// Should parse as conditional (containing rules)
 				const block = media.block!
 				const nestedRule = block.first_child!
-				expect(nestedRule.type).toBe(NODE_STYLE_RULE)
+				expect(nestedRule.type).toBe(STYLE_RULE)
 			})
 
 			test('should parse @Font-Face (mixed case declaration at-rule)', () => {
@@ -301,14 +301,14 @@ describe('Parser', () => {
 				const root = parser.parse()
 
 				const fontFace = root.first_child!
-				expect(fontFace.type).toBe(NODE_AT_RULE)
+				expect(fontFace.type).toBe(AT_RULE)
 				expect(fontFace.name).toBe('Font-Face')
 				expect(fontFace.length).toBe(60)
 				expect(fontFace.has_children).toBe(true)
 				// Should parse as declaration at-rule (containing declarations)
 				const block = fontFace.block!
 				const decl = block.first_child!
-				expect(decl.type).toBe(NODE_DECLARATION)
+				expect(decl.type).toBe(DECLARATION)
 			})
 
 			test('should parse @SUPPORTS (uppercase conditional at-rule)', () => {
@@ -317,7 +317,7 @@ describe('Parser', () => {
 				const root = parser.parse()
 
 				const supports = root.first_child!
-				expect(supports.type).toBe(NODE_AT_RULE)
+				expect(supports.type).toBe(AT_RULE)
 				expect(supports.name).toBe('SUPPORTS')
 				expect(supports.has_children).toBe(true)
 			})
@@ -330,14 +330,14 @@ describe('Parser', () => {
 				const root = parser.parse()
 
 				const media = root.first_child!
-				expect(media.type).toBe(NODE_AT_RULE)
+				expect(media.type).toBe(AT_RULE)
 				expect(media.name).toBe('media')
 				expect(media.has_children).toBe(true)
 				expect(media.length).toBe(50)
 
 				const block = media.block!
 				const nestedRule = block.first_child!
-				expect(nestedRule.type).toBe(NODE_STYLE_RULE)
+				expect(nestedRule.type).toBe(STYLE_RULE)
 				expect(nestedRule.length).toBe(20)
 			})
 
@@ -347,7 +347,7 @@ describe('Parser', () => {
 				const root = parser.parse()
 
 				const layer = root.first_child!
-				expect(layer.type).toBe(NODE_AT_RULE)
+				expect(layer.type).toBe(AT_RULE)
 				expect(layer.name).toBe('layer')
 				expect(layer.has_children).toBe(true)
 			})
@@ -358,7 +358,7 @@ describe('Parser', () => {
 				const root = parser.parse()
 
 				const layer = root.first_child!
-				expect(layer.type).toBe(NODE_AT_RULE)
+				expect(layer.type).toBe(AT_RULE)
 				expect(layer.name).toBe('layer')
 				expect(layer.has_children).toBe(true)
 			})
@@ -369,7 +369,7 @@ describe('Parser', () => {
 				const root = parser.parse()
 
 				const supports = root.first_child!
-				expect(supports.type).toBe(NODE_AT_RULE)
+				expect(supports.type).toBe(AT_RULE)
 				expect(supports.name).toBe('supports')
 				expect(supports.has_children).toBe(true)
 			})
@@ -380,7 +380,7 @@ describe('Parser', () => {
 				const root = parser.parse()
 
 				const container = root.first_child!
-				expect(container.type).toBe(NODE_AT_RULE)
+				expect(container.type).toBe(AT_RULE)
 				expect(container.name).toBe('container')
 				expect(container.has_children).toBe(true)
 			})
@@ -393,15 +393,15 @@ describe('Parser', () => {
 				const root = parser.parse()
 
 				const fontFace = root.first_child!
-				expect(fontFace.type).toBe(NODE_AT_RULE)
+				expect(fontFace.type).toBe(AT_RULE)
 				expect(fontFace.name).toBe('font-face')
 				expect(fontFace.has_children).toBe(true)
 
 				// Should have declarations as children
 				const block = fontFace.block!
 				const [decl1, decl2] = block.children
-				expect(decl1.type).toBe(NODE_DECLARATION)
-				expect(decl2.type).toBe(NODE_DECLARATION)
+				expect(decl1.type).toBe(DECLARATION)
+				expect(decl2.type).toBe(DECLARATION)
 			})
 
 			test('should parse @page', () => {
@@ -410,12 +410,12 @@ describe('Parser', () => {
 				const root = parser.parse()
 
 				const page = root.first_child!
-				expect(page.type).toBe(NODE_AT_RULE)
+				expect(page.type).toBe(AT_RULE)
 				expect(page.name).toBe('page')
 
 				const block = page.block!
 				const decl = block.first_child!
-				expect(decl.type).toBe(NODE_DECLARATION)
+				expect(decl.type).toBe(DECLARATION)
 			})
 
 			test('should parse @counter-style', () => {
@@ -424,12 +424,12 @@ describe('Parser', () => {
 				const root = parser.parse()
 
 				const counterStyle = root.first_child!
-				expect(counterStyle.type).toBe(NODE_AT_RULE)
+				expect(counterStyle.type).toBe(AT_RULE)
 				expect(counterStyle.name).toBe('counter-style')
 
 				const block = counterStyle.block!
 				const decl = block.first_child!
-				expect(decl.type).toBe(NODE_DECLARATION)
+				expect(decl.type).toBe(DECLARATION)
 			})
 		})
 
@@ -445,14 +445,14 @@ describe('Parser', () => {
 
 				const supports_block = supports.block!
 				const media = supports_block.first_child!
-				expect(media.type).toBe(NODE_AT_RULE)
+				expect(media.type).toBe(AT_RULE)
 				expect(media.name).toBe('media')
 				expect(media.text).toBe('@media (min-width: 768px) { body { color: red; } }')
 				expect(media.length).toBe(50)
 
 				const media_block = media.block!
 				const rule = media_block.first_child!
-				expect(rule.type).toBe(NODE_STYLE_RULE)
+				expect(rule.type).toBe(STYLE_RULE)
 				expect(rule.length).toBe(20)
 			})
 		})
@@ -481,14 +481,14 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let parent = root.first_child!
-			expect(parent.type).toBe(NODE_STYLE_RULE)
+			expect(parent.type).toBe(STYLE_RULE)
 
 			let [_selector, block] = parent.children
 			let [decl, nested_rule] = block.children
-			expect(decl.type).toBe(NODE_DECLARATION)
+			expect(decl.type).toBe(DECLARATION)
 			expect(decl.name).toBe('color')
 
-			expect(nested_rule.type).toBe(NODE_STYLE_RULE)
+			expect(nested_rule.type).toBe(STYLE_RULE)
 			let nested_selector = nested_rule.first_child!
 			// With parseSelectors enabled, selector is now detailed
 			expect(nested_selector.text).toBe('& .child')
@@ -503,7 +503,7 @@ describe('Parser', () => {
 			let [_selector, block] = parent.children
 			let [_decl, nested_rule] = block.children
 
-			expect(nested_rule.type).toBe(NODE_STYLE_RULE)
+			expect(nested_rule.type).toBe(STYLE_RULE)
 			let nested_selector = nested_rule.first_child!
 			expect(nested_selector.text).toBe('.child')
 		})
@@ -517,8 +517,8 @@ describe('Parser', () => {
 			let [_selector, block] = parent.children
 			let [nested1, nested2] = block.children
 
-			expect(nested1.type).toBe(NODE_STYLE_RULE)
-			expect(nested2.type).toBe(NODE_STYLE_RULE)
+			expect(nested1.type).toBe(STYLE_RULE)
+			expect(nested2.type).toBe(STYLE_RULE)
 		})
 
 		test('should parse deeply nested rules', () => {
@@ -530,17 +530,17 @@ describe('Parser', () => {
 			expect(a.length).toBe(32)
 			let [_selector_a, block_a] = a.children
 			let b = block_a.first_child!
-			expect(b.type).toBe(NODE_STYLE_RULE)
+			expect(b.type).toBe(STYLE_RULE)
 			expect(b.length).toBe(25)
 
 			let [_selector_b, block_b] = b.children
 			let c = block_b.first_child!
-			expect(c.type).toBe(NODE_STYLE_RULE)
+			expect(c.type).toBe(STYLE_RULE)
 			expect(c.length).toBe(18)
 
 			let [_selector_c, block_c] = c.children
 			let decl = block_c.first_child!
-			expect(decl.type).toBe(NODE_DECLARATION)
+			expect(decl.type).toBe(DECLARATION)
 			expect(decl.name).toBe('color')
 		})
 
@@ -553,13 +553,13 @@ describe('Parser', () => {
 			let [_selector, block] = card.children
 			let [decl, media] = block.children
 
-			expect(decl.type).toBe(NODE_DECLARATION)
-			expect(media.type).toBe(NODE_AT_RULE)
+			expect(decl.type).toBe(DECLARATION)
+			expect(media.type).toBe(AT_RULE)
 			expect(media.name).toBe('media')
 
 			let media_block = media.block!
 			let nested_decl = media_block.first_child!
-			expect(nested_decl.type).toBe(NODE_DECLARATION)
+			expect(nested_decl.type).toBe(DECLARATION)
 			expect(nested_decl.name).toBe('padding')
 		})
 
@@ -607,15 +607,15 @@ describe('Parser', () => {
 			let [_selector, block] = card.children
 			let [decl1, title, decl2, body] = block.children
 
-			expect(decl1.type).toBe(NODE_DECLARATION)
+			expect(decl1.type).toBe(DECLARATION)
 			expect(decl1.name).toBe('color')
 
-			expect(title.type).toBe(NODE_STYLE_RULE)
+			expect(title.type).toBe(STYLE_RULE)
 
-			expect(decl2.type).toBe(NODE_DECLARATION)
+			expect(decl2.type).toBe(DECLARATION)
 			expect(decl2.name).toBe('padding')
 
-			expect(body.type).toBe(NODE_STYLE_RULE)
+			expect(body.type).toBe(STYLE_RULE)
 		})
 
 		describe('Relaxed nesting (CSS Nesting Module Level 1)', () => {
@@ -625,11 +625,11 @@ describe('Parser', () => {
 				let root = parser.parse()
 
 				let parent = root.first_child!
-				expect(parent.type).toBe(NODE_STYLE_RULE)
+				expect(parent.type).toBe(STYLE_RULE)
 
 				let [_selector, block] = parent.children
 				let nested_rule = block.first_child!
-				expect(nested_rule.type).toBe(NODE_STYLE_RULE)
+				expect(nested_rule.type).toBe(STYLE_RULE)
 
 				let nested_selector = nested_rule.first_child!
 				expect(nested_selector.text).toBe('> a')
@@ -645,7 +645,7 @@ describe('Parser', () => {
 				let parent = root.first_child!
 				let [_selector, block] = parent.children
 				let nested_rule = block.first_child!
-				expect(nested_rule.type).toBe(NODE_STYLE_RULE)
+				expect(nested_rule.type).toBe(STYLE_RULE)
 
 				let nested_selector = nested_rule.first_child!
 				expect(nested_selector.text).toBe('+ span')
@@ -660,7 +660,7 @@ describe('Parser', () => {
 				let parent = root.first_child!
 				let [_selector, block] = parent.children
 				let nested_rule = block.first_child!
-				expect(nested_rule.type).toBe(NODE_STYLE_RULE)
+				expect(nested_rule.type).toBe(STYLE_RULE)
 
 				let nested_selector = nested_rule.first_child!
 				expect(nested_selector.text).toBe('~ div')
@@ -676,15 +676,15 @@ describe('Parser', () => {
 				let [_selector, block] = parent.children
 				let [rule1, rule2, rule3] = block.children
 
-				expect(rule1.type).toBe(NODE_STYLE_RULE)
+				expect(rule1.type).toBe(STYLE_RULE)
 				expect(rule1.first_child!.text).toBe('> a')
 				expect(rule1.first_child!.has_children).toBe(true)
 
-				expect(rule2.type).toBe(NODE_STYLE_RULE)
+				expect(rule2.type).toBe(STYLE_RULE)
 				expect(rule2.first_child!.text).toBe('~ span')
 				expect(rule2.first_child!.has_children).toBe(true)
 
-				expect(rule3.type).toBe(NODE_STYLE_RULE)
+				expect(rule3.type).toBe(STYLE_RULE)
 				expect(rule3.first_child!.text).toBe('+ div')
 				expect(rule3.first_child!.has_children).toBe(true)
 			})
@@ -711,13 +711,13 @@ describe('Parser', () => {
 				let a = root.first_child!
 				let [_selector_a, block_a] = a.children
 				let b = block_a.first_child!
-				expect(b.type).toBe(NODE_STYLE_RULE)
+				expect(b.type).toBe(STYLE_RULE)
 				expect(b.first_child!.text).toBe('> .b')
 				expect(b.first_child!.has_children).toBe(true)
 
 				let [_selector_b, block_b] = b.children
 				let c = block_b.first_child!
-				expect(c.type).toBe(NODE_STYLE_RULE)
+				expect(c.type).toBe(STYLE_RULE)
 				expect(c.first_child!.text).toBe('> .c')
 				expect(c.first_child!.has_children).toBe(true)
 			})
@@ -731,10 +731,10 @@ describe('Parser', () => {
 				let [_selector, block] = parent.children
 				let [normal, combinator] = block.children
 
-				expect(normal.type).toBe(NODE_STYLE_RULE)
+				expect(normal.type).toBe(STYLE_RULE)
 				expect(normal.first_child!.text).toBe('.normal')
 
-				expect(combinator.type).toBe(NODE_STYLE_RULE)
+				expect(combinator.type).toBe(STYLE_RULE)
 				expect(combinator.first_child!.text).toBe('> .combinator')
 				expect(combinator.first_child!.has_children).toBe(true)
 			})
@@ -748,13 +748,13 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let keyframes = root.first_child!
-			expect(keyframes.type).toBe(NODE_AT_RULE)
+			expect(keyframes.type).toBe(AT_RULE)
 			expect(keyframes.name).toBe('keyframes')
 
 			let block = keyframes.block!
 			let [from_rule, to_rule] = block.children
-			expect(from_rule.type).toBe(NODE_STYLE_RULE)
-			expect(to_rule.type).toBe(NODE_STYLE_RULE)
+			expect(from_rule.type).toBe(STYLE_RULE)
+			expect(to_rule.type).toBe(STYLE_RULE)
 
 			let from_selector = from_rule.first_child!
 			expect(from_selector.text).toBe('from')
@@ -772,9 +772,9 @@ describe('Parser', () => {
 			let block = keyframes.block!
 			let [rule0, rule50, rule100] = block.children
 
-			expect(rule0.type).toBe(NODE_STYLE_RULE)
-			expect(rule50.type).toBe(NODE_STYLE_RULE)
-			expect(rule100.type).toBe(NODE_STYLE_RULE)
+			expect(rule0.type).toBe(STYLE_RULE)
+			expect(rule50.type).toBe(STYLE_RULE)
+			expect(rule100.type).toBe(STYLE_RULE)
 
 			let selector0 = rule0.first_child!
 			expect(selector0.text).toBe('0%')
@@ -804,13 +804,13 @@ describe('Parser', () => {
 			let [_selector, block] = parent.children
 			let nest = block.first_child!
 
-			expect(nest.type).toBe(NODE_AT_RULE)
+			expect(nest.type).toBe(AT_RULE)
 			expect(nest.name).toBe('nest')
 			expect(nest.has_children).toBe(true)
 
 			let nest_block = nest.block!
 			let decl = nest_block.first_child!
-			expect(decl.type).toBe(NODE_DECLARATION)
+			expect(decl.type).toBe(DECLARATION)
 			expect(decl.name).toBe('color')
 		})
 
@@ -823,7 +823,7 @@ describe('Parser', () => {
 			let [_selector, block] = a.children
 			let nest = block.first_child!
 
-			expect(nest.type).toBe(NODE_AT_RULE)
+			expect(nest.type).toBe(AT_RULE)
 			expect(nest.name).toBe('nest')
 		})
 	})
@@ -853,7 +853,7 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let rule = root.first_child!
-			expect(rule.type).toBe(NODE_STYLE_RULE)
+			expect(rule.type).toBe(STYLE_RULE)
 			// Only has selector and empty block
 			expect(rule.children.length).toBe(2)
 		})
@@ -866,7 +866,7 @@ describe('Parser', () => {
 			let rule = root.first_child!
 			let [_selector, block] = rule.children
 			let decl = block.first_child!
-			expect(decl.type).toBe(NODE_DECLARATION)
+			expect(decl.type).toBe(DECLARATION)
 		})
 
 		test('should handle multiple semicolons', () => {
@@ -914,7 +914,7 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let a = root.first_child!
-			expect(a.type).toBe(NODE_STYLE_RULE)
+			expect(a.type).toBe(STYLE_RULE)
 		})
 
 		test('should handle trailing comma in selector', () => {
@@ -923,7 +923,7 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let rule = root.first_child!
-			expect(rule.type).toBe(NODE_STYLE_RULE)
+			expect(rule.type).toBe(STYLE_RULE)
 		})
 	})
 
@@ -1077,7 +1077,7 @@ describe('Parser', () => {
 
 			let rule = root.first_child!
 			let selectorList = rule.first_child!
-			let selector = selectorList.first_child! // NODE_SELECTOR wrapper
+			let selector = selectorList.first_child! // SELECTOR wrapper
 			// Selector has detailed parsing enabled by default
 			expect(selector.has_children).toBe(true)
 			// Navigate: selector -> type selector (input) -> pseudo-class (next sibling)
@@ -1094,7 +1094,7 @@ describe('Parser', () => {
 
 			let rule = root.first_child!
 			let selectorList = rule.first_child!
-			let selector = selectorList.first_child! // NODE_SELECTOR wrapper
+			let selector = selectorList.first_child! // SELECTOR wrapper
 			let typeSelector = selector.first_child!
 			let pseudoClass = typeSelector.next_sibling!
 			expect(pseudoClass.name).toBe('-moz-focusring')
@@ -1108,7 +1108,7 @@ describe('Parser', () => {
 
 			let rule = root.first_child!
 			let selectorList = rule.first_child!
-			let selector = selectorList.first_child! // NODE_SELECTOR wrapper
+			let selector = selectorList.first_child! // SELECTOR wrapper
 			let typeSelector = selector.first_child!
 			let pseudoClass = typeSelector.next_sibling!
 			expect(pseudoClass.name).toBe('-ms-input-placeholder')
@@ -1122,7 +1122,7 @@ describe('Parser', () => {
 
 			let rule = root.first_child!
 			let selectorList = rule.first_child!
-			let selector = selectorList.first_child! // NODE_SELECTOR wrapper
+			let selector = selectorList.first_child! // SELECTOR wrapper
 			let typeSelector = selector.first_child!
 			let pseudoElement = typeSelector.next_sibling!
 			expect(pseudoElement.name).toBe('-webkit-scrollbar')
@@ -1136,7 +1136,7 @@ describe('Parser', () => {
 
 			let rule = root.first_child!
 			let selectorList = rule.first_child!
-			let selector = selectorList.first_child! // NODE_SELECTOR wrapper
+			let selector = selectorList.first_child! // SELECTOR wrapper
 			let typeSelector = selector.first_child!
 			let pseudoElement = typeSelector.next_sibling!
 			expect(pseudoElement.name).toBe('-moz-selection')
@@ -1150,7 +1150,7 @@ describe('Parser', () => {
 
 			let rule = root.first_child!
 			let selectorList = rule.first_child!
-			let selector = selectorList.first_child! // NODE_SELECTOR wrapper
+			let selector = selectorList.first_child! // SELECTOR wrapper
 			let typeSelector = selector.first_child!
 			let pseudoElement = typeSelector.next_sibling!
 			expect(pseudoElement.name).toBe('-webkit-input-placeholder')
@@ -1164,7 +1164,7 @@ describe('Parser', () => {
 
 			let rule = root.first_child!
 			let selectorList = rule.first_child!
-			let selector = selectorList.first_child! // NODE_SELECTOR wrapper
+			let selector = selectorList.first_child! // SELECTOR wrapper
 			let typeSelector = selector.first_child!
 			let pseudoClass = typeSelector.next_sibling!
 			expect(pseudoClass.name).toBe('-webkit-any')
@@ -1178,7 +1178,7 @@ describe('Parser', () => {
 
 			let rule = root.first_child!
 			let selectorList = rule.first_child!
-			let selector = selectorList.first_child! // NODE_SELECTOR wrapper
+			let selector = selectorList.first_child! // SELECTOR wrapper
 			let typeSelector = selector.first_child!
 			let pseudoClass = typeSelector.next_sibling!
 			expect(pseudoClass.name).toBe('hover')
@@ -1192,7 +1192,7 @@ describe('Parser', () => {
 
 			let rule = root.first_child!
 			let selectorList = rule.first_child!
-			let selector = selectorList.first_child! // NODE_SELECTOR wrapper
+			let selector = selectorList.first_child! // SELECTOR wrapper
 			let typeSelector = selector.first_child!
 			let pseudoElement = typeSelector.next_sibling!
 			expect(pseudoElement.name).toBe('before')
@@ -1207,21 +1207,21 @@ describe('Parser', () => {
 			let [rule1, rule2, rule3] = root.children
 
 			let selectorList1 = rule1.first_child!
-			let selector1 = selectorList1.first_child! // NODE_SELECTOR wrapper
+			let selector1 = selectorList1.first_child! // SELECTOR wrapper
 			let typeSelector1 = selector1.first_child!
 			let pseudo1 = typeSelector1.next_sibling!
 			expect(pseudo1.name).toBe('-webkit-scrollbar')
 			expect(pseudo1.is_vendor_prefixed).toBe(true)
 
 			let selectorList2 = rule2.first_child!
-			let selector2 = selectorList2.first_child! // NODE_SELECTOR wrapper
+			let selector2 = selectorList2.first_child! // SELECTOR wrapper
 			let typeSelector2 = selector2.first_child!
 			let pseudo2 = typeSelector2.next_sibling!
 			expect(pseudo2.name).toBe('-webkit-scrollbar-thumb')
 			expect(pseudo2.is_vendor_prefixed).toBe(true)
 
 			let selectorList3 = rule3.first_child!
-			let selector3 = selectorList3.first_child! // NODE_SELECTOR wrapper
+			let selector3 = selectorList3.first_child! // SELECTOR wrapper
 			let typeSelector3 = selector3.first_child!
 			let pseudo3 = typeSelector3.next_sibling!
 			expect(pseudo3.name).toBe('after')
@@ -1235,7 +1235,7 @@ describe('Parser', () => {
 
 			let rule = root.first_child!
 			let selectorList = rule.first_child!
-			let selector = selectorList.first_child! // NODE_SELECTOR wrapper
+			let selector = selectorList.first_child! // SELECTOR wrapper
 			// Navigate through compound selector: input (type) -> -webkit-autofill (pseudo) -> :focus (pseudo)
 			let typeSelector = selector.first_child!
 			let webkitPseudo = typeSelector.next_sibling!
@@ -1282,7 +1282,7 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let card = root.first_child!
-			expect(card.type).toBe(NODE_STYLE_RULE)
+			expect(card.type).toBe(STYLE_RULE)
 			// Card has selector + block
 			expect(card.children.length).toBe(2)
 		})
@@ -1307,8 +1307,8 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let [layer1, layer2] = root.children
-			expect(layer1.type).toBe(NODE_AT_RULE)
-			expect(layer2.type).toBe(NODE_AT_RULE)
+			expect(layer1.type).toBe(AT_RULE)
+			expect(layer2.type).toBe(AT_RULE)
 		})
 
 		test('should parse vendor prefixed properties', () => {
@@ -1378,7 +1378,7 @@ describe('Parser', () => {
 			// Parser may have issues with -- custom property names, check what we got
 			expect(root.children.length).toBeGreaterThan(0)
 			let first_rule = root.first_child!
-			expect(first_rule.type).toBe(NODE_STYLE_RULE)
+			expect(first_rule.type).toBe(STYLE_RULE)
 		})
 
 		test('should parse attribute selectors with operators', () => {
@@ -1399,8 +1399,8 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let [rule1, rule2] = root.children
-			expect(rule1.type).toBe(NODE_STYLE_RULE)
-			expect(rule2.type).toBe(NODE_STYLE_RULE)
+			expect(rule1.type).toBe(STYLE_RULE)
+			expect(rule2.type).toBe(STYLE_RULE)
 		})
 
 		test('should parse multiple !important declarations', () => {
@@ -1412,7 +1412,7 @@ describe('Parser', () => {
 			let block = rule.block!
 			expect(block.children.length).toBeGreaterThan(1)
 			// Check at least first declaration has important flag
-			let declarations = block.children.filter((c) => c.type === NODE_DECLARATION)
+			let declarations = block.children.filter((c) => c.type === DECLARATION)
 			expect(declarations.length).toBeGreaterThan(0)
 			expect(declarations[0].is_important).toBe(true)
 		})
@@ -1427,7 +1427,7 @@ describe('Parser', () => {
 			// Comments are skipped, only rule remains
 			expect(root.children.length).toBe(1)
 			let rule = root.first_child!
-			expect(rule.type).toBe(NODE_STYLE_RULE)
+			expect(rule.type).toBe(STYLE_RULE)
 		})
 
 		test('should skip comments in declaration block', () => {
@@ -1437,7 +1437,7 @@ describe('Parser', () => {
 
 			let rule = root.first_child!
 			// Comments don't break parsing
-			expect(rule.type).toBe(NODE_STYLE_RULE)
+			expect(rule.type).toBe(STYLE_RULE)
 			// Rule has selector + block
 			expect(rule.children.length).toBe(2)
 		})
@@ -1448,7 +1448,7 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let rule = root.first_child!
-			expect(rule.type).toBe(NODE_STYLE_RULE)
+			expect(rule.type).toBe(STYLE_RULE)
 		})
 
 		test('should handle comment between property and colon', () => {
@@ -1482,7 +1482,7 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let rule = root.first_child!
-			expect(rule.type).toBe(NODE_STYLE_RULE)
+			expect(rule.type).toBe(STYLE_RULE)
 		})
 
 		test('should handle tabs and newlines', () => {
@@ -1491,7 +1491,7 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let rule = root.first_child!
-			expect(rule.type).toBe(NODE_STYLE_RULE)
+			expect(rule.type).toBe(STYLE_RULE)
 		})
 
 		test('should handle no whitespace', () => {
@@ -1514,7 +1514,7 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let [charset, _body] = root.children
-			expect(charset.type).toBe(NODE_AT_RULE)
+			expect(charset.type).toBe(AT_RULE)
 			expect(charset.name).toBe('charset')
 		})
 
@@ -1524,7 +1524,7 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let import_rule = root.first_child!
-			expect(import_rule.type).toBe(NODE_AT_RULE)
+			expect(import_rule.type).toBe(AT_RULE)
 			expect(import_rule.name).toBe('import')
 		})
 
@@ -1793,7 +1793,7 @@ describe('Parser', () => {
 			let root = parser.parse()
 
 			let atrule = root.first_child!
-			expect(atrule.type).toBe(NODE_AT_RULE)
+			expect(atrule.type).toBe(AT_RULE)
 			expect(atrule.name).toBe('media')
 			expect(atrule.prelude).toBe('(min-width: 768px)')
 		})
@@ -1916,14 +1916,14 @@ describe('Parser', () => {
 		let rule = atrule?.block?.first_child
 
 		test('atrule should have block', () => {
-			expect(sheet.type).toBe(NODE_STYLESHEET)
-			expect(atrule!.type).toBe(NODE_AT_RULE)
-			expect(atrule?.block?.type).toBe(NODE_BLOCK)
+			expect(sheet.type).toBe(STYLESHEET)
+			expect(atrule!.type).toBe(AT_RULE)
+			expect(atrule?.block?.type).toBe(BLOCK)
 		})
 
 		test('block children should be stylerule', () => {
 			expect(atrule!.block).not.toBeNull()
-			expect(rule!.type).toBe(NODE_STYLE_RULE)
+			expect(rule!.type).toBe(STYLE_RULE)
 			expect(rule!.text).toBe('a {}')
 		})
 
@@ -1931,14 +1931,14 @@ describe('Parser', () => {
 			expect(rule!.block).not.toBeNull()
 			expect(rule?.has_block).toBeTruthy()
 			expect(rule?.has_declarations).toBeFalsy()
-			expect(rule?.first_child!.type).toBe(NODE_SELECTOR_LIST)
+			expect(rule?.first_child!.type).toBe(SELECTOR_LIST)
 		})
 
 		test('has correct nested selectors', () => {
 			let list = rule?.first_child
-			expect(list!.type).toBe(NODE_SELECTOR_LIST)
+			expect(list!.type).toBe(SELECTOR_LIST)
 			expect(list!.children).toHaveLength(1)
-			expect(list?.first_child?.type).toEqual(NODE_SELECTOR)
+			expect(list?.first_child?.type).toEqual(SELECTOR)
 			expect(list?.first_child?.text).toEqual('a')
 		})
 	})
@@ -2035,12 +2035,12 @@ describe('Parser', () => {
 			let ast = parse(css)
 
 			const container = ast.first_child!
-			expect(container.type).toBe(NODE_AT_RULE)
+			expect(container.type).toBe(AT_RULE)
 			expect(container.name).toBe('container')
 
 			const containerBlock = container.block!
 			const rule = containerBlock.first_child!
-			expect(rule.type).toBe(NODE_STYLE_RULE)
+			expect(rule.type).toBe(STYLE_RULE)
 		})
 
 		test('@container should parse rules with :has() selector', () => {
@@ -2050,7 +2050,7 @@ describe('Parser', () => {
 			const container = ast.first_child!
 			const containerBlock = container.block!
 			const rule = containerBlock.first_child!
-			expect(rule.type).toBe(NODE_STYLE_RULE)
+			expect(rule.type).toBe(STYLE_RULE)
 		})
 
 		test('modern CSS example by Vadim Makeev', () => {
@@ -2069,64 +2069,64 @@ describe('Parser', () => {
 			let ast = parse(css)
 
 			// Root should be stylesheet
-			expect(ast.type).toBe(NODE_STYLESHEET)
+			expect(ast.type).toBe(STYLESHEET)
 			expect(ast.has_children).toBe(true)
 
 			// First child: @layer what
 			const layer = ast.first_child!
-			expect(layer.type).toBe(NODE_AT_RULE)
+			expect(layer.type).toBe(AT_RULE)
 			expect(layer.name).toBe('layer')
 			expect(layer.prelude).toBe('what')
 			expect(layer.has_block).toBe(true)
 
 			// Inside @layer: @container (width > 0)
 			const container = layer.block!.first_child!
-			expect(container.type).toBe(NODE_AT_RULE)
+			expect(container.type).toBe(AT_RULE)
 			expect(container.name).toBe('container')
 			expect(container.prelude).toBe('(width > 0)')
 			expect(container.has_block).toBe(true)
 
 			// Inside @container: ul:has(:nth-child(1 of li))
 			const ulRule = container.block!.first_child!
-			expect(ulRule.type).toBe(NODE_STYLE_RULE)
+			expect(ulRule.type).toBe(STYLE_RULE)
 			expect(ulRule.has_block).toBe(true)
 
 			// Verify selector contains ul and :has(:nth-child(1 of li))
 			const selectorList = ulRule.first_child!
-			expect(selectorList.type).toBe(NODE_SELECTOR_LIST)
+			expect(selectorList.type).toBe(SELECTOR_LIST)
 			const selector = selectorList.first_child!
-			expect(selector.type).toBe(NODE_SELECTOR)
+			expect(selector.type).toBe(SELECTOR)
 			// The selector should have ul type selector and :has() pseudo-class
 			const selectorParts = selector.children
 			expect(selectorParts.length).toBeGreaterThan(0)
-			expect(selectorParts[0].type).toBe(NODE_SELECTOR_TYPE)
+			expect(selectorParts[0].type).toBe(TYPE_SELECTOR)
 			expect(selectorParts[0].text).toBe('ul')
 
 			// Inside ul rule: @media (height > 0)
 			const media = ulRule.block!.first_child!
-			expect(media.type).toBe(NODE_AT_RULE)
+			expect(media.type).toBe(AT_RULE)
 			expect(media.name).toBe('media')
 			expect(media.prelude).toBe('(height > 0)')
 			expect(media.has_block).toBe(true)
 
 			// Inside @media: &:hover
 			const nestingRule = media.block!.first_child!
-			expect(nestingRule.type).toBe(NODE_STYLE_RULE)
+			expect(nestingRule.type).toBe(STYLE_RULE)
 			expect(nestingRule.has_block).toBe(true)
 
 			// Verify nesting selector &:hover
 			const nestingSelectorList = nestingRule.first_child!
-			expect(nestingSelectorList.type).toBe(NODE_SELECTOR_LIST)
+			expect(nestingSelectorList.type).toBe(SELECTOR_LIST)
 			const nestingSelector = nestingSelectorList.first_child!
-			expect(nestingSelector.type).toBe(NODE_SELECTOR)
+			expect(nestingSelector.type).toBe(SELECTOR)
 			const nestingParts = nestingSelector.children
 			expect(nestingParts.length).toBeGreaterThan(0)
-			expect(nestingParts[0].type).toBe(NODE_SELECTOR_NESTING)
+			expect(nestingParts[0].type).toBe(NESTING_SELECTOR)
 			expect(nestingParts[0].text).toBe('&')
 
 			// Inside &:hover: --is: this declaration
 			const declaration = nestingRule.block!.first_child!
-			expect(declaration.type).toBe(NODE_DECLARATION)
+			expect(declaration.type).toBe(DECLARATION)
 			expect(declaration.property).toBe('--is')
 			expect(declaration.value).toBe('this')
 		})
