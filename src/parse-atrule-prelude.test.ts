@@ -14,7 +14,6 @@ import {
 	PRELUDE_OPERATOR,
 	IMPORT_URL,
 	IMPORT_LAYER,
-	IMPORT_SUPPORTS,
 } from './arena'
 
 describe('At-Rule Prelude Parser', () => {
@@ -394,7 +393,7 @@ describe('At-Rule Prelude Parser', () => {
 
 			expect(children.length).toBe(2)
 			expect(children[0].type).toBe(IMPORT_URL)
-			expect(children[1].type).toBe(IMPORT_SUPPORTS)
+			expect(children[1].type).toBe(SUPPORTS_QUERY)
 			expect(children[1].text).toBe('supports(display: grid)')
 		})
 
@@ -452,7 +451,7 @@ describe('At-Rule Prelude Parser', () => {
 			expect(children.length).toBe(3)
 			expect(children[0].type).toBe(IMPORT_URL)
 			expect(children[1].type).toBe(IMPORT_LAYER)
-			expect(children[2].type).toBe(IMPORT_SUPPORTS)
+			expect(children[2].type).toBe(SUPPORTS_QUERY)
 		})
 
 		it('should parse with supports and media query', () => {
@@ -463,7 +462,7 @@ describe('At-Rule Prelude Parser', () => {
 
 			expect(children.length).toBe(3)
 			expect(children[0].type).toBe(IMPORT_URL)
-			expect(children[1].type).toBe(IMPORT_SUPPORTS)
+			expect(children[1].type).toBe(SUPPORTS_QUERY)
 			expect(children[2].type).toBe(MEDIA_QUERY)
 		})
 
@@ -476,7 +475,7 @@ describe('At-Rule Prelude Parser', () => {
 			expect(children.length).toBe(4)
 			expect(children[0].type).toBe(IMPORT_URL)
 			expect(children[1].type).toBe(IMPORT_LAYER)
-			expect(children[2].type).toBe(IMPORT_SUPPORTS)
+			expect(children[2].type).toBe(SUPPORTS_QUERY)
 			expect(children[3].type).toBe(MEDIA_QUERY)
 		})
 
@@ -488,7 +487,7 @@ describe('At-Rule Prelude Parser', () => {
 
 			expect(children.length).toBe(2)
 			expect(children[0].type).toBe(IMPORT_URL)
-			expect(children[1].type).toBe(IMPORT_SUPPORTS)
+			expect(children[1].type).toBe(SUPPORTS_QUERY)
 			expect(children[1].text).toContain('supports(')
 		})
 
@@ -648,7 +647,7 @@ describe('parse_atrule_prelude()', () => {
 
 			expect(result.length).toBeGreaterThanOrEqual(2)
 			expect(result[0].type).toBe(IMPORT_URL)
-			expect(result[1].type).toBe(IMPORT_SUPPORTS)
+			expect(result[1].type).toBe(SUPPORTS_QUERY)
 		})
 	})
 
@@ -929,7 +928,7 @@ describe('parse_atrule_prelude()', () => {
 				const atRule = ast.first_child
 				const children = atRule?.children || []
 
-				const importSupports = children.find((c) => c.type === IMPORT_SUPPORTS)
+				const importSupports = children.find((c) => c.type === SUPPORTS_QUERY)
 				expect(importSupports?.text).toBe('supports(display: flex)')
 				expect(importSupports?.text.length).toBe(23)
 			})

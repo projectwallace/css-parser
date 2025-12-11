@@ -12,7 +12,6 @@ import {
 	PRELUDE_OPERATOR,
 	IMPORT_URL,
 	IMPORT_LAYER,
-	IMPORT_SUPPORTS,
 } from './arena'
 import {
 	TOKEN_IDENT,
@@ -557,7 +556,7 @@ export class AtRulePreludeParser {
 				}
 
 				// Create supports node
-				let supports_node = this.create_node(IMPORT_SUPPORTS, supports_start, supports_end)
+				let supports_node = this.create_node(SUPPORTS_QUERY, supports_start, supports_end)
 
 				return supports_node
 			}

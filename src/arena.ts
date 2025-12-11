@@ -67,7 +67,6 @@ export const PRELUDE_IDENTIFIER = 38 // generic identifier: keyframe name, prope
 export const PRELUDE_OPERATOR = 39 // logical operator: and, or, not
 export const IMPORT_URL = 40 // import URL: url("file.css") or "file.css"
 export const IMPORT_LAYER = 41 // import layer: layer or layer(name)
-export const IMPORT_SUPPORTS = 42 // import supports: supports(condition)
 
 // Flag constants (bit-packed in 1 byte)
 export const FLAG_IMPORTANT = 1 << 0 // Has !important
