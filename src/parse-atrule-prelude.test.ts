@@ -12,7 +12,7 @@ import {
 	LAYER_NAME,
 	PRELUDE_IDENTIFIER,
 	PRELUDE_OPERATOR,
-	IMPORT_URL,
+	URL,
 } from './arena'
 
 describe('At-Rule Prelude Parser', () => {
@@ -300,7 +300,7 @@ describe('At-Rule Prelude Parser', () => {
 			const children = atRule?.children || []
 
 			expect(children.length).toBeGreaterThan(0)
-			expect(children[0].type).toBe(IMPORT_URL)
+			expect(children[0].type).toBe(URL)
 			expect(children[0].text).toBe('url("styles.css")')
 		})
 
@@ -311,7 +311,7 @@ describe('At-Rule Prelude Parser', () => {
 			const children = atRule?.children || []
 
 			expect(children.length).toBeGreaterThan(0)
-			expect(children[0].type).toBe(IMPORT_URL)
+			expect(children[0].type).toBe(URL)
 			expect(children[0].text).toBe('"styles.css"')
 		})
 
@@ -322,7 +322,7 @@ describe('At-Rule Prelude Parser', () => {
 			const children = atRule?.children || []
 
 			expect(children.length).toBe(2)
-			expect(children[0].type).toBe(IMPORT_URL)
+			expect(children[0].type).toBe(URL)
 			expect(children[1].type).toBe(LAYER_NAME)
 			expect(children[1].text).toBe('layer')
 			expect(children[1].name).toBe('')
@@ -335,7 +335,7 @@ describe('At-Rule Prelude Parser', () => {
 			const children = atRule?.children || []
 
 			expect(children.length).toBe(2)
-			expect(children[0].type).toBe(IMPORT_URL)
+			expect(children[0].type).toBe(URL)
 			expect(children[1].type).toBe(LAYER_NAME)
 			expect(children[1].text).toBe('LAYER')
 			expect(children[1].name).toBe('')
@@ -348,7 +348,7 @@ describe('At-Rule Prelude Parser', () => {
 			const children = atRule?.children || []
 
 			expect(children.length).toBe(2)
-			expect(children[0].type).toBe(IMPORT_URL)
+			expect(children[0].type).toBe(URL)
 			expect(children[1].type).toBe(LAYER_NAME)
 			expect(children[1].text).toBe('layer(utilities)')
 			expect(children[1].name).toBe('utilities')
@@ -391,7 +391,7 @@ describe('At-Rule Prelude Parser', () => {
 			const children = atRule?.children || []
 
 			expect(children.length).toBe(2)
-			expect(children[0].type).toBe(IMPORT_URL)
+			expect(children[0].type).toBe(URL)
 			expect(children[1].type).toBe(SUPPORTS_QUERY)
 			expect(children[1].text).toBe('supports(display: grid)')
 		})
@@ -403,7 +403,7 @@ describe('At-Rule Prelude Parser', () => {
 			const children = atRule?.children || []
 
 			expect(children.length).toBe(2)
-			expect(children[0].type).toBe(IMPORT_URL)
+			expect(children[0].type).toBe(URL)
 			expect(children[1].type).toBe(MEDIA_QUERY)
 		})
 
@@ -414,7 +414,7 @@ describe('At-Rule Prelude Parser', () => {
 			const children = atRule?.children || []
 
 			expect(children.length).toBe(2)
-			expect(children[0].type).toBe(IMPORT_URL)
+			expect(children[0].type).toBe(URL)
 			expect(children[1].type).toBe(MEDIA_QUERY)
 		})
 
@@ -425,7 +425,7 @@ describe('At-Rule Prelude Parser', () => {
 			const children = atRule?.children || []
 
 			expect(children.length).toBe(2)
-			expect(children[0].type).toBe(IMPORT_URL)
+			expect(children[0].type).toBe(URL)
 			expect(children[1].type).toBe(MEDIA_QUERY)
 		})
 
@@ -436,7 +436,7 @@ describe('At-Rule Prelude Parser', () => {
 			const children = atRule?.children || []
 
 			expect(children.length).toBe(3)
-			expect(children[0].type).toBe(IMPORT_URL)
+			expect(children[0].type).toBe(URL)
 			expect(children[1].type).toBe(LAYER_NAME)
 			expect(children[2].type).toBe(MEDIA_QUERY)
 		})
@@ -448,7 +448,7 @@ describe('At-Rule Prelude Parser', () => {
 			const children = atRule?.children || []
 
 			expect(children.length).toBe(3)
-			expect(children[0].type).toBe(IMPORT_URL)
+			expect(children[0].type).toBe(URL)
 			expect(children[1].type).toBe(LAYER_NAME)
 			expect(children[2].type).toBe(SUPPORTS_QUERY)
 		})
@@ -460,7 +460,7 @@ describe('At-Rule Prelude Parser', () => {
 			const children = atRule?.children || []
 
 			expect(children.length).toBe(3)
-			expect(children[0].type).toBe(IMPORT_URL)
+			expect(children[0].type).toBe(URL)
 			expect(children[1].type).toBe(SUPPORTS_QUERY)
 			expect(children[2].type).toBe(MEDIA_QUERY)
 		})
@@ -472,7 +472,7 @@ describe('At-Rule Prelude Parser', () => {
 			const children = atRule?.children || []
 
 			expect(children.length).toBe(4)
-			expect(children[0].type).toBe(IMPORT_URL)
+			expect(children[0].type).toBe(URL)
 			expect(children[1].type).toBe(LAYER_NAME)
 			expect(children[2].type).toBe(SUPPORTS_QUERY)
 			expect(children[3].type).toBe(MEDIA_QUERY)
@@ -485,7 +485,7 @@ describe('At-Rule Prelude Parser', () => {
 			const children = atRule?.children || []
 
 			expect(children.length).toBe(2)
-			expect(children[0].type).toBe(IMPORT_URL)
+			expect(children[0].type).toBe(URL)
 			expect(children[1].type).toBe(SUPPORTS_QUERY)
 			expect(children[1].text).toContain('supports(')
 		})
@@ -621,7 +621,7 @@ describe('parse_atrule_prelude()', () => {
 			const result = parse_atrule_prelude('import', 'url("styles.css")')
 
 			expect(result.length).toBeGreaterThan(0)
-			expect(result[0].type).toBe(IMPORT_URL)
+			expect(result[0].type).toBe(URL)
 			expect(result[0].text).toBe('url("styles.css")')
 		})
 
@@ -629,7 +629,7 @@ describe('parse_atrule_prelude()', () => {
 			const result = parse_atrule_prelude('import', '"styles.css"')
 
 			expect(result.length).toBeGreaterThan(0)
-			expect(result[0].type).toBe(IMPORT_URL)
+			expect(result[0].type).toBe(URL)
 			expect(result[0].text).toBe('"styles.css"')
 		})
 
@@ -637,7 +637,7 @@ describe('parse_atrule_prelude()', () => {
 			const result = parse_atrule_prelude('import', 'url("base.css") layer(framework)')
 
 			expect(result.length).toBeGreaterThanOrEqual(2)
-			expect(result[0].type).toBe(IMPORT_URL)
+			expect(result[0].type).toBe(URL)
 			expect(result[1].type).toBe(LAYER_NAME)
 		})
 
@@ -645,7 +645,7 @@ describe('parse_atrule_prelude()', () => {
 			const result = parse_atrule_prelude('import', 'url("modern.css") supports(display: grid)')
 
 			expect(result.length).toBeGreaterThanOrEqual(2)
-			expect(result[0].type).toBe(IMPORT_URL)
+			expect(result[0].type).toBe(URL)
 			expect(result[1].type).toBe(SUPPORTS_QUERY)
 		})
 	})
@@ -905,7 +905,7 @@ describe('parse_atrule_prelude()', () => {
 				const atRule = ast.first_child
 				const children = atRule?.children || []
 
-				const importUrl = children.find((c) => c.type === IMPORT_URL)
+				const importUrl = children.find((c) => c.type === URL)
 				expect(importUrl?.text).toBe('url("styles.css")')
 				expect(importUrl?.text.length).toBe(17)
 			})

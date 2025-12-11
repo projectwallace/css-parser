@@ -1,6 +1,6 @@
 // Value Parser - Parses CSS declaration values into structured AST nodes
 import { Lexer } from './lexer'
-import { CSSDataArena, IDENTIFIER, NUMBER, DIMENSION, STRING, HEX, FUNCTION, OPERATOR, PARENTHESIS } from './arena'
+import { CSSDataArena, IDENTIFIER, NUMBER, DIMENSION, STRING, HEX, FUNCTION, OPERATOR, PARENTHESIS, URL } from './arena'
 import {
 	TOKEN_IDENT,
 	TOKEN_NUMBER,
@@ -146,19 +146,19 @@ export class ValueParser {
 	}
 
 	private parse_function_node(start: number, end: number): number {
-		// Create function node
-		let node = this.arena.create_node()
-		this.arena.set_type(node, FUNCTION)
-		this.arena.set_start_offset(node, start)
-
 		// Function name is everything before the '('
 		// The lexer's TOKEN_FUNCTION includes the '(' at the end
 		let name_end = end - 1 // Exclude the '('
-		this.arena.set_content_start(node, start)
-		this.arena.set_content_length(node, name_end - start)
 
 		// Get function name to check for special handling
 		let func_name = this.source.substring(start, name_end).toLowerCase()
+
+		// Create URL or function node based on function name
+		let node = this.arena.create_node()
+		this.arena.set_type(node, func_name === 'url' ? URL : FUNCTION)
+		this.arena.set_start_offset(node, start)
+		this.arena.set_content_start(node, start)
+		this.arena.set_content_length(node, name_end - start)
 
 		// Special handling for url() and src() functions with unquoted content:
 		// Don't parse contents to preserve URLs with dots, base64, inline SVGs, etc.

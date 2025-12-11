@@ -37,9 +37,10 @@ export const NUMBER = 11 // number: 42, 3.14, -5
 export const DIMENSION = 12 // number with unit: 10px, 2em, 50%
 export const STRING = 13 // quoted string: "hello", 'world'
 export const HEX = 14 // hex color: #fff, #ff0000
-export const FUNCTION = 15 // function: calc(), var(), url()
+export const FUNCTION = 15 // function: calc(), var()
 export const OPERATOR = 16 // operator: +, -, *, /, comma
 export const PARENTHESIS = 17 // parenthesized expression: (100% - 50px)
+export const URL = 18 // URL: url("file.css"), url(image.png), used in values and @import
 
 // Selector node type constants (for detailed selector parsing)
 export const SELECTOR_LIST = 20 // comma-separated selectors
@@ -65,7 +66,6 @@ export const SUPPORTS_QUERY = 36 // supports query: (display: flex)
 export const LAYER_NAME = 37 // layer name: base, components
 export const PRELUDE_IDENTIFIER = 38 // generic identifier: keyframe name, property name
 export const PRELUDE_OPERATOR = 39 // logical operator: and, or, not
-export const IMPORT_URL = 40 // import URL: url("file.css") or "file.css"
 
 // Flag constants (bit-packed in 1 byte)
 export const FLAG_IMPORTANT = 1 << 0 // Has !important

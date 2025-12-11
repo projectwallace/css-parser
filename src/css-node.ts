@@ -16,6 +16,7 @@ import {
 	FUNCTION,
 	OPERATOR,
 	PARENTHESIS,
+	URL,
 	SELECTOR_LIST,
 	TYPE_SELECTOR,
 	CLASS_SELECTOR,
@@ -37,7 +38,6 @@ import {
 	LAYER_NAME,
 	PRELUDE_IDENTIFIER,
 	PRELUDE_OPERATOR,
-	IMPORT_URL,
 	FLAG_IMPORTANT,
 	FLAG_HAS_ERROR,
 	FLAG_HAS_BLOCK,
@@ -66,6 +66,7 @@ export const TYPE_NAMES: Record<number, string> = {
 	[FUNCTION]: 'Function',
 	[OPERATOR]: 'Operator',
 	[PARENTHESIS]: 'Parentheses',
+	[URL]: 'Url',
 	[SELECTOR_LIST]: 'SelectorList',
 	[TYPE_SELECTOR]: 'TypeSelector',
 	[CLASS_SELECTOR]: 'ClassSelector',
@@ -87,7 +88,6 @@ export const TYPE_NAMES: Record<number, string> = {
 	[LAYER_NAME]: 'Layer',
 	[PRELUDE_IDENTIFIER]: 'Identifier',
 	[PRELUDE_OPERATOR]: 'Operator',
-	[IMPORT_URL]: 'Url',
 } as const
 
 // Node type constants (numeric for performance)
@@ -107,6 +107,7 @@ export type CSSNodeType =
 	| typeof FUNCTION
 	| typeof OPERATOR
 	| typeof PARENTHESIS
+	| typeof URL
 	| typeof SELECTOR_LIST
 	| typeof TYPE_SELECTOR
 	| typeof CLASS_SELECTOR
@@ -128,7 +129,6 @@ export type CSSNodeType =
 	| typeof LAYER_NAME
 	| typeof PRELUDE_IDENTIFIER
 	| typeof PRELUDE_OPERATOR
-	| typeof IMPORT_URL
 
 // Options for cloning nodes
 export interface CloneOptions {

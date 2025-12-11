@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { Parser } from './parse'
-import { IDENTIFIER, NUMBER, DIMENSION, STRING, HEX, FUNCTION, OPERATOR, PARENTHESIS } from './arena'
+import { IDENTIFIER, NUMBER, DIMENSION, STRING, HEX, FUNCTION, OPERATOR, PARENTHESIS, URL } from './arena'
 
 describe('ValueParser', () => {
 	describe('Simple values', () => {
@@ -214,7 +214,7 @@ describe('ValueParser', () => {
 			const decl = rule?.first_child?.next_sibling?.first_child
 
 			expect(decl?.values).toHaveLength(1)
-			expect(decl?.values[0].type).toBe(FUNCTION)
+			expect(decl?.values[0].type).toBe(URL)
 			expect(decl?.values[0].name).toBe('url')
 			expect(decl?.values[0].children).toHaveLength(1)
 			expect(decl?.values[0].children[0].type).toBe(STRING)
@@ -228,7 +228,7 @@ describe('ValueParser', () => {
 			const decl = rule?.first_child?.next_sibling?.first_child
 			const func = decl?.values[0]
 
-			expect(func?.type).toBe(FUNCTION)
+			expect(func?.type).toBe(URL)
 			expect(func?.name).toBe('url')
 
 			// URL function should not parse children - content is available via node.value
@@ -258,7 +258,7 @@ describe('ValueParser', () => {
 			const decl = rule?.first_child?.next_sibling?.first_child
 			const func = decl?.values[0]
 
-			expect(func?.type).toBe(FUNCTION)
+			expect(func?.type).toBe(URL)
 			expect(func?.name).toBe('url')
 			expect(func?.has_children).toBe(false)
 			expect(func?.value).toBe('data:image/png;base64,iVBORw0KGg')
@@ -271,7 +271,7 @@ describe('ValueParser', () => {
 			const decl = rule?.first_child?.next_sibling?.first_child
 			const func = decl?.values[0]
 
-			expect(func?.type).toBe(FUNCTION)
+			expect(func?.type).toBe(URL)
 			expect(func?.name).toBe('url')
 			expect(func?.has_children).toBe(false)
 			expect(func?.value).toBe('data:image/svg+xml,<svg></svg>')
@@ -314,7 +314,7 @@ describe('ValueParser', () => {
 			const decl = rule?.first_child?.next_sibling?.first_child
 
 			expect(decl?.values.length).toBeGreaterThan(1)
-			expect(decl?.values[0].type).toBe(FUNCTION)
+			expect(decl?.values[0].type).toBe(URL)
 			expect(decl?.values[0].name).toBe('url')
 			expect(decl?.values[1].type).toBe(IDENTIFIER)
 			expect(decl?.values[1].text).toBe('no-repeat')

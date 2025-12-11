@@ -10,7 +10,7 @@ import {
 	LAYER_NAME,
 	PRELUDE_IDENTIFIER,
 	PRELUDE_OPERATOR,
-	IMPORT_URL,
+	URL,
 } from './arena'
 import {
 	TOKEN_IDENT,
@@ -456,7 +456,7 @@ export class AtRulePreludeParser {
 		}
 
 		// Create URL node
-		let url_node = this.create_node(IMPORT_URL, url_start, url_end)
+		let url_node = this.create_node(URL, url_start, url_end)
 		return url_node
 	}
 

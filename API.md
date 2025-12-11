@@ -172,7 +172,7 @@ console.log(importRule.has_children) // true (has prelude nodes)
 
 // Access parsed import components
 const [url, layer, supports, media] = importRule.children
-console.log(url.type) // NODE_PRELUDE_IMPORT_URL
+console.log(url.type) // NODE_VALUE_URL
 console.log(url.text) // 'url("styles.css")'
 
 console.log(layer.type) // NODE_PRELUDE_LAYER_NAME
@@ -639,7 +639,7 @@ import {
 - `NODE_COMMENT` (6) - CSS comment
 - `NODE_BLOCK` (7) - Block container for declarations and nested rules
 
-### Value Node Types (10-16)
+### Value Node Types (10-18)
 
 - `NODE_VALUE_KEYWORD` (10) - Keyword value (e.g., `red`, `auto`)
 - `NODE_VALUE_NUMBER` (11) - Number value (e.g., `42`, `3.14`)
@@ -648,6 +648,8 @@ import {
 - `NODE_VALUE_COLOR` (14) - Hex color (e.g., `#fff`, `#ff0000`)
 - `NODE_VALUE_FUNCTION` (15) - Function (e.g., `calc()`, `var()`)
 - `NODE_VALUE_OPERATOR` (16) - Operator (e.g., `+`, `,`)
+- `NODE_VALUE_PARENTHESIS` (17) - Parenthesized expression (e.g., `(100% - 50px)`)
+- `NODE_VALUE_URL` (18) - URL (e.g., `url("file.css")`, `url(image.png)`), used in values and @import preludes
 
 ### Selector Node Types (20-29)
 
@@ -662,7 +664,7 @@ import {
 - `NODE_SELECTOR_UNIVERSAL` (28) - Universal selector (`*`)
 - `NODE_SELECTOR_NESTING` (29) - Nesting selector (`&`)
 
-### At-Rule Prelude Node Types (32-40)
+### At-Rule Prelude Node Types (32-39)
 
 - `NODE_PRELUDE_MEDIA_QUERY` (32) - Media query
 - `NODE_PRELUDE_MEDIA_FEATURE` (33) - Media feature
@@ -672,7 +674,6 @@ import {
 - `NODE_PRELUDE_LAYER_NAME` (37) - Layer name (used in @layer and @import)
 - `NODE_PRELUDE_IDENTIFIER` (38) - Generic identifier
 - `NODE_PRELUDE_OPERATOR` (39) - Logical operator (e.g., `and`, `or`)
-- `NODE_PRELUDE_IMPORT_URL` (40) - Import URL
 
 ## Pseudo-Class Function Syntax Detection
 
