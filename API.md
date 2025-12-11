@@ -209,11 +209,9 @@ for (const rule of ast) {
 const rules = ast.children
 console.log(rules.length) // 3
 
-// Iterate using next_sibling
-let node = ast.first_child
-while (node) {
+// Iterate using for...of (recommended)
+for (const node of ast) {
 	console.log(node.type) // 2, 2, 2 (all STYLE_RULE)
-	node = node.next_sibling
 }
 ```
 
