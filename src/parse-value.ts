@@ -1,6 +1,6 @@
 // Value Parser - Parses CSS declaration values into structured AST nodes
 import { Lexer } from './lexer'
-import { CSSDataArena, IDENTIFIER, NUMBER, DIMENSION, STRING, HEX, FUNCTION, OPERATOR, PARENTHESIS, URL } from './arena'
+import { CSSDataArena, IDENTIFIER, NUMBER, DIMENSION, STRING, HASH, FUNCTION, OPERATOR, PARENTHESIS, URL } from './arena'
 import {
 	TOKEN_IDENT,
 	TOKEN_NUMBER,
@@ -100,7 +100,7 @@ export class ValueParser {
 				return this.create_node(STRING, start, end)
 
 			case TOKEN_HASH:
-				return this.create_node(HEX, start, end)
+				return this.create_node(HASH, start, end)
 
 			case TOKEN_FUNCTION:
 				return this.parse_function_node(start, end)

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { Parser } from './parse'
-import { IDENTIFIER, NUMBER, DIMENSION, STRING, HEX, FUNCTION, OPERATOR, PARENTHESIS, URL } from './arena'
+import { IDENTIFIER, NUMBER, DIMENSION, STRING, HASH, FUNCTION, OPERATOR, PARENTHESIS, URL } from './arena'
 
 describe('ValueParser', () => {
 	describe('Simple values', () => {
@@ -88,7 +88,7 @@ describe('ValueParser', () => {
 
 			expect(decl?.value).toBe('#ff0000')
 			expect(decl?.values).toHaveLength(1)
-			expect(decl?.values[0].type).toBe(HEX)
+			expect(decl?.values[0].type).toBe(HASH)
 			expect(decl?.values[0].text).toBe('#ff0000')
 		})
 	})

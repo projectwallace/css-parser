@@ -12,7 +12,7 @@ import {
 	NUMBER,
 	DIMENSION,
 	STRING,
-	HEX,
+	HASH,
 	FUNCTION,
 	OPERATOR,
 	PARENTHESIS,
@@ -61,7 +61,7 @@ export const TYPE_NAMES: Record<number, string> = {
 	[NUMBER]: 'Number',
 	[DIMENSION]: 'Dimension',
 	[STRING]: 'String',
-	[HEX]: 'Hash',
+	[HASH]: 'Hash',
 	[FUNCTION]: 'Function',
 	[OPERATOR]: 'Operator',
 	[PARENTHESIS]: 'Parentheses',
@@ -101,7 +101,7 @@ export type CSSNodeType =
 	| typeof NUMBER
 	| typeof DIMENSION
 	| typeof STRING
-	| typeof HEX
+	| typeof HASH
 	| typeof FUNCTION
 	| typeof OPERATOR
 	| typeof PARENTHESIS
