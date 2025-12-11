@@ -31,7 +31,7 @@ function parse(source: string, options?: ParserOptions): CSSNode
 
 `CSSNode` - Root stylesheet node with the following properties:
 
-- `type` - Node type constant (e.g., `NODE_STYLESHEET`, `NODE_STYLE_RULE`)
+- `type` - Node type constant (e.g., `STYLESHEET`, `STYLE_RULE`)
 - `type_name` - CSSTree-compatible type name (e.g., `'StyleSheet'`, `'Rule'`)
 - `text` - Full text of the node from source
 - `name` - Property name, at-rule name, or layer name
@@ -54,15 +54,15 @@ function parse(source: string, options?: ParserOptions): CSSNode
 - `children` - Array of all child nodes
 - `values` - Array of value nodes (for declarations)
 - `selector_list` - Selector list from pseudo-classes like `:is()`, `:not()`, `:has()`, `:where()`, or `:nth-child(of)`
-- `nth` - An+B formula node from `:nth-child(of)` wrapper (for NODE_SELECTOR_NTH_OF nodes)
-- `selector` - Selector list from `:nth-child(of)` wrapper (for NODE_SELECTOR_NTH_OF nodes)
+- `nth` - An+B formula node from `:nth-child(of)` wrapper (for NTH_OF_SELECTOR nodes)
+- `selector` - Selector list from `:nth-child(of)` wrapper (for NTH_OF_SELECTOR nodes)
 - `nth_a` - The 'a' coefficient from An+B expressions like `2n` from `:nth-child(2n+1)`
 - `nth_b` - The 'b' coefficient from An+B expressions like `+1` from `:nth-child(2n+1)`
-- `compound_parts()` - Iterator over first compound selector parts (zero allocation, for NODE_SELECTOR)
-- `first_compound` - Array of parts before first combinator (for NODE_SELECTOR)
-- `all_compounds` - Array of compound arrays split by combinators (for NODE_SELECTOR)
-- `is_compound` - Whether selector has no combinators (for NODE_SELECTOR)
-- `first_compound_text` - Text of first compound selector (for NODE_SELECTOR)
+- `compound_parts()` - Iterator over first compound selector parts (zero allocation, for SELECTOR)
+- `first_compound` - Array of parts before first combinator (for SELECTOR)
+- `all_compounds` - Array of compound arrays split by combinators (for SELECTOR)
+- `is_compound` - Whether selector has no combinators (for SELECTOR)
+- `first_compound_text` - Text of first compound selector (for SELECTOR)
 - `clone(options?)` - Clone node as a mutable plain object with children as arrays
 
 ### Example 1: Basic Parsing
@@ -72,12 +72,12 @@ import { parse } from '@projectwallace/css-parser'
 
 const ast = parse('body { color: red; }')
 
-console.log(ast.type) // 1 (NODE_STYLESHEET)
+console.log(ast.type) // 1 (STYLESHEET)
 console.log(ast.has_children) // true
 console.log(ast.children.length) // 1
 
 const rule = ast.first_child
-console.log(rule.type) // 2 (NODE_STYLE_RULE)
+console.log(rule.type) // 2 (STYLE_RULE)
 console.log(rule.has_block) // true
 
 const selector = rule.first_child
@@ -85,7 +85,7 @@ console.log(selector.text) // "body"
 
 // Access block, then declaration inside it
 const block = rule.block
-console.log(block.type) // 7 (NODE_BLOCK)
+console.log(block.type) // 7 (BLOCK)
 console.log(block.is_empty) // false
 
 const declaration = block.first_child
@@ -96,13 +96,13 @@ console.log(declaration.value) // "red"
 **Response structure:**
 
 ```
-Stylesheet (NODE_STYLESHEET)
-  └─ StyleRule (NODE_STYLE_RULE)
-       ├─ SelectorList (NODE_SELECTOR_LIST) "body"
-       │    └─ Type (NODE_SELECTOR_TYPE) "body"
-       └─ Block (NODE_BLOCK)
-            └─ Declaration (NODE_DECLARATION) "color: red"
-                 └─ Keyword (NODE_VALUE_KEYWORD) "red"
+Stylesheet (STYLESHEET)
+  └─ StyleRule (STYLE_RULE)
+       ├─ SelectorList (SELECTOR_LIST) "body"
+       │    └─ Type (TYPE_SELECTOR) "body"
+       └─ Block (BLOCK)
+            └─ Declaration (DECLARATION) "color: red"
+                 └─ Keyword (IDENTIFIER) "red"
 ```
 
 ### Example 2: Parsing with Options
@@ -142,7 +142,7 @@ console.log(mediaRule.has_children) // true
 // Access prelude nodes when parse_atrule_preludes is true
 // (Prelude nodes are first children, before the block)
 const mediaQuery = mediaRule.first_child
-console.log(mediaQuery.type) // NODE_PRELUDE_MEDIA_QUERY
+console.log(mediaQuery.type) // MEDIA_QUERY
 console.log(mediaQuery.text) // "(min-width: 768px)"
 console.log(mediaQuery.value) // "min-width: 768px" (without parentheses)
 
@@ -150,7 +150,7 @@ console.log(mediaQuery.value) // "min-width: 768px" (without parentheses)
 const block = mediaRule.block
 for (const child of block) {
 	if (child.type === 2) {
-		// NODE_STYLE_RULE
+		// STYLE_RULE
 		console.log('Found style rule in media query')
 	}
 }
@@ -172,18 +172,18 @@ console.log(importRule.has_children) // true (has prelude nodes)
 
 // Access parsed import components
 const [url, layer, supports, media] = importRule.children
-console.log(url.type) // NODE_VALUE_URL
+console.log(url.type) // URL
 console.log(url.text) // 'url("styles.css")'
 
-console.log(layer.type) // NODE_PRELUDE_LAYER_NAME
+console.log(layer.type) // LAYER_NAME
 console.log(layer.name) // "base"
 console.log(layer.text) // "layer(base)"
 
-console.log(supports.type) // NODE_PRELUDE_SUPPORTS_QUERY
+console.log(supports.type) // SUPPORTS_QUERY
 console.log(supports.text) // "supports(display: flex)"
 console.log(supports.value) // "display: flex" (without supports() wrapper)
 
-console.log(media.type) // NODE_PRELUDE_MEDIA_TYPE
+console.log(media.type) // MEDIA_TYPE
 console.log(media.text) // "screen"
 ```
 
@@ -212,7 +212,7 @@ console.log(rules.length) // 3
 // Iterate using next_sibling
 let node = ast.first_child
 while (node) {
-	console.log(node.type) // 2, 2, 2 (all NODE_STYLE_RULE)
+	console.log(node.type) // 2, 2, 2 (all STYLE_RULE)
 	node = node.next_sibling
 }
 ```
@@ -228,16 +228,16 @@ const ast = parse('/* header */ body { color: red; }', {
 })
 
 const comment = ast.first_child
-console.log(comment.type) // NODE_COMMENT
+console.log(comment.type) // COMMENT
 console.log(comment.text) // "/* header */"
 
 const rule = comment.next_sibling
-console.log(rule.type) // NODE_STYLE_RULE
+console.log(rule.type) // STYLE_RULE
 
 // Skip comments (default)
 const ast2 = parse('/* header */ body { color: red; }')
 const firstNode = ast2.first_child
-console.log(firstNode.type) // NODE_STYLE_RULE (comment skipped)
+console.log(firstNode.type) // STYLE_RULE (comment skipped)
 ```
 
 ### Example 7: Block Nodes and Empty Rules
@@ -267,7 +267,7 @@ const parent = ast4.first_child
 const parentBlock = parent.block
 const nestedRule = parentBlock.first_child
 
-console.log(nestedRule.type) // NODE_STYLE_RULE
+console.log(nestedRule.type) // STYLE_RULE
 console.log(nestedRule.block.is_empty) // false
 ```
 
@@ -297,8 +297,8 @@ const rule = ast.first_child
 console.log(`Processing ${rule.type_name}`) // "Processing Rule"
 
 // TYPE_NAMES export for custom type checking
-import { NODE_DECLARATION } from '@projectwallace/css-parser'
-console.log(TYPE_NAMES[NODE_DECLARATION]) // 'Declaration'
+import { DECLARATION } from '@projectwallace/css-parser'
+console.log(TYPE_NAMES[DECLARATION]) // 'Declaration'
 
 // Compare strings instead of numeric constants
 if (node.type_name === 'Declaration') {
@@ -311,7 +311,7 @@ if (node.type_name === 'Declaration') {
 Convenience properties simplify access to nested selector data:
 
 ```typescript
-import { parse_selector, NODE_SELECTOR_LIST, NODE_SELECTOR_NTH } from '@projectwallace/css-parser'
+import { parse_selector, SELECTOR_LIST, NTH_SELECTOR } from '@projectwallace/css-parser'
 
 // Simple pseudo-classes with selectors
 const isSelector = parse_selector(':is(.foo, #bar)')
@@ -319,15 +319,15 @@ const pseudo = isSelector.first_child?.first_child
 
 // Direct access to selector list
 console.log(pseudo.selector_list.text) // ".foo, #bar"
-console.log(pseudo.selector_list.type === NODE_SELECTOR_LIST) // true
+console.log(pseudo.selector_list.type === SELECTOR_LIST) // true
 
 // Complex pseudo-classes with An+B notation
 const nthSelector = parse_selector(':nth-child(2n+1 of .foo)')
 const nthPseudo = nthSelector.first_child?.first_child
-const nthOf = nthPseudo.first_child // NODE_SELECTOR_NTH_OF
+const nthOf = nthPseudo.first_child // NTH_OF_SELECTOR
 
 // Direct access to formula
-console.log(nthOf.nth.type === NODE_SELECTOR_NTH) // true
+console.log(nthOf.nth.type === NTH_SELECTOR) // true
 console.log(nthOf.nth.nth_a) // "2n"
 console.log(nthOf.nth.nth_b) // "+1"
 
@@ -344,10 +344,10 @@ console.log(nthPseudo.selector_list.text) // ".foo"
 // Had to manually traverse to find selector list
 let child = pseudo.first_child
 while (child) {
-	if (child.type === NODE_SELECTOR_NTH_OF) {
+	if (child.type === NTH_OF_SELECTOR) {
 		let inner = child.first_child
 		while (inner) {
-			if (inner.type === NODE_SELECTOR_LIST) {
+			if (inner.type === SELECTOR_LIST) {
 				processSelectors(inner)
 				break
 			}
@@ -373,7 +373,7 @@ if (pseudo.selector_list) {
 Compound selectors (parts between combinators) can be extracted without reparsing:
 
 ```typescript
-import { parse_selector, NODE_SELECTOR_ID, NODE_SELECTOR_CLASS, NODE_SELECTOR_TYPE } from '@projectwallace/css-parser'
+import { parse_selector, ID_SELECTOR, CLASS_SELECTOR, TYPE_SELECTOR } from '@projectwallace/css-parser'
 
 const root = parse_selector('div.container#app > p.text + span')
 const selector = root.first_child
@@ -381,9 +381,9 @@ const selector = root.first_child
 // Hot path: Calculate specificity (zero allocations)
 let [id, cls, type] = [0, 0, 0]
 for (let part of selector.compound_parts()) {
-	if (part.type === NODE_SELECTOR_ID) id++
-	else if (part.type === NODE_SELECTOR_CLASS) cls++
-	else if (part.type === NODE_SELECTOR_TYPE) type++
+	if (part.type === ID_SELECTOR) id++
+	else if (part.type === CLASS_SELECTOR) cls++
+	else if (part.type === TYPE_SELECTOR) type++
 }
 console.log('Specificity:', [id, cls, type]) // [1, 1, 1]
 
@@ -417,7 +417,7 @@ console.log('First text:', selector.first_compound_text) // "div.container#app"
 const compoundParts = []
 let selectorPart = selector.first_child
 while (selectorPart) {
-	if (selectorPart.type === NODE_SELECTOR_COMBINATOR) break
+	if (selectorPart.type === COMBINATOR) break
 	compoundParts.push(selectorPart)
 	selectorPart = selectorPart.next_sibling
 }
@@ -455,7 +455,7 @@ const marginDecl = block.first_child
 
 // Shallow clone (no children)
 const shallow = marginDecl.clone({ deep: false })
-console.log(shallow.type) // NODE_DECLARATION
+console.log(shallow.type) // DECLARATION
 console.log(shallow.type_name) // "Declaration"
 console.log(shallow.property) // "margin"
 console.log(shallow.children) // [] (empty array)
@@ -515,17 +515,17 @@ import { parse_selector } from '@projectwallace/css-parser'
 
 const selector = parse_selector('div.class > p#id::before')
 
-console.log(selector.type) // NODE_SELECTOR_LIST
+console.log(selector.type) // SELECTOR_LIST
 // Iterate over selector components
 for (const part of selector.first_child) {
 	console.log(part.type, part.text)
 }
-// NODE_SELECTOR_TYPE "div"
-// NODE_SELECTOR_CLASS ".class"
-// NODE_SELECTOR_COMBINATOR ">"
-// NODE_SELECTOR_TYPE "p"
-// NODE_SELECTOR_ID "#id"
-// NODE_SELECTOR_PSEUDO_ELEMENT "::before"
+// TYPE_SELECTOR "div"
+// CLASS_SELECTOR ".class"
+// COMBINATOR ">"
+// TYPE_SELECTOR "p"
+// ID_SELECTOR "#id"
+// PSEUDO_ELEMENT_SELECTOR "::before"
 ```
 
 ---
@@ -546,7 +546,7 @@ import { parse_atrule_prelude } from '@projectwallace/css-parser'
 const nodes = parse_atrule_prelude('media', '(min-width: 768px)')
 
 console.log(nodes.length) // 1
-console.log(nodes[0].type) // NODE_PRELUDE_MEDIA_QUERY
+console.log(nodes[0].type) // MEDIA_QUERY
 console.log(nodes[0].text) // "(min-width: 768px)"
 ```
 
@@ -570,13 +570,13 @@ const ast = parse('body { color: red; }')
 walk(ast, (node, depth) => {
 	console.log('  '.repeat(depth) + node.type)
 })
-// NODE_STYLESHEET
-//   NODE_STYLE_RULE
-//     NODE_SELECTOR_LIST
-//       NODE_SELECTOR_TYPE
-//     NODE_BLOCK
-//       NODE_DECLARATION
-//         NODE_VALUE_KEYWORD
+// STYLESHEET
+//   STYLE_RULE
+//     SELECTOR_LIST
+//       TYPE_SELECTOR
+//     BLOCK
+//       DECLARATION
+//         IDENTIFIER
 ```
 
 ---
@@ -618,61 +618,61 @@ The parser uses numeric constants for node types. Import them from the parser:
 
 ```typescript
 import {
-	NODE_STYLESHEET,
-	NODE_STYLE_RULE,
-	NODE_AT_RULE,
-	NODE_DECLARATION,
-	NODE_SELECTOR,
-	NODE_COMMENT,
-	NODE_BLOCK,
+	STYLESHEET,
+	STYLE_RULE,
+	AT_RULE,
+	DECLARATION,
+	SELECTOR,
+	COMMENT,
+	BLOCK,
 	// ... and more
 } from '@projectwallace/css-parser'
 ```
 
 ### Core Node Types
 
-- `NODE_STYLESHEET` (1) - Root stylesheet node
-- `NODE_STYLE_RULE` (2) - Style rule (e.g., `body { }`)
-- `NODE_AT_RULE` (3) - At-rule (e.g., `@media`, `@keyframes`)
-- `NODE_DECLARATION` (4) - Property declaration (e.g., `color: red`)
-- `NODE_SELECTOR` (5) - Selector wrapper (deprecated, use NODE_SELECTOR_LIST)
-- `NODE_COMMENT` (6) - CSS comment
-- `NODE_BLOCK` (7) - Block container for declarations and nested rules
+- `STYLESHEET` (1) - Root stylesheet node
+- `STYLE_RULE` (2) - Style rule (e.g., `body { }`)
+- `AT_RULE` (3) - At-rule (e.g., `@media`, `@keyframes`)
+- `DECLARATION` (4) - Property declaration (e.g., `color: red`)
+- `SELECTOR` (5) - Selector wrapper (deprecated, use SELECTOR_LIST)
+- `COMMENT` (6) - CSS comment
+- `BLOCK` (7) - Block container for declarations and nested rules
 
 ### Value Node Types (10-18)
 
-- `NODE_VALUE_KEYWORD` (10) - Identifier/keyword value (e.g., `red`, `auto`, `inherit`), also used in at-rule preludes (keyframe names, @property names)
-- `NODE_VALUE_NUMBER` (11) - Number value (e.g., `42`, `3.14`)
-- `NODE_VALUE_DIMENSION` (12) - Dimension value (e.g., `10px`, `2em`, `50%`)
-- `NODE_VALUE_STRING` (13) - String value (e.g., `"hello"`)
-- `NODE_VALUE_COLOR` (14) - Hex color (e.g., `#fff`, `#ff0000`)
-- `NODE_VALUE_FUNCTION` (15) - Function (e.g., `calc()`, `var()`)
-- `NODE_VALUE_OPERATOR` (16) - Operator (e.g., `+`, `,`)
-- `NODE_VALUE_PARENTHESIS` (17) - Parenthesized expression (e.g., `(100% - 50px)`)
-- `NODE_VALUE_URL` (18) - URL (e.g., `url("file.css")`, `url(image.png)`), used in values and @import preludes
+- `IDENTIFIER` (10) - Identifier/keyword value (e.g., `red`, `auto`, `inherit`), also used in at-rule preludes (keyframe names, @property names)
+- `NUMBER` (11) - Number value (e.g., `42`, `3.14`)
+- `DIMENSION` (12) - Dimension value (e.g., `10px`, `2em`, `50%`)
+- `STRING` (13) - String value (e.g., `"hello"`)
+- `HASH` (14) - Hex color (e.g., `#fff`, `#ff0000`)
+- `FUNCTION` (15) - Function (e.g., `calc()`, `var()`)
+- `OPERATOR` (16) - Operator (e.g., `+`, `,`)
+- `PARENTHESIS` (17) - Parenthesized expression (e.g., `(100% - 50px)`)
+- `URL` (18) - URL (e.g., `url("file.css")`, `url(image.png)`), used in values and @import preludes
 
 ### Selector Node Types (20-29)
 
-- `NODE_SELECTOR_LIST` (20) - Selector list container
-- `NODE_SELECTOR_TYPE` (21) - Type selector (e.g., `div`, `span`)
-- `NODE_SELECTOR_CLASS` (22) - Class selector (e.g., `.classname`)
-- `NODE_SELECTOR_ID` (23) - ID selector (e.g., `#identifier`)
-- `NODE_SELECTOR_ATTRIBUTE` (24) - Attribute selector (e.g., `[attr=value]`)
-- `NODE_SELECTOR_PSEUDO_CLASS` (25) - Pseudo-class (e.g., `:hover`)
-- `NODE_SELECTOR_PSEUDO_ELEMENT` (26) - Pseudo-element (e.g., `::before`)
-- `NODE_SELECTOR_COMBINATOR` (27) - Combinator (e.g., `>`, `+`, `~`, or ` `)
-- `NODE_SELECTOR_UNIVERSAL` (28) - Universal selector (`*`)
-- `NODE_SELECTOR_NESTING` (29) - Nesting selector (`&`)
+- `SELECTOR_LIST` (20) - Selector list container
+- `TYPE_SELECTOR` (21) - Type selector (e.g., `div`, `span`)
+- `CLASS_SELECTOR` (22) - Class selector (e.g., `.classname`)
+- `ID_SELECTOR` (23) - ID selector (e.g., `#identifier`)
+- `ATTRIBUTE_SELECTOR` (24) - Attribute selector (e.g., `[attr=value]`)
+- `PSEUDO_CLASS_SELECTOR` (25) - Pseudo-class (e.g., `:hover`)
+- `PSEUDO_ELEMENT_SELECTOR` (26) - Pseudo-element (e.g., `::before`)
+- `COMBINATOR` (27) - Combinator (e.g., `>`, `+`, `~`, or ` `)
+- `UNIVERSAL_SELECTOR` (28) - Universal selector (`*`)
+- `NESTING_SELECTOR` (29) - Nesting selector (`&`)
 
 ### At-Rule Prelude Node Types (32-38)
 
-- `NODE_PRELUDE_MEDIA_QUERY` (32) - Media query
-- `NODE_PRELUDE_MEDIA_FEATURE` (33) - Media feature
-- `NODE_PRELUDE_MEDIA_TYPE` (34) - Media type (e.g., `screen`, `print`)
-- `NODE_PRELUDE_CONTAINER_QUERY` (35) - Container query
-- `NODE_PRELUDE_SUPPORTS_QUERY` (36) - Supports query (used in @supports and @import)
-- `NODE_PRELUDE_LAYER_NAME` (37) - Layer name (used in @layer and @import)
-- `NODE_PRELUDE_OPERATOR` (38) - Logical operator (e.g., `and`, `or`)
+- `MEDIA_QUERY` (32) - Media query
+- `MEDIA_FEATURE` (33) - Media feature
+- `MEDIA_TYPE` (34) - Media type (e.g., `screen`, `print`)
+- `CONTAINER_QUERY` (35) - Container query
+- `SUPPORTS_QUERY` (36) - Supports query (used in @supports and @import)
+- `LAYER_NAME` (37) - Layer name (used in @layer and @import)
+- `PRELUDE_OPERATOR` (38) - Logical operator (e.g., `and`, `or`)
 
 ## Pseudo-Class Function Syntax Detection
 
@@ -733,12 +733,12 @@ Use these constants with the `node.attr_flags` property to identify case sensiti
 #### Example
 
 ```javascript
-import { parse_selector, NODE_SELECTOR_ATTRIBUTE, ATTR_OPERATOR_EQUAL, ATTR_FLAG_CASE_INSENSITIVE } from '@projectwallace/css-parser'
+import { parse_selector, ATTRIBUTE_SELECTOR, ATTR_OPERATOR_EQUAL, ATTR_FLAG_CASE_INSENSITIVE } from '@projectwallace/css-parser'
 
 const ast = parse_selector('[type="text" i]')
 
 for (let node of ast) {
-	if (node.type === NODE_SELECTOR_ATTRIBUTE) {
+	if (node.type === ATTRIBUTE_SELECTOR) {
 		console.log(node.attr_operator === ATTR_OPERATOR_EQUAL) // true
 		console.log(node.attr_flags === ATTR_FLAG_CASE_INSENSITIVE) // true
 	}
