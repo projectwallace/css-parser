@@ -38,7 +38,6 @@ import {
 	PRELUDE_IDENTIFIER,
 	PRELUDE_OPERATOR,
 	IMPORT_URL,
-	IMPORT_LAYER,
 	FLAG_IMPORTANT,
 	FLAG_HAS_ERROR,
 	FLAG_HAS_BLOCK,
@@ -89,7 +88,6 @@ export const TYPE_NAMES: Record<number, string> = {
 	[PRELUDE_IDENTIFIER]: 'Identifier',
 	[PRELUDE_OPERATOR]: 'Operator',
 	[IMPORT_URL]: 'Url',
-	[IMPORT_LAYER]: 'ImportLayer',
 } as const
 
 // Node type constants (numeric for performance)
@@ -131,7 +129,6 @@ export type CSSNodeType =
 	| typeof PRELUDE_IDENTIFIER
 	| typeof PRELUDE_OPERATOR
 	| typeof IMPORT_URL
-	| typeof IMPORT_LAYER
 
 // Options for cloning nodes
 export interface CloneOptions {

@@ -13,7 +13,6 @@ import {
 	PRELUDE_IDENTIFIER,
 	PRELUDE_OPERATOR,
 	IMPORT_URL,
-	IMPORT_LAYER,
 } from './arena'
 
 describe('At-Rule Prelude Parser', () => {
@@ -324,7 +323,7 @@ describe('At-Rule Prelude Parser', () => {
 
 			expect(children.length).toBe(2)
 			expect(children[0].type).toBe(IMPORT_URL)
-			expect(children[1].type).toBe(IMPORT_LAYER)
+			expect(children[1].type).toBe(LAYER_NAME)
 			expect(children[1].text).toBe('layer')
 			expect(children[1].name).toBe('')
 		})
@@ -337,7 +336,7 @@ describe('At-Rule Prelude Parser', () => {
 
 			expect(children.length).toBe(2)
 			expect(children[0].type).toBe(IMPORT_URL)
-			expect(children[1].type).toBe(IMPORT_LAYER)
+			expect(children[1].type).toBe(LAYER_NAME)
 			expect(children[1].text).toBe('LAYER')
 			expect(children[1].name).toBe('')
 		})
@@ -350,7 +349,7 @@ describe('At-Rule Prelude Parser', () => {
 
 			expect(children.length).toBe(2)
 			expect(children[0].type).toBe(IMPORT_URL)
-			expect(children[1].type).toBe(IMPORT_LAYER)
+			expect(children[1].type).toBe(LAYER_NAME)
 			expect(children[1].text).toBe('layer(utilities)')
 			expect(children[1].name).toBe('utilities')
 		})
@@ -361,7 +360,7 @@ describe('At-Rule Prelude Parser', () => {
 			const atRule = ast.first_child
 			const children = atRule?.children || []
 
-			expect(children[1].type).toBe(IMPORT_LAYER)
+			expect(children[1].type).toBe(LAYER_NAME)
 			expect(children[1].name).toBe('utilities')
 		})
 
@@ -371,7 +370,7 @@ describe('At-Rule Prelude Parser', () => {
 			const atRule = ast.first_child
 			const children = atRule?.children || []
 
-			expect(children[1].type).toBe(IMPORT_LAYER)
+			expect(children[1].type).toBe(LAYER_NAME)
 			expect(children[1].name).toBe('utilities')
 		})
 
@@ -381,7 +380,7 @@ describe('At-Rule Prelude Parser', () => {
 			const atRule = ast.first_child
 			const children = atRule?.children || []
 
-			expect(children[1].type).toBe(IMPORT_LAYER)
+			expect(children[1].type).toBe(LAYER_NAME)
 			expect(children[1].name).toBe('named.nested')
 		})
 
@@ -438,7 +437,7 @@ describe('At-Rule Prelude Parser', () => {
 
 			expect(children.length).toBe(3)
 			expect(children[0].type).toBe(IMPORT_URL)
-			expect(children[1].type).toBe(IMPORT_LAYER)
+			expect(children[1].type).toBe(LAYER_NAME)
 			expect(children[2].type).toBe(MEDIA_QUERY)
 		})
 
@@ -450,7 +449,7 @@ describe('At-Rule Prelude Parser', () => {
 
 			expect(children.length).toBe(3)
 			expect(children[0].type).toBe(IMPORT_URL)
-			expect(children[1].type).toBe(IMPORT_LAYER)
+			expect(children[1].type).toBe(LAYER_NAME)
 			expect(children[2].type).toBe(SUPPORTS_QUERY)
 		})
 
@@ -474,7 +473,7 @@ describe('At-Rule Prelude Parser', () => {
 
 			expect(children.length).toBe(4)
 			expect(children[0].type).toBe(IMPORT_URL)
-			expect(children[1].type).toBe(IMPORT_LAYER)
+			expect(children[1].type).toBe(LAYER_NAME)
 			expect(children[2].type).toBe(SUPPORTS_QUERY)
 			expect(children[3].type).toBe(MEDIA_QUERY)
 		})
@@ -639,7 +638,7 @@ describe('parse_atrule_prelude()', () => {
 
 			expect(result.length).toBeGreaterThanOrEqual(2)
 			expect(result[0].type).toBe(IMPORT_URL)
-			expect(result[1].type).toBe(IMPORT_LAYER)
+			expect(result[1].type).toBe(LAYER_NAME)
 		})
 
 		test('should parse import with supports', () => {
@@ -917,7 +916,7 @@ describe('parse_atrule_prelude()', () => {
 				const atRule = ast.first_child
 				const children = atRule?.children || []
 
-				const importLayer = children.find((c) => c.type === IMPORT_LAYER)
+				const importLayer = children.find((c) => c.type === LAYER_NAME)
 				expect(importLayer?.text).toBe('layer(utilities)')
 				expect(importLayer?.text.length).toBe(16)
 			})

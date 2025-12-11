@@ -11,7 +11,6 @@ import {
 	PRELUDE_IDENTIFIER,
 	PRELUDE_OPERATOR,
 	IMPORT_URL,
-	IMPORT_LAYER,
 } from './arena'
 import {
 	TOKEN_IDENT,
@@ -504,7 +503,7 @@ export class AtRulePreludeParser {
 				}
 
 				// Create layer node
-				let layer_node = this.create_node(IMPORT_LAYER, layer_start, layer_end)
+				let layer_node = this.create_node(LAYER_NAME, layer_start, layer_end)
 
 				// Store the layer name (content inside parentheses), trimmed
 				if (content_length > 0) {

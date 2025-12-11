@@ -175,7 +175,7 @@ const [url, layer, supports, media] = importRule.children
 console.log(url.type) // NODE_PRELUDE_IMPORT_URL
 console.log(url.text) // 'url("styles.css")'
 
-console.log(layer.type) // NODE_PRELUDE_IMPORT_LAYER
+console.log(layer.type) // NODE_PRELUDE_LAYER_NAME
 console.log(layer.name) // "base"
 console.log(layer.text) // "layer(base)"
 
@@ -662,18 +662,17 @@ import {
 - `NODE_SELECTOR_UNIVERSAL` (28) - Universal selector (`*`)
 - `NODE_SELECTOR_NESTING` (29) - Nesting selector (`&`)
 
-### At-Rule Prelude Node Types (32-41)
+### At-Rule Prelude Node Types (32-40)
 
 - `NODE_PRELUDE_MEDIA_QUERY` (32) - Media query
 - `NODE_PRELUDE_MEDIA_FEATURE` (33) - Media feature
 - `NODE_PRELUDE_MEDIA_TYPE` (34) - Media type (e.g., `screen`, `print`)
 - `NODE_PRELUDE_CONTAINER_QUERY` (35) - Container query
 - `NODE_PRELUDE_SUPPORTS_QUERY` (36) - Supports query (used in @supports and @import)
-- `NODE_PRELUDE_LAYER_NAME` (37) - Layer name
+- `NODE_PRELUDE_LAYER_NAME` (37) - Layer name (used in @layer and @import)
 - `NODE_PRELUDE_IDENTIFIER` (38) - Generic identifier
 - `NODE_PRELUDE_OPERATOR` (39) - Logical operator (e.g., `and`, `or`)
 - `NODE_PRELUDE_IMPORT_URL` (40) - Import URL
-- `NODE_PRELUDE_IMPORT_LAYER` (41) - Import layer
 
 ## Pseudo-Class Function Syntax Detection
 
