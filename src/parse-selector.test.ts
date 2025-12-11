@@ -2,20 +2,20 @@ import { describe, it, expect, test } from 'vitest'
 import { SelectorParser, parse_selector } from './parse-selector'
 import { ATTR_OPERATOR_EQUAL, CSSDataArena } from './arena'
 import {
-	NODE_SELECTOR,
-	NODE_SELECTOR_LIST,
-	NODE_SELECTOR_TYPE,
-	NODE_SELECTOR_CLASS,
-	NODE_SELECTOR_ID,
-	NODE_SELECTOR_ATTRIBUTE,
-	NODE_SELECTOR_PSEUDO_CLASS,
-	NODE_SELECTOR_PSEUDO_ELEMENT,
-	NODE_SELECTOR_COMBINATOR,
-	NODE_SELECTOR_UNIVERSAL,
-	NODE_SELECTOR_NESTING,
-	NODE_SELECTOR_NTH,
-	NODE_SELECTOR_NTH_OF,
-	NODE_SELECTOR_LANG,
+	SELECTOR,
+	SELECTOR_LIST,
+	TYPE_SELECTOR,
+	CLASS_SELECTOR,
+	ID_SELECTOR,
+	ATTRIBUTE_SELECTOR,
+	PSEUDO_CLASS_SELECTOR,
+	PSEUDO_ELEMENT_SELECTOR,
+	COMBINATOR,
+	UNIVERSAL_SELECTOR,
+	NESTING_SELECTOR,
+	NTH_SELECTOR,
+	NTH_OF_SELECTOR,
+	LANG_SELECTOR,
 	ATTR_FLAG_NONE,
 	ATTR_FLAG_CASE_INSENSITIVE,
 	ATTR_FLAG_CASE_SENSITIVE,
@@ -26,19 +26,19 @@ describe('parse_selector() function', () => {
 	it('should parse and return a CSSNode', () => {
 		const node = parse_selector('div.container')
 		expect(node).toBeDefined()
-		expect(node.type).toBe(NODE_SELECTOR_LIST)
+		expect(node.type).toBe(SELECTOR_LIST)
 		expect(node.text).toBe('div.container')
 	})
 
 	it('should parse type selector', () => {
 		const node = parse_selector('div')
-		expect(node.type).toBe(NODE_SELECTOR_LIST)
+		expect(node.type).toBe(SELECTOR_LIST)
 
 		const firstSelector = node.first_child
-		expect(firstSelector?.type).toBe(NODE_SELECTOR)
+		expect(firstSelector?.type).toBe(SELECTOR)
 
 		const typeNode = firstSelector?.first_child
-		expect(typeNode?.type).toBe(NODE_SELECTOR_TYPE)
+		expect(typeNode?.type).toBe(TYPE_SELECTOR)
 		expect(typeNode?.text).toBe('div')
 	})
 
@@ -47,7 +47,7 @@ describe('parse_selector() function', () => {
 		const firstSelector = node.first_child
 		const classNode = firstSelector?.first_child
 
-		expect(classNode?.type).toBe(NODE_SELECTOR_CLASS)
+		expect(classNode?.type).toBe(CLASS_SELECTOR)
 		expect(classNode?.name).toBe('.my-class')
 	})
 
@@ -56,7 +56,7 @@ describe('parse_selector() function', () => {
 		const firstSelector = node.first_child
 		const idNode = firstSelector?.first_child
 
-		expect(idNode?.type).toBe(NODE_SELECTOR_ID)
+		expect(idNode?.type).toBe(ID_SELECTOR)
 		expect(idNode?.name).toBe('#my-id')
 	})
 
@@ -66,9 +66,9 @@ describe('parse_selector() function', () => {
 		const children = firstSelector?.children || []
 
 		expect(children.length).toBe(3)
-		expect(children[0].type).toBe(NODE_SELECTOR_TYPE)
-		expect(children[1].type).toBe(NODE_SELECTOR_CLASS)
-		expect(children[2].type).toBe(NODE_SELECTOR_ID)
+		expect(children[0].type).toBe(TYPE_SELECTOR)
+		expect(children[1].type).toBe(CLASS_SELECTOR)
+		expect(children[2].type).toBe(ID_SELECTOR)
 	})
 
 	it('should parse complex selector with descendant combinator', () => {
@@ -77,9 +77,9 @@ describe('parse_selector() function', () => {
 		const children = firstSelector?.children || []
 
 		expect(children.length).toBe(3) // div, combinator, .container
-		expect(children[0].type).toBe(NODE_SELECTOR_TYPE)
-		expect(children[1].type).toBe(NODE_SELECTOR_COMBINATOR)
-		expect(children[2].type).toBe(NODE_SELECTOR_CLASS)
+		expect(children[0].type).toBe(TYPE_SELECTOR)
+		expect(children[1].type).toBe(COMBINATOR)
+		expect(children[2].type).toBe(CLASS_SELECTOR)
 	})
 
 	it('should parse selector list', () => {
@@ -87,9 +87,9 @@ describe('parse_selector() function', () => {
 		const selectors = node.children
 
 		expect(selectors.length).toBe(3)
-		expect(selectors[0].first_child?.type).toBe(NODE_SELECTOR_TYPE)
-		expect(selectors[1].first_child?.type).toBe(NODE_SELECTOR_TYPE)
-		expect(selectors[2].first_child?.type).toBe(NODE_SELECTOR_TYPE)
+		expect(selectors[0].first_child?.type).toBe(TYPE_SELECTOR)
+		expect(selectors[1].first_child?.type).toBe(TYPE_SELECTOR)
+		expect(selectors[2].first_child?.type).toBe(TYPE_SELECTOR)
 	})
 })
 
@@ -139,16 +139,16 @@ describe('SelectorParser', () => {
 			if (!rootNode) return
 
 			// Root is NODE_SELECTOR_LIST
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
+			expect(arena.get_type(rootNode)).toBe(SELECTOR_LIST)
 			expect(getNodeText(arena, source, rootNode)).toBe('div')
 
 			// First child is NODE_SELECTOR wrapper
 			const selectorWrapper = arena.get_first_child(rootNode)
-			expect(arena.get_type(selectorWrapper)).toBe(NODE_SELECTOR)
+			expect(arena.get_type(selectorWrapper)).toBe(SELECTOR)
 
 			// First child of wrapper is the actual type
 			const child = arena.get_first_child(selectorWrapper)
-			expect(arena.get_type(child)).toBe(NODE_SELECTOR_TYPE)
+			expect(arena.get_type(child)).toBe(TYPE_SELECTOR)
 			expect(getNodeText(arena, source, child)).toBe('div')
 		})
 
@@ -159,13 +159,13 @@ describe('SelectorParser', () => {
 			if (!rootNode) return
 
 			// Root is NODE_SELECTOR_LIST
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
+			expect(arena.get_type(rootNode)).toBe(SELECTOR_LIST)
 
 			const selectorWrapper = arena.get_first_child(rootNode)
-			expect(arena.get_type(selectorWrapper)).toBe(NODE_SELECTOR)
+			expect(arena.get_type(selectorWrapper)).toBe(SELECTOR)
 
 			const child = arena.get_first_child(selectorWrapper)
-			expect(arena.get_type(child)).toBe(NODE_SELECTOR_CLASS)
+			expect(arena.get_type(child)).toBe(CLASS_SELECTOR)
 			expect(getNodeText(arena, source, child)).toBe('.my-class')
 			expect(getNodeContent(arena, source, child)).toBe('.my-class')
 		})
@@ -177,13 +177,13 @@ describe('SelectorParser', () => {
 			if (!rootNode) return
 
 			// Root is NODE_SELECTOR_LIST
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
+			expect(arena.get_type(rootNode)).toBe(SELECTOR_LIST)
 
 			const selectorWrapper = arena.get_first_child(rootNode)
-			expect(arena.get_type(selectorWrapper)).toBe(NODE_SELECTOR)
+			expect(arena.get_type(selectorWrapper)).toBe(SELECTOR)
 
 			const child = arena.get_first_child(selectorWrapper)
-			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ID)
+			expect(arena.get_type(child)).toBe(ID_SELECTOR)
 			expect(getNodeText(arena, source, child)).toBe('#my-id')
 			expect(getNodeContent(arena, source, child)).toBe('#my-id')
 		})
@@ -195,13 +195,13 @@ describe('SelectorParser', () => {
 			if (!rootNode) return
 
 			// Root is NODE_SELECTOR_LIST
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
+			expect(arena.get_type(rootNode)).toBe(SELECTOR_LIST)
 
 			const selectorWrapper = arena.get_first_child(rootNode)
-			expect(arena.get_type(selectorWrapper)).toBe(NODE_SELECTOR)
+			expect(arena.get_type(selectorWrapper)).toBe(SELECTOR)
 
 			const child = arena.get_first_child(selectorWrapper)
-			expect(arena.get_type(child)).toBe(NODE_SELECTOR_UNIVERSAL)
+			expect(arena.get_type(child)).toBe(UNIVERSAL_SELECTOR)
 			expect(getNodeText(arena, source, child)).toBe('*')
 		})
 
@@ -212,13 +212,13 @@ describe('SelectorParser', () => {
 			if (!rootNode) return
 
 			// Root is NODE_SELECTOR_LIST
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
+			expect(arena.get_type(rootNode)).toBe(SELECTOR_LIST)
 
 			const selectorWrapper = arena.get_first_child(rootNode)
-			expect(arena.get_type(selectorWrapper)).toBe(NODE_SELECTOR)
+			expect(arena.get_type(selectorWrapper)).toBe(SELECTOR)
 
 			const child = arena.get_first_child(selectorWrapper)
-			expect(arena.get_type(child)).toBe(NODE_SELECTOR_NESTING)
+			expect(arena.get_type(child)).toBe(NESTING_SELECTOR)
 			expect(getNodeText(arena, source, child)).toBe('&')
 		})
 	})
@@ -231,18 +231,18 @@ describe('SelectorParser', () => {
 			if (!rootNode) return
 
 			// Root is NODE_SELECTOR_LIST
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
+			expect(arena.get_type(rootNode)).toBe(SELECTOR_LIST)
 
 			// Get the NODE_SELECTOR wrapper
 			const selectorWrapper = arena.get_first_child(rootNode)
-			expect(arena.get_type(selectorWrapper)).toBe(NODE_SELECTOR)
+			expect(arena.get_type(selectorWrapper)).toBe(SELECTOR)
 
 			// Compound selector has multiple children
 			const children = getChildren(arena, source, selectorWrapper)
 			expect(children).toHaveLength(2)
-			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_TYPE)
+			expect(arena.get_type(children[0])).toBe(TYPE_SELECTOR)
 			expect(getNodeText(arena, source, children[0])).toBe('div')
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_CLASS)
+			expect(arena.get_type(children[1])).toBe(CLASS_SELECTOR)
 			expect(getNodeContent(arena, source, children[1])).toBe('.container')
 		})
 
@@ -253,13 +253,13 @@ describe('SelectorParser', () => {
 			if (!rootNode) return
 
 			// Root is NODE_SELECTOR_LIST
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
+			expect(arena.get_type(rootNode)).toBe(SELECTOR_LIST)
 
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const children = getChildren(arena, source, selectorWrapper)
 			expect(children).toHaveLength(2)
-			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_TYPE)
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_ID)
+			expect(arena.get_type(children[0])).toBe(TYPE_SELECTOR)
+			expect(arena.get_type(children[1])).toBe(ID_SELECTOR)
 			expect(getNodeContent(arena, source, children[1])).toBe('#app')
 		})
 
@@ -272,12 +272,12 @@ describe('SelectorParser', () => {
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const children = getChildren(arena, source, selectorWrapper)
 			expect(children).toHaveLength(4)
-			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_TYPE)
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_CLASS)
+			expect(arena.get_type(children[0])).toBe(TYPE_SELECTOR)
+			expect(arena.get_type(children[1])).toBe(CLASS_SELECTOR)
 			expect(getNodeContent(arena, source, children[1])).toBe('.foo')
-			expect(arena.get_type(children[2])).toBe(NODE_SELECTOR_CLASS)
+			expect(arena.get_type(children[2])).toBe(CLASS_SELECTOR)
 			expect(getNodeContent(arena, source, children[2])).toBe('.bar')
-			expect(arena.get_type(children[3])).toBe(NODE_SELECTOR_CLASS)
+			expect(arena.get_type(children[3])).toBe(CLASS_SELECTOR)
 			expect(getNodeContent(arena, source, children[3])).toBe('.baz')
 		})
 
@@ -290,11 +290,11 @@ describe('SelectorParser', () => {
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const children = getChildren(arena, source, selectorWrapper)
 			expect(children).toHaveLength(3)
-			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_TYPE)
+			expect(arena.get_type(children[0])).toBe(TYPE_SELECTOR)
 			expect(getNodeText(arena, source, children[0])).toBe('div')
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_CLASS)
+			expect(arena.get_type(children[1])).toBe(CLASS_SELECTOR)
 			expect(getNodeContent(arena, source, children[1])).toBe('.container')
-			expect(arena.get_type(children[2])).toBe(NODE_SELECTOR_ID)
+			expect(arena.get_type(children[2])).toBe(ID_SELECTOR)
 			expect(getNodeContent(arena, source, children[2])).toBe('#app')
 		})
 	})
@@ -309,8 +309,8 @@ describe('SelectorParser', () => {
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const children = getChildren(arena, source, selectorWrapper)
 			expect(children).toHaveLength(2)
-			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_TYPE)
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(arena.get_type(children[0])).toBe(TYPE_SELECTOR)
+			expect(arena.get_type(children[1])).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(getNodeContent(arena, source, children[1])).toBe('hover')
 		})
 
@@ -323,8 +323,8 @@ describe('SelectorParser', () => {
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const children = getChildren(arena, source, selectorWrapper)
 			expect(children).toHaveLength(2)
-			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_TYPE)
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(arena.get_type(children[0])).toBe(TYPE_SELECTOR)
+			expect(arena.get_type(children[1])).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(getNodeContent(arena, source, children[1])).toBe('nth-child')
 			expect(getNodeText(arena, source, children[1])).toBe(':nth-child(2n+1)')
 		})
@@ -338,10 +338,10 @@ describe('SelectorParser', () => {
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const children = getChildren(arena, source, selectorWrapper)
 			expect(children).toHaveLength(3)
-			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_TYPE)
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(arena.get_type(children[0])).toBe(TYPE_SELECTOR)
+			expect(arena.get_type(children[1])).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(getNodeContent(arena, source, children[1])).toBe('focus')
-			expect(arena.get_type(children[2])).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(arena.get_type(children[2])).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(getNodeContent(arena, source, children[2])).toBe('valid')
 		})
 
@@ -354,7 +354,7 @@ describe('SelectorParser', () => {
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const children = getChildren(arena, source, selectorWrapper)
 			expect(children).toHaveLength(2)
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(arena.get_type(children[1])).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(getNodeContent(arena, source, children[1])).toBe('is')
 		})
 
@@ -367,7 +367,7 @@ describe('SelectorParser', () => {
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const children = getChildren(arena, source, selectorWrapper)
 			expect(children).toHaveLength(2)
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(arena.get_type(children[1])).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(getNodeContent(arena, source, children[1])).toBe('not')
 		})
 	})
@@ -382,8 +382,8 @@ describe('SelectorParser', () => {
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const children = getChildren(arena, source, selectorWrapper)
 			expect(children).toHaveLength(2)
-			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_TYPE)
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_PSEUDO_ELEMENT)
+			expect(arena.get_type(children[0])).toBe(TYPE_SELECTOR)
+			expect(arena.get_type(children[1])).toBe(PSEUDO_ELEMENT_SELECTOR)
 			expect(getNodeContent(arena, source, children[1])).toBe('before')
 		})
 
@@ -396,8 +396,8 @@ describe('SelectorParser', () => {
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const children = getChildren(arena, source, selectorWrapper)
 			expect(children).toHaveLength(2)
-			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_TYPE)
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(arena.get_type(children[0])).toBe(TYPE_SELECTOR)
+			expect(arena.get_type(children[1])).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(getNodeContent(arena, source, children[1])).toBe('after')
 		})
 
@@ -410,7 +410,7 @@ describe('SelectorParser', () => {
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const children = getChildren(arena, source, selectorWrapper)
 			expect(children).toHaveLength(2)
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_PSEUDO_ELEMENT)
+			expect(arena.get_type(children[1])).toBe(PSEUDO_ELEMENT_SELECTOR)
 			expect(getNodeContent(arena, source, children[1])).toBe('first-line')
 		})
 	})
@@ -419,7 +419,7 @@ describe('SelectorParser', () => {
 		it('should indicate :lang() has function syntax even when empty', () => {
 			const root = parse_selector(':lang()')
 			const pseudoClass = root.first_child!.first_child!
-			expect(pseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(pseudoClass.type).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(pseudoClass.name).toBe('lang')
 			expect(pseudoClass.has_children).toBe(true) // Function syntax, even if empty
 		})
@@ -427,7 +427,7 @@ describe('SelectorParser', () => {
 		it('should indicate :lang(en) has function syntax with children', () => {
 			const root = parse_selector(':lang(en)')
 			const pseudoClass = root.first_child!.first_child!
-			expect(pseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(pseudoClass.type).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(pseudoClass.name).toBe('lang')
 			expect(pseudoClass.has_children).toBe(true) // Function syntax with content
 		})
@@ -435,7 +435,7 @@ describe('SelectorParser', () => {
 		it('should indicate :hover has no function syntax', () => {
 			const root = parse_selector(':hover')
 			const pseudoClass = root.first_child!.first_child!
-			expect(pseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(pseudoClass.type).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(pseudoClass.name).toBe('hover')
 			expect(pseudoClass.has_children).toBe(false) // Not a function
 		})
@@ -443,7 +443,7 @@ describe('SelectorParser', () => {
 		it('should indicate :is() has function syntax even when empty', () => {
 			const root = parse_selector(':is()')
 			const pseudoClass = root.first_child!.first_child!
-			expect(pseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(pseudoClass.type).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(pseudoClass.name).toBe('is')
 			expect(pseudoClass.has_children).toBe(true) // Function syntax, even if empty
 		})
@@ -451,7 +451,7 @@ describe('SelectorParser', () => {
 		it('should indicate :has() has function syntax even when empty', () => {
 			const root = parse_selector(':has()')
 			const pseudoClass = root.first_child!.first_child!
-			expect(pseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(pseudoClass.type).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(pseudoClass.name).toBe('has')
 			expect(pseudoClass.has_children).toBe(true) // Function syntax, even if empty
 		})
@@ -459,7 +459,7 @@ describe('SelectorParser', () => {
 		it('should indicate :nth-child() has function syntax even when empty', () => {
 			const root = parse_selector(':nth-child()')
 			const pseudoClass = root.first_child!.first_child!
-			expect(pseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(pseudoClass.type).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(pseudoClass.name).toBe('nth-child')
 			expect(pseudoClass.has_children).toBe(true) // Function syntax, even if empty
 		})
@@ -467,7 +467,7 @@ describe('SelectorParser', () => {
 		it('should indicate ::before has no function syntax', () => {
 			const root = parse_selector('::before')
 			const pseudoElement = root.first_child!.first_child!
-			expect(pseudoElement.type).toBe(NODE_SELECTOR_PSEUDO_ELEMENT)
+			expect(pseudoElement.type).toBe(PSEUDO_ELEMENT_SELECTOR)
 			expect(pseudoElement.name).toBe('before')
 			expect(pseudoElement.has_children).toBe(false) // Not a function
 		})
@@ -475,7 +475,7 @@ describe('SelectorParser', () => {
 		it('should indicate ::slotted() has function syntax even when empty', () => {
 			const root = parse_selector('::slotted()')
 			const pseudoElement = root.first_child!.first_child!
-			expect(pseudoElement.type).toBe(NODE_SELECTOR_PSEUDO_ELEMENT)
+			expect(pseudoElement.type).toBe(PSEUDO_ELEMENT_SELECTOR)
 			expect(pseudoElement.name).toBe('slotted')
 			expect(pseudoElement.has_children).toBe(true) // Function syntax, even if empty
 		})
@@ -489,13 +489,13 @@ describe('SelectorParser', () => {
 			if (!rootNode) return
 
 			// Root is NODE_SELECTOR_LIST
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
+			expect(arena.get_type(rootNode)).toBe(SELECTOR_LIST)
 
 			const selectorWrapper = arena.get_first_child(rootNode)
-			expect(arena.get_type(selectorWrapper)).toBe(NODE_SELECTOR)
+			expect(arena.get_type(selectorWrapper)).toBe(SELECTOR)
 
 			const child = arena.get_first_child(selectorWrapper)
-			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(arena.get_type(child)).toBe(ATTRIBUTE_SELECTOR)
 			expect(getNodeText(arena, source, child)).toBe('[disabled]')
 			expect(getNodeContent(arena, source, child)).toBe('disabled')
 		})
@@ -507,13 +507,13 @@ describe('SelectorParser', () => {
 			if (!rootNode) return
 
 			// Root is NODE_SELECTOR_LIST
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
+			expect(arena.get_type(rootNode)).toBe(SELECTOR_LIST)
 
 			const selectorWrapper = arena.get_first_child(rootNode)
-			expect(arena.get_type(selectorWrapper)).toBe(NODE_SELECTOR)
+			expect(arena.get_type(selectorWrapper)).toBe(SELECTOR)
 
 			const child = arena.get_first_child(selectorWrapper)
-			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(arena.get_type(child)).toBe(ATTRIBUTE_SELECTOR)
 			expect(getNodeText(arena, source, child)).toBe('[type="text"]')
 			// Content now stores just the attribute name
 			expect(getNodeContent(arena, source, child)).toBe('type')
@@ -526,13 +526,13 @@ describe('SelectorParser', () => {
 			if (!rootNode) return
 
 			// Root is NODE_SELECTOR_LIST
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
+			expect(arena.get_type(rootNode)).toBe(SELECTOR_LIST)
 
 			const selectorWrapper = arena.get_first_child(rootNode)
-			expect(arena.get_type(selectorWrapper)).toBe(NODE_SELECTOR)
+			expect(arena.get_type(selectorWrapper)).toBe(SELECTOR)
 
 			const child = arena.get_first_child(selectorWrapper)
-			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(arena.get_type(child)).toBe(ATTRIBUTE_SELECTOR)
 			expect(getNodeText(arena, source, child)).toBe('[class^="btn-"]')
 		})
 
@@ -545,8 +545,8 @@ describe('SelectorParser', () => {
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const children = getChildren(arena, source, selectorWrapper)
 			expect(children).toHaveLength(2)
-			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_TYPE)
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(arena.get_type(children[0])).toBe(TYPE_SELECTOR)
+			expect(arena.get_type(children[1])).toBe(ATTRIBUTE_SELECTOR)
 		})
 
 		it('should trim whitespace from attribute selectors', () => {
@@ -557,7 +557,7 @@ describe('SelectorParser', () => {
 
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const child = arena.get_first_child(selectorWrapper)
-			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(arena.get_type(child)).toBe(ATTRIBUTE_SELECTOR)
 			// Content now stores just the attribute name
 			expect(getNodeContent(arena, source, child)).toBe('data-test')
 			// Full text still includes brackets
@@ -572,7 +572,7 @@ describe('SelectorParser', () => {
 
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const child = arena.get_first_child(selectorWrapper)
-			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(arena.get_type(child)).toBe(ATTRIBUTE_SELECTOR)
 			// Content now stores just the attribute name
 			expect(getNodeContent(arena, source, child)).toBe('data-test')
 		})
@@ -585,7 +585,7 @@ describe('SelectorParser', () => {
 
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const child = arena.get_first_child(selectorWrapper)
-			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(arena.get_type(child)).toBe(ATTRIBUTE_SELECTOR)
 			// Content now stores just the attribute name
 			expect(getNodeContent(arena, source, child)).toBe('data-test')
 		})
@@ -598,7 +598,7 @@ describe('SelectorParser', () => {
 
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const child = arena.get_first_child(selectorWrapper)
-			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(arena.get_type(child)).toBe(ATTRIBUTE_SELECTOR)
 			expect(getNodeText(arena, source, child)).toBe('[type="text" i]')
 			expect(getNodeContent(arena, source, child)).toBe('type')
 			expect(arena.get_attr_flags(child)).toBe(ATTR_FLAG_CASE_INSENSITIVE)
@@ -610,11 +610,11 @@ describe('SelectorParser', () => {
 			expect(root).not.toBeNull()
 			if (!root) return
 
-			expect(root.type).toBe(NODE_SELECTOR_LIST)
+			expect(root.type).toBe(SELECTOR_LIST)
 			let selector = root.first_child!
-			expect(selector.type).toBe(NODE_SELECTOR)
+			expect(selector.type).toBe(SELECTOR)
 			let attr = selector.first_child!
-			expect(attr.type).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(attr.type).toBe(ATTRIBUTE_SELECTOR)
 			expect(attr.attr_flags).toBe(ATTR_FLAG_CASE_INSENSITIVE)
 			expect(attr.attr_operator).toBe(ATTR_OPERATOR_EQUAL)
 		})
@@ -627,7 +627,7 @@ describe('SelectorParser', () => {
 
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const child = arena.get_first_child(selectorWrapper)
-			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(arena.get_type(child)).toBe(ATTRIBUTE_SELECTOR)
 			expect(getNodeText(arena, source, child)).toBe('[type="text" s]')
 			expect(getNodeContent(arena, source, child)).toBe('type')
 			expect(arena.get_attr_flags(child)).toBe(ATTR_FLAG_CASE_SENSITIVE)
@@ -641,7 +641,7 @@ describe('SelectorParser', () => {
 
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const child = arena.get_first_child(selectorWrapper)
-			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(arena.get_type(child)).toBe(ATTRIBUTE_SELECTOR)
 			expect(arena.get_attr_flags(child)).toBe(ATTR_FLAG_CASE_INSENSITIVE)
 		})
 
@@ -653,7 +653,7 @@ describe('SelectorParser', () => {
 
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const child = arena.get_first_child(selectorWrapper)
-			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(arena.get_type(child)).toBe(ATTRIBUTE_SELECTOR)
 			expect(arena.get_attr_flags(child)).toBe(ATTR_FLAG_CASE_INSENSITIVE)
 		})
 
@@ -665,7 +665,7 @@ describe('SelectorParser', () => {
 
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const child = arena.get_first_child(selectorWrapper)
-			expect(arena.get_type(child)).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(arena.get_type(child)).toBe(ATTRIBUTE_SELECTOR)
 			expect(arena.get_attr_flags(child)).toBe(ATTR_FLAG_NONE)
 		})
 
@@ -707,7 +707,7 @@ describe('SelectorParser', () => {
 			if (!rootNode) return
 
 			// Root is NODE_SELECTOR_LIST
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
+			expect(arena.get_type(rootNode)).toBe(SELECTOR_LIST)
 
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const children = getChildren(arena, source, selectorWrapper)
@@ -716,7 +716,7 @@ describe('SelectorParser', () => {
 			// Should have: compound(div), combinator(space), compound(p)
 			const hasDescendantCombinator = children.some((child) => {
 				const type = arena.get_type(child)
-				return type === NODE_SELECTOR_COMBINATOR
+				return type === COMBINATOR
 			})
 			expect(hasDescendantCombinator).toBe(true)
 		})
@@ -732,7 +732,7 @@ describe('SelectorParser', () => {
 
 			const hasCombinator = children.some((child) => {
 				const type = arena.get_type(child)
-				if (type === NODE_SELECTOR_COMBINATOR) {
+				if (type === COMBINATOR) {
 					return getNodeText(arena, source, child).includes('>')
 				}
 				return false
@@ -751,7 +751,7 @@ describe('SelectorParser', () => {
 
 			const hasCombinator = children.some((child) => {
 				const type = arena.get_type(child)
-				if (type === NODE_SELECTOR_COMBINATOR) {
+				if (type === COMBINATOR) {
 					return getNodeText(arena, source, child).includes('+')
 				}
 				return false
@@ -770,7 +770,7 @@ describe('SelectorParser', () => {
 
 			const hasCombinator = children.some((child) => {
 				const type = arena.get_type(child)
-				if (type === NODE_SELECTOR_COMBINATOR) {
+				if (type === COMBINATOR) {
 					return getNodeText(arena, source, child).includes('~')
 				}
 				return false
@@ -787,7 +787,7 @@ describe('SelectorParser', () => {
 			if (!rootNode) return
 
 			// Root is NODE_SELECTOR_LIST
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
+			expect(arena.get_type(rootNode)).toBe(SELECTOR_LIST)
 
 			// List contains the two selectors
 			const children = getChildren(arena, source, rootNode)
@@ -801,7 +801,7 @@ describe('SelectorParser', () => {
 			if (!rootNode) return
 
 			// Root is NODE_SELECTOR_LIST
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
+			expect(arena.get_type(rootNode)).toBe(SELECTOR_LIST)
 
 			// List contains the three selectors
 			const children = getChildren(arena, source, rootNode)
@@ -815,7 +815,7 @@ describe('SelectorParser', () => {
 			if (!rootNode) return
 
 			// Root is NODE_SELECTOR_LIST
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
+			expect(arena.get_type(rootNode)).toBe(SELECTOR_LIST)
 
 			// List contains 3 NODE_SELECTOR wrappers: div.container, .wrapper > p, #app
 			const children = getChildren(arena, source, rootNode)
@@ -831,7 +831,7 @@ describe('SelectorParser', () => {
 			if (!rootNode) return
 
 			// Root is NODE_SELECTOR_LIST
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
+			expect(arena.get_type(rootNode)).toBe(SELECTOR_LIST)
 		})
 
 		it('should parse form selector', () => {
@@ -863,7 +863,7 @@ describe('SelectorParser', () => {
 			const children = getChildren(arena, source, selectorWrapper)
 
 			const combinators = children.filter((child) => {
-				return arena.get_type(child) === NODE_SELECTOR_COMBINATOR
+				return arena.get_type(child) === COMBINATOR
 			})
 
 			expect(combinators.length).toBeGreaterThan(0)
@@ -878,67 +878,67 @@ describe('SelectorParser', () => {
 			if (!rootNode) return
 
 			// Root is NODE_SELECTOR_LIST
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
+			expect(arena.get_type(rootNode)).toBe(SELECTOR_LIST)
 
 			const selectorWrapper = arena.get_first_child(rootNode)
-			expect(arena.get_type(selectorWrapper)).toBe(NODE_SELECTOR)
+			expect(arena.get_type(selectorWrapper)).toBe(SELECTOR)
 
 			const child = arena.get_first_child(selectorWrapper)
-			expect(arena.get_type(child)).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(arena.get_type(child)).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(getNodeContent(arena, source, child)).toBe('where')
 		})
 
 		it('should parse :has(a) pseudo-class', () => {
 			const root = parse_selector('div:has(a)')
 
-			expect(root.first_child?.type).toBe(NODE_SELECTOR)
+			expect(root.first_child?.type).toBe(SELECTOR)
 			expect(root.first_child!.children).toHaveLength(2)
 			const [_, has] = root.first_child!.children
 
-			expect(has.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(has.type).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(has.text).toBe(':has(a)')
 
 			// Check children of :has() - should contain selector list with > combinator and p type selector
 			expect(has.has_children).toBe(true)
 			const selectorList = has.first_child!
-			expect(selectorList.type).toBe(NODE_SELECTOR_LIST)
+			expect(selectorList.type).toBe(SELECTOR_LIST)
 
 			// Selector list contains one selector
 			const selector = selectorList.first_child!
-			expect(selector.type).toBe(NODE_SELECTOR)
+			expect(selector.type).toBe(SELECTOR)
 
 			const selectorParts = selector.children
 			expect(selectorParts).toHaveLength(1)
-			expect(selectorParts[0].type).toBe(NODE_SELECTOR_TYPE)
+			expect(selectorParts[0].type).toBe(TYPE_SELECTOR)
 			expect(selectorParts[0].text).toBe('a')
 		})
 
 		it('should parse :has(> p) pseudo-class', () => {
 			const root = parse_selector('div:has(> p)')
 
-			expect(root.first_child?.type).toBe(NODE_SELECTOR)
+			expect(root.first_child?.type).toBe(SELECTOR)
 			expect(root.first_child!.children).toHaveLength(2)
 			const [div, has] = root.first_child!.children
-			expect(div.type).toBe(NODE_SELECTOR_TYPE)
+			expect(div.type).toBe(TYPE_SELECTOR)
 			expect(div.text).toBe('div')
 
-			expect(has.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(has.type).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(has.text).toBe(':has(> p)')
 
 			// Check children of :has() - should contain selector list with > combinator and p type selector
 			expect(has.has_children).toBe(true)
 			const selectorList = has.first_child!
-			expect(selectorList.type).toBe(NODE_SELECTOR_LIST)
+			expect(selectorList.type).toBe(SELECTOR_LIST)
 
 			// Selector list contains one selector
 			const selector = selectorList.first_child!
-			expect(selector.type).toBe(NODE_SELECTOR)
+			expect(selector.type).toBe(SELECTOR)
 
 			const selectorParts = selector.children
 			expect(selectorParts).toHaveLength(2)
-			expect(selectorParts[0].type).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(selectorParts[0].type).toBe(COMBINATOR)
 			expect(selectorParts[0].text).toBe('>')
-			expect(selectorParts[1].type).toBe(NODE_SELECTOR_TYPE)
+			expect(selectorParts[1].type).toBe(TYPE_SELECTOR)
 			expect(selectorParts[1].text).toBe('p')
 		})
 
@@ -950,9 +950,9 @@ describe('SelectorParser', () => {
 			const parts = selector.children
 
 			expect(parts).toHaveLength(2)
-			expect(parts[0].type).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(parts[0].type).toBe(COMBINATOR)
 			expect(parts[0].text).toBe('+')
-			expect(parts[1].type).toBe(NODE_SELECTOR_TYPE)
+			expect(parts[1].type).toBe(TYPE_SELECTOR)
 			expect(parts[1].text).toBe('p')
 		})
 
@@ -964,9 +964,9 @@ describe('SelectorParser', () => {
 			const parts = selector.children
 
 			expect(parts).toHaveLength(2)
-			expect(parts[0].type).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(parts[0].type).toBe(COMBINATOR)
 			expect(parts[0].text).toBe('~')
-			expect(parts[1].type).toBe(NODE_SELECTOR_TYPE)
+			expect(parts[1].type).toBe(TYPE_SELECTOR)
 			expect(parts[1].text).toBe('p')
 		})
 
@@ -977,7 +977,7 @@ describe('SelectorParser', () => {
 			const selector = selectorList.first_child!
 
 			expect(selector.children).toHaveLength(1)
-			expect(selector.children[0].type).toBe(NODE_SELECTOR_TYPE)
+			expect(selector.children[0].type).toBe(TYPE_SELECTOR)
 			expect(selector.children[0].text).toBe('p')
 		})
 
@@ -1007,7 +1007,7 @@ describe('SelectorParser', () => {
 			const root = parse_selector('div:has()')
 			const has = root.first_child!.children[1]
 
-			expect(has.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(has.type).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(has.text).toBe(':has()')
 			expect(has.has_children).toBe(true) // Has function syntax (parentheses)
 		})
@@ -1021,8 +1021,8 @@ describe('SelectorParser', () => {
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const children = getChildren(arena, source, selectorWrapper)
 			expect(children).toHaveLength(2)
-			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_NESTING)
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_CLASS)
+			expect(arena.get_type(children[0])).toBe(NESTING_SELECTOR)
+			expect(arena.get_type(children[1])).toBe(CLASS_SELECTOR)
 		})
 
 		it('should parse nesting selector with descendant combinator as single selector', () => {
@@ -1032,7 +1032,7 @@ describe('SelectorParser', () => {
 			if (!rootNode) return
 
 			// Root is NODE_SELECTOR_LIST
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
+			expect(arena.get_type(rootNode)).toBe(SELECTOR_LIST)
 
 			// Should have only ONE selector, not two
 			const selectorWrappers = getChildren(arena, source, rootNode)
@@ -1042,9 +1042,9 @@ describe('SelectorParser', () => {
 			const selectorWrapper = selectorWrappers[0]
 			const children = getChildren(arena, source, selectorWrapper)
 			expect(children).toHaveLength(3)
-			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_NESTING)
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_COMBINATOR)
-			expect(arena.get_type(children[2])).toBe(NODE_SELECTOR_TYPE)
+			expect(arena.get_type(children[0])).toBe(NESTING_SELECTOR)
+			expect(arena.get_type(children[1])).toBe(COMBINATOR)
+			expect(arena.get_type(children[2])).toBe(TYPE_SELECTOR)
 			expect(getNodeText(arena, source, children[2])).toBe('span')
 		})
 
@@ -1062,10 +1062,10 @@ describe('SelectorParser', () => {
 			const selectorWrapper = selectorWrappers[0]
 			const children = getChildren(arena, source, selectorWrapper)
 			expect(children).toHaveLength(3)
-			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_NESTING)
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(arena.get_type(children[0])).toBe(NESTING_SELECTOR)
+			expect(arena.get_type(children[1])).toBe(COMBINATOR)
 			expect(getNodeText(arena, source, children[1]).trim()).toBe('>')
-			expect(arena.get_type(children[2])).toBe(NODE_SELECTOR_TYPE)
+			expect(arena.get_type(children[2])).toBe(TYPE_SELECTOR)
 			expect(getNodeText(arena, source, children[2])).toBe('div')
 		})
 	})
@@ -1085,9 +1085,9 @@ describe('SelectorParser', () => {
 			const selectorWrapper = selectorWrappers[0]
 			const children = getChildren(arena, source, selectorWrapper)
 			expect(children).toHaveLength(2)
-			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(arena.get_type(children[0])).toBe(COMBINATOR)
 			expect(getNodeText(arena, source, children[0]).trim()).toBe('>')
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_TYPE)
+			expect(arena.get_type(children[1])).toBe(TYPE_SELECTOR)
 			expect(getNodeText(arena, source, children[1])).toBe('a')
 		})
 
@@ -1103,9 +1103,9 @@ describe('SelectorParser', () => {
 			const selectorWrapper = selectorWrappers[0]
 			const children = getChildren(arena, source, selectorWrapper)
 			expect(children).toHaveLength(2)
-			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(arena.get_type(children[0])).toBe(COMBINATOR)
 			expect(getNodeText(arena, source, children[0]).trim()).toBe('+')
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_TYPE)
+			expect(arena.get_type(children[1])).toBe(TYPE_SELECTOR)
 			expect(getNodeText(arena, source, children[1])).toBe('div')
 		})
 
@@ -1121,9 +1121,9 @@ describe('SelectorParser', () => {
 			const selectorWrapper = selectorWrappers[0]
 			const children = getChildren(arena, source, selectorWrapper)
 			expect(children).toHaveLength(2)
-			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(arena.get_type(children[0])).toBe(COMBINATOR)
 			expect(getNodeText(arena, source, children[0]).trim()).toBe('~')
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_TYPE)
+			expect(arena.get_type(children[1])).toBe(TYPE_SELECTOR)
 			expect(getNodeText(arena, source, children[1])).toBe('span')
 		})
 
@@ -1141,16 +1141,16 @@ describe('SelectorParser', () => {
 
 			// Should have: combinator (>), type (a), class (.link), id (#nav), attribute ([href]), pseudo-class (:hover)
 			expect(children.length).toBeGreaterThanOrEqual(6)
-			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(arena.get_type(children[0])).toBe(COMBINATOR)
 			expect(getNodeText(arena, source, children[0]).trim()).toBe('>')
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_TYPE)
+			expect(arena.get_type(children[1])).toBe(TYPE_SELECTOR)
 			expect(getNodeText(arena, source, children[1])).toBe('a')
-			expect(arena.get_type(children[2])).toBe(NODE_SELECTOR_CLASS)
+			expect(arena.get_type(children[2])).toBe(CLASS_SELECTOR)
 			expect(getNodeText(arena, source, children[2])).toBe('.link')
-			expect(arena.get_type(children[3])).toBe(NODE_SELECTOR_ID)
+			expect(arena.get_type(children[3])).toBe(ID_SELECTOR)
 			expect(getNodeText(arena, source, children[3])).toBe('#nav')
-			expect(arena.get_type(children[4])).toBe(NODE_SELECTOR_ATTRIBUTE)
-			expect(arena.get_type(children[5])).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(arena.get_type(children[4])).toBe(ATTRIBUTE_SELECTOR)
+			expect(arena.get_type(children[5])).toBe(PSEUDO_CLASS_SELECTOR)
 		})
 
 		it('should parse multiple selectors with leading combinators', () => {
@@ -1166,25 +1166,25 @@ describe('SelectorParser', () => {
 			// First selector: > a
 			let children = getChildren(arena, source, selectorWrappers[0])
 			expect(children).toHaveLength(2)
-			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(arena.get_type(children[0])).toBe(COMBINATOR)
 			expect(getNodeText(arena, source, children[0]).trim()).toBe('>')
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_TYPE)
+			expect(arena.get_type(children[1])).toBe(TYPE_SELECTOR)
 			expect(getNodeText(arena, source, children[1])).toBe('a')
 
 			// Second selector: ~ span
 			children = getChildren(arena, source, selectorWrappers[1])
 			expect(children).toHaveLength(2)
-			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(arena.get_type(children[0])).toBe(COMBINATOR)
 			expect(getNodeText(arena, source, children[0]).trim()).toBe('~')
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_TYPE)
+			expect(arena.get_type(children[1])).toBe(TYPE_SELECTOR)
 			expect(getNodeText(arena, source, children[1])).toBe('span')
 
 			// Third selector: + div
 			children = getChildren(arena, source, selectorWrappers[2])
 			expect(children).toHaveLength(2)
-			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(arena.get_type(children[0])).toBe(COMBINATOR)
 			expect(getNodeText(arena, source, children[0]).trim()).toBe('+')
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_TYPE)
+			expect(arena.get_type(children[1])).toBe(TYPE_SELECTOR)
 			expect(getNodeText(arena, source, children[1])).toBe('div')
 		})
 
@@ -1200,9 +1200,9 @@ describe('SelectorParser', () => {
 			const selectorWrapper = selectorWrappers[0]
 			const children = getChildren(arena, source, selectorWrapper)
 			expect(children).toHaveLength(2)
-			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(arena.get_type(children[0])).toBe(COMBINATOR)
 			expect(getNodeText(arena, source, children[0]).trim()).toBe('>')
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_TYPE)
+			expect(arena.get_type(children[1])).toBe(TYPE_SELECTOR)
 			expect(getNodeText(arena, source, children[1])).toBe('a')
 		})
 
@@ -1220,12 +1220,12 @@ describe('SelectorParser', () => {
 
 			// Should have: combinator (>), type (div), combinator (descendant), type (span)
 			expect(children).toHaveLength(4)
-			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_COMBINATOR)
+			expect(arena.get_type(children[0])).toBe(COMBINATOR)
 			expect(getNodeText(arena, source, children[0]).trim()).toBe('>')
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_TYPE)
+			expect(arena.get_type(children[1])).toBe(TYPE_SELECTOR)
 			expect(getNodeText(arena, source, children[1])).toBe('div')
-			expect(arena.get_type(children[2])).toBe(NODE_SELECTOR_COMBINATOR)
-			expect(arena.get_type(children[3])).toBe(NODE_SELECTOR_TYPE)
+			expect(arena.get_type(children[2])).toBe(COMBINATOR)
+			expect(arena.get_type(children[3])).toBe(TYPE_SELECTOR)
 			expect(getNodeText(arena, source, children[3])).toBe('span')
 		})
 	})
@@ -1267,13 +1267,13 @@ describe('SelectorParser', () => {
 			if (!rootNode) return
 
 			// Root is NODE_SELECTOR_LIST
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
+			expect(arena.get_type(rootNode)).toBe(SELECTOR_LIST)
 
 			const selectorWrapper = arena.get_first_child(rootNode)
-			expect(arena.get_type(selectorWrapper)).toBe(NODE_SELECTOR)
+			expect(arena.get_type(selectorWrapper)).toBe(SELECTOR)
 
 			const child = arena.get_first_child(selectorWrapper)
-			expect(arena.get_type(child)).toBe(NODE_SELECTOR_CLASS)
+			expect(arena.get_type(child)).toBe(CLASS_SELECTOR)
 			expect(getNodeContent(arena, source, child)).toBe('.my-class-123')
 		})
 
@@ -1284,13 +1284,13 @@ describe('SelectorParser', () => {
 			if (!rootNode) return
 
 			// Root is NODE_SELECTOR_LIST
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
+			expect(arena.get_type(rootNode)).toBe(SELECTOR_LIST)
 
 			const selectorWrapper = arena.get_first_child(rootNode)
-			expect(arena.get_type(selectorWrapper)).toBe(NODE_SELECTOR)
+			expect(arena.get_type(selectorWrapper)).toBe(SELECTOR)
 
 			const child = arena.get_first_child(selectorWrapper)
-			expect(arena.get_type(child)).toBe(NODE_SELECTOR_TYPE)
+			expect(arena.get_type(child)).toBe(TYPE_SELECTOR)
 			expect(getNodeText(arena, source, child)).toBe('custom-element')
 		})
 	})
@@ -1303,13 +1303,13 @@ describe('SelectorParser', () => {
 			if (!rootNode) return
 
 			// Root is NODE_SELECTOR_LIST
-			expect(arena.get_type(rootNode)).toBe(NODE_SELECTOR_LIST)
+			expect(arena.get_type(rootNode)).toBe(SELECTOR_LIST)
 
 			const selectorWrapper = arena.get_first_child(rootNode)
-			expect(arena.get_type(selectorWrapper)).toBe(NODE_SELECTOR)
+			expect(arena.get_type(selectorWrapper)).toBe(SELECTOR)
 
 			const child = arena.get_first_child(selectorWrapper)
-			expect(arena.get_type(child)).toBe(NODE_SELECTOR_CLASS)
+			expect(arena.get_type(child)).toBe(CLASS_SELECTOR)
 			expect(getNodeContent(arena, source, child)).toBe('.block__element--modifier')
 		})
 
@@ -1322,9 +1322,9 @@ describe('SelectorParser', () => {
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const children = getChildren(arena, source, selectorWrapper)
 			expect(children).toHaveLength(3)
-			expect(arena.get_type(children[0])).toBe(NODE_SELECTOR_CLASS)
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_CLASS)
-			expect(arena.get_type(children[2])).toBe(NODE_SELECTOR_CLASS)
+			expect(arena.get_type(children[0])).toBe(CLASS_SELECTOR)
+			expect(arena.get_type(children[1])).toBe(CLASS_SELECTOR)
+			expect(arena.get_type(children[2])).toBe(CLASS_SELECTOR)
 		})
 
 		it('should parse table selector', () => {
@@ -1346,36 +1346,36 @@ describe('SelectorParser', () => {
 			const selectorWrapper = arena.get_first_child(rootNode)
 			const children = getChildren(arena, source, selectorWrapper)
 			expect(children).toHaveLength(2)
-			expect(arena.get_type(children[1])).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(arena.get_type(children[1])).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(getNodeContent(arena, source, children[1])).toBe('nth-of-type')
 		})
 
 		it('should parse ul:has(:nth-child(1 of li))', () => {
 			const root = parse_selector('ul:has(:nth-child(1 of li))')
 
-			expect(root.first_child?.type).toBe(NODE_SELECTOR)
+			expect(root.first_child?.type).toBe(SELECTOR)
 			expect(root.first_child!.children).toHaveLength(2)
 			const [ul, has] = root.first_child!.children
-			expect(ul.type).toBe(NODE_SELECTOR_TYPE)
+			expect(ul.type).toBe(TYPE_SELECTOR)
 			expect(ul.text).toBe('ul')
 
-			expect(has.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(has.type).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(has.text).toBe(':has(:nth-child(1 of li))')
 		})
 
 		it('should parse :nth-child(1)', () => {
 			const root = parse_selector(':nth-child(1)')
 
-			expect(root.first_child?.type).toBe(NODE_SELECTOR)
+			expect(root.first_child?.type).toBe(SELECTOR)
 			expect(root.first_child!.children).toHaveLength(1)
 			const nth_child = root.first_child!.first_child!
-			expect(nth_child.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(nth_child.type).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(nth_child.text).toBe(':nth-child(1)')
 
 			// Should have An+B child node
 			expect(nth_child.children).toHaveLength(1)
 			const anplusb = nth_child.first_child!
-			expect(anplusb.type).toBe(NODE_SELECTOR_NTH)
+			expect(anplusb.type).toBe(NTH_SELECTOR)
 			expect(anplusb.nth_a).toBe(null) // No 'a' coefficient, just 'b'
 			expect(anplusb.nth_b).toBe('1')
 		})
@@ -1383,16 +1383,16 @@ describe('SelectorParser', () => {
 		it('should parse :nth-child(2n+1)', () => {
 			const root = parse_selector(':nth-child(2n+1)')
 
-			expect(root.first_child?.type).toBe(NODE_SELECTOR)
+			expect(root.first_child?.type).toBe(SELECTOR)
 			expect(root.first_child!.children).toHaveLength(1)
 			const nth_child = root.first_child!.first_child!
-			expect(nth_child.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(nth_child.type).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(nth_child.text).toBe(':nth-child(2n+1)')
 
 			// Should have An+B child node
 			expect(nth_child.children).toHaveLength(1)
 			const anplusb = nth_child.first_child!
-			expect(anplusb.type).toBe(NODE_SELECTOR_NTH)
+			expect(anplusb.type).toBe(NTH_SELECTOR)
 			expect(anplusb.nth_a).toBe('2n')
 			expect(anplusb.nth_b).toBe('+1')
 			expect(anplusb.text).toBe('2n+1')
@@ -1401,30 +1401,30 @@ describe('SelectorParser', () => {
 		it('should parse :nth-child(2n of .selector)', () => {
 			const root = parse_selector(':nth-child(2n of .selector)')
 
-			expect(root.first_child?.type).toBe(NODE_SELECTOR)
+			expect(root.first_child?.type).toBe(SELECTOR)
 			expect(root.first_child!.children).toHaveLength(1)
 			const nth_child = root.first_child!.first_child!
-			expect(nth_child.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(nth_child.type).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(nth_child.text).toBe(':nth-child(2n of .selector)')
 
 			// Should have NTH_OF child node (An+B with selector)
 			expect(nth_child.children).toHaveLength(1)
 			const nth_of = nth_child.first_child!
-			expect(nth_of.type).toBe(NODE_SELECTOR_NTH_OF)
+			expect(nth_of.type).toBe(NTH_OF_SELECTOR)
 			expect(nth_of.text).toBe('2n of .selector')
 
 			// NTH_OF has two children: An+B and selector list
 			expect(nth_of.children).toHaveLength(2)
 			const anplusb = nth_of.first_child!
-			expect(anplusb.type).toBe(NODE_SELECTOR_NTH)
+			expect(anplusb.type).toBe(NTH_SELECTOR)
 			expect(anplusb.nth_a).toBe('2n')
 			expect(anplusb.nth_b).toBe(null)
 
 			// Second child is the selector list
 			const selectorList = nth_of.children[1]
-			expect(selectorList.type).toBe(NODE_SELECTOR_LIST)
+			expect(selectorList.type).toBe(SELECTOR_LIST)
 			const selector = selectorList.first_child!
-			expect(selector.type).toBe(NODE_SELECTOR)
+			expect(selector.type).toBe(SELECTOR)
 			expect(selector.first_child!.text).toBe('.selector')
 		})
 
@@ -1432,37 +1432,37 @@ describe('SelectorParser', () => {
 			const root = parse_selector(':is(a, b)')
 
 			// Root is selector list
-			expect(root.type).toBe(NODE_SELECTOR_LIST)
+			expect(root.type).toBe(SELECTOR_LIST)
 
 			// First selector in the list
 			const selector = root.first_child!
-			expect(selector.type).toBe(NODE_SELECTOR)
+			expect(selector.type).toBe(SELECTOR)
 
 			// Selector has :is() pseudo-class
 			const isPseudoClass = selector.first_child!
-			expect(isPseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(isPseudoClass.type).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(isPseudoClass.text).toBe(':is(a, b)')
 
 			// :is() has 1 child: a selector list
 			expect(isPseudoClass.children).toHaveLength(1)
 			const innerSelectorList = isPseudoClass.first_child!
-			expect(innerSelectorList.type).toBe(NODE_SELECTOR_LIST)
+			expect(innerSelectorList.type).toBe(SELECTOR_LIST)
 
 			// The selector list has 2 children: selector for 'a' and selector for 'b'
 			expect(innerSelectorList.children).toHaveLength(2)
 
 			// First selector: 'a'
 			const selectorA = innerSelectorList.children[0]
-			expect(selectorA.type).toBe(NODE_SELECTOR)
+			expect(selectorA.type).toBe(SELECTOR)
 			expect(selectorA.children).toHaveLength(1)
-			expect(selectorA.children[0].type).toBe(NODE_SELECTOR_TYPE)
+			expect(selectorA.children[0].type).toBe(TYPE_SELECTOR)
 			expect(selectorA.children[0].text).toBe('a')
 
 			// Second selector: 'b'
 			const selectorB = innerSelectorList.children[1]
-			expect(selectorB.type).toBe(NODE_SELECTOR)
+			expect(selectorB.type).toBe(SELECTOR)
 			expect(selectorB.children).toHaveLength(1)
-			expect(selectorB.children[0].type).toBe(NODE_SELECTOR_TYPE)
+			expect(selectorB.children[0].type).toBe(TYPE_SELECTOR)
 			expect(selectorB.children[0].text).toBe('b')
 		})
 
@@ -1470,15 +1470,15 @@ describe('SelectorParser', () => {
 			const root = parse_selector(':lang("nl", "de")')
 
 			// Root is selector list
-			expect(root.type).toBe(NODE_SELECTOR_LIST)
+			expect(root.type).toBe(SELECTOR_LIST)
 
 			// First selector in the list
 			const selector = root.first_child!
-			expect(selector.type).toBe(NODE_SELECTOR)
+			expect(selector.type).toBe(SELECTOR)
 
 			// Selector has :lang() pseudo-class
 			const langPseudoClass = selector.first_child!
-			expect(langPseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(langPseudoClass.type).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(langPseudoClass.text).toBe(':lang("nl", "de")')
 
 			// :lang() has 2 children - language identifiers
@@ -1487,12 +1487,12 @@ describe('SelectorParser', () => {
 
 			// First language identifier: "nl"
 			const lang1 = langPseudoClass.children[0]
-			expect(lang1.type).toBe(NODE_SELECTOR_LANG)
+			expect(lang1.type).toBe(LANG_SELECTOR)
 			expect(lang1.text).toBe('"nl"')
 
 			// Second language identifier: "de"
 			const lang2 = langPseudoClass.children[1]
-			expect(lang2.type).toBe(NODE_SELECTOR_LANG)
+			expect(lang2.type).toBe(LANG_SELECTOR)
 			expect(lang2.text).toBe('"de"')
 		})
 
@@ -1502,7 +1502,7 @@ describe('SelectorParser', () => {
 			const selector = root.first_child!
 			const langPseudoClass = selector.first_child!
 
-			expect(langPseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(langPseudoClass.type).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(langPseudoClass.text).toBe(':lang(en, fr)')
 
 			// :lang() has 2 children - language identifiers
@@ -1510,12 +1510,12 @@ describe('SelectorParser', () => {
 
 			// First language identifier: en
 			const lang1 = langPseudoClass.children[0]
-			expect(lang1.type).toBe(NODE_SELECTOR_LANG)
+			expect(lang1.type).toBe(LANG_SELECTOR)
 			expect(lang1.text).toBe('en')
 
 			// Second language identifier: fr
 			const lang2 = langPseudoClass.children[1]
-			expect(lang2.type).toBe(NODE_SELECTOR_LANG)
+			expect(lang2.type).toBe(LANG_SELECTOR)
 			expect(lang2.text).toBe('fr')
 		})
 
@@ -1525,14 +1525,14 @@ describe('SelectorParser', () => {
 			const selector = root.first_child!
 			const langPseudoClass = selector.first_child!
 
-			expect(langPseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(langPseudoClass.type).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(langPseudoClass.text).toBe(':lang(en-US)')
 
 			// :lang() has 1 child - single language identifier
 			expect(langPseudoClass.children).toHaveLength(1)
 
 			const lang1 = langPseudoClass.children[0]
-			expect(lang1.type).toBe(NODE_SELECTOR_LANG)
+			expect(lang1.type).toBe(LANG_SELECTOR)
 			expect(lang1.text).toBe('en-US')
 		})
 
@@ -1542,14 +1542,14 @@ describe('SelectorParser', () => {
 			const selector = root.first_child!
 			const langPseudoClass = selector.first_child!
 
-			expect(langPseudoClass.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(langPseudoClass.type).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(langPseudoClass.text).toBe(':lang("*-Latn")')
 
 			// :lang() has 1 child - wildcard language identifier
 			expect(langPseudoClass.children).toHaveLength(1)
 
 			const lang1 = langPseudoClass.children[0]
-			expect(lang1.type).toBe(NODE_SELECTOR_LANG)
+			expect(lang1.type).toBe(LANG_SELECTOR)
 			expect(lang1.text).toBe('"*-Latn"')
 		})
 	})
@@ -1559,7 +1559,7 @@ describe('parse_selector()', () => {
 	test('should parse simple type selector', () => {
 		const result = parse_selector('div')
 
-		expect(result.type).toBe(NODE_SELECTOR_LIST)
+		expect(result.type).toBe(SELECTOR_LIST)
 		expect(result.text).toBe('div')
 		expect(result.has_children).toBe(true)
 	})
@@ -1567,7 +1567,7 @@ describe('parse_selector()', () => {
 	test('should parse class selector', () => {
 		const result = parse_selector('.classname')
 
-		expect(result.type).toBe(NODE_SELECTOR_LIST)
+		expect(result.type).toBe(SELECTOR_LIST)
 		expect(result.text).toBe('.classname')
 		expect(result.has_children).toBe(true)
 	})
@@ -1575,7 +1575,7 @@ describe('parse_selector()', () => {
 	test('should parse ID selector', () => {
 		const result = parse_selector('#identifier')
 
-		expect(result.type).toBe(NODE_SELECTOR_LIST)
+		expect(result.type).toBe(SELECTOR_LIST)
 		expect(result.text).toBe('#identifier')
 		expect(result.has_children).toBe(true)
 	})
@@ -1583,7 +1583,7 @@ describe('parse_selector()', () => {
 	test('should parse compound selector', () => {
 		const result = parse_selector('div.class#id')
 
-		expect(result.type).toBe(NODE_SELECTOR_LIST)
+		expect(result.type).toBe(SELECTOR_LIST)
 		expect(result.text).toBe('div.class#id')
 		expect(result.has_children).toBe(true)
 	})
@@ -1591,7 +1591,7 @@ describe('parse_selector()', () => {
 	test('should parse complex selector with combinator', () => {
 		const result = parse_selector('div.class > p#id')
 
-		expect(result.type).toBe(NODE_SELECTOR_LIST)
+		expect(result.type).toBe(SELECTOR_LIST)
 		expect(result.text).toBe('div.class > p#id')
 		expect(result.has_children).toBe(true)
 	})
@@ -1599,7 +1599,7 @@ describe('parse_selector()', () => {
 	test('should parse selector list', () => {
 		const result = parse_selector('h1, h2, h3')
 
-		expect(result.type).toBe(NODE_SELECTOR_LIST)
+		expect(result.type).toBe(SELECTOR_LIST)
 		expect(result.text).toBe('h1, h2, h3')
 		expect(result.has_children).toBe(true)
 	})
@@ -1607,7 +1607,7 @@ describe('parse_selector()', () => {
 	test('should parse pseudo-class selector', () => {
 		const result = parse_selector('a:hover')
 
-		expect(result.type).toBe(NODE_SELECTOR_LIST)
+		expect(result.type).toBe(SELECTOR_LIST)
 		expect(result.text).toBe('a:hover')
 		expect(result.has_children).toBe(true)
 	})
@@ -1615,7 +1615,7 @@ describe('parse_selector()', () => {
 	test('should parse pseudo-class with function', () => {
 		const result = parse_selector(':nth-child(2n+1)')
 
-		expect(result.type).toBe(NODE_SELECTOR_LIST)
+		expect(result.type).toBe(SELECTOR_LIST)
 		expect(result.text).toBe(':nth-child(2n+1)')
 		expect(result.has_children).toBe(true)
 	})
@@ -1623,14 +1623,14 @@ describe('parse_selector()', () => {
 	test('should parse unknown pseudo-class without parens', () => {
 		let root = parse_selector(':hello')
 		let pseudo = root.first_child?.first_child
-		expect(pseudo?.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+		expect(pseudo?.type).toBe(PSEUDO_CLASS_SELECTOR)
 		expect(pseudo?.has_children).toBe(false)
 	})
 
 	test('should parse unknown pseudo-class with empty parens', () => {
 		let root = parse_selector(':hello()')
 		let pseudo = root.first_child?.first_child
-		expect(pseudo?.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+		expect(pseudo?.type).toBe(PSEUDO_CLASS_SELECTOR)
 		expect(pseudo?.has_children).toBe(true)
 		expect(pseudo?.children.length).toBe(0)
 	})
@@ -1638,7 +1638,7 @@ describe('parse_selector()', () => {
 	test('should parse attribute selector', () => {
 		const result = parse_selector('[href^="https"]')
 
-		expect(result.type).toBe(NODE_SELECTOR_LIST)
+		expect(result.type).toBe(SELECTOR_LIST)
 		expect(result.text).toBe('[href^="https"]')
 		expect(result.has_children).toBe(true)
 	})
@@ -1646,7 +1646,7 @@ describe('parse_selector()', () => {
 	test('should parse universal selector', () => {
 		const result = parse_selector('*')
 
-		expect(result.type).toBe(NODE_SELECTOR_LIST)
+		expect(result.type).toBe(SELECTOR_LIST)
 		expect(result.text).toBe('*')
 		expect(result.has_children).toBe(true)
 	})
@@ -1654,7 +1654,7 @@ describe('parse_selector()', () => {
 	test('should parse nesting selector', () => {
 		const result = parse_selector('& .child')
 
-		expect(result.type).toBe(NODE_SELECTOR_LIST)
+		expect(result.type).toBe(SELECTOR_LIST)
 		expect(result.text).toBe('& .child')
 		expect(result.has_children).toBe(true)
 	})
@@ -1662,7 +1662,7 @@ describe('parse_selector()', () => {
 	test('should parse descendant combinator', () => {
 		const result = parse_selector('div span')
 
-		expect(result.type).toBe(NODE_SELECTOR_LIST)
+		expect(result.type).toBe(SELECTOR_LIST)
 		expect(result.text).toBe('div span')
 		expect(result.has_children).toBe(true)
 	})
@@ -1670,7 +1670,7 @@ describe('parse_selector()', () => {
 	test('should parse child combinator', () => {
 		const result = parse_selector('ul > li')
 
-		expect(result.type).toBe(NODE_SELECTOR_LIST)
+		expect(result.type).toBe(SELECTOR_LIST)
 		expect(result.text).toBe('ul > li')
 		expect(result.has_children).toBe(true)
 	})
@@ -1678,7 +1678,7 @@ describe('parse_selector()', () => {
 	test('should parse adjacent sibling combinator', () => {
 		const result = parse_selector('h1 + p')
 
-		expect(result.type).toBe(NODE_SELECTOR_LIST)
+		expect(result.type).toBe(SELECTOR_LIST)
 		expect(result.text).toBe('h1 + p')
 		expect(result.has_children).toBe(true)
 	})
@@ -1686,7 +1686,7 @@ describe('parse_selector()', () => {
 	test('should parse general sibling combinator', () => {
 		const result = parse_selector('h1 ~ p')
 
-		expect(result.type).toBe(NODE_SELECTOR_LIST)
+		expect(result.type).toBe(SELECTOR_LIST)
 		expect(result.text).toBe('h1 ~ p')
 		expect(result.has_children).toBe(true)
 	})
@@ -1694,7 +1694,7 @@ describe('parse_selector()', () => {
 	test('should parse modern pseudo-classes', () => {
 		const result = parse_selector(':is(h1, h2, h3)')
 
-		expect(result.type).toBe(NODE_SELECTOR_LIST)
+		expect(result.type).toBe(SELECTOR_LIST)
 		expect(result.text).toBe(':is(h1, h2, h3)')
 		expect(result.has_children).toBe(true)
 	})
@@ -1702,7 +1702,7 @@ describe('parse_selector()', () => {
 	test('should parse :where() pseudo-class', () => {
 		const result = parse_selector(':where(.a, .b)')
 
-		expect(result.type).toBe(NODE_SELECTOR_LIST)
+		expect(result.type).toBe(SELECTOR_LIST)
 		expect(result.text).toBe(':where(.a, .b)')
 		expect(result.has_children).toBe(true)
 	})
@@ -1710,7 +1710,7 @@ describe('parse_selector()', () => {
 	test('should parse :has() pseudo-class', () => {
 		const result = parse_selector('div:has(> img)')
 
-		expect(result.type).toBe(NODE_SELECTOR_LIST)
+		expect(result.type).toBe(SELECTOR_LIST)
 		expect(result.text).toBe('div:has(> img)')
 		expect(result.has_children).toBe(true)
 	})
@@ -1718,7 +1718,7 @@ describe('parse_selector()', () => {
 	test('should parse empty selector', () => {
 		const result = parse_selector('')
 
-		expect(result.type).toBe(NODE_SELECTOR_LIST)
+		expect(result.type).toBe(SELECTOR_LIST)
 		expect(result.text).toBe('')
 	})
 
@@ -1744,15 +1744,15 @@ describe('parse_selector()', () => {
 		test('should parse ns|* (namespace with universal selector)', () => {
 			const result = parse_selector('ns|*')
 
-			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.type).toBe(SELECTOR_LIST)
 			expect(result.text).toBe('ns|*')
 
 			const selector = result.first_child
-			expect(selector?.type).toBe(NODE_SELECTOR)
+			expect(selector?.type).toBe(SELECTOR)
 			expect(selector?.text).toBe('ns|*')
 
 			const universal = selector?.first_child
-			expect(universal?.type).toBe(NODE_SELECTOR_UNIVERSAL)
+			expect(universal?.type).toBe(UNIVERSAL_SELECTOR)
 			expect(universal?.text).toBe('ns|*')
 			expect(universal?.name).toBe('ns')
 		})
@@ -1760,14 +1760,14 @@ describe('parse_selector()', () => {
 		test('should parse ns|div (namespace with type selector)', () => {
 			const result = parse_selector('ns|div')
 
-			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.type).toBe(SELECTOR_LIST)
 			expect(result.text).toBe('ns|div')
 
 			const selector = result.first_child
-			expect(selector?.type).toBe(NODE_SELECTOR)
+			expect(selector?.type).toBe(SELECTOR)
 
 			const typeSelector = selector?.first_child
-			expect(typeSelector?.type).toBe(NODE_SELECTOR_TYPE)
+			expect(typeSelector?.type).toBe(TYPE_SELECTOR)
 			expect(typeSelector?.text).toBe('ns|div')
 			expect(typeSelector?.name).toBe('ns')
 		})
@@ -1775,12 +1775,12 @@ describe('parse_selector()', () => {
 		test('should parse *|* (any namespace with universal selector)', () => {
 			const result = parse_selector('*|*')
 
-			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.type).toBe(SELECTOR_LIST)
 			expect(result.text).toBe('*|*')
 
 			const selector = result.first_child
 			const universal = selector?.first_child
-			expect(universal?.type).toBe(NODE_SELECTOR_UNIVERSAL)
+			expect(universal?.type).toBe(UNIVERSAL_SELECTOR)
 			expect(universal?.text).toBe('*|*')
 			expect(universal?.name).toBe('*')
 		})
@@ -1788,12 +1788,12 @@ describe('parse_selector()', () => {
 		test('should parse *|div (any namespace with type selector)', () => {
 			const result = parse_selector('*|div')
 
-			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.type).toBe(SELECTOR_LIST)
 			expect(result.text).toBe('*|div')
 
 			const selector = result.first_child
 			const typeSelector = selector?.first_child
-			expect(typeSelector?.type).toBe(NODE_SELECTOR_TYPE)
+			expect(typeSelector?.type).toBe(TYPE_SELECTOR)
 			expect(typeSelector?.text).toBe('*|div')
 			expect(typeSelector?.name).toBe('*')
 		})
@@ -1801,12 +1801,12 @@ describe('parse_selector()', () => {
 		test('should parse |* (empty namespace with universal selector)', () => {
 			const result = parse_selector('|*')
 
-			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.type).toBe(SELECTOR_LIST)
 			expect(result.text).toBe('|*')
 
 			const selector = result.first_child
 			const universal = selector?.first_child
-			expect(universal?.type).toBe(NODE_SELECTOR_UNIVERSAL)
+			expect(universal?.type).toBe(UNIVERSAL_SELECTOR)
 			expect(universal?.text).toBe('|*')
 			// Empty namespace should result in empty name
 			expect(universal?.name).toBe('|')
@@ -1815,12 +1815,12 @@ describe('parse_selector()', () => {
 		test('should parse |div (empty namespace with type selector)', () => {
 			const result = parse_selector('|div')
 
-			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.type).toBe(SELECTOR_LIST)
 			expect(result.text).toBe('|div')
 
 			const selector = result.first_child
 			const typeSelector = selector?.first_child
-			expect(typeSelector?.type).toBe(NODE_SELECTOR_TYPE)
+			expect(typeSelector?.type).toBe(TYPE_SELECTOR)
 			expect(typeSelector?.text).toBe('|div')
 			// Empty namespace should result in empty name
 			expect(typeSelector?.name).toBe('|')
@@ -1829,69 +1829,69 @@ describe('parse_selector()', () => {
 		test('should parse namespace selector with class', () => {
 			const result = parse_selector('ns|div.class')
 
-			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.type).toBe(SELECTOR_LIST)
 			expect(result.text).toBe('ns|div.class')
 
 			const selector = result.first_child
 			const children = selector?.children || []
 			expect(children.length).toBe(2)
-			expect(children[0].type).toBe(NODE_SELECTOR_TYPE)
+			expect(children[0].type).toBe(TYPE_SELECTOR)
 			expect(children[0].text).toBe('ns|div')
 			expect(children[0].name).toBe('ns')
-			expect(children[1].type).toBe(NODE_SELECTOR_CLASS)
+			expect(children[1].type).toBe(CLASS_SELECTOR)
 		})
 
 		test('should parse namespace selector with ID', () => {
 			const result = parse_selector('ns|*#id')
 
-			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.type).toBe(SELECTOR_LIST)
 			expect(result.text).toBe('ns|*#id')
 
 			const selector = result.first_child
 			const children = selector?.children || []
 			expect(children.length).toBe(2)
-			expect(children[0].type).toBe(NODE_SELECTOR_UNIVERSAL)
+			expect(children[0].type).toBe(UNIVERSAL_SELECTOR)
 			expect(children[0].text).toBe('ns|*')
-			expect(children[1].type).toBe(NODE_SELECTOR_ID)
+			expect(children[1].type).toBe(ID_SELECTOR)
 		})
 
 		test('should parse namespace selector in complex selector', () => {
 			const result = parse_selector('ns|div > *|span')
 
-			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.type).toBe(SELECTOR_LIST)
 			expect(result.text).toBe('ns|div > *|span')
 
 			const selector = result.first_child
 			const children = selector?.children || []
 			expect(children.length).toBe(3) // div, >, span
-			expect(children[0].type).toBe(NODE_SELECTOR_TYPE)
+			expect(children[0].type).toBe(TYPE_SELECTOR)
 			expect(children[0].text).toBe('ns|div')
-			expect(children[1].type).toBe(NODE_SELECTOR_COMBINATOR)
-			expect(children[2].type).toBe(NODE_SELECTOR_TYPE)
+			expect(children[1].type).toBe(COMBINATOR)
+			expect(children[2].type).toBe(TYPE_SELECTOR)
 			expect(children[2].text).toBe('*|span')
 		})
 
 		test('should parse namespace selector in selector list', () => {
 			const result = parse_selector('ns|div, |span, *|p')
 
-			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.type).toBe(SELECTOR_LIST)
 			expect(result.text).toBe('ns|div, |span, *|p')
 
 			const selectors = result.children
 			expect(selectors.length).toBe(3)
 
 			const firstType = selectors[0].first_child
-			expect(firstType?.type).toBe(NODE_SELECTOR_TYPE)
+			expect(firstType?.type).toBe(TYPE_SELECTOR)
 			expect(firstType?.text).toBe('ns|div')
 			expect(firstType?.name).toBe('ns')
 
 			const secondType = selectors[1].first_child
-			expect(secondType?.type).toBe(NODE_SELECTOR_TYPE)
+			expect(secondType?.type).toBe(TYPE_SELECTOR)
 			expect(secondType?.text).toBe('|span')
 			expect(secondType?.name).toBe('|')
 
 			const thirdType = selectors[2].first_child
-			expect(thirdType?.type).toBe(NODE_SELECTOR_TYPE)
+			expect(thirdType?.type).toBe(TYPE_SELECTOR)
 			expect(thirdType?.text).toBe('*|p')
 			expect(thirdType?.name).toBe('*')
 		})
@@ -1899,40 +1899,40 @@ describe('parse_selector()', () => {
 		test('should parse namespace selector with attribute', () => {
 			const result = parse_selector('ns|div[attr="value"]')
 
-			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.type).toBe(SELECTOR_LIST)
 			expect(result.text).toBe('ns|div[attr="value"]')
 
 			const selector = result.first_child
 			const children = selector?.children || []
 			expect(children.length).toBe(2)
-			expect(children[0].type).toBe(NODE_SELECTOR_TYPE)
+			expect(children[0].type).toBe(TYPE_SELECTOR)
 			expect(children[0].name).toBe('ns')
-			expect(children[1].type).toBe(NODE_SELECTOR_ATTRIBUTE)
+			expect(children[1].type).toBe(ATTRIBUTE_SELECTOR)
 		})
 
 		test('should parse namespace selector with pseudo-class', () => {
 			const result = parse_selector('ns|a:hover')
 
-			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.type).toBe(SELECTOR_LIST)
 			expect(result.text).toBe('ns|a:hover')
 
 			const selector = result.first_child
 			const children = selector?.children || []
 			expect(children.length).toBe(2)
-			expect(children[0].type).toBe(NODE_SELECTOR_TYPE)
+			expect(children[0].type).toBe(TYPE_SELECTOR)
 			expect(children[0].name).toBe('ns')
-			expect(children[1].type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(children[1].type).toBe(PSEUDO_CLASS_SELECTOR)
 		})
 
 		test('should parse namespace with various identifiers', () => {
 			const result = parse_selector('svg|rect')
 
-			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.type).toBe(SELECTOR_LIST)
 			expect(result.text).toBe('svg|rect')
 
 			const selector = result.first_child
 			const typeSelector = selector?.first_child
-			expect(typeSelector?.type).toBe(NODE_SELECTOR_TYPE)
+			expect(typeSelector?.type).toBe(TYPE_SELECTOR)
 			expect(typeSelector?.text).toBe('svg|rect')
 			expect(typeSelector?.name).toBe('svg')
 		})
@@ -1940,39 +1940,39 @@ describe('parse_selector()', () => {
 		test('should parse long namespace identifier', () => {
 			const result = parse_selector('myNamespace|element')
 
-			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.type).toBe(SELECTOR_LIST)
 			expect(result.text).toBe('myNamespace|element')
 
 			const selector = result.first_child
 			const typeSelector = selector?.first_child
-			expect(typeSelector?.type).toBe(NODE_SELECTOR_TYPE)
+			expect(typeSelector?.type).toBe(TYPE_SELECTOR)
 			expect(typeSelector?.name).toBe('myNamespace')
 		})
 
 		test('should handle namespace in nested pseudo-class', () => {
 			const result = parse_selector(':is(ns|div, *|span)')
 
-			expect(result.type).toBe(NODE_SELECTOR_LIST)
+			expect(result.type).toBe(SELECTOR_LIST)
 			expect(result.text).toBe(':is(ns|div, *|span)')
 
 			const selector = result.first_child
 			const pseudo = selector?.first_child
-			expect(pseudo?.type).toBe(NODE_SELECTOR_PSEUDO_CLASS)
+			expect(pseudo?.type).toBe(PSEUDO_CLASS_SELECTOR)
 			expect(pseudo?.name).toBe('is')
 
 			// The content should contain namespace selectors
 			const nestedList = pseudo?.first_child
-			expect(nestedList?.type).toBe(NODE_SELECTOR_LIST)
+			expect(nestedList?.type).toBe(SELECTOR_LIST)
 
 			const nestedSelectors = nestedList?.children || []
 			expect(nestedSelectors.length).toBe(2)
 
 			const firstNestedType = nestedSelectors[0].first_child
-			expect(firstNestedType?.type).toBe(NODE_SELECTOR_TYPE)
+			expect(firstNestedType?.type).toBe(TYPE_SELECTOR)
 			expect(firstNestedType?.text).toBe('ns|div')
 
 			const secondNestedType = nestedSelectors[1].first_child
-			expect(secondNestedType?.type).toBe(NODE_SELECTOR_TYPE)
+			expect(secondNestedType?.type).toBe(TYPE_SELECTOR)
 			expect(secondNestedType?.text).toBe('*|span')
 		})
 	})

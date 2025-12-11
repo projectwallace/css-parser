@@ -1,16 +1,6 @@
 // Value Parser - Parses CSS declaration values into structured AST nodes
 import { Lexer } from './lexer'
-import {
-	CSSDataArena,
-	NODE_VALUE_KEYWORD,
-	NODE_VALUE_NUMBER,
-	NODE_VALUE_DIMENSION,
-	NODE_VALUE_STRING,
-	NODE_VALUE_COLOR,
-	NODE_VALUE_FUNCTION,
-	NODE_VALUE_OPERATOR,
-	NODE_VALUE_PARENTHESIS,
-} from './arena'
+import { CSSDataArena, IDENTIFIER, NUMBER, DIMENSION, STRING, HASH, FUNCTION, OPERATOR, PARENTHESIS, URL } from './arena'
 import {
 	TOKEN_IDENT,
 	TOKEN_NUMBER,
@@ -97,20 +87,20 @@ export class ValueParser {
 
 		switch (token_type) {
 			case TOKEN_IDENT:
-				return this.create_node(NODE_VALUE_KEYWORD, start, end)
+				return this.create_node(IDENTIFIER, start, end)
 
 			case TOKEN_NUMBER:
-				return this.create_node(NODE_VALUE_NUMBER, start, end)
+				return this.create_node(NUMBER, start, end)
 
 			case TOKEN_PERCENTAGE:
 			case TOKEN_DIMENSION:
-				return this.create_node(NODE_VALUE_DIMENSION, start, end)
+				return this.create_node(DIMENSION, start, end)
 
 			case TOKEN_STRING:
-				return this.create_node(NODE_VALUE_STRING, start, end)
+				return this.create_node(STRING, start, end)
 
 			case TOKEN_HASH:
-				return this.create_node(NODE_VALUE_COLOR, start, end)
+				return this.create_node(HASH, start, end)
 
 			case TOKEN_FUNCTION:
 				return this.parse_function_node(start, end)
@@ -119,7 +109,7 @@ export class ValueParser {
 				return this.parse_operator_node(start, end)
 
 			case TOKEN_COMMA:
-				return this.create_node(NODE_VALUE_OPERATOR, start, end)
+				return this.create_node(OPERATOR, start, end)
 
 			case TOKEN_LEFT_PAREN:
 				return this.parse_parenthesis_node(start, end)
@@ -142,7 +132,7 @@ export class ValueParser {
 	}
 
 	private create_operator_node(start: number, end: number): number {
-		return this.create_node(NODE_VALUE_OPERATOR, start, end)
+		return this.create_node(OPERATOR, start, end)
 	}
 
 	private parse_operator_node(start: number, end: number): number | null {
@@ -156,19 +146,19 @@ export class ValueParser {
 	}
 
 	private parse_function_node(start: number, end: number): number {
-		// Create function node
-		let node = this.arena.create_node()
-		this.arena.set_type(node, NODE_VALUE_FUNCTION)
-		this.arena.set_start_offset(node, start)
-
 		// Function name is everything before the '('
 		// The lexer's TOKEN_FUNCTION includes the '(' at the end
 		let name_end = end - 1 // Exclude the '('
-		this.arena.set_content_start(node, start)
-		this.arena.set_content_length(node, name_end - start)
 
 		// Get function name to check for special handling
 		let func_name = this.source.substring(start, name_end).toLowerCase()
+
+		// Create URL or function node based on function name
+		let node = this.arena.create_node()
+		this.arena.set_type(node, func_name === 'url' ? URL : FUNCTION)
+		this.arena.set_start_offset(node, start)
+		this.arena.set_content_start(node, start)
+		this.arena.set_content_length(node, name_end - start)
 
 		// Special handling for url() and src() functions with unquoted content:
 		// Don't parse contents to preserve URLs with dots, base64, inline SVGs, etc.
@@ -295,7 +285,7 @@ export class ValueParser {
 	private parse_parenthesis_node(start: number, end: number): number {
 		// Create parenthesis node
 		let node = this.arena.create_node()
-		this.arena.set_type(node, NODE_VALUE_PARENTHESIS)
+		this.arena.set_type(node, PARENTHESIS)
 		this.arena.set_start_offset(node, start)
 
 		// Parse parenthesized content (everything until matching ')')

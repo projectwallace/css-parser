@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { ANplusBParser } from './parse-anplusb'
-import { CSSDataArena, NODE_SELECTOR_NTH } from './arena'
+import { CSSDataArena, NTH_SELECTOR } from './arena'
 import { CSSNode } from './css-node'
 
 // Helper to parse An+B expression
@@ -18,7 +18,7 @@ describe('ANplusBParser', () => {
 		it('should parse positive integer', () => {
 			const node = parse_anplusb('3')!
 			expect(node).not.toBeNull()
-			expect(node.type).toBe(NODE_SELECTOR_NTH)
+			expect(node.type).toBe(NTH_SELECTOR)
 			expect(node.nth_a).toBe(null)
 			expect(node.nth_b).toBe('3')
 			expect(node.text).toBe('3')

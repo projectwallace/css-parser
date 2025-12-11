@@ -1,45 +1,42 @@
 // CSSNode - Ergonomic wrapper over arena node indices
 import type { CSSDataArena } from './arena'
 import {
-	NODE_STYLESHEET,
-	NODE_STYLE_RULE,
-	NODE_AT_RULE,
-	NODE_DECLARATION,
-	NODE_SELECTOR,
-	NODE_COMMENT,
-	NODE_BLOCK,
-	NODE_VALUE_KEYWORD,
-	NODE_VALUE_NUMBER,
-	NODE_VALUE_DIMENSION,
-	NODE_VALUE_STRING,
-	NODE_VALUE_COLOR,
-	NODE_VALUE_FUNCTION,
-	NODE_VALUE_OPERATOR,
-	NODE_VALUE_PARENTHESIS,
-	NODE_SELECTOR_LIST,
-	NODE_SELECTOR_TYPE,
-	NODE_SELECTOR_CLASS,
-	NODE_SELECTOR_ID,
-	NODE_SELECTOR_ATTRIBUTE,
-	NODE_SELECTOR_PSEUDO_CLASS,
-	NODE_SELECTOR_PSEUDO_ELEMENT,
-	NODE_SELECTOR_COMBINATOR,
-	NODE_SELECTOR_UNIVERSAL,
-	NODE_SELECTOR_NESTING,
-	NODE_SELECTOR_NTH,
-	NODE_SELECTOR_NTH_OF,
-	NODE_SELECTOR_LANG,
-	NODE_PRELUDE_MEDIA_QUERY,
-	NODE_PRELUDE_MEDIA_FEATURE,
-	NODE_PRELUDE_MEDIA_TYPE,
-	NODE_PRELUDE_CONTAINER_QUERY,
-	NODE_PRELUDE_SUPPORTS_QUERY,
-	NODE_PRELUDE_LAYER_NAME,
-	NODE_PRELUDE_IDENTIFIER,
-	NODE_PRELUDE_OPERATOR,
-	NODE_PRELUDE_IMPORT_URL,
-	NODE_PRELUDE_IMPORT_LAYER,
-	NODE_PRELUDE_IMPORT_SUPPORTS,
+	STYLESHEET,
+	STYLE_RULE,
+	AT_RULE,
+	DECLARATION,
+	SELECTOR,
+	COMMENT,
+	BLOCK,
+	IDENTIFIER,
+	NUMBER,
+	DIMENSION,
+	STRING,
+	HASH,
+	FUNCTION,
+	OPERATOR,
+	PARENTHESIS,
+	URL,
+	SELECTOR_LIST,
+	TYPE_SELECTOR,
+	CLASS_SELECTOR,
+	ID_SELECTOR,
+	ATTRIBUTE_SELECTOR,
+	PSEUDO_CLASS_SELECTOR,
+	PSEUDO_ELEMENT_SELECTOR,
+	COMBINATOR,
+	UNIVERSAL_SELECTOR,
+	NESTING_SELECTOR,
+	NTH_SELECTOR,
+	NTH_OF_SELECTOR,
+	LANG_SELECTOR,
+	MEDIA_QUERY,
+	MEDIA_FEATURE,
+	MEDIA_TYPE,
+	CONTAINER_QUERY,
+	SUPPORTS_QUERY,
+	LAYER_NAME,
+	PRELUDE_OPERATOR,
 	FLAG_IMPORTANT,
 	FLAG_HAS_ERROR,
 	FLAG_HAS_BLOCK,
@@ -51,90 +48,84 @@ import {
 import { CHAR_MINUS_HYPHEN, CHAR_PLUS, is_whitespace } from './string-utils'
 import { parse_dimension } from './parse-utils'
 
-// Type name lookup table - maps numeric type to human-readable string
+// Type name lookup table - maps numeric type to CSSTree-compatible strings
 export const TYPE_NAMES: Record<number, string> = {
-	[NODE_STYLESHEET]: 'stylesheet',
-	[NODE_STYLE_RULE]: 'rule',
-	[NODE_AT_RULE]: 'atrule',
-	[NODE_DECLARATION]: 'declaration',
-	[NODE_SELECTOR]: 'selector',
-	[NODE_COMMENT]: 'comment',
-	[NODE_BLOCK]: 'block',
-	[NODE_VALUE_KEYWORD]: 'keyword',
-	[NODE_VALUE_NUMBER]: 'number',
-	[NODE_VALUE_DIMENSION]: 'dimension',
-	[NODE_VALUE_STRING]: 'string',
-	[NODE_VALUE_COLOR]: 'color',
-	[NODE_VALUE_FUNCTION]: 'function',
-	[NODE_VALUE_OPERATOR]: 'operator',
-	[NODE_VALUE_PARENTHESIS]: 'parenthesis',
-	[NODE_SELECTOR_LIST]: 'selectorlist',
-	[NODE_SELECTOR_TYPE]: 'type-selector',
-	[NODE_SELECTOR_CLASS]: 'class-selector',
-	[NODE_SELECTOR_ID]: 'id-selector',
-	[NODE_SELECTOR_ATTRIBUTE]: 'attribute-selector',
-	[NODE_SELECTOR_PSEUDO_CLASS]: 'pseudoclass-selector',
-	[NODE_SELECTOR_PSEUDO_ELEMENT]: 'pseudoelement-selector',
-	[NODE_SELECTOR_COMBINATOR]: 'selector-combinator',
-	[NODE_SELECTOR_UNIVERSAL]: 'universal-selector',
-	[NODE_SELECTOR_NESTING]: 'nesting-selector',
-	[NODE_SELECTOR_NTH]: 'nth-selector',
-	[NODE_SELECTOR_NTH_OF]: 'nth-of-selector',
-	[NODE_SELECTOR_LANG]: 'lang-selector',
-	[NODE_PRELUDE_MEDIA_QUERY]: 'media-query',
-	[NODE_PRELUDE_MEDIA_FEATURE]: 'media-feature',
-	[NODE_PRELUDE_MEDIA_TYPE]: 'media-type',
-	[NODE_PRELUDE_CONTAINER_QUERY]: 'container-query',
-	[NODE_PRELUDE_SUPPORTS_QUERY]: 'supports-query',
-	[NODE_PRELUDE_LAYER_NAME]: 'layer-name',
-	[NODE_PRELUDE_IDENTIFIER]: 'identifier',
-	[NODE_PRELUDE_OPERATOR]: 'operator',
-	[NODE_PRELUDE_IMPORT_URL]: 'import-url',
-	[NODE_PRELUDE_IMPORT_LAYER]: 'import-layer',
-	[NODE_PRELUDE_IMPORT_SUPPORTS]: 'import-supports',
+	[STYLESHEET]: 'StyleSheet',
+	[STYLE_RULE]: 'Rule',
+	[AT_RULE]: 'Atrule',
+	[DECLARATION]: 'Declaration',
+	[SELECTOR]: 'Selector',
+	[COMMENT]: 'Comment',
+	[BLOCK]: 'Block',
+	[IDENTIFIER]: 'Identifier',
+	[NUMBER]: 'Number',
+	[DIMENSION]: 'Dimension',
+	[STRING]: 'String',
+	[HASH]: 'Hash',
+	[FUNCTION]: 'Function',
+	[OPERATOR]: 'Operator',
+	[PARENTHESIS]: 'Parentheses',
+	[URL]: 'Url',
+	[SELECTOR_LIST]: 'SelectorList',
+	[TYPE_SELECTOR]: 'TypeSelector',
+	[CLASS_SELECTOR]: 'ClassSelector',
+	[ID_SELECTOR]: 'IdSelector',
+	[ATTRIBUTE_SELECTOR]: 'AttributeSelector',
+	[PSEUDO_CLASS_SELECTOR]: 'PseudoClassSelector',
+	[PSEUDO_ELEMENT_SELECTOR]: 'PseudoElementSelector',
+	[COMBINATOR]: 'Combinator',
+	[UNIVERSAL_SELECTOR]: 'UniversalSelector',
+	[NESTING_SELECTOR]: 'NestingSelector',
+	[NTH_SELECTOR]: 'Nth',
+	[NTH_OF_SELECTOR]: 'NthOf',
+	[LANG_SELECTOR]: 'Lang',
+	[MEDIA_QUERY]: 'MediaQuery',
+	[MEDIA_FEATURE]: 'Feature',
+	[MEDIA_TYPE]: 'MediaType',
+	[CONTAINER_QUERY]: 'ContainerQuery',
+	[SUPPORTS_QUERY]: 'SupportsQuery',
+	[LAYER_NAME]: 'Layer',
+	[PRELUDE_OPERATOR]: 'Operator',
 } as const
 
 // Node type constants (numeric for performance)
 export type CSSNodeType =
-	| typeof NODE_STYLESHEET
-	| typeof NODE_STYLE_RULE
-	| typeof NODE_AT_RULE
-	| typeof NODE_DECLARATION
-	| typeof NODE_SELECTOR
-	| typeof NODE_COMMENT
-	| typeof NODE_BLOCK
-	| typeof NODE_VALUE_KEYWORD
-	| typeof NODE_VALUE_NUMBER
-	| typeof NODE_VALUE_DIMENSION
-	| typeof NODE_VALUE_STRING
-	| typeof NODE_VALUE_COLOR
-	| typeof NODE_VALUE_FUNCTION
-	| typeof NODE_VALUE_OPERATOR
-	| typeof NODE_VALUE_PARENTHESIS
-	| typeof NODE_SELECTOR_LIST
-	| typeof NODE_SELECTOR_TYPE
-	| typeof NODE_SELECTOR_CLASS
-	| typeof NODE_SELECTOR_ID
-	| typeof NODE_SELECTOR_ATTRIBUTE
-	| typeof NODE_SELECTOR_PSEUDO_CLASS
-	| typeof NODE_SELECTOR_PSEUDO_ELEMENT
-	| typeof NODE_SELECTOR_COMBINATOR
-	| typeof NODE_SELECTOR_UNIVERSAL
-	| typeof NODE_SELECTOR_NESTING
-	| typeof NODE_SELECTOR_NTH
-	| typeof NODE_SELECTOR_NTH_OF
-	| typeof NODE_SELECTOR_LANG
-	| typeof NODE_PRELUDE_MEDIA_QUERY
-	| typeof NODE_PRELUDE_MEDIA_FEATURE
-	| typeof NODE_PRELUDE_MEDIA_TYPE
-	| typeof NODE_PRELUDE_CONTAINER_QUERY
-	| typeof NODE_PRELUDE_SUPPORTS_QUERY
-	| typeof NODE_PRELUDE_LAYER_NAME
-	| typeof NODE_PRELUDE_IDENTIFIER
-	| typeof NODE_PRELUDE_OPERATOR
-	| typeof NODE_PRELUDE_IMPORT_URL
-	| typeof NODE_PRELUDE_IMPORT_LAYER
-	| typeof NODE_PRELUDE_IMPORT_SUPPORTS
+	| typeof STYLESHEET
+	| typeof STYLE_RULE
+	| typeof AT_RULE
+	| typeof DECLARATION
+	| typeof SELECTOR
+	| typeof COMMENT
+	| typeof BLOCK
+	| typeof IDENTIFIER
+	| typeof NUMBER
+	| typeof DIMENSION
+	| typeof STRING
+	| typeof HASH
+	| typeof FUNCTION
+	| typeof OPERATOR
+	| typeof PARENTHESIS
+	| typeof URL
+	| typeof SELECTOR_LIST
+	| typeof TYPE_SELECTOR
+	| typeof CLASS_SELECTOR
+	| typeof ID_SELECTOR
+	| typeof ATTRIBUTE_SELECTOR
+	| typeof PSEUDO_CLASS_SELECTOR
+	| typeof PSEUDO_ELEMENT_SELECTOR
+	| typeof COMBINATOR
+	| typeof UNIVERSAL_SELECTOR
+	| typeof NESTING_SELECTOR
+	| typeof NTH_SELECTOR
+	| typeof NTH_OF_SELECTOR
+	| typeof LANG_SELECTOR
+	| typeof MEDIA_QUERY
+	| typeof MEDIA_FEATURE
+	| typeof MEDIA_TYPE
+	| typeof CONTAINER_QUERY
+	| typeof SUPPORTS_QUERY
+	| typeof LAYER_NAME
+	| typeof PRELUDE_OPERATOR
 
 // Options for cloning nodes
 export interface CloneOptions {
@@ -235,7 +226,7 @@ export class CSSNode {
 	// For string nodes: returns the string content without quotes
 	get value(): string | number | null {
 		// For dimension and number nodes, parse and return as number
-		if (this.type === NODE_VALUE_DIMENSION || this.type === NODE_VALUE_NUMBER) {
+		if (this.type === DIMENSION || this.type === NUMBER) {
 			return parse_dimension(this.text).value
 		}
 
@@ -267,13 +258,13 @@ export class CSSNode {
 
 	// Get the unit for dimension nodes (e.g., "px" from "100px", "%" from "50%")
 	get unit(): string | null {
-		if (this.type !== NODE_VALUE_DIMENSION) return null
+		if (this.type !== DIMENSION) return null
 		return parse_dimension(this.text).unit
 	}
 
 	// Check if this declaration has !important
 	get is_important(): boolean | null {
-		if (this.type !== NODE_DECLARATION) return null
+		if (this.type !== DECLARATION) return null
 		return this.arena.has_flag(this.index, FLAG_IMPORTANT)
 	}
 
@@ -305,23 +296,23 @@ export class CSSNode {
 	// Get the block node (for style rules and at-rules with blocks)
 	get block(): CSSNode | null {
 		// For StyleRule: block is sibling after selector list
-		if (this.type === NODE_STYLE_RULE) {
+		if (this.type === STYLE_RULE) {
 			let first = this.first_child
 			if (!first) return null
 			// Block is the sibling after selector list
 			let blockNode = first.next_sibling
-			if (blockNode && blockNode.type === NODE_BLOCK) {
+			if (blockNode && blockNode.type === BLOCK) {
 				return blockNode
 			}
 			return null
 		}
 
 		// For AtRule: block is last child (after prelude nodes)
-		if (this.type === NODE_AT_RULE) {
+		if (this.type === AT_RULE) {
 			// Find last child that is a block
 			let child = this.first_child
 			while (child) {
-				if (child.type === NODE_BLOCK && !child.next_sibling) {
+				if (child.type === BLOCK && !child.next_sibling) {
 					return child
 				}
 				child = child.next_sibling
@@ -335,12 +326,12 @@ export class CSSNode {
 	// Check if this block is empty (no declarations or rules, only comments allowed)
 	get is_empty(): boolean {
 		// Only valid on block nodes
-		if (this.type !== NODE_BLOCK) return false
+		if (this.type !== BLOCK) return false
 
 		// Empty if no children, or all children are comments
 		let child = this.first_child
 		while (child) {
-			if (child.type !== NODE_COMMENT) {
+			if (child.type !== COMMENT) {
 				return false
 			}
 			child = child.next_sibling
@@ -418,7 +409,7 @@ export class CSSNode {
 	// This allows formatters to distinguish :lang() from :hover
 	get has_children(): boolean {
 		// For pseudo-class/pseudo-element nodes, check if they have function syntax
-		if (this.type === NODE_SELECTOR_PSEUDO_CLASS || this.type === NODE_SELECTOR_PSEUDO_ELEMENT) {
+		if (this.type === PSEUDO_CLASS_SELECTOR || this.type === PSEUDO_ELEMENT_SELECTOR) {
 			// If FLAG_HAS_PARENS is set, return true even if no actual children
 			// This indicates that `()` is there but contains no children which can be caught by checking `.children.length`
 			if (this.arena.has_flag(this.index, FLAG_HAS_PARENS)) {
@@ -452,7 +443,7 @@ export class CSSNode {
 
 	// Get the 'a' coefficient from An+B expression (e.g., "2n" from "2n+1", "odd" from "odd")
 	get nth_a(): string | null {
-		if (this.type !== NODE_SELECTOR_NTH) return null
+		if (this.type !== NTH_SELECTOR) return null
 
 		let len = this.arena.get_content_length(this.index)
 		if (len === 0) return null
@@ -462,7 +453,7 @@ export class CSSNode {
 
 	// Get the 'b' coefficient from An+B expression (e.g., "+1" from "2n+1")
 	get nth_b(): string | null {
-		if (this.type !== NODE_SELECTOR_NTH) return null
+		if (this.type !== NTH_SELECTOR) return null
 
 		let len = this.arena.get_value_length(this.index)
 		if (len === 0) return null
@@ -494,13 +485,13 @@ export class CSSNode {
 
 	// Get the An+B formula node from :nth-child(2n+1 of .foo)
 	get nth(): CSSNode | null {
-		if (this.type !== NODE_SELECTOR_NTH_OF) return null
+		if (this.type !== NTH_OF_SELECTOR) return null
 		return this.first_child // First child is always NODE_SELECTOR_NTH
 	}
 
 	// Get the selector list from :nth-child(2n+1 of .foo)
 	get selector(): CSSNode | null {
-		if (this.type !== NODE_SELECTOR_NTH_OF) return null
+		if (this.type !== NTH_OF_SELECTOR) return null
 		let first = this.first_child
 		return first ? first.next_sibling : null // Second child is NODE_SELECTOR_LIST
 	}
@@ -510,18 +501,18 @@ export class CSSNode {
 	// Get selector list from pseudo-class functions
 	// Works for :is(.a), :not(.b), :has(.c), :where(.d), :nth-child(2n of .e)
 	get selector_list(): CSSNode | null {
-		if (this.type !== NODE_SELECTOR_PSEUDO_CLASS) return null
+		if (this.type !== PSEUDO_CLASS_SELECTOR) return null
 
 		let child = this.first_child
 		if (!child) return null
 
 		// For simple cases (:is, :not, :where, :has), first_child is the selector list
-		if (child.type === NODE_SELECTOR_LIST) {
+		if (child.type === SELECTOR_LIST) {
 			return child
 		}
 
 		// For :nth-child(of) cases, need to look inside NODE_SELECTOR_NTH_OF
-		if (child.type === NODE_SELECTOR_NTH_OF) {
+		if (child.type === NTH_OF_SELECTOR) {
 			// Use the convenience getter we just added
 			return child.selector
 		}
@@ -534,11 +525,11 @@ export class CSSNode {
 	// Iterator over first compound selector parts (zero allocation)
 	// Yields parts before the first combinator
 	*compound_parts(): IterableIterator<CSSNode> {
-		if (this.type !== NODE_SELECTOR) return
+		if (this.type !== SELECTOR) return
 
 		let child = this.first_child
 		while (child) {
-			if (child.type === NODE_SELECTOR_COMBINATOR) break
+			if (child.type === COMBINATOR) break
 			yield child
 			child = child.next_sibling
 		}
@@ -547,12 +538,12 @@ export class CSSNode {
 	// Get first compound selector as array
 	// Returns array of parts before first combinator
 	get first_compound(): CSSNode[] {
-		if (this.type !== NODE_SELECTOR) return []
+		if (this.type !== SELECTOR) return []
 
 		let result: CSSNode[] = []
 		let child = this.first_child
 		while (child) {
-			if (child.type === NODE_SELECTOR_COMBINATOR) break
+			if (child.type === COMBINATOR) break
 			result.push(child)
 			child = child.next_sibling
 		}
@@ -562,14 +553,14 @@ export class CSSNode {
 	// Split selector into compound selectors
 	// Returns array of compound arrays split by combinators
 	get all_compounds(): CSSNode[][] {
-		if (this.type !== NODE_SELECTOR) return []
+		if (this.type !== SELECTOR) return []
 
 		let compounds: CSSNode[][] = []
 		let current_compound: CSSNode[] = []
 
 		let child = this.first_child
 		while (child) {
-			if (child.type === NODE_SELECTOR_COMBINATOR) {
+			if (child.type === COMBINATOR) {
 				if (current_compound.length > 0) {
 					compounds.push(current_compound)
 					current_compound = []
@@ -589,11 +580,11 @@ export class CSSNode {
 
 	// Check if selector is compound (no combinators)
 	get is_compound(): boolean {
-		if (this.type !== NODE_SELECTOR) return false
+		if (this.type !== SELECTOR) return false
 
 		let child = this.first_child
 		while (child) {
-			if (child.type === NODE_SELECTOR_COMBINATOR) return false
+			if (child.type === COMBINATOR) return false
 			child = child.next_sibling
 		}
 		return true
@@ -601,14 +592,14 @@ export class CSSNode {
 
 	// Get text of first compound selector (no node allocation)
 	get first_compound_text(): string {
-		if (this.type !== NODE_SELECTOR) return ''
+		if (this.type !== SELECTOR) return ''
 
 		let start = -1
 		let end = -1
 
 		let child = this.first_child
 		while (child) {
-			if (child.type === NODE_SELECTOR_COMBINATOR) break
+			if (child.type === COMBINATOR) break
 
 			if (start === -1) start = child.offset
 			end = child.offset + child.length
@@ -656,7 +647,7 @@ export class CSSNode {
 
 		// 2. Extract type-specific properties (only if meaningful)
 		if (this.name) plain.name = this.name
-		if (this.type === NODE_DECLARATION) plain.property = this.name
+		if (this.type === DECLARATION) plain.property = this.name
 
 		// 3. Handle value types
 		if (this.value !== undefined && this.value !== null) {
@@ -665,21 +656,21 @@ export class CSSNode {
 		}
 
 		// 4. Extract prelude for at-rules
-		if (this.type === NODE_AT_RULE && this.prelude) {
+		if (this.type === AT_RULE && this.prelude) {
 			plain.prelude = this.prelude
 		}
 
 		// 5. Extract flags
-		if (this.type === NODE_DECLARATION) plain.is_important = this.is_important
+		if (this.type === DECLARATION) plain.is_important = this.is_important
 		plain.is_vendor_prefixed = this.is_vendor_prefixed
 		plain.has_error = this.has_error
 
 		// 6. Extract selector-specific properties
-		if (this.type === NODE_SELECTOR_ATTRIBUTE) {
+		if (this.type === ATTRIBUTE_SELECTOR) {
 			plain.attr_operator = this.attr_operator
 			plain.attr_flags = this.attr_flags
 		}
-		if (this.type === NODE_SELECTOR_NTH || this.type === NODE_SELECTOR_NTH_OF) {
+		if (this.type === NTH_SELECTOR || this.type === NTH_OF_SELECTOR) {
 			plain.nth_a = this.nth_a
 			plain.nth_b = this.nth_b
 		}

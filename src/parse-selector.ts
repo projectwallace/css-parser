@@ -2,19 +2,19 @@
 import { Lexer } from './lexer'
 import { CSSDataArena } from './arena'
 import {
-	NODE_SELECTOR,
-	NODE_SELECTOR_LIST,
-	NODE_SELECTOR_TYPE,
-	NODE_SELECTOR_CLASS,
-	NODE_SELECTOR_ID,
-	NODE_SELECTOR_ATTRIBUTE,
-	NODE_SELECTOR_PSEUDO_CLASS,
-	NODE_SELECTOR_PSEUDO_ELEMENT,
-	NODE_SELECTOR_COMBINATOR,
-	NODE_SELECTOR_UNIVERSAL,
-	NODE_SELECTOR_NESTING,
-	NODE_SELECTOR_NTH_OF,
-	NODE_SELECTOR_LANG,
+	SELECTOR,
+	SELECTOR_LIST,
+	TYPE_SELECTOR,
+	CLASS_SELECTOR,
+	ID_SELECTOR,
+	ATTRIBUTE_SELECTOR,
+	PSEUDO_CLASS_SELECTOR,
+	PSEUDO_ELEMENT_SELECTOR,
+	COMBINATOR,
+	UNIVERSAL_SELECTOR,
+	NESTING_SELECTOR,
+	NTH_OF_SELECTOR,
+	LANG_SELECTOR,
 	FLAG_VENDOR_PREFIXED,
 	FLAG_HAS_PARENS,
 	ATTR_OPERATOR_NONE,
@@ -113,7 +113,7 @@ export class SelectorParser {
 			let complex_selector = this.parse_complex_selector(allow_relative)
 			if (complex_selector !== null) {
 				// Wrap the complex selector (chain of components) in a NODE_SELECTOR
-				let selector_wrapper = this.create_node(NODE_SELECTOR, selector_start, this.lexer.pos)
+				let selector_wrapper = this.create_node(SELECTOR, selector_start, this.lexer.pos)
 
 				// Find the last component in the chain
 				let last_component = complex_selector
@@ -148,7 +148,7 @@ export class SelectorParser {
 		// Always wrap in selector list node, even for single selectors
 		if (selectors.length >= 1) {
 			let list_node = this.arena.create_node()
-			this.arena.set_type(list_node, NODE_SELECTOR_LIST)
+			this.arena.set_type(list_node, SELECTOR_LIST)
 			this.arena.set_start_offset(list_node, list_start)
 			this.arena.set_length(list_node, this.lexer.pos - list_start)
 			this.arena.set_start_line(list_node, list_line)
@@ -190,7 +190,7 @@ export class SelectorParser {
 				let ch = this.source.charCodeAt(this.lexer.token_start)
 				if (ch === CHAR_GREATER_THAN || ch === CHAR_PLUS || ch === CHAR_TILDE) {
 					// Found leading combinator (>, +, ~) - this is a relative selector
-					let combinator = this.create_node(NODE_SELECTOR_COMBINATOR, this.lexer.token_start, this.lexer.token_end)
+					let combinator = this.create_node(COMBINATOR, this.lexer.token_start, this.lexer.token_end)
 					components.push(combinator)
 					this.skip_whitespace()
 					// Continue to parse the rest normally
@@ -306,7 +306,7 @@ export class SelectorParser {
 
 			case TOKEN_HASH:
 				// ID selector: #id
-				return this.create_node(NODE_SELECTOR_ID, start, end)
+				return this.create_node(ID_SELECTOR, start, end)
 
 			case TOKEN_DELIM:
 				// Could be: . (class), * (universal), & (nesting), | (namespace)
@@ -319,7 +319,7 @@ export class SelectorParser {
 					return this.parse_universal_or_namespace_selector(start, end)
 				} else if (ch === CHAR_AMPERSAND) {
 					// & - nesting selector
-					return this.create_node(NODE_SELECTOR_NESTING, start, end)
+					return this.create_node(NESTING_SELECTOR, start, end)
 				} else if (ch === CHAR_PIPE) {
 					// | - empty namespace prefix (|E or |*)
 					return this.parse_empty_namespace_selector(start)
@@ -358,10 +358,10 @@ export class SelectorParser {
 		let node_type: number
 		if (this.lexer.token_type === TOKEN_IDENT) {
 			// ns|type
-			node_type = NODE_SELECTOR_TYPE
+			node_type = TYPE_SELECTOR
 		} else if (this.lexer.token_type === TOKEN_DELIM && this.source.charCodeAt(this.lexer.token_start) === CHAR_ASTERISK) {
 			// ns|*
-			node_type = NODE_SELECTOR_UNIVERSAL
+			node_type = UNIVERSAL_SELECTOR
 		} else {
 			// Invalid - restore position
 			this.lexer.restore_position(saved)
@@ -388,7 +388,7 @@ export class SelectorParser {
 		}
 
 		// Regular type selector (no namespace)
-		return this.create_node(NODE_SELECTOR_TYPE, start, end)
+		return this.create_node(TYPE_SELECTOR, start, end)
 	}
 
 	// Parse universal selector or namespace selector (*|E or *|*)
@@ -404,7 +404,7 @@ export class SelectorParser {
 		}
 
 		// Regular universal selector (no namespace)
-		return this.create_node(NODE_SELECTOR_UNIVERSAL, start, end)
+		return this.create_node(UNIVERSAL_SELECTOR, start, end)
 	}
 
 	// Parse empty namespace selector (|E or |*)
@@ -440,7 +440,7 @@ export class SelectorParser {
 			let ch = this.source.charCodeAt(this.lexer.token_start)
 			if (is_combinator(ch)) {
 				// > + ~ (combinator text excludes leading whitespace)
-				return this.create_node(NODE_SELECTOR_COMBINATOR, this.lexer.token_start, this.lexer.token_end)
+				return this.create_node(COMBINATOR, this.lexer.token_start, this.lexer.token_end)
 			}
 		}
 
@@ -457,7 +457,7 @@ export class SelectorParser {
 					break
 				}
 			}
-			return this.create_node(NODE_SELECTOR_COMBINATOR, whitespace_start, this.lexer.pos)
+			return this.create_node(COMBINATOR, whitespace_start, this.lexer.pos)
 		}
 
 		// No combinator found, reset position
@@ -478,7 +478,7 @@ export class SelectorParser {
 			return null
 		}
 
-		return this.create_node(NODE_SELECTOR_CLASS, dot_pos, this.lexer.token_end)
+		return this.create_node(CLASS_SELECTOR, dot_pos, this.lexer.token_end)
 	}
 
 	// Parse attribute selector ([attr], [attr=value], etc.)
@@ -504,7 +504,7 @@ export class SelectorParser {
 			}
 		}
 
-		let node = this.create_node(NODE_SELECTOR_ATTRIBUTE, start, end)
+		let node = this.create_node(ATTRIBUTE_SELECTOR, start, end)
 
 		// Parse the content inside brackets to extract name, operator, and value
 		this.parse_attribute_content(node, content_start, content_end)
@@ -684,11 +684,7 @@ export class SelectorParser {
 
 		let token_type = this.lexer.token_type
 		if (token_type === TOKEN_IDENT) {
-			let node = this.create_node(
-				is_pseudo_element ? NODE_SELECTOR_PSEUDO_ELEMENT : NODE_SELECTOR_PSEUDO_CLASS,
-				start,
-				this.lexer.token_end,
-			)
+			let node = this.create_node(is_pseudo_element ? PSEUDO_ELEMENT_SELECTOR : PSEUDO_CLASS_SELECTOR, start, this.lexer.token_end)
 
 			// Content is the pseudo name (without colons)
 			this.arena.set_content_start(node, this.lexer.token_start)
@@ -742,7 +738,7 @@ export class SelectorParser {
 			}
 		}
 
-		let node = this.create_node(is_pseudo_element ? NODE_SELECTOR_PSEUDO_ELEMENT : NODE_SELECTOR_PSEUDO_CLASS, start, end)
+		let node = this.create_node(is_pseudo_element ? PSEUDO_ELEMENT_SELECTOR : PSEUDO_CLASS_SELECTOR, start, end)
 		// Content is the function name (without colons and parentheses)
 		this.arena.set_content_start(node, func_name_start)
 		this.arena.set_content_length(node, func_name_end - func_name_start)
@@ -842,7 +838,7 @@ export class SelectorParser {
 			// Accept both strings and identifiers
 			if (token_type === TOKEN_STRING || token_type === TOKEN_IDENT) {
 				// Create language identifier node
-				let lang_node = this.create_node(NODE_SELECTOR_LANG, token_start, token_end)
+				let lang_node = this.create_node(LANG_SELECTOR, token_start, token_end)
 
 				// Link as child of :lang() pseudo-class
 				if (first_child === null) {
@@ -905,7 +901,7 @@ export class SelectorParser {
 
 			// Create NTH_OF wrapper
 			let of_node = this.arena.create_node()
-			this.arena.set_type(of_node, NODE_SELECTOR_NTH_OF)
+			this.arena.set_type(of_node, NTH_OF_SELECTOR)
 			this.arena.set_start_offset(of_node, start)
 			this.arena.set_length(of_node, end - start)
 			this.arena.set_start_line(of_node, this.lexer.line)
@@ -980,7 +976,7 @@ export function parse_selector(source: string): CSSNode {
 	if (selector_index === null) {
 		// Return empty selector list node if parsing failed
 		const empty = arena.create_node()
-		arena.set_type(empty, NODE_SELECTOR_LIST)
+		arena.set_type(empty, SELECTOR_LIST)
 		arena.set_start_offset(empty, 0)
 		arena.set_length(empty, 0)
 		arena.set_start_line(empty, 1)
