@@ -302,8 +302,7 @@ export class Parser {
 		this.arena.set_start_offset(declaration, prop_start)
 
 		// Store property name position
-		this.arena.set_content_start(declaration, prop_start)
-		this.arena.set_content_length(declaration, prop_end - prop_start)
+		this.arena.set_content_range(declaration, prop_start, prop_end)
 
 		// Check for vendor prefix and set flag if detected
 		if (is_vendor_prefixed(this.source, prop_start, prop_end)) {
@@ -352,8 +351,7 @@ export class Parser {
 		let trimmed = trim_boundaries(this.source, value_start, value_end)
 		if (trimmed) {
 			// Store raw value string offsets (for fast string access)
-			this.arena.set_value_start(declaration, trimmed[0])
-			this.arena.set_value_length(declaration, trimmed[1] - trimmed[0])
+			this.arena.set_value_range(declaration, trimmed[0], trimmed[1])
 
 			// Parse value into structured nodes (only if enabled)
 			if (this.parse_values_enabled && this.value_parser) {
@@ -414,8 +412,7 @@ export class Parser {
 		this.arena.set_start_offset(at_rule, at_rule_start)
 
 		// Store at-rule name in contentStart/contentLength
-		this.arena.set_content_start(at_rule, name_start)
-		this.arena.set_content_length(at_rule, name_length)
+		this.arena.set_content_range(at_rule, name_start, name_start + name_length)
 
 		// Track prelude start and end
 		let prelude_start = this.lexer.token_start
@@ -432,8 +429,7 @@ export class Parser {
 		// Store prelude position (trimmed)
 		let trimmed = trim_boundaries(this.source, prelude_start, prelude_end)
 		if (trimmed) {
-			this.arena.set_value_start(at_rule, trimmed[0])
-			this.arena.set_value_length(at_rule, trimmed[1] - trimmed[0])
+			this.arena.set_value_range(at_rule, trimmed[0], trimmed[1])
 
 			// Parse prelude if enabled
 			if (this.prelude_parser) {
