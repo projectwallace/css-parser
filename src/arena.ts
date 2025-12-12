@@ -373,4 +373,92 @@ export class CSSDataArena {
 	has_flag(node_index: number, flag: number): boolean {
 		return (this.get_flags(node_index) & flag) !== 0
 	}
+
+	// --- Node Creation Helpers (Used by parsers) ---
+
+	/**
+	 * Create a node with standard properties and line/column tracking
+	 * Used by parsers that don't need separate content tracking
+	 *
+	 * @param type - Node type constant
+	 * @param start - Start offset in source
+	 * @param end - End offset in source
+	 * @param line - Start line number (from lexer)
+	 * @param column - Start column number (from lexer)
+	 * @returns The created node ID
+	 */
+	create_node_with_line_column(type: number, start: number, end: number, line: number, column: number): number {
+		let node = this.create_node()
+		this.set_type(node, type)
+		this.set_start_offset(node, start)
+		this.set_length(node, end - start)
+		this.set_start_line(node, line)
+		this.set_start_column(node, column)
+		return node
+	}
+
+	/**
+	 * Create a node with content tracking (content and value have same range)
+	 * Used by selectors and nodes where content range equals the full node range
+	 *
+	 * @param type - Node type constant
+	 * @param start - Start offset in source
+	 * @param end - End offset in source
+	 * @param line - Start line number (from lexer)
+	 * @param column - Start column number (from lexer)
+	 * @returns The created node ID
+	 */
+	create_node_with_content(type: number, start: number, end: number, line: number, column: number): number {
+		let node = this.create_node_with_line_column(type, start, end, line, column)
+		this.set_content_start(node, start)
+		this.set_content_length(node, end - start)
+		return node
+	}
+
+	/**
+	 * Link an array of nodes as siblings and attach to parent
+	 * Sets both first_child and last_child on parent
+	 * Reduces code duplication in node tree construction
+	 *
+	 * @param parent - Parent node ID
+	 * @param nodes - Array of node IDs to link as siblings
+	 */
+	link_nodes_as_children(parent: number, nodes: number[]): void {
+		if (nodes.length === 0) return
+
+		this.set_first_child(parent, nodes[0])
+		if (nodes.length > 1) {
+			this.set_last_child(parent, nodes[nodes.length - 1])
+			for (let i = 0; i < nodes.length - 1; i++) {
+				this.set_next_sibling(nodes[i], nodes[i + 1])
+			}
+		}
+	}
+
+	/**
+	 * Set content range (start offset and length) on a node
+	 * Convenience method that avoids calculating length separately
+	 *
+	 * @param node - Node ID
+	 * @param start - Content start offset
+	 * @param end - Content end offset (exclusive)
+	 */
+	set_content_range(node: number, start: number, end: number): void {
+		this.set_content_start(node, start)
+		this.set_content_length(node, end - start)
+	}
+
+	/**
+	 * Set value range (start offset and length) on a node
+	 * Convenience method that avoids calculating length separately
+	 *
+	 * @param node - Node ID
+	 * @param start - Value start offset
+	 * @param end - Value end offset (exclusive)
+	 */
+	set_value_range(node: number, start: number, end: number): void {
+		this.set_value_start(node, start)
+		this.set_value_length(node, end - start)
+	}
+
 }

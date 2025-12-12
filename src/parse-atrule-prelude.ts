@@ -99,13 +99,7 @@ export class AtRulePreludeParser {
 	}
 
 	private create_node(type: number, start: number, end: number): number {
-		let node = this.arena.create_node()
-		this.arena.set_type(node, type)
-		this.arena.set_start_offset(node, start)
-		this.arena.set_length(node, end - start)
-		this.arena.set_start_line(node, this.lexer.token_line)
-		this.arena.set_start_column(node, this.lexer.token_column)
-		return node
+		return this.arena.create_node_with_line_column(type, start, end, this.lexer.token_line, this.lexer.token_column)
 	}
 
 	private is_and_or_not(str: string): boolean {
@@ -218,8 +212,7 @@ export class AtRulePreludeParser {
 		// Store feature content (without parentheses) in value fields, trimmed
 		let trimmed = trim_boundaries(this.source, content_start, content_end)
 		if (trimmed) {
-			this.arena.set_value_start(feature, trimmed[0])
-			this.arena.set_value_length(feature, trimmed[1] - trimmed[0])
+			this.arena.set_value_range(feature, trimmed[0], trimmed[1])
 		}
 
 		return feature
@@ -316,8 +309,7 @@ export class AtRulePreludeParser {
 					// Store query content in value fields, trimmed
 					let trimmed = trim_boundaries(this.source, content_start, content_end)
 					if (trimmed) {
-						this.arena.set_value_start(query, trimmed[0])
-						this.arena.set_value_length(query, trimmed[1] - trimmed[0])
+						this.arena.set_value_range(query, trimmed[0], trimmed[1])
 					}
 
 					nodes.push(query)
@@ -509,8 +501,7 @@ export class AtRulePreludeParser {
 				if (content_length > 0) {
 					let trimmed = trim_boundaries(this.source, content_start, content_start + content_length)
 					if (trimmed) {
-						this.arena.set_content_start(layer_node, trimmed[0])
-						this.arena.set_content_length(layer_node, trimmed[1] - trimmed[0])
+						this.arena.set_content_range(layer_node, trimmed[0], trimmed[1])
 					}
 				}
 

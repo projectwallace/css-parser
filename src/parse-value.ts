@@ -121,12 +121,8 @@ export class ValueParser {
 	}
 
 	private create_node(node_type: number, start: number, end: number): number {
-		let node = this.arena.create_node()
-		this.arena.set_type(node, node_type)
-		this.arena.set_start_offset(node, start)
+		let node = this.arena.create_node_with_line_column(node_type, start, end, this.lexer.line, this.lexer.column)
 		let length = end - start
-		this.arena.set_length(node, length)
-		// Skip set_content_start since it would compute delta = start - start = 0 (already zero-initialized)
 		this.arena.set_content_length(node, length)
 		return node
 	}
@@ -270,13 +266,7 @@ export class ValueParser {
 
 		// Link arguments as children
 		if (args.length > 0) {
-			this.arena.set_first_child(node, args[0])
-			this.arena.set_last_child(node, args[args.length - 1])
-
-			// Chain arguments as siblings
-			for (let i = 0; i < args.length - 1; i++) {
-				this.arena.set_next_sibling(args[i], args[i + 1])
-			}
+			this.arena.link_nodes_as_children(node, args)
 		}
 
 		return node
@@ -328,13 +318,7 @@ export class ValueParser {
 
 		// Link children as siblings
 		if (children.length > 0) {
-			this.arena.set_first_child(node, children[0])
-			this.arena.set_last_child(node, children[children.length - 1])
-
-			// Chain children as siblings
-			for (let i = 0; i < children.length - 1; i++) {
-				this.arena.set_next_sibling(children[i], children[i + 1])
-			}
+			this.arena.link_nodes_as_children(node, children)
 		}
 
 		return node

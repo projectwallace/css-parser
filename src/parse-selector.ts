@@ -155,13 +155,7 @@ export class SelectorParser {
 			this.arena.set_start_column(list_node, list_column)
 
 			// Link selector wrapper nodes as children
-			this.arena.set_first_child(list_node, selectors[0])
-			this.arena.set_last_child(list_node, selectors[selectors.length - 1])
-
-			// Chain selector wrappers as siblings (simple since they're already wrapped)
-			for (let i = 0; i < selectors.length - 1; i++) {
-				this.arena.set_next_sibling(selectors[i], selectors[i + 1])
-			}
+			this.arena.link_nodes_as_children(list_node, selectors)
 
 			return list_node
 		}
@@ -941,15 +935,7 @@ export class SelectorParser {
 	}
 
 	private create_node(type: number, start: number, end: number): number {
-		let node = this.arena.create_node()
-		this.arena.set_type(node, type)
-		this.arena.set_start_offset(node, start)
-		this.arena.set_length(node, end - start)
-		this.arena.set_start_line(node, this.lexer.line)
-		this.arena.set_start_column(node, this.lexer.column)
-		this.arena.set_content_start(node, start)
-		this.arena.set_content_length(node, end - start)
-		return node
+		return this.arena.create_node_with_content(type, start, end, this.lexer.line, this.lexer.column)
 	}
 
 	// Helper to skip whitespace
