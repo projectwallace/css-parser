@@ -2,521 +2,686 @@ import { describe, it, expect } from 'vitest'
 import { Parser } from './parse'
 import { IDENTIFIER, NUMBER, DIMENSION, STRING, HASH, FUNCTION, OPERATOR, PARENTHESIS, URL } from './arena'
 
-describe('ValueParser', () => {
-	describe('Simple values', () => {
-		it('should parse keyword values', () => {
-			const parser = new Parser('body { color: red; }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child // selector → block → declaration
+describe('Value Node Types', () => {
+	// Helper to get first value node from a declaration
+	const getValue = (css: string) => {
+		const parser = new Parser(css)
+		const root = parser.parse()
+		const rule = root.first_child
+		const decl = rule?.first_child?.next_sibling?.first_child // selector → block → declaration
+		return decl?.values[0]
+	}
 
-			expect(decl?.value).toBe('red')
-			expect(decl?.values).toHaveLength(1)
-			expect(decl?.values[0].type).toBe(IDENTIFIER)
-			expect(decl?.values[0].text).toBe('red')
+	describe('Locations', () => {
+		describe('IDENTIFIER', () => {
+			it('should have correct offset and length', () => {
+				const value = getValue('div { color: red; }')
+				expect(value?.offset).toBe(13)
+				expect(value?.length).toBe(3)
+			})
 		})
 
-		it('should parse number values', () => {
-			const parser = new Parser('body { opacity: 0.5; }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
+		describe('NUMBER', () => {
+			it('should have correct offset and length', () => {
+				const value = getValue('div { opacity: 0.5; }')
+				expect(value?.offset).toBe(15)
+				expect(value?.length).toBe(3)
+			})
 
-			expect(decl?.value).toBe('0.5')
-			expect(decl?.values).toHaveLength(1)
-			expect(decl?.values[0].type).toBe(NUMBER)
-			expect(decl?.values[0].text).toBe('0.5')
 		})
 
-		it('should parse px dimension values', () => {
-			const parser = new Parser('body { width: 100px; }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
+		describe('DIMENSION', () => {
+			it('should have correct offset and length', () => {
+				const value = getValue('div { width: 100px; }')
+				expect(value?.offset).toBe(13)
+				expect(value?.length).toBe(5)
+			})
 
-			expect(decl?.value).toBe('100px')
-			expect(decl?.values).toHaveLength(1)
-			expect(decl?.values[0].type).toBe(DIMENSION)
-			expect(decl?.values[0].text).toBe('100px')
-			expect(decl?.values[0].value).toBe(100)
-			expect(decl?.values[0].unit).toBe('px')
 		})
 
-		it('should parse px dimension values', () => {
-			const parser = new Parser('body { font-size: 3em; }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
+		describe('STRING', () => {
+			it('should have correct offset and length', () => {
+				const value = getValue('div { content: "hello"; }')
+				expect(value?.offset).toBe(15)
+				expect(value?.length).toBe(7)
+			})
 
-			expect(decl?.value).toBe('3em')
-			expect(decl?.values).toHaveLength(1)
-			expect(decl?.values[0].type).toBe(DIMENSION)
-			expect(decl?.values[0].text).toBe('3em')
-			expect(decl?.values[0].value).toBe(3)
-			expect(decl?.values[0].unit).toBe('em')
 		})
 
-		it('should parse percentage values', () => {
-			const parser = new Parser('body { width: 50%; }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
+		describe('HASH', () => {
+			it('should have correct offset and length', () => {
+				const value = getValue('div { color: #ff0000; }')
+				expect(value?.offset).toBe(13)
+				expect(value?.length).toBe(7)
+			})
 
-			expect(decl?.value).toBe('50%')
-			expect(decl?.values).toHaveLength(1)
-			expect(decl?.values[0].type).toBe(DIMENSION)
-			expect(decl?.values[0].text).toBe('50%')
 		})
 
-		it('should parse string values', () => {
-			const parser = new Parser('body { content: "hello"; }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
+		describe('FUNCTION', () => {
+			it('should have correct offset and length', () => {
+				const value = getValue('div { color: rgb(255, 0, 0); }')
+				expect(value?.offset).toBe(13)
+				expect(value?.length).toBe(14)
+			})
 
-			expect(decl?.value).toBe('"hello"')
-			expect(decl?.values).toHaveLength(1)
-			expect(decl?.values[0].type).toBe(STRING)
-			expect(decl?.values[0].text).toBe('"hello"')
 		})
 
-		it('should parse color values', () => {
-			const parser = new Parser('body { color: #ff0000; }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
+		describe('OPERATOR', () => {
+			it('should have correct offset and length', () => {
+				const parser = new Parser('div { font-family: Arial, sans-serif; }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+				const comma = decl?.values[1]
+				expect(comma?.offset).toBe(24)
+				expect(comma?.length).toBe(1)
+			})
 
-			expect(decl?.value).toBe('#ff0000')
-			expect(decl?.values).toHaveLength(1)
-			expect(decl?.values[0].type).toBe(HASH)
-			expect(decl?.values[0].text).toBe('#ff0000')
-		})
-	})
-
-	describe('Space-separated values', () => {
-		it('should parse multiple keywords', () => {
-			const parser = new Parser('body { font-family: Arial, sans-serif; }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
-
-			expect(decl?.values).toHaveLength(3)
-			expect(decl?.values[0].type).toBe(IDENTIFIER)
-			expect(decl?.values[0].text).toBe('Arial')
-			expect(decl?.values[1].type).toBe(OPERATOR)
-			expect(decl?.values[1].text).toBe(',')
-			expect(decl?.values[2].type).toBe(IDENTIFIER)
-			expect(decl?.values[2].text).toBe('sans-serif')
 		})
 
-		it('should parse margin shorthand', () => {
-			const parser = new Parser('body { margin: 10px 20px 30px 40px; }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
-
-			expect(decl?.values).toHaveLength(4)
-			expect(decl?.values[0].type).toBe(DIMENSION)
-			expect(decl?.values[0].text).toBe('10px')
-			expect(decl?.values[1].type).toBe(DIMENSION)
-			expect(decl?.values[1].text).toBe('20px')
-			expect(decl?.values[2].type).toBe(DIMENSION)
-			expect(decl?.values[2].text).toBe('30px')
-			expect(decl?.values[3].type).toBe(DIMENSION)
-			expect(decl?.values[3].text).toBe('40px')
+		describe('PARENTHESIS', () => {
+			it('should have correct offset and length', () => {
+				const parser = new Parser('div { width: calc((100% - 50px) / 2); }')
+				const root = parser.parse()
+				const func = root.first_child?.first_child?.next_sibling?.first_child?.values[0]
+				const paren = func?.children[0]
+				expect(paren?.offset).toBe(18)
+				expect(paren?.length).toBe(13)
+			})
 		})
 
-		it('should parse mixed value types', () => {
-			const parser = new Parser('body { border: 1px solid red; }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
+		describe('URL', () => {
+			it('should have correct offset and length', () => {
+				const value = getValue('div { background: url("image.png"); }')
+				expect(value?.offset).toBe(18)
+				expect(value?.length).toBe(16)
+			})
 
-			expect(decl?.values).toHaveLength(3)
-			expect(decl?.values[0].type).toBe(DIMENSION)
-			expect(decl?.values[0].text).toBe('1px')
-			expect(decl?.values[1].type).toBe(IDENTIFIER)
-			expect(decl?.values[1].text).toBe('solid')
-			expect(decl?.values[2].type).toBe(IDENTIFIER)
-			expect(decl?.values[2].text).toBe('red')
 		})
 	})
 
-	describe('Function values', () => {
-		it('should parse simple function', () => {
-			const parser = new Parser('body { color: rgb(255, 0, 0); }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
-
-			expect(decl?.values).toHaveLength(1)
-			expect(decl?.values[0].type).toBe(FUNCTION)
-			expect(decl?.values[0].name).toBe('rgb')
-			expect(decl?.values[0].text).toBe('rgb(255, 0, 0)')
+	describe('Types', () => {
+		it('IDENTIFIER type constant', () => {
+			const value = getValue('div { color: red; }')
+			expect(value?.type).toBe(IDENTIFIER)
 		})
 
-		it('should parse function arguments', () => {
-			const parser = new Parser('body { color: rgb(255, 0, 0); }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
-			const func = decl?.values[0]
-
-			expect(func?.children).toHaveLength(5)
-			expect(func?.children[0].type).toBe(NUMBER)
-			expect(func?.children[0].text).toBe('255')
-			expect(func?.children[1].type).toBe(OPERATOR)
-			expect(func?.children[1].text).toBe(',')
-			expect(func?.children[2].type).toBe(NUMBER)
-			expect(func?.children[2].text).toBe('0')
-			expect(func?.children[3].type).toBe(OPERATOR)
-			expect(func?.children[3].text).toBe(',')
-			expect(func?.children[4].type).toBe(NUMBER)
-			expect(func?.children[4].text).toBe('0')
+		it('NUMBER type constant', () => {
+			const value = getValue('div { opacity: 0.5; }')
+			expect(value?.type).toBe(NUMBER)
 		})
 
-		it('should parse nested functions', () => {
-			const parser = new Parser('body { width: calc(100% - 20px); }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
-
-			expect(decl?.values).toHaveLength(1)
-			expect(decl?.values[0].type).toBe(FUNCTION)
-			expect(decl?.values[0].name).toBe('calc')
-			expect(decl?.values[0].children).toHaveLength(3)
-			expect(decl?.values[0].children[0].type).toBe(DIMENSION)
-			expect(decl?.values[0].children[0].text).toBe('100%')
-			expect(decl?.values[0].children[1].type).toBe(OPERATOR)
-			expect(decl?.values[0].children[1].text).toBe('-')
-			expect(decl?.values[0].children[2].type).toBe(DIMENSION)
-			expect(decl?.values[0].children[2].text).toBe('20px')
+		it('DIMENSION type constant', () => {
+			const value = getValue('div { width: 100px; }')
+			expect(value?.type).toBe(DIMENSION)
 		})
 
-		it('should parse var() function', () => {
-			const parser = new Parser('body { color: var(--primary-color); }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
-
-			expect(decl?.values).toHaveLength(1)
-			expect(decl?.values[0].type).toBe(FUNCTION)
-			expect(decl?.values[0].name).toBe('var')
-			expect(decl?.values[0].children).toHaveLength(1)
-			expect(decl?.values[0].children[0].type).toBe(IDENTIFIER)
-			expect(decl?.values[0].children[0].text).toBe('--primary-color')
+		it('STRING type constant', () => {
+			const value = getValue('div { content: "hello"; }')
+			expect(value?.type).toBe(STRING)
 		})
 
-		it('should parse url() function with quoted string', () => {
-			const parser = new Parser('body { background: url("image.png"); }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
-
-			expect(decl?.values).toHaveLength(1)
-			expect(decl?.values[0].type).toBe(URL)
-			expect(decl?.values[0].name).toBe('url')
-			expect(decl?.values[0].children).toHaveLength(1)
-			expect(decl?.values[0].children[0].type).toBe(STRING)
-			expect(decl?.values[0].children[0].text).toBe('"image.png"')
+		it('HASH type constant', () => {
+			const value = getValue('div { color: #ff0000; }')
+			expect(value?.type).toBe(HASH)
 		})
 
-		it('should parse url() function with unquoted URL containing dots', () => {
-			const parser = new Parser('body { cursor: url(mycursor.cur); }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
-			const func = decl?.values[0]
-
-			expect(func?.type).toBe(URL)
-			expect(func?.name).toBe('url')
-
-			// URL function should not parse children - content is available via node.value
-			expect(func?.has_children).toBe(false)
-			expect(func?.text).toBe('url(mycursor.cur)')
-			expect(func?.value).toBe('mycursor.cur')
+		it('FUNCTION type constant', () => {
+			const value = getValue('div { color: rgb(255, 0, 0); }')
+			expect(value?.type).toBe(FUNCTION)
 		})
 
-		it('should parse src() function with unquoted URL', () => {
-			const parser = new Parser('body { content: src(myfont.woff2); }')
+		it('OPERATOR type constant', () => {
+			const parser = new Parser('div { font-family: Arial, sans-serif; }')
 			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
-			const func = decl?.values[0]
-
-			expect(func?.type).toBe(FUNCTION)
-			expect(func?.name).toBe('src')
-			expect(func?.has_children).toBe(false)
-			expect(func?.text).toBe('src(myfont.woff2)')
-			expect(func?.value).toBe('myfont.woff2')
+			const comma = root.first_child?.first_child?.next_sibling?.first_child?.values[1]
+			expect(comma?.type).toBe(OPERATOR)
 		})
 
-		it('should parse url() with base64 data URL', () => {
-			const parser = new Parser('body { background: url(data:image/png;base64,iVBORw0KGg); }')
+		it('PARENTHESIS type constant', () => {
+			const parser = new Parser('div { width: calc((100% - 50px) / 2); }')
 			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
-			const func = decl?.values[0]
-
-			expect(func?.type).toBe(URL)
-			expect(func?.name).toBe('url')
-			expect(func?.has_children).toBe(false)
-			expect(func?.value).toBe('data:image/png;base64,iVBORw0KGg')
+			const func = root.first_child?.first_child?.next_sibling?.first_child?.values[0]
+			const paren = func?.children[0]
+			expect(paren?.type).toBe(PARENTHESIS)
 		})
 
-		it('should parse url() with inline SVG', () => {
-			const parser = new Parser('body { background: url(data:image/svg+xml,<svg></svg>); }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
-			const func = decl?.values[0]
-
-			expect(func?.type).toBe(URL)
-			expect(func?.name).toBe('url')
-			expect(func?.has_children).toBe(false)
-			expect(func?.value).toBe('data:image/svg+xml,<svg></svg>')
-		})
-
-		it('should provide node.value for other functions like calc()', () => {
-			const parser = new Parser('body { width: calc(100% - 20px); }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
-			const func = decl?.values[0]
-
-			expect(func?.type).toBe(FUNCTION)
-			expect(func?.name).toBe('calc')
-			expect(func?.text).toBe('calc(100% - 20px)')
-			expect(func?.value).toBe('100% - 20px')
-			expect(func?.has_children).toBe(true) // calc() parses its children
-		})
-
-		it('should provide node.value for var() function', () => {
-			const parser = new Parser('body { color: var(--primary-color); }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
-			const func = decl?.values[0]
-
-			expect(func?.type).toBe(FUNCTION)
-			expect(func?.name).toBe('var')
-			expect(func?.text).toBe('var(--primary-color)')
-			expect(func?.value).toBe('--primary-color')
-			expect(func?.has_children).toBe(true) // var() parses its children
+		it('URL type constant', () => {
+			const value = getValue('div { background: url("image.png"); }')
+			expect(value?.type).toBe(URL)
 		})
 	})
 
-	describe('Complex values', () => {
-		it('should parse complex background value', () => {
-			const parser = new Parser('body { background: url("bg.png") no-repeat center center / cover; }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
-
-			expect(decl?.values.length).toBeGreaterThan(1)
-			expect(decl?.values[0].type).toBe(URL)
-			expect(decl?.values[0].name).toBe('url')
-			expect(decl?.values[1].type).toBe(IDENTIFIER)
-			expect(decl?.values[1].text).toBe('no-repeat')
+	describe('Type Names', () => {
+		it('IDENTIFIER type_name', () => {
+			const value = getValue('div { color: red; }')
+			expect(value?.type_name).toBe('Identifier')
 		})
 
-		it('should parse transform value', () => {
-			const parser = new Parser('body { transform: translateX(10px) rotate(45deg); }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
-
-			expect(decl?.values).toHaveLength(2)
-			expect(decl?.values[0].type).toBe(FUNCTION)
-			expect(decl?.values[0].name).toBe('translateX')
-			expect(decl?.values[1].type).toBe(FUNCTION)
-			expect(decl?.values[1].name).toBe('rotate')
+		it('NUMBER type_name', () => {
+			const value = getValue('div { opacity: 0.5; }')
+			expect(value?.type_name).toBe('Number')
 		})
 
-		it('should parse filter value', () => {
-			const parser = new Parser('body { filter: blur(5px) brightness(1.2); }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
-
-			expect(decl?.values).toHaveLength(2)
-			expect(decl?.values[0].type).toBe(FUNCTION)
-			expect(decl?.values[0].name).toBe('blur')
-			expect(decl?.values[0].children[0].text).toBe('5px')
-			expect(decl?.values[1].type).toBe(FUNCTION)
-			expect(decl?.values[1].name).toBe('brightness')
-			expect(decl?.values[1].children[0].text).toBe('1.2')
-		})
-	})
-
-	describe('Edge cases', () => {
-		it('should handle empty value', () => {
-			const parser = new Parser('body { color: ; }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
-
-			expect(decl?.value).toBeNull()
-			expect(decl?.values).toHaveLength(0)
+		it('DIMENSION type_name', () => {
+			const value = getValue('div { width: 100px; }')
+			expect(value?.type_name).toBe('Dimension')
 		})
 
-		it('should handle value with !important', () => {
-			const parser = new Parser('body { color: red !important; }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
-
-			expect(decl?.value).toBe('red')
-			expect(decl?.values).toHaveLength(1)
-			expect(decl?.values[0].type).toBe(IDENTIFIER)
-			expect(decl?.values[0].text).toBe('red')
-			expect(decl?.is_important).toBe(true)
+		it('STRING type_name', () => {
+			const value = getValue('div { content: "hello"; }')
+			expect(value?.type_name).toBe('String')
 		})
 
-		it('should handle negative numbers', () => {
-			const parser = new Parser('body { margin: -10px; }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
-
-			expect(decl?.values).toHaveLength(1)
-			expect(decl?.values[0].type).toBe(DIMENSION)
-			expect(decl?.values[0].text).toBe('-10px')
+		it('HASH type_name', () => {
+			const value = getValue('div { color: #ff0000; }')
+			expect(value?.type_name).toBe('Hash')
 		})
 
-		it('should handle zero with unit', () => {
-			const parser = new Parser('body { margin: 0px; }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
-
-			expect(decl?.values).toHaveLength(1)
-			expect(decl?.values[0].type).toBe(DIMENSION)
-			expect(decl?.values[0].text).toBe('0px')
+		it('FUNCTION type_name', () => {
+			const value = getValue('div { color: rgb(255, 0, 0); }')
+			expect(value?.type_name).toBe('Function')
 		})
 
-		it('should handle zero without unit', () => {
-			const parser = new Parser('body { margin: 0; }')
+		it('OPERATOR type_name', () => {
+			const parser = new Parser('div { font-family: Arial, sans-serif; }')
 			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
+			const comma = root.first_child?.first_child?.next_sibling?.first_child?.values[1]
+			expect(comma?.type_name).toBe('Operator')
+		})
 
-			expect(decl?.values).toHaveLength(1)
-			expect(decl?.values[0].type).toBe(NUMBER)
-			expect(decl?.values[0].text).toBe('0')
+		it('PARENTHESIS type_name', () => {
+			const parser = new Parser('div { width: calc((100% - 50px) / 2); }')
+			const root = parser.parse()
+			const func = root.first_child?.first_child?.next_sibling?.first_child?.values[0]
+			const paren = func?.children[0]
+			expect(paren?.type_name).toBe('Parentheses')
+		})
+
+		it('URL type_name', () => {
+			const value = getValue('div { background: url("image.png"); }')
+			expect(value?.type_name).toBe('Url')
 		})
 	})
 
-	describe('Operators', () => {
-		it('should parse comma operator', () => {
-			const parser = new Parser('body { font-family: Arial, sans-serif; }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
+	describe('Value Properties', () => {
+		describe('IDENTIFIER', () => {
+			it('should parse keyword values', () => {
+				const parser = new Parser('body { color: red; }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
-			expect(decl?.values[1].type).toBe(OPERATOR)
-			expect(decl?.values[1].text).toBe(',')
+				expect(decl?.value).toBe('red')
+				expect(decl?.values).toHaveLength(1)
+				expect(decl?.values[0].text).toBe('red')
+			})
+
+			it('should parse multiple keywords', () => {
+				const parser = new Parser('body { font-family: Arial, sans-serif; }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+
+				expect(decl?.values).toHaveLength(3)
+				expect(decl?.values[0].type).toBe(IDENTIFIER)
+				expect(decl?.values[0].text).toBe('Arial')
+				expect(decl?.values[2].type).toBe(IDENTIFIER)
+				expect(decl?.values[2].text).toBe('sans-serif')
+			})
 		})
 
-		it('should parse calc operators', () => {
-			const parser = new Parser('body { width: calc(100% - 20px); }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
-			const func = decl?.values[0]
+		describe('NUMBER', () => {
+			it('should parse number values', () => {
+				const parser = new Parser('body { opacity: 0.5; }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
-			expect(func?.children[1].type).toBe(OPERATOR)
-			expect(func?.children[1].text).toBe('-')
+				expect(decl?.value).toBe('0.5')
+				expect(decl?.values).toHaveLength(1)
+				expect(decl?.values[0].text).toBe('0.5')
+			})
+
+			it('should handle negative numbers', () => {
+				const parser = new Parser('body { margin: -10px; }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+
+				expect(decl?.values).toHaveLength(1)
+				expect(decl?.values[0].type).toBe(DIMENSION)
+				expect(decl?.values[0].text).toBe('-10px')
+			})
+
+			it('should handle zero without unit', () => {
+				const parser = new Parser('body { margin: 0; }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+
+				expect(decl?.values).toHaveLength(1)
+				expect(decl?.values[0].type).toBe(NUMBER)
+				expect(decl?.values[0].text).toBe('0')
+			})
 		})
 
-		it('should parse all calc operators', () => {
-			const parser = new Parser('body { width: calc(1px + 2px * 3px / 4px - 5px); }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
-			const func = decl?.values[0]
+		describe('DIMENSION', () => {
+			it('should parse px dimension values', () => {
+				const parser = new Parser('body { width: 100px; }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
-			const operators = func?.children.filter((n) => n.type === OPERATOR)
-			expect(operators).toHaveLength(4)
-			expect(operators?.[0].text).toBe('+')
-			expect(operators?.[1].text).toBe('*')
-			expect(operators?.[2].text).toBe('/')
-			expect(operators?.[3].text).toBe('-')
+				expect(decl?.value).toBe('100px')
+				expect(decl?.values).toHaveLength(1)
+				expect(decl?.values[0].text).toBe('100px')
+				expect(decl?.values[0].value).toBe(100)
+				expect(decl?.values[0].unit).toBe('px')
+			})
+
+			it('should parse em dimension values', () => {
+				const parser = new Parser('body { font-size: 3em; }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+
+				expect(decl?.value).toBe('3em')
+				expect(decl?.values).toHaveLength(1)
+				expect(decl?.values[0].text).toBe('3em')
+				expect(decl?.values[0].value).toBe(3)
+				expect(decl?.values[0].unit).toBe('em')
+			})
+
+			it('should parse percentage values', () => {
+				const parser = new Parser('body { width: 50%; }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+
+				expect(decl?.value).toBe('50%')
+				expect(decl?.values).toHaveLength(1)
+				expect(decl?.values[0].text).toBe('50%')
+			})
+
+			it('should handle zero with unit', () => {
+				const parser = new Parser('body { margin: 0px; }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+
+				expect(decl?.values).toHaveLength(1)
+				expect(decl?.values[0].type).toBe(DIMENSION)
+				expect(decl?.values[0].text).toBe('0px')
+			})
+
+			it('should parse margin shorthand', () => {
+				const parser = new Parser('body { margin: 10px 20px 30px 40px; }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+
+				expect(decl?.values).toHaveLength(4)
+				expect(decl?.values[0].type).toBe(DIMENSION)
+				expect(decl?.values[0].text).toBe('10px')
+				expect(decl?.values[1].type).toBe(DIMENSION)
+				expect(decl?.values[1].text).toBe('20px')
+				expect(decl?.values[2].type).toBe(DIMENSION)
+				expect(decl?.values[2].text).toBe('30px')
+				expect(decl?.values[3].type).toBe(DIMENSION)
+				expect(decl?.values[3].text).toBe('40px')
+			})
 		})
-	})
 
-	describe('Parentheses', () => {
-		it('should parse parenthesized expressions in calc()', () => {
-			const parser = new Parser('body { width: calc((100% - 50px) / 2); }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
-			const func = decl?.values[0]
+		describe('STRING', () => {
+			it('should parse string values', () => {
+				const parser = new Parser('body { content: "hello"; }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
-			expect(func?.type).toBe(FUNCTION)
-			expect(func?.name).toBe('calc')
-			expect(func?.children).toHaveLength(3)
-
-			// First child should be a parenthesis node
-			expect(func?.children[0].type).toBe(PARENTHESIS)
-			expect(func?.children[0].text).toBe('(100% - 50px)')
-
-			// Check parenthesis content
-			const parenNode = func?.children[0]
-			expect(parenNode?.children).toHaveLength(3)
-			expect(parenNode?.children[0].type).toBe(DIMENSION)
-			expect(parenNode?.children[0].text).toBe('100%')
-			expect(parenNode?.children[1].type).toBe(OPERATOR)
-			expect(parenNode?.children[1].text).toBe('-')
-			expect(parenNode?.children[2].type).toBe(DIMENSION)
-			expect(parenNode?.children[2].text).toBe('50px')
-
-			// Second child should be division operator
-			expect(func?.children[1].type).toBe(OPERATOR)
-			expect(func?.children[1].text).toBe('/')
-
-			// Third child should be number
-			expect(func?.children[2].type).toBe(NUMBER)
-			expect(func?.children[2].text).toBe('2')
+				expect(decl?.value).toBe('"hello"')
+				expect(decl?.values).toHaveLength(1)
+				expect(decl?.values[0].text).toBe('"hello"')
+			})
 		})
 
-		it('should parse complex nested parentheses', () => {
-			const parser = new Parser('body { width: calc(((100% - var(--x)) / 12 * 6) + (-1 * var(--y))); }')
-			const root = parser.parse()
-			const rule = root.first_child
-			const decl = rule?.first_child?.next_sibling?.first_child
-			const func = decl?.values[0]
+		describe('HASH', () => {
+			it('should parse color values', () => {
+				const parser = new Parser('body { color: #ff0000; }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
-			expect(func?.type).toBe(FUNCTION)
-			expect(func?.name).toBe('calc')
+				expect(decl?.value).toBe('#ff0000')
+				expect(decl?.values).toHaveLength(1)
+				expect(decl?.values[0].text).toBe('#ff0000')
+			})
+		})
 
-			// The calc function should have 3 children: parenthesis + operator + parenthesis
-			expect(func?.children).toHaveLength(3)
-			expect(func?.children[0].type).toBe(PARENTHESIS)
-			expect(func?.children[0].text).toBe('((100% - var(--x)) / 12 * 6)')
-			expect(func?.children[1].type).toBe(OPERATOR)
-			expect(func?.children[1].text).toBe('+')
-			expect(func?.children[2].type).toBe(PARENTHESIS)
-			expect(func?.children[2].text).toBe('(-1 * var(--y))')
+		describe('FUNCTION', () => {
+			it('should parse simple function', () => {
+				const parser = new Parser('body { color: rgb(255, 0, 0); }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
-			// Check first parenthesis has nested parenthesis and preserves structure
-			const firstParen = func?.children[0]
-			expect(firstParen?.children).toHaveLength(5) // paren + / + 12 + * + 6
-			expect(firstParen?.children[0].type).toBe(PARENTHESIS)
-			expect(firstParen?.children[0].text).toBe('(100% - var(--x))')
+				expect(decl?.values).toHaveLength(1)
+				expect(decl?.values[0].type).toBe(FUNCTION)
+				expect(decl?.values[0].name).toBe('rgb')
+				expect(decl?.values[0].text).toBe('rgb(255, 0, 0)')
+			})
 
-			// Check nested parenthesis has function
-			const nestedParen = firstParen?.children[0]
-			expect(nestedParen?.children[2].type).toBe(FUNCTION)
-			expect(nestedParen?.children[2].name).toBe('var')
+			it('should parse function arguments', () => {
+				const parser = new Parser('body { color: rgb(255, 0, 0); }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+				const func = decl?.values[0]
 
-			// Check second parenthesis has content
-			const secondParen = func?.children[2]
-			expect(secondParen?.children).toHaveLength(3) // -1 * var(--y)
-			expect(secondParen?.children[0].type).toBe(NUMBER)
-			expect(secondParen?.children[0].text).toBe('-1')
-			expect(secondParen?.children[2].type).toBe(FUNCTION)
-			expect(secondParen?.children[2].name).toBe('var')
+				expect(func?.children).toHaveLength(5)
+				expect(func?.children[0].type).toBe(NUMBER)
+				expect(func?.children[0].text).toBe('255')
+				expect(func?.children[1].type).toBe(OPERATOR)
+				expect(func?.children[1].text).toBe(',')
+				expect(func?.children[2].type).toBe(NUMBER)
+				expect(func?.children[2].text).toBe('0')
+				expect(func?.children[3].type).toBe(OPERATOR)
+				expect(func?.children[3].text).toBe(',')
+				expect(func?.children[4].type).toBe(NUMBER)
+				expect(func?.children[4].text).toBe('0')
+			})
+
+			it('should parse nested functions', () => {
+				const parser = new Parser('body { width: calc(100% - 20px); }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+
+				expect(decl?.values).toHaveLength(1)
+				expect(decl?.values[0].type).toBe(FUNCTION)
+				expect(decl?.values[0].name).toBe('calc')
+				expect(decl?.values[0].children).toHaveLength(3)
+				expect(decl?.values[0].children[0].type).toBe(DIMENSION)
+				expect(decl?.values[0].children[0].text).toBe('100%')
+				expect(decl?.values[0].children[1].type).toBe(OPERATOR)
+				expect(decl?.values[0].children[1].text).toBe('-')
+				expect(decl?.values[0].children[2].type).toBe(DIMENSION)
+				expect(decl?.values[0].children[2].text).toBe('20px')
+			})
+
+			it('should parse var() function', () => {
+				const parser = new Parser('body { color: var(--primary-color); }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+
+				expect(decl?.values).toHaveLength(1)
+				expect(decl?.values[0].type).toBe(FUNCTION)
+				expect(decl?.values[0].name).toBe('var')
+				expect(decl?.values[0].children).toHaveLength(1)
+				expect(decl?.values[0].children[0].type).toBe(IDENTIFIER)
+				expect(decl?.values[0].children[0].text).toBe('--primary-color')
+			})
+
+			it('should provide node.value for calc()', () => {
+				const parser = new Parser('body { width: calc(100% - 20px); }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+				const func = decl?.values[0]
+
+				expect(func?.type).toBe(FUNCTION)
+				expect(func?.name).toBe('calc')
+				expect(func?.text).toBe('calc(100% - 20px)')
+				expect(func?.value).toBe('100% - 20px')
+				expect(func?.has_children).toBe(true)
+			})
+
+			it('should provide node.value for var() function', () => {
+				const parser = new Parser('body { color: var(--primary-color); }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+				const func = decl?.values[0]
+
+				expect(func?.type).toBe(FUNCTION)
+				expect(func?.name).toBe('var')
+				expect(func?.text).toBe('var(--primary-color)')
+				expect(func?.value).toBe('--primary-color')
+				expect(func?.has_children).toBe(true)
+			})
+
+			it('should parse transform value', () => {
+				const parser = new Parser('body { transform: translateX(10px) rotate(45deg); }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+
+				expect(decl?.values).toHaveLength(2)
+				expect(decl?.values[0].type).toBe(FUNCTION)
+				expect(decl?.values[0].name).toBe('translateX')
+				expect(decl?.values[1].type).toBe(FUNCTION)
+				expect(decl?.values[1].name).toBe('rotate')
+			})
+
+			it('should parse filter value', () => {
+				const parser = new Parser('body { filter: blur(5px) brightness(1.2); }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+
+				expect(decl?.values).toHaveLength(2)
+				expect(decl?.values[0].type).toBe(FUNCTION)
+				expect(decl?.values[0].name).toBe('blur')
+				expect(decl?.values[0].children[0].text).toBe('5px')
+				expect(decl?.values[1].type).toBe(FUNCTION)
+				expect(decl?.values[1].name).toBe('brightness')
+				expect(decl?.values[1].children[0].text).toBe('1.2')
+			})
+		})
+
+		describe('OPERATOR', () => {
+			it('should parse comma operator', () => {
+				const parser = new Parser('body { font-family: Arial, sans-serif; }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+
+				expect(decl?.values[1].type).toBe(OPERATOR)
+				expect(decl?.values[1].text).toBe(',')
+			})
+
+			it('should parse calc operators', () => {
+				const parser = new Parser('body { width: calc(100% - 20px); }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+				const func = decl?.values[0]
+
+				expect(func?.children[1].type).toBe(OPERATOR)
+				expect(func?.children[1].text).toBe('-')
+			})
+
+			it('should parse all calc operators', () => {
+				const parser = new Parser('body { width: calc(1px + 2px * 3px / 4px - 5px); }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+				const func = decl?.values[0]
+
+				const operators = func?.children.filter((n) => n.type === OPERATOR)
+				expect(operators).toHaveLength(4)
+				expect(operators?.[0].text).toBe('+')
+				expect(operators?.[1].text).toBe('*')
+				expect(operators?.[2].text).toBe('/')
+				expect(operators?.[3].text).toBe('-')
+			})
+		})
+
+		describe('PARENTHESIS', () => {
+			it('should parse parenthesized expressions in calc()', () => {
+				const parser = new Parser('body { width: calc((100% - 50px) / 2); }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+				const func = decl?.values[0]
+
+				expect(func?.type).toBe(FUNCTION)
+				expect(func?.name).toBe('calc')
+				expect(func?.children).toHaveLength(3)
+
+				// First child should be a parenthesis node
+				expect(func?.children[0].type).toBe(PARENTHESIS)
+				expect(func?.children[0].text).toBe('(100% - 50px)')
+
+				// Check parenthesis content
+				const parenNode = func?.children[0]
+				expect(parenNode?.children).toHaveLength(3)
+				expect(parenNode?.children[0].type).toBe(DIMENSION)
+				expect(parenNode?.children[0].text).toBe('100%')
+				expect(parenNode?.children[1].type).toBe(OPERATOR)
+				expect(parenNode?.children[1].text).toBe('-')
+				expect(parenNode?.children[2].type).toBe(DIMENSION)
+				expect(parenNode?.children[2].text).toBe('50px')
+
+				// Second child should be division operator
+				expect(func?.children[1].type).toBe(OPERATOR)
+				expect(func?.children[1].text).toBe('/')
+
+				// Third child should be number
+				expect(func?.children[2].type).toBe(NUMBER)
+				expect(func?.children[2].text).toBe('2')
+			})
+
+			it('should parse complex nested parentheses', () => {
+				const parser = new Parser('body { width: calc(((100% - var(--x)) / 12 * 6) + (-1 * var(--y))); }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+				const func = decl?.values[0]
+
+				expect(func?.type).toBe(FUNCTION)
+				expect(func?.name).toBe('calc')
+
+				// The calc function should have 3 children: parenthesis + operator + parenthesis
+				expect(func?.children).toHaveLength(3)
+				expect(func?.children[0].type).toBe(PARENTHESIS)
+				expect(func?.children[0].text).toBe('((100% - var(--x)) / 12 * 6)')
+				expect(func?.children[1].type).toBe(OPERATOR)
+				expect(func?.children[1].text).toBe('+')
+				expect(func?.children[2].type).toBe(PARENTHESIS)
+				expect(func?.children[2].text).toBe('(-1 * var(--y))')
+
+				// Check first parenthesis has nested parenthesis and preserves structure
+				const firstParen = func?.children[0]
+				expect(firstParen?.children).toHaveLength(5) // paren + / + 12 + * + 6
+				expect(firstParen?.children[0].type).toBe(PARENTHESIS)
+				expect(firstParen?.children[0].text).toBe('(100% - var(--x))')
+
+				// Check nested parenthesis has function
+				const nestedParen = firstParen?.children[0]
+				expect(nestedParen?.children[2].type).toBe(FUNCTION)
+				expect(nestedParen?.children[2].name).toBe('var')
+
+				// Check second parenthesis has content
+				const secondParen = func?.children[2]
+				expect(secondParen?.children).toHaveLength(3) // -1 * var(--y)
+				expect(secondParen?.children[0].type).toBe(NUMBER)
+				expect(secondParen?.children[0].text).toBe('-1')
+				expect(secondParen?.children[2].type).toBe(FUNCTION)
+				expect(secondParen?.children[2].name).toBe('var')
+			})
+		})
+
+		describe('URL', () => {
+			it('should parse url() function with quoted string', () => {
+				const parser = new Parser('body { background: url("image.png"); }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+
+				expect(decl?.values).toHaveLength(1)
+				expect(decl?.values[0].type).toBe(URL)
+				expect(decl?.values[0].name).toBe('url')
+				expect(decl?.values[0].children).toHaveLength(1)
+				expect(decl?.values[0].children[0].type).toBe(STRING)
+				expect(decl?.values[0].children[0].text).toBe('"image.png"')
+			})
+
+			it('should parse url() function with unquoted URL containing dots', () => {
+				const parser = new Parser('body { cursor: url(mycursor.cur); }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+				const func = decl?.values[0]
+
+				expect(func?.type).toBe(URL)
+				expect(func?.name).toBe('url')
+
+				// URL function should not parse children - content is available via node.value
+				expect(func?.has_children).toBe(false)
+				expect(func?.text).toBe('url(mycursor.cur)')
+				expect(func?.value).toBe('mycursor.cur')
+			})
+
+			it('should parse src() function with unquoted URL', () => {
+				const parser = new Parser('body { content: src(myfont.woff2); }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+				const func = decl?.values[0]
+
+				expect(func?.type).toBe(FUNCTION)
+				expect(func?.name).toBe('src')
+				expect(func?.has_children).toBe(false)
+				expect(func?.text).toBe('src(myfont.woff2)')
+				expect(func?.value).toBe('myfont.woff2')
+			})
+
+			it('should parse url() with base64 data URL', () => {
+				const parser = new Parser('body { background: url(data:image/png;base64,iVBORw0KGg); }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+				const func = decl?.values[0]
+
+				expect(func?.type).toBe(URL)
+				expect(func?.name).toBe('url')
+				expect(func?.has_children).toBe(false)
+				expect(func?.value).toBe('data:image/png;base64,iVBORw0KGg')
+			})
+
+			it('should parse url() with inline SVG', () => {
+				const parser = new Parser('body { background: url(data:image/svg+xml,<svg></svg>); }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+				const func = decl?.values[0]
+
+				expect(func?.type).toBe(URL)
+				expect(func?.name).toBe('url')
+				expect(func?.has_children).toBe(false)
+				expect(func?.value).toBe('data:image/svg+xml,<svg></svg>')
+			})
+
+			it('should parse complex background value with url()', () => {
+				const parser = new Parser('body { background: url("bg.png") no-repeat center center / cover; }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+
+				expect(decl?.values.length).toBeGreaterThan(1)
+				expect(decl?.values[0].type).toBe(URL)
+				expect(decl?.values[0].name).toBe('url')
+				expect(decl?.values[1].type).toBe(IDENTIFIER)
+				expect(decl?.values[1].text).toBe('no-repeat')
+			})
+		})
+
+		describe('Mixed values', () => {
+			it('should parse mixed value types', () => {
+				const parser = new Parser('body { border: 1px solid red; }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+
+				expect(decl?.values).toHaveLength(3)
+				expect(decl?.values[0].type).toBe(DIMENSION)
+				expect(decl?.values[0].text).toBe('1px')
+				expect(decl?.values[1].type).toBe(IDENTIFIER)
+				expect(decl?.values[1].text).toBe('solid')
+				expect(decl?.values[2].type).toBe(IDENTIFIER)
+				expect(decl?.values[2].text).toBe('red')
+			})
+
+			it('should handle empty value', () => {
+				const parser = new Parser('body { color: ; }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+
+				expect(decl?.value).toBeNull()
+				expect(decl?.values).toHaveLength(0)
+			})
+
+			it('should handle value with !important', () => {
+				const parser = new Parser('body { color: red !important; }')
+				const root = parser.parse()
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+
+				expect(decl?.value).toBe('red')
+				expect(decl?.values).toHaveLength(1)
+				expect(decl?.values[0].type).toBe(IDENTIFIER)
+				expect(decl?.values[0].text).toBe('red')
+				expect(decl?.is_important).toBe(true)
+			})
 		})
 	})
 })
