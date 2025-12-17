@@ -68,6 +68,7 @@ export interface LexerPosition {
 	token_column: number
 }
 
+/** @internal */
 export class Lexer {
 	source: string
 	pos: number

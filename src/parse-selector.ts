@@ -69,6 +69,7 @@ import {
 import { ANplusBParser } from './parse-anplusb'
 import { CSSNode } from './css-node'
 
+/** @internal */
 export class SelectorParser {
 	private lexer: Lexer
 	private arena: CSSDataArena

@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { Parser, parse } from './parse'
+import { parse } from './parse'
 import { parse_selector } from './parse-selector'
 import {
 	DECLARATION,
@@ -18,8 +18,7 @@ describe('CSSNode', () => {
 	describe('iteration', () => {
 		test('should be iterable with for-of', () => {
 			const source = 'body { color: red; margin: 0; padding: 10px; }'
-			const parser = new Parser(source, { parse_selectors: false, parse_values: false })
-			const root = parser.parse()
+			const root = parse(source, { parse_selectors: false, parse_values: false })
 
 			const rule = root.first_child!
 			const block = rule.block!
@@ -34,8 +33,7 @@ describe('CSSNode', () => {
 
 		test('should work with spread operator', () => {
 			const source = 'body { color: red; } div { margin: 0; }'
-			const parser = new Parser(source, { parse_selectors: false, parse_values: false })
-			const root = parser.parse()
+			const root = parse(source, { parse_selectors: false, parse_values: false })
 
 			const rules = [...root]
 			expect(rules).toHaveLength(2)
@@ -45,8 +43,7 @@ describe('CSSNode', () => {
 
 		test('should work with Array.from', () => {
 			const source = '@media print { body { color: black; } }'
-			const parser = new Parser(source, { parse_selectors: false, parse_values: false, parse_atrule_preludes: false })
-			const root = parser.parse()
+			const root = parse(source, { parse_selectors: false, parse_values: false, parse_atrule_preludes: false })
 
 			const media = root.first_child!
 			const block = media.block!
@@ -58,12 +55,11 @@ describe('CSSNode', () => {
 
 		test('should iterate over empty children', () => {
 			const source = '@import url("style.css");'
-			const parser = new Parser(source, {
+			const root = parse(source, {
 				parse_selectors: false,
 				parse_values: false,
 				parse_atrule_preludes: false,
 			})
-			const root = parser.parse()
 
 			const importRule = root.first_child!
 			const children = [...importRule]
@@ -75,8 +71,7 @@ describe('CSSNode', () => {
 	describe('has_prelude', () => {
 		test('should return true for @media with prelude', () => {
 			const source = '@media (min-width: 768px) { body { color: red; } }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const media = root.first_child!
 
 			expect(media.type).toBe(AT_RULE)
@@ -86,8 +81,7 @@ describe('CSSNode', () => {
 
 		test('should return true for @supports with prelude', () => {
 			const source = '@supports (display: grid) { .grid { display: grid; } }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const supports = root.first_child!
 
 			expect(supports.type).toBe(AT_RULE)
@@ -97,8 +91,7 @@ describe('CSSNode', () => {
 
 		test('should return true for @layer with name', () => {
 			const source = '@layer utilities { .btn { padding: 1rem; } }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const layer = root.first_child!
 
 			expect(layer.type).toBe(AT_RULE)
@@ -108,8 +101,7 @@ describe('CSSNode', () => {
 
 		test('should return false for @layer without name', () => {
 			const source = '@layer { .btn { padding: 1rem; } }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const layer = root.first_child!
 
 			expect(layer.type).toBe(AT_RULE)
@@ -119,8 +111,7 @@ describe('CSSNode', () => {
 
 		test('should return true for @keyframes with name', () => {
 			const source = '@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const keyframes = root.first_child!
 
 			expect(keyframes.type).toBe(AT_RULE)
@@ -130,8 +121,7 @@ describe('CSSNode', () => {
 
 		test('should return false for @font-face without prelude', () => {
 			const source = '@font-face { font-family: "Custom"; src: url("font.woff2"); }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const fontFace = root.first_child!
 
 			expect(fontFace.type).toBe(AT_RULE)
@@ -141,8 +131,7 @@ describe('CSSNode', () => {
 
 		test('should return false for @page without prelude', () => {
 			const source = '@page { margin: 1in; }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const page = root.first_child!
 
 			expect(page.type).toBe(AT_RULE)
@@ -152,8 +141,7 @@ describe('CSSNode', () => {
 
 		test('should return true for @import with options', () => {
 			const source = '@import url("styles.css") layer(base) supports(display: flex);'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const importRule = root.first_child!
 
 			expect(importRule.type).toBe(AT_RULE)
@@ -163,8 +151,7 @@ describe('CSSNode', () => {
 
 		test('should work efficiently without creating strings', () => {
 			const source = '@media (min-width: 768px) { body { color: red; } }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const media = root.first_child!
 
 			// has_prelude should be faster than prelude !== null
@@ -175,8 +162,7 @@ describe('CSSNode', () => {
 
 		test('should work for other node types that use value field', () => {
 			const source = 'body { color: red; }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const rule = root.first_child!
 			const selector = rule.first_child!
 			const block = selector.next_sibling!
@@ -196,8 +182,7 @@ describe('CSSNode', () => {
 	describe('has_block', () => {
 		test('should return true for style rules with blocks', () => {
 			const source = 'body { color: red; }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const rule = root.first_child!
 
 			expect(rule.type).toBe(STYLE_RULE)
@@ -206,8 +191,7 @@ describe('CSSNode', () => {
 
 		test('should return true for empty style rule blocks', () => {
 			const source = 'body { }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const rule = root.first_child!
 
 			expect(rule.type).toBe(STYLE_RULE)
@@ -216,8 +200,7 @@ describe('CSSNode', () => {
 
 		test('should return true for @media with block', () => {
 			const source = '@media (min-width: 768px) { body { color: red; } }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const media = root.first_child!
 
 			expect(media.type).toBe(AT_RULE)
@@ -226,8 +209,7 @@ describe('CSSNode', () => {
 
 		test('should return true for @supports with block', () => {
 			const source = '@supports (display: grid) { .grid { display: grid; } }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const supports = root.first_child!
 
 			expect(supports.type).toBe(AT_RULE)
@@ -236,8 +218,7 @@ describe('CSSNode', () => {
 
 		test('should return true for @layer with block', () => {
 			const source = '@layer utilities { .btn { padding: 1rem; } }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const layer = root.first_child!
 
 			expect(layer.type).toBe(AT_RULE)
@@ -246,8 +227,7 @@ describe('CSSNode', () => {
 
 		test('should return true for anonymous @layer with block', () => {
 			const source = '@layer { .btn { padding: 1rem; } }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const layer = root.first_child!
 
 			expect(layer.type).toBe(AT_RULE)
@@ -256,8 +236,7 @@ describe('CSSNode', () => {
 
 		test('should return true for @font-face with block', () => {
 			const source = '@font-face { font-family: "Custom"; src: url("font.woff2"); }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const fontFace = root.first_child!
 
 			expect(fontFace.type).toBe(AT_RULE)
@@ -266,8 +245,7 @@ describe('CSSNode', () => {
 
 		test('should return true for @keyframes with block', () => {
 			const source = '@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const keyframes = root.first_child!
 
 			expect(keyframes.type).toBe(AT_RULE)
@@ -276,8 +254,7 @@ describe('CSSNode', () => {
 
 		test('should return false for @import without block', () => {
 			const source = '@import url("styles.css");'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const importRule = root.first_child!
 
 			expect(importRule.type).toBe(AT_RULE)
@@ -286,8 +263,7 @@ describe('CSSNode', () => {
 
 		test('should return false for @import with preludes but no block', () => {
 			const source = '@import url("styles.css") layer(base) supports(display: flex);'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const importRule = root.first_child!
 
 			expect(importRule.type).toBe(AT_RULE)
@@ -301,8 +277,7 @@ describe('CSSNode', () => {
 				@import url("file.css") layer(base);
 				@layer utilities { .btn { padding: 1rem; } }
 			`
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const importRule = root.first_child!
 			const layerRule = importRule.next_sibling!
 
@@ -317,8 +292,7 @@ describe('CSSNode', () => {
 
 		test('should return false for non-rule nodes', () => {
 			const source = 'body { color: red; }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const rule = root.first_child!
 			const selector = rule.first_child!
 			const declaration = selector.next_sibling!
@@ -337,8 +311,7 @@ describe('CSSNode', () => {
 				@font-face { font-family: "Custom"; }
 				@keyframes fadeIn { from { opacity: 0; } }
 			`
-			const parser = new Parser(css)
-			const root = parser.parse()
+			const root = parse(css)
 
 			const nodes = [...root]
 			const [media, importRule, supports, layer, fontFace, keyframes] = nodes
@@ -355,8 +328,7 @@ describe('CSSNode', () => {
 	describe('has_declarations', () => {
 		test('should return true for style rules with declarations', () => {
 			const source = 'body { color: red; margin: 0; }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const rule = root.first_child!
 
 			expect(rule.type).toBe(STYLE_RULE)
@@ -365,8 +337,7 @@ describe('CSSNode', () => {
 
 		test('should return false for empty style rules', () => {
 			const source = 'body { }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const rule = root.first_child!
 
 			expect(rule.type).toBe(STYLE_RULE)
@@ -375,8 +346,7 @@ describe('CSSNode', () => {
 
 		test('should return false for style rules with only nested rules', () => {
 			const source = 'body { .nested { color: red; } }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const rule = root.first_child!
 
 			expect(rule.type).toBe(STYLE_RULE)
@@ -385,8 +355,7 @@ describe('CSSNode', () => {
 
 		test('should return true for style rules with both declarations and nested rules', () => {
 			const source = 'body { color: blue; .nested { margin: 0; } }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const rule = root.first_child!
 
 			expect(rule.type).toBe(STYLE_RULE)
@@ -395,8 +364,7 @@ describe('CSSNode', () => {
 
 		test('should return false for at-rules', () => {
 			const source = '@media screen { body { color: red; } }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const media = root.first_child!
 
 			expect(media.type).toBe(AT_RULE)
@@ -407,16 +375,14 @@ describe('CSSNode', () => {
 	describe('type_name property', () => {
 		test('should return stylesheet for root node', () => {
 			const source = 'body { color: red; }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 
 			expect(root.type_name).toBe('StyleSheet')
 		})
 
 		test('should return style_rule for style rules', () => {
 			const source = 'body { color: red; }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const rule = root.first_child!
 
 			expect(rule.type_name).toBe('Rule')
@@ -424,8 +390,7 @@ describe('CSSNode', () => {
 
 		test('should return declaration for declarations', () => {
 			const source = 'body { color: red; }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const rule = root.first_child!
 			const block = rule.block!
 			const decl = block.first_child!
@@ -435,8 +400,7 @@ describe('CSSNode', () => {
 
 		test('should return at_rule for at-rules', () => {
 			const source = '@media screen { body { color: red; } }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const media = root.first_child!
 
 			expect(media.type_name).toBe('Atrule')
@@ -444,8 +408,7 @@ describe('CSSNode', () => {
 
 		test('should return selector_list for selector lists', () => {
 			const source = 'body { color: red; }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const rule = root.first_child!
 			const selectorList = rule.first_child!
 
@@ -454,8 +417,7 @@ describe('CSSNode', () => {
 
 		test('should return selector_type for type selectors', () => {
 			const source = 'div { color: red; }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const rule = root.first_child!
 			const selectorList = rule.first_child!
 			const selector = selectorList.first_child!
@@ -466,8 +428,7 @@ describe('CSSNode', () => {
 
 		test('should return selector_class for class selectors', () => {
 			const source = '.foo { color: red; }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const rule = root.first_child!
 			const selectorList = rule.first_child!
 			const selector = selectorList.first_child!
@@ -478,8 +439,7 @@ describe('CSSNode', () => {
 
 		test('should return selector_id for ID selectors', () => {
 			const source = '#bar { color: red; }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const rule = root.first_child!
 			const selectorList = rule.first_child!
 			const selector = selectorList.first_child!
@@ -490,8 +450,7 @@ describe('CSSNode', () => {
 
 		test('should return selector_universal for universal selectors', () => {
 			const source = '* { color: red; }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const rule = root.first_child!
 			const selectorList = rule.first_child!
 			const selector = selectorList.first_child!
@@ -502,8 +461,7 @@ describe('CSSNode', () => {
 
 		test('should return selector_attribute for attribute selectors', () => {
 			const source = '[href] { color: red; }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const rule = root.first_child!
 			const selectorList = rule.first_child!
 			const selector = selectorList.first_child!
@@ -514,8 +472,7 @@ describe('CSSNode', () => {
 
 		test('should return selector_pseudo_class for pseudo-class selectors', () => {
 			const source = ':hover { color: red; }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const rule = root.first_child!
 			const selectorList = rule.first_child!
 			const selector = selectorList.first_child!
@@ -526,8 +483,7 @@ describe('CSSNode', () => {
 
 		test('should return selector_pseudo_element for pseudo-element selectors', () => {
 			const source = '::before { color: red; }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const rule = root.first_child!
 			const selectorList = rule.first_child!
 			const selector = selectorList.first_child!
@@ -538,8 +494,7 @@ describe('CSSNode', () => {
 
 		test('should return selector_combinator for combinators', () => {
 			const source = 'div > span { color: red; }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const rule = root.first_child!
 			const selectorList = rule.first_child!
 			const selector = selectorList.first_child!
@@ -550,8 +505,7 @@ describe('CSSNode', () => {
 
 		test('should return value_keyword for keyword values', () => {
 			const source = 'body { color: red; }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const rule = root.first_child!
 			const block = rule.block!
 			const decl = block.first_child!
@@ -562,8 +516,7 @@ describe('CSSNode', () => {
 
 		test('should return value_number for numeric values', () => {
 			const source = 'body { opacity: 0.5; }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const rule = root.first_child!
 			const block = rule.block!
 			const decl = block.first_child!
@@ -574,8 +527,7 @@ describe('CSSNode', () => {
 
 		test('should return value_dimension for dimension values', () => {
 			const source = 'body { width: 100px; }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const rule = root.first_child!
 			const block = rule.block!
 			const decl = block.first_child!
@@ -586,8 +538,7 @@ describe('CSSNode', () => {
 
 		test('should return value_string for string values', () => {
 			const source = 'body { content: "hello"; }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const rule = root.first_child!
 			const block = rule.block!
 			const decl = block.first_child!
@@ -598,8 +549,7 @@ describe('CSSNode', () => {
 
 		test('should return value_color for color values', () => {
 			const source = 'body { color: #ff0000; }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const rule = root.first_child!
 			const block = rule.block!
 			const decl = block.first_child!
@@ -610,8 +560,7 @@ describe('CSSNode', () => {
 
 		test('should return value_function for function values', () => {
 			const source = 'body { width: calc(100% - 20px); }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const rule = root.first_child!
 			const block = rule.block!
 			const decl = block.first_child!
@@ -622,8 +571,7 @@ describe('CSSNode', () => {
 
 		test('should return prelude_media_query for media query preludes', () => {
 			const source = '@media screen and (min-width: 768px) { body { color: red; } }'
-			const parser = new Parser(source)
-			const root = parser.parse()
+			const root = parse(source)
 			const media = root.first_child!
 			const prelude = media.first_child!
 

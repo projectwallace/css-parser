@@ -11,6 +11,7 @@ import { CHAR_MINUS_HYPHEN, CHAR_PLUS } from './string-utils'
 import { skip_whitespace_forward } from './parse-utils'
 import { CSSNode } from './css-node'
 
+/** @internal */
 export class ANplusBParser {
 	private lexer: Lexer
 	private arena: CSSDataArena

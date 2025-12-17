@@ -1,12 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { Parser } from './parse'
+import { parse } from './parse'
 import { IDENTIFIER, NUMBER, DIMENSION, STRING, HASH, FUNCTION, OPERATOR, PARENTHESIS, URL } from './arena'
 
 describe('Value Node Types', () => {
 	// Helper to get first value node from a declaration
 	const getValue = (css: string) => {
-		const parser = new Parser(css)
-		const root = parser.parse()
+		const root = parse(css)
 		const rule = root.first_child
 		const decl = rule?.first_child?.next_sibling?.first_child // selector → block → declaration
 		return decl?.values[0]
@@ -68,8 +67,7 @@ describe('Value Node Types', () => {
 
 		describe('OPERATOR', () => {
 			it('should have correct offset and length', () => {
-				const parser = new Parser('div { font-family: Arial, sans-serif; }')
-				const root = parser.parse()
+				const root = parse('div { font-family: Arial, sans-serif; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				const comma = decl?.values[1]
 				expect(comma?.offset).toBe(24)
@@ -80,8 +78,7 @@ describe('Value Node Types', () => {
 
 		describe('PARENTHESIS', () => {
 			it('should have correct offset and length', () => {
-				const parser = new Parser('div { width: calc((100% - 50px) / 2); }')
-				const root = parser.parse()
+				const root = parse('div { width: calc((100% - 50px) / 2); }')
 				const func = root.first_child?.first_child?.next_sibling?.first_child?.values[0]
 				const paren = func?.children[0]
 				expect(paren?.offset).toBe(18)
@@ -131,15 +128,13 @@ describe('Value Node Types', () => {
 		})
 
 		it('OPERATOR type constant', () => {
-			const parser = new Parser('div { font-family: Arial, sans-serif; }')
-			const root = parser.parse()
+			const root = parse('div { font-family: Arial, sans-serif; }')
 			const comma = root.first_child?.first_child?.next_sibling?.first_child?.values[1]
 			expect(comma?.type).toBe(OPERATOR)
 		})
 
 		it('PARENTHESIS type constant', () => {
-			const parser = new Parser('div { width: calc((100% - 50px) / 2); }')
-			const root = parser.parse()
+			const root = parse('div { width: calc((100% - 50px) / 2); }')
 			const func = root.first_child?.first_child?.next_sibling?.first_child?.values[0]
 			const paren = func?.children[0]
 			expect(paren?.type).toBe(PARENTHESIS)
@@ -183,15 +178,13 @@ describe('Value Node Types', () => {
 		})
 
 		it('OPERATOR type_name', () => {
-			const parser = new Parser('div { font-family: Arial, sans-serif; }')
-			const root = parser.parse()
+			const root = parse('div { font-family: Arial, sans-serif; }')
 			const comma = root.first_child?.first_child?.next_sibling?.first_child?.values[1]
 			expect(comma?.type_name).toBe('Operator')
 		})
 
 		it('PARENTHESIS type_name', () => {
-			const parser = new Parser('div { width: calc((100% - 50px) / 2); }')
-			const root = parser.parse()
+			const root = parse('div { width: calc((100% - 50px) / 2); }')
 			const func = root.first_child?.first_child?.next_sibling?.first_child?.values[0]
 			const paren = func?.children[0]
 			expect(paren?.type_name).toBe('Parentheses')
@@ -206,8 +199,7 @@ describe('Value Node Types', () => {
 	describe('Value Properties', () => {
 		describe('IDENTIFIER', () => {
 			it('should parse keyword values', () => {
-				const parser = new Parser('body { color: red; }')
-				const root = parser.parse()
+				const root = parse('body { color: red; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
 				expect(decl?.value).toBe('red')
@@ -216,8 +208,7 @@ describe('Value Node Types', () => {
 			})
 
 			it('should parse multiple keywords', () => {
-				const parser = new Parser('body { font-family: Arial, sans-serif; }')
-				const root = parser.parse()
+				const root = parse('body { font-family: Arial, sans-serif; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
 				expect(decl?.values).toHaveLength(3)
@@ -230,8 +221,7 @@ describe('Value Node Types', () => {
 
 		describe('NUMBER', () => {
 			it('should parse number values', () => {
-				const parser = new Parser('body { opacity: 0.5; }')
-				const root = parser.parse()
+				const root = parse('body { opacity: 0.5; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
 				expect(decl?.value).toBe('0.5')
@@ -240,8 +230,7 @@ describe('Value Node Types', () => {
 			})
 
 			it('should handle negative numbers', () => {
-				const parser = new Parser('body { margin: -10px; }')
-				const root = parser.parse()
+				const root = parse('body { margin: -10px; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
 				expect(decl?.values).toHaveLength(1)
@@ -250,8 +239,7 @@ describe('Value Node Types', () => {
 			})
 
 			it('should handle zero without unit', () => {
-				const parser = new Parser('body { margin: 0; }')
-				const root = parser.parse()
+				const root = parse('body { margin: 0; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
 				expect(decl?.values).toHaveLength(1)
@@ -262,8 +250,7 @@ describe('Value Node Types', () => {
 
 		describe('DIMENSION', () => {
 			it('should parse px dimension values', () => {
-				const parser = new Parser('body { width: 100px; }')
-				const root = parser.parse()
+				const root = parse('body { width: 100px; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
 				expect(decl?.value).toBe('100px')
@@ -274,8 +261,7 @@ describe('Value Node Types', () => {
 			})
 
 			it('should parse em dimension values', () => {
-				const parser = new Parser('body { font-size: 3em; }')
-				const root = parser.parse()
+				const root = parse('body { font-size: 3em; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
 				expect(decl?.value).toBe('3em')
@@ -286,8 +272,7 @@ describe('Value Node Types', () => {
 			})
 
 			it('should parse percentage values', () => {
-				const parser = new Parser('body { width: 50%; }')
-				const root = parser.parse()
+				const root = parse('body { width: 50%; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
 				expect(decl?.value).toBe('50%')
@@ -296,8 +281,7 @@ describe('Value Node Types', () => {
 			})
 
 			it('should handle zero with unit', () => {
-				const parser = new Parser('body { margin: 0px; }')
-				const root = parser.parse()
+				const root = parse('body { margin: 0px; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
 				expect(decl?.values).toHaveLength(1)
@@ -306,8 +290,7 @@ describe('Value Node Types', () => {
 			})
 
 			it('should parse margin shorthand', () => {
-				const parser = new Parser('body { margin: 10px 20px 30px 40px; }')
-				const root = parser.parse()
+				const root = parse('body { margin: 10px 20px 30px 40px; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
 				expect(decl?.values).toHaveLength(4)
@@ -324,8 +307,7 @@ describe('Value Node Types', () => {
 
 		describe('STRING', () => {
 			it('should parse string values', () => {
-				const parser = new Parser('body { content: "hello"; }')
-				const root = parser.parse()
+				const root = parse('body { content: "hello"; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
 				expect(decl?.value).toBe('"hello"')
@@ -336,8 +318,7 @@ describe('Value Node Types', () => {
 
 		describe('HASH', () => {
 			it('should parse color values', () => {
-				const parser = new Parser('body { color: #ff0000; }')
-				const root = parser.parse()
+				const root = parse('body { color: #ff0000; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
 				expect(decl?.value).toBe('#ff0000')
@@ -348,8 +329,7 @@ describe('Value Node Types', () => {
 
 		describe('FUNCTION', () => {
 			it('should parse simple function', () => {
-				const parser = new Parser('body { color: rgb(255, 0, 0); }')
-				const root = parser.parse()
+				const root = parse('body { color: rgb(255, 0, 0); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
 				expect(decl?.values).toHaveLength(1)
@@ -359,8 +339,7 @@ describe('Value Node Types', () => {
 			})
 
 			it('should parse function arguments', () => {
-				const parser = new Parser('body { color: rgb(255, 0, 0); }')
-				const root = parser.parse()
+				const root = parse('body { color: rgb(255, 0, 0); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				const func = decl?.values[0]
 
@@ -378,8 +357,7 @@ describe('Value Node Types', () => {
 			})
 
 			it('should parse nested functions', () => {
-				const parser = new Parser('body { width: calc(100% - 20px); }')
-				const root = parser.parse()
+				const root = parse('body { width: calc(100% - 20px); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
 				expect(decl?.values).toHaveLength(1)
@@ -395,8 +373,7 @@ describe('Value Node Types', () => {
 			})
 
 			it('should parse var() function', () => {
-				const parser = new Parser('body { color: var(--primary-color); }')
-				const root = parser.parse()
+				const root = parse('body { color: var(--primary-color); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
 				expect(decl?.values).toHaveLength(1)
@@ -408,8 +385,7 @@ describe('Value Node Types', () => {
 			})
 
 			it('should provide node.value for calc()', () => {
-				const parser = new Parser('body { width: calc(100% - 20px); }')
-				const root = parser.parse()
+				const root = parse('body { width: calc(100% - 20px); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				const func = decl?.values[0]
 
@@ -421,8 +397,7 @@ describe('Value Node Types', () => {
 			})
 
 			it('should provide node.value for var() function', () => {
-				const parser = new Parser('body { color: var(--primary-color); }')
-				const root = parser.parse()
+				const root = parse('body { color: var(--primary-color); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				const func = decl?.values[0]
 
@@ -434,8 +409,7 @@ describe('Value Node Types', () => {
 			})
 
 			it('should parse transform value', () => {
-				const parser = new Parser('body { transform: translateX(10px) rotate(45deg); }')
-				const root = parser.parse()
+				const root = parse('body { transform: translateX(10px) rotate(45deg); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
 				expect(decl?.values).toHaveLength(2)
@@ -446,8 +420,7 @@ describe('Value Node Types', () => {
 			})
 
 			it('should parse filter value', () => {
-				const parser = new Parser('body { filter: blur(5px) brightness(1.2); }')
-				const root = parser.parse()
+				const root = parse('body { filter: blur(5px) brightness(1.2); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
 				expect(decl?.values).toHaveLength(2)
@@ -462,8 +435,7 @@ describe('Value Node Types', () => {
 
 		describe('OPERATOR', () => {
 			it('should parse comma operator', () => {
-				const parser = new Parser('body { font-family: Arial, sans-serif; }')
-				const root = parser.parse()
+				const root = parse('body { font-family: Arial, sans-serif; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
 				expect(decl?.values[1].type).toBe(OPERATOR)
@@ -471,8 +443,7 @@ describe('Value Node Types', () => {
 			})
 
 			it('should parse calc operators', () => {
-				const parser = new Parser('body { width: calc(100% - 20px); }')
-				const root = parser.parse()
+				const root = parse('body { width: calc(100% - 20px); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				const func = decl?.values[0]
 
@@ -481,8 +452,7 @@ describe('Value Node Types', () => {
 			})
 
 			it('should parse all calc operators', () => {
-				const parser = new Parser('body { width: calc(1px + 2px * 3px / 4px - 5px); }')
-				const root = parser.parse()
+				const root = parse('body { width: calc(1px + 2px * 3px / 4px - 5px); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				const func = decl?.values[0]
 
@@ -497,8 +467,7 @@ describe('Value Node Types', () => {
 
 		describe('PARENTHESIS', () => {
 			it('should parse parenthesized expressions in calc()', () => {
-				const parser = new Parser('body { width: calc((100% - 50px) / 2); }')
-				const root = parser.parse()
+				const root = parse('body { width: calc((100% - 50px) / 2); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				const func = decl?.values[0]
 
@@ -530,8 +499,7 @@ describe('Value Node Types', () => {
 			})
 
 			it('should parse complex nested parentheses', () => {
-				const parser = new Parser('body { width: calc(((100% - var(--x)) / 12 * 6) + (-1 * var(--y))); }')
-				const root = parser.parse()
+				const root = parse('body { width: calc(((100% - var(--x)) / 12 * 6) + (-1 * var(--y))); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				const func = decl?.values[0]
 
@@ -570,8 +538,7 @@ describe('Value Node Types', () => {
 
 		describe('URL', () => {
 			it('should parse url() function with quoted string', () => {
-				const parser = new Parser('body { background: url("image.png"); }')
-				const root = parser.parse()
+				const root = parse('body { background: url("image.png"); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
 				expect(decl?.values).toHaveLength(1)
@@ -583,8 +550,7 @@ describe('Value Node Types', () => {
 			})
 
 			it('should parse url() function with unquoted URL containing dots', () => {
-				const parser = new Parser('body { cursor: url(mycursor.cur); }')
-				const root = parser.parse()
+				const root = parse('body { cursor: url(mycursor.cur); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				const func = decl?.values[0]
 
@@ -598,8 +564,7 @@ describe('Value Node Types', () => {
 			})
 
 			it('should parse src() function with unquoted URL', () => {
-				const parser = new Parser('body { content: src(myfont.woff2); }')
-				const root = parser.parse()
+				const root = parse('body { content: src(myfont.woff2); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				const func = decl?.values[0]
 
@@ -611,8 +576,7 @@ describe('Value Node Types', () => {
 			})
 
 			it('should parse url() with base64 data URL', () => {
-				const parser = new Parser('body { background: url(data:image/png;base64,iVBORw0KGg); }')
-				const root = parser.parse()
+				const root = parse('body { background: url(data:image/png;base64,iVBORw0KGg); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				const func = decl?.values[0]
 
@@ -623,8 +587,7 @@ describe('Value Node Types', () => {
 			})
 
 			it('should parse url() with inline SVG', () => {
-				const parser = new Parser('body { background: url(data:image/svg+xml,<svg></svg>); }')
-				const root = parser.parse()
+				const root = parse('body { background: url(data:image/svg+xml,<svg></svg>); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				const func = decl?.values[0]
 
@@ -635,8 +598,7 @@ describe('Value Node Types', () => {
 			})
 
 			it('should parse complex background value with url()', () => {
-				const parser = new Parser('body { background: url("bg.png") no-repeat center center / cover; }')
-				const root = parser.parse()
+				const root = parse('body { background: url("bg.png") no-repeat center center / cover; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
 				expect(decl?.values.length).toBeGreaterThan(1)
@@ -649,8 +611,7 @@ describe('Value Node Types', () => {
 
 		describe('Mixed values', () => {
 			it('should parse mixed value types', () => {
-				const parser = new Parser('body { border: 1px solid red; }')
-				const root = parser.parse()
+				const root = parse('body { border: 1px solid red; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
 				expect(decl?.values).toHaveLength(3)
@@ -663,8 +624,7 @@ describe('Value Node Types', () => {
 			})
 
 			it('should handle empty value', () => {
-				const parser = new Parser('body { color: ; }')
-				const root = parser.parse()
+				const root = parse('body { color: ; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
 				expect(decl?.value).toBeNull()
@@ -672,8 +632,7 @@ describe('Value Node Types', () => {
 			})
 
 			it('should handle value with !important', () => {
-				const parser = new Parser('body { color: red !important; }')
-				const root = parser.parse()
+				const root = parse('body { color: red !important; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
 				expect(decl?.value).toBe('red')

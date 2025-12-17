@@ -18,6 +18,7 @@ import {
 import { is_whitespace, CHAR_MINUS_HYPHEN, CHAR_PLUS, CHAR_ASTERISK, CHAR_FORWARD_SLASH } from './string-utils'
 import { CSSNode } from './css-node'
 
+/** @internal */
 export class ValueParser {
 	private lexer: Lexer
 	private arena: CSSDataArena

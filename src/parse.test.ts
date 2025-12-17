@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { Parser, parse } from './parse'
+import { parse } from './parse'
 import {
 	STYLESHEET,
 	STYLE_RULE,
@@ -277,26 +277,19 @@ describe('Core Nodes', () => {
 	describe('Node Properties', () => {
 		describe('STYLESHEET', () => {
 			test('empty stylesheet has no children', () => {
-				const parser = new Parser('')
-				const root = parser.parse()
+				const root = parse('')
+				
 				expect(root.type).toBe(STYLESHEET)
 				expect(root.has_children).toBe(false)
 			})
 
 			test('stylesheet with only whitespace has no children', () => {
-				const parser = new Parser('   \n\n   ')
-				const root = parser.parse()
+				const root = parse('   \n\n   ')
+				
 				expect(root.type).toBe(STYLESHEET)
 				expect(root.has_children).toBe(false)
 			})
 
-			test('parser creates arena sized for source', () => {
-				const source = 'body { color: red; }'
-				const parser = new Parser(source)
-				const arena = parser.get_arena()
-				expect(arena.get_capacity()).toBeGreaterThan(0)
-				expect(arena.get_count()).toBe(1) // Count starts at 1 (0 is reserved for "no node")
-			})
 		})
 
 		describe('STYLE_RULE', () => {
@@ -642,8 +635,8 @@ describe('Core Nodes', () => {
 			describe('Selector parsing', () => {
 				test('should parse simple selector', () => {
 					const source = 'body { }'
-					const parser = new Parser(source)
-					const root = parser.parse()
+					const root = parse(source)
+					
 
 					const rule = root.first_child!
 					expect(rule.has_children).toBe(true)
@@ -657,8 +650,8 @@ describe('Core Nodes', () => {
 
 				test('should parse complex selector', () => {
 					const source = 'div.class > p#id { }'
-					const parser = new Parser(source)
-					const root = parser.parse()
+					const root = parse(source)
+					
 
 					const rule = root.first_child!
 					const selectorlist = rule.first_child!
@@ -708,8 +701,8 @@ describe('Core Nodes', () => {
 
 			describe('Multiple rules', () => {
 				test('should parse multiple style rules', () => {
-					const parser = new Parser('body { } div { }')
-					const root = parser.parse()
+					const root = parse('body { } div { }')
+					
 
 					const [rule1, rule2] = root.children
 					expect(rule1.type).toBe(STYLE_RULE)
@@ -723,8 +716,8 @@ describe('Core Nodes', () => {
 			describe('Statement at-rules (no block)', () => {
 				test('@import', () => {
 					const source = '@import url("style.css");'
-					const parser = new Parser(source, { parse_atrule_preludes: false })
-					const root = parser.parse()
+					const root = parse(source, { parse_atrule_preludes: false })
+					
 
 					const atRule = root.first_child!
 					expect(atRule.type).toBe(AT_RULE)
@@ -734,8 +727,8 @@ describe('Core Nodes', () => {
 
 				test('@namespace', () => {
 					const source = '@namespace url(http://www.w3.org/1999/xhtml);'
-					const parser = new Parser(source)
-					const root = parser.parse()
+					const root = parse(source)
+					
 
 					const atRule = root.first_child!
 					expect(atRule.type).toBe(AT_RULE)
@@ -747,8 +740,8 @@ describe('Core Nodes', () => {
 			describe('Case-insensitive at-rule names', () => {
 				test('should parse @MEDIA (uppercase)', () => {
 					const source = '@MEDIA (min-width: 768px) { body { color: red; } }'
-					const parser = new Parser(source, { parse_atrule_preludes: false })
-					const root = parser.parse()
+					const root = parse(source, { parse_atrule_preludes: false })
+					
 
 					const media = root.first_child!
 					expect(media.type).toBe(AT_RULE)
@@ -761,8 +754,8 @@ describe('Core Nodes', () => {
 
 				test('should parse @Font-Face (mixed case)', () => {
 					const source = '@Font-Face { font-family: "MyFont"; src: url("font.woff"); }'
-					const parser = new Parser(source)
-					const root = parser.parse()
+					const root = parse(source)
+					
 
 					const fontFace = root.first_child!
 					expect(fontFace.type).toBe(AT_RULE)
@@ -776,8 +769,8 @@ describe('Core Nodes', () => {
 
 				test('should parse @SUPPORTS (uppercase)', () => {
 					const source = '@SUPPORTS (display: grid) { .grid { display: grid; } }'
-					const parser = new Parser(source, { parse_atrule_preludes: false })
-					const root = parser.parse()
+					const root = parse(source, { parse_atrule_preludes: false })
+					
 
 					const supports = root.first_child!
 					expect(supports.type).toBe(AT_RULE)
@@ -789,8 +782,8 @@ describe('Core Nodes', () => {
 			describe('Block at-rules with nested rules', () => {
 				test('@media with nested rule', () => {
 					const source = '@media (min-width: 768px) { body { color: red; } }'
-					const parser = new Parser(source, { parse_atrule_preludes: false })
-					const root = parser.parse()
+					const root = parse(source, { parse_atrule_preludes: false })
+					
 
 					const media = root.first_child!
 					expect(media.type).toBe(AT_RULE)
@@ -806,8 +799,8 @@ describe('Core Nodes', () => {
 
 				test('@layer with name', () => {
 					const source = '@layer utilities { .text-center { text-align: center; } }'
-					const parser = new Parser(source)
-					const root = parser.parse()
+					const root = parse(source)
+					
 
 					const layer = root.first_child!
 					expect(layer.type).toBe(AT_RULE)
@@ -817,8 +810,8 @@ describe('Core Nodes', () => {
 
 				test('anonymous @layer', () => {
 					const source = '@layer { body { margin: 0; } }'
-					const parser = new Parser(source)
-					const root = parser.parse()
+					const root = parse(source)
+					
 
 					const layer = root.first_child!
 					expect(layer.type).toBe(AT_RULE)
@@ -828,8 +821,8 @@ describe('Core Nodes', () => {
 
 				test('@supports', () => {
 					const source = '@supports (display: grid) { .grid { display: grid; } }'
-					const parser = new Parser(source)
-					const root = parser.parse()
+					const root = parse(source)
+					
 
 					const supports = root.first_child!
 					expect(supports.type).toBe(AT_RULE)
@@ -839,8 +832,8 @@ describe('Core Nodes', () => {
 
 				test('@container', () => {
 					const source = '@container (min-width: 400px) { .card { padding: 2rem; } }'
-					const parser = new Parser(source)
-					const root = parser.parse()
+					const root = parse(source)
+					
 
 					const container = root.first_child!
 					expect(container.type).toBe(AT_RULE)
@@ -852,8 +845,8 @@ describe('Core Nodes', () => {
 			describe('Descriptor at-rules (with declarations)', () => {
 				test('@font-face', () => {
 					const source = '@font-face { font-family: "Open Sans"; src: url(font.woff2); }'
-					const parser = new Parser(source)
-					const root = parser.parse()
+					const root = parse(source)
+					
 
 					const fontFace = root.first_child!
 					expect(fontFace.type).toBe(AT_RULE)
@@ -868,8 +861,8 @@ describe('Core Nodes', () => {
 
 				test('@page', () => {
 					const source = '@page { margin: 1in; }'
-					const parser = new Parser(source)
-					const root = parser.parse()
+					const root = parse(source)
+					
 
 					const page = root.first_child!
 					expect(page.type).toBe(AT_RULE)
@@ -882,8 +875,8 @@ describe('Core Nodes', () => {
 
 				test('@counter-style', () => {
 					const source = '@counter-style thumbs { system: cyclic; symbols: "👍"; }'
-					const parser = new Parser(source)
-					const root = parser.parse()
+					const root = parse(source)
+					
 
 					const counterStyle = root.first_child!
 					expect(counterStyle.type).toBe(AT_RULE)
@@ -898,8 +891,8 @@ describe('Core Nodes', () => {
 			describe('Nested at-rules', () => {
 				test('@media inside @supports', () => {
 					const source = '@supports (display: grid) { @media (min-width: 768px) { body { color: red; } } }'
-					const parser = new Parser(source, { parse_atrule_preludes: false })
-					const root = parser.parse()
+					const root = parse(source, { parse_atrule_preludes: false })
+					
 
 					const supports = root.first_child!
 					expect(supports.name).toBe('supports')
@@ -922,8 +915,8 @@ describe('Core Nodes', () => {
 			describe('Multiple at-rules', () => {
 				test('multiple at-rules at top level', () => {
 					const source = '@import url("a.css"); @layer base { body { margin: 0; } } @media print { body { color: black; } }'
-					const parser = new Parser(source)
-					const root = parser.parse()
+					const root = parse(source)
+					
 
 					const [import1, layer, media] = root.children
 					expect(import1.name).toBe('import')
@@ -938,8 +931,8 @@ describe('Core Nodes', () => {
 			describe('Special at-rules', () => {
 				test('@charset', () => {
 					let source = '@charset "UTF-8"; body { color: red; }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let [charset, _body] = root.children
 					expect(charset.type).toBe(AT_RULE)
@@ -948,8 +941,8 @@ describe('Core Nodes', () => {
 
 				test('@import with media query', () => {
 					let source = '@import url("print.css") print;'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let import_rule = root.first_child!
 					expect(import_rule.type).toBe(AT_RULE)
@@ -967,8 +960,8 @@ describe('Core Nodes', () => {
 							font-display: swap;
 						}
 					`
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let font_face = root.first_child!
 					expect(font_face.name).toBe('font-face')
@@ -978,8 +971,8 @@ describe('Core Nodes', () => {
 
 				test('@counter-style', () => {
 					let source = '@counter-style custom { system: cyclic; symbols: "⚫" "⚪"; suffix: " "; }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let counter = root.first_child!
 					expect(counter.name).toBe('counter-style')
@@ -989,8 +982,8 @@ describe('Core Nodes', () => {
 
 				test('@property', () => {
 					let source = '@property --my-color { syntax: "<color>"; inherits: false; initial-value: #c0ffee; }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let property = root.first_child!
 					expect(property.name).toBe('property')
@@ -1000,8 +993,8 @@ describe('Core Nodes', () => {
 			describe('At-rule preludes', () => {
 				test('media query prelude', () => {
 					let source = '@media (min-width: 768px) { }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let atrule = root.first_child!
 					expect(atrule.type).toBe(AT_RULE)
@@ -1011,8 +1004,8 @@ describe('Core Nodes', () => {
 
 				test('complex media query prelude', () => {
 					let source = '@media screen and (min-width: 768px) and (max-width: 1024px) { }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let atrule = root.first_child!
 					expect(atrule.name).toBe('media')
@@ -1021,8 +1014,8 @@ describe('Core Nodes', () => {
 
 				test('container query prelude', () => {
 					let source = '@container (width >= 200px) { }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let atrule = root.first_child!
 					expect(atrule.name).toBe('container')
@@ -1031,8 +1024,8 @@ describe('Core Nodes', () => {
 
 				test('supports query prelude', () => {
 					let source = '@supports (display: grid) { }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let atrule = root.first_child!
 					expect(atrule.name).toBe('supports')
@@ -1041,8 +1034,8 @@ describe('Core Nodes', () => {
 
 				test('import prelude', () => {
 					let source = '@import url("styles.css");'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let atrule = root.first_child!
 					expect(atrule.name).toBe('import')
@@ -1051,8 +1044,8 @@ describe('Core Nodes', () => {
 
 				test('at-rule without prelude', () => {
 					let source = '@font-face { font-family: MyFont; }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let atrule = root.first_child!
 					expect(atrule.name).toBe('font-face')
@@ -1061,8 +1054,8 @@ describe('Core Nodes', () => {
 
 				test('layer prelude', () => {
 					let source = '@layer utilities { }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let atrule = root.first_child!
 					expect(atrule.name).toBe('layer')
@@ -1071,8 +1064,8 @@ describe('Core Nodes', () => {
 
 				test('keyframes prelude', () => {
 					let source = '@keyframes slide-in { }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let atrule = root.first_child!
 					expect(atrule.name).toBe('keyframes')
@@ -1081,8 +1074,8 @@ describe('Core Nodes', () => {
 
 				test('prelude with extra whitespace', () => {
 					let source = '@media   (min-width: 768px)   { }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let atrule = root.first_child!
 					expect(atrule.name).toBe('media')
@@ -1091,8 +1084,8 @@ describe('Core Nodes', () => {
 
 				test('charset prelude', () => {
 					let source = '@charset "UTF-8";'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let atrule = root.first_child!
 					expect(atrule.name).toBe('charset')
@@ -1101,8 +1094,8 @@ describe('Core Nodes', () => {
 
 				test('namespace prelude', () => {
 					let source = '@namespace svg url(http://www.w3.org/2000/svg);'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let atrule = root.first_child!
 					expect(atrule.name).toBe('namespace')
@@ -1111,8 +1104,8 @@ describe('Core Nodes', () => {
 
 				test('value and prelude should be aliases for at-rules', () => {
 					let source = '@media (min-width: 768px) { }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let atrule = root.first_child!
 					expect(atrule.value).toBe(atrule.prelude)
@@ -1121,8 +1114,8 @@ describe('Core Nodes', () => {
 
 				test('at-rule prelude line tracking', () => {
 					let source = 'body { color: red; }\n\n@media screen { }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let [_rule1, atRule] = root.children
 					expect(atRule.line).toBe(3)
@@ -1173,8 +1166,8 @@ describe('Core Nodes', () => {
 			describe('Basic declaration properties', () => {
 				test('should parse property name', () => {
 					const source = 'body { color: red; }'
-					const parser = new Parser(source)
-					const root = parser.parse()
+					const root = parse(source)
+					
 
 					const rule = root.first_child!
 					const [_selector, block] = rule.children
@@ -1185,8 +1178,8 @@ describe('Core Nodes', () => {
 
 				test('simple declaration without !important', () => {
 					const source = 'body { color: red; }'
-					const parser = new Parser(source)
-					const root = parser.parse()
+					const root = parse(source)
+					
 
 					const rule = root.first_child!
 					const [_selector, block] = rule.children
@@ -1198,8 +1191,8 @@ describe('Core Nodes', () => {
 
 				test('declaration with !important', () => {
 					const source = 'body { color: red !important; }'
-					const parser = new Parser(source)
-					const root = parser.parse()
+					const root = parse(source)
+					
 
 					const rule = root.first_child!
 					const [_selector, block] = rule.children
@@ -1211,8 +1204,8 @@ describe('Core Nodes', () => {
 
 				test('declaration with !ie (historic !important)', () => {
 					const source = 'body { color: red !ie; }'
-					const parser = new Parser(source)
-					const root = parser.parse()
+					const root = parse(source)
+					
 
 					const rule = root.first_child!
 					const [_selector, block] = rule.children
@@ -1224,8 +1217,8 @@ describe('Core Nodes', () => {
 
 				test('declaration with ! followed by any identifier', () => {
 					const source = 'body { color: red !foo; }'
-					const parser = new Parser(source)
-					const root = parser.parse()
+					const root = parse(source)
+					
 
 					const rule = root.first_child!
 					const [_selector, block] = rule.children
@@ -1237,8 +1230,8 @@ describe('Core Nodes', () => {
 
 				test('declaration without semicolon at end of block', () => {
 					const source = 'body { color: red }'
-					const parser = new Parser(source)
-					const root = parser.parse()
+					const root = parse(source)
+					
 
 					const rule = root.first_child!
 					const [_selector, block] = rule.children
@@ -1249,8 +1242,8 @@ describe('Core Nodes', () => {
 
 				test('complex declaration value', () => {
 					const source = 'body { background: url(image.png) no-repeat center; }'
-					const parser = new Parser(source)
-					const root = parser.parse()
+					const root = parse(source)
+					
 
 					const rule = root.first_child!
 					const [_selector, block] = rule.children
@@ -1264,8 +1257,8 @@ describe('Core Nodes', () => {
 			describe('Multiple declarations', () => {
 				test('should parse multiple declarations', () => {
 					const source = 'body { color: red; margin: 0; }'
-					const parser = new Parser(source)
-					const root = parser.parse()
+					const root = parse(source)
+					
 
 					const rule = root.first_child!
 					const [_selector, block] = rule.children
@@ -1280,8 +1273,8 @@ describe('Core Nodes', () => {
 			describe('Declaration values', () => {
 				test('extract simple value', () => {
 					let source = 'a { color: blue; }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
@@ -1293,8 +1286,8 @@ describe('Core Nodes', () => {
 
 				test('extract value with spaces', () => {
 					let source = 'a { padding: 1rem 2rem 3rem 4rem; }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
@@ -1306,8 +1299,8 @@ describe('Core Nodes', () => {
 
 				test('extract function value', () => {
 					let source = 'a { background: linear-gradient(to bottom, red, blue); }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
@@ -1319,8 +1312,8 @@ describe('Core Nodes', () => {
 
 				test('extract calc value', () => {
 					let source = 'a { width: calc(100% - 2rem); }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
@@ -1332,8 +1325,8 @@ describe('Core Nodes', () => {
 
 				test('exclude !important from value', () => {
 					let source = 'a { color: blue !important; }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
@@ -1346,8 +1339,8 @@ describe('Core Nodes', () => {
 
 				test('value with extra whitespace', () => {
 					let source = 'a { color:    blue   ; }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
@@ -1359,8 +1352,8 @@ describe('Core Nodes', () => {
 
 				test('CSS custom property value', () => {
 					let source = ':root { --brand-color: rgb(0% 10% 50% / 0.5); }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
@@ -1372,8 +1365,8 @@ describe('Core Nodes', () => {
 
 				test('var() reference value', () => {
 					let source = 'a { color: var(--primary-color); }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
@@ -1385,8 +1378,8 @@ describe('Core Nodes', () => {
 
 				test('nested function value', () => {
 					let source = 'a { transform: translate(calc(50% - 1rem), 0); }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
@@ -1398,8 +1391,8 @@ describe('Core Nodes', () => {
 
 				test('value without semicolon', () => {
 					let source = 'a { color: blue }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
@@ -1411,8 +1404,8 @@ describe('Core Nodes', () => {
 
 				test('empty value', () => {
 					let source = 'a { color: ; }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
@@ -1424,8 +1417,8 @@ describe('Core Nodes', () => {
 
 				test('URL value', () => {
 					let source = 'a { background: url("image.png"); }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
@@ -1439,8 +1432,8 @@ describe('Core Nodes', () => {
 			describe('Vendor prefix detection', () => {
 				test('-webkit- vendor prefix', () => {
 					let source = '.box { -webkit-transform: scale(1); }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
@@ -1451,8 +1444,8 @@ describe('Core Nodes', () => {
 
 				test('-moz- vendor prefix', () => {
 					let source = '.box { -moz-transform: scale(1); }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
@@ -1463,8 +1456,8 @@ describe('Core Nodes', () => {
 
 				test('-ms- vendor prefix', () => {
 					let source = '.box { -ms-transform: scale(1); }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
@@ -1475,8 +1468,8 @@ describe('Core Nodes', () => {
 
 				test('-o- vendor prefix', () => {
 					let source = '.box { -o-transform: scale(1); }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
@@ -1487,8 +1480,8 @@ describe('Core Nodes', () => {
 
 				test('no vendor prefix for standard properties', () => {
 					let source = '.box { transform: scale(1); }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
@@ -1499,8 +1492,8 @@ describe('Core Nodes', () => {
 
 				test('no vendor prefix for properties with hyphens', () => {
 					let source = '.box { background-color: red; }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
@@ -1511,8 +1504,8 @@ describe('Core Nodes', () => {
 
 				test('no vendor prefix for custom properties', () => {
 					let source = ':root { --primary-color: blue; }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
@@ -1523,8 +1516,8 @@ describe('Core Nodes', () => {
 
 				test('multiple vendor-prefixed properties', () => {
 					let source = '.box { -webkit-transform: scale(1); -moz-transform: scale(1); transform: scale(1); }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
@@ -1542,8 +1535,8 @@ describe('Core Nodes', () => {
 
 				test('complex property names with vendor prefix', () => {
 					let source = '.box { -webkit-border-top-left-radius: 5px; }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
@@ -1554,8 +1547,8 @@ describe('Core Nodes', () => {
 
 				test('no vendor prefix for similar but non-vendor properties', () => {
 					let source = '.box { border-radius: 5px; }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
@@ -1566,8 +1559,8 @@ describe('Core Nodes', () => {
 
 				test('false for nodes without names', () => {
 					let source = 'body { }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let selector = rule.first_child!
@@ -1578,8 +1571,8 @@ describe('Core Nodes', () => {
 			describe('Vendor prefix detection for selectors', () => {
 				test('-webkit- vendor prefix in pseudo-class', () => {
 					let source = 'input:-webkit-autofill { color: black; }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let selectorList = rule.first_child!
@@ -1592,8 +1585,8 @@ describe('Core Nodes', () => {
 
 				test('-moz- vendor prefix in pseudo-class', () => {
 					let source = 'button:-moz-focusring { outline: 2px solid blue; }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let selectorList = rule.first_child!
@@ -1606,8 +1599,8 @@ describe('Core Nodes', () => {
 
 				test('-ms- vendor prefix in pseudo-class', () => {
 					let source = 'input:-ms-input-placeholder { color: gray; }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let selectorList = rule.first_child!
@@ -1620,8 +1613,8 @@ describe('Core Nodes', () => {
 
 				test('-webkit- vendor prefix in pseudo-element', () => {
 					let source = 'div::-webkit-scrollbar { width: 10px; }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let selectorList = rule.first_child!
@@ -1634,8 +1627,8 @@ describe('Core Nodes', () => {
 
 				test('-moz- vendor prefix in pseudo-element', () => {
 					let source = 'div::-moz-selection { background: yellow; }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let selectorList = rule.first_child!
@@ -1648,8 +1641,8 @@ describe('Core Nodes', () => {
 
 				test('-webkit- vendor prefix in pseudo-element with multiple parts', () => {
 					let source = 'input::-webkit-input-placeholder { color: gray; }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let selectorList = rule.first_child!
@@ -1662,8 +1655,8 @@ describe('Core Nodes', () => {
 
 				test('-webkit- vendor prefix in pseudo-class function', () => {
 					let source = 'input:-webkit-any(input, button) { margin: 0; }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let selectorList = rule.first_child!
@@ -1676,8 +1669,8 @@ describe('Core Nodes', () => {
 
 				test('no vendor prefix for standard pseudo-classes', () => {
 					let source = 'a:hover { color: blue; }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let selectorList = rule.first_child!
@@ -1690,8 +1683,8 @@ describe('Core Nodes', () => {
 
 				test('no vendor prefix for standard pseudo-elements', () => {
 					let source = 'div::before { content: ""; }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let selectorList = rule.first_child!
@@ -1704,8 +1697,8 @@ describe('Core Nodes', () => {
 
 				test('multiple vendor-prefixed pseudo-elements', () => {
 					let source = 'div::-webkit-scrollbar { } div::-webkit-scrollbar-thumb { } div::after { }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let [rule1, rule2, rule3] = root.children
 
@@ -1733,8 +1726,8 @@ describe('Core Nodes', () => {
 
 				test('vendor prefix in complex selector', () => {
 					let source = 'input:-webkit-autofill:focus { color: black; }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let rule = root.first_child!
 					let selectorList = rule.first_child!
@@ -1753,8 +1746,8 @@ describe('Core Nodes', () => {
 
 		describe('BLOCK', () => {
 			test('block text excludes braces for empty at-rule block', () => {
-				const parser = new Parser('@layer test {}')
-				const root = parser.parse()
+				const root = parse('@layer test {}')
+				
 				const atRule = root.first_child!
 
 				expect(atRule.has_block).toBe(true)
@@ -1763,8 +1756,8 @@ describe('Core Nodes', () => {
 			})
 
 			test('at-rule block with content excludes braces', () => {
-				const parser = new Parser('@layer test { .foo { color: red; } }')
-				const root = parser.parse()
+				const root = parse('@layer test { .foo { color: red; } }')
+				
 				const atRule = root.first_child!
 
 				expect(atRule.has_block).toBe(true)
@@ -1773,8 +1766,8 @@ describe('Core Nodes', () => {
 			})
 
 			test('empty style rule block has empty text', () => {
-				const parser = new Parser('body {}')
-				const root = parser.parse()
+				const root = parse('body {}')
+				
 				const styleRule = root.first_child!
 
 				expect(styleRule.has_block).toBe(true)
@@ -1783,8 +1776,8 @@ describe('Core Nodes', () => {
 			})
 
 			test('style rule block with declaration excludes braces', () => {
-				const parser = new Parser('body { color: red; }')
-				const root = parser.parse()
+				const root = parse('body { color: red; }')
+				
 				const styleRule = root.first_child!
 
 				expect(styleRule.has_block).toBe(true)
@@ -1793,8 +1786,8 @@ describe('Core Nodes', () => {
 			})
 
 			test('nested style rule blocks exclude braces', () => {
-				const parser = new Parser('.parent { .child { margin: 0; } }')
-				const root = parser.parse()
+				const root = parse('.parent { .child { margin: 0; } }')
+				
 				const parent = root.first_child!
 				const parentBlock = parent.block!
 				const child = parentBlock.first_child!
@@ -1805,32 +1798,32 @@ describe('Core Nodes', () => {
 			})
 
 			test('at-rule with multiple declarations excludes braces', () => {
-				const parser = new Parser('@font-face { font-family: "Test"; src: url(test.woff); }')
-				const root = parser.parse()
+				const root = parse('@font-face { font-family: "Test"; src: url(test.woff); }')
+				
 				const atRule = root.first_child!
 
 				expect(atRule.block!.text).toBe(' font-family: "Test"; src: url(test.woff); ')
 			})
 
 			test('media query with nested rules excludes braces', () => {
-				const parser = new Parser('@media screen { body { color: blue; } }')
-				const root = parser.parse()
+				const root = parse('@media screen { body { color: blue; } }')
+				
 				const mediaRule = root.first_child!
 
 				expect(mediaRule.block!.text).toBe(' body { color: blue; } ')
 			})
 
 			test('block with no whitespace is empty', () => {
-				const parser = new Parser('div{}')
-				const root = parser.parse()
+				const root = parse('div{}')
+				
 				const styleRule = root.first_child!
 
 				expect(styleRule.block!.text).toBe('')
 			})
 
 			test('block with only whitespace preserves whitespace', () => {
-				const parser = new Parser('div{ \n\t }')
-				const root = parser.parse()
+				const root = parse('div{ \n\t }')
+				
 				const styleRule = root.first_child!
 
 				expect(styleRule.block!.text).toBe(' \n\t ')
@@ -1840,8 +1833,8 @@ describe('Core Nodes', () => {
 		describe('CSS Nesting', () => {
 			test('nested rule with & selector', () => {
 				let source = '.parent { color: red; & .child { color: blue; } }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let parent = root.first_child!
 				expect(parent.type).toBe(STYLE_RULE)
@@ -1858,8 +1851,8 @@ describe('Core Nodes', () => {
 
 			test('nested rule without & selector', () => {
 				let source = '.parent { color: red; .child { color: blue; } }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let parent = root.first_child!
 				let [_selector, block] = parent.children
@@ -1872,8 +1865,8 @@ describe('Core Nodes', () => {
 
 			test('multiple nested rules', () => {
 				let source = '.parent { .child1 { } .child2 { } }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let parent = root.first_child!
 				let [_selector, block] = parent.children
@@ -1885,8 +1878,8 @@ describe('Core Nodes', () => {
 
 			test('deeply nested rules', () => {
 				let source = '.a { .b { .c { color: red; } } }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let a = root.first_child!
 				expect(a.length).toBe(32)
@@ -1908,8 +1901,8 @@ describe('Core Nodes', () => {
 
 			test('nested @media inside rule', () => {
 				let source = '.card { color: red; @media (min-width: 768px) { padding: 2rem; } }'
-				let parser = new Parser(source, { parse_atrule_preludes: false })
-				let root = parser.parse()
+				let root = parse(source, { parse_atrule_preludes: false })
+				
 
 				let card = root.first_child!
 				let [_selector, block] = card.children
@@ -1927,8 +1920,8 @@ describe('Core Nodes', () => {
 
 			test(':is() pseudo-class', () => {
 				let source = ':is(.a, .b) { color: red; }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let rule = root.first_child!
 				let selector = rule.first_child!
@@ -1937,8 +1930,8 @@ describe('Core Nodes', () => {
 
 			test(':where() pseudo-class', () => {
 				let source = ':where(h1, h2, h3) { margin: 0; }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let rule = root.first_child!
 				let selector = rule.first_child!
@@ -1947,8 +1940,8 @@ describe('Core Nodes', () => {
 
 			test(':has() pseudo-class', () => {
 				let source = 'div:has(> img) { display: flex; }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let rule = root.first_child!
 				let selector = rule.first_child!
@@ -1962,8 +1955,8 @@ describe('Core Nodes', () => {
 					padding: 1rem;
 					.body { line-height: 1.5; }
 				}`
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let card = root.first_child!
 				let [_selector, block] = card.children
@@ -1983,8 +1976,8 @@ describe('Core Nodes', () => {
 			describe('Relaxed nesting (CSS Nesting Module Level 1)', () => {
 				test('nested rule with leading child combinator', () => {
 					let source = '.parent { > a { color: red; } }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let parent = root.first_child!
 					expect(parent.type).toBe(STYLE_RULE)
@@ -2000,8 +1993,8 @@ describe('Core Nodes', () => {
 
 				test('nested rule with leading next-sibling combinator', () => {
 					let source = '.parent { + span { color: blue; } }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let parent = root.first_child!
 					let [_selector, block] = parent.children
@@ -2015,8 +2008,8 @@ describe('Core Nodes', () => {
 
 				test('nested rule with leading subsequent-sibling combinator', () => {
 					let source = '.parent { ~ div { color: green; } }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let parent = root.first_child!
 					let [_selector, block] = parent.children
@@ -2030,8 +2023,8 @@ describe('Core Nodes', () => {
 
 				test('multiple nested rules with different leading combinators', () => {
 					let source = '.parent { > a { color: red; } ~ span { color: blue; } + div { color: green; } }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let parent = root.first_child!
 					let [_selector, block] = parent.children
@@ -2052,8 +2045,8 @@ describe('Core Nodes', () => {
 
 				test('complex selector after leading combinator', () => {
 					let source = '.parent { > a.link#nav[href]:hover { color: red; } }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let parent = root.first_child!
 					let [_selector, block] = parent.children
@@ -2066,8 +2059,8 @@ describe('Core Nodes', () => {
 
 				test('deeply nested rules with leading combinators', () => {
 					let source = '.a { > .b { > .c { color: red; } } }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let a = root.first_child!
 					let [_selector_a, block_a] = a.children
@@ -2085,8 +2078,8 @@ describe('Core Nodes', () => {
 
 				test('mixed nested rules with and without leading combinators', () => {
 					let source = '.parent { .normal { } > .combinator { } }'
-					let parser = new Parser(source)
-					let root = parser.parse()
+					let root = parse(source)
+					
 
 					let parent = root.first_child!
 					let [_selector, block] = parent.children
@@ -2105,8 +2098,8 @@ describe('Core Nodes', () => {
 		describe('@keyframes parsing', () => {
 			test('@keyframes with from/to', () => {
 				let source = '@keyframes fade { from { opacity: 0; } to { opacity: 1; } }'
-				let parser = new Parser(source, { parse_atrule_preludes: false })
-				let root = parser.parse()
+				let root = parse(source, { parse_atrule_preludes: false })
+				
 
 				let keyframes = root.first_child!
 				expect(keyframes.type).toBe(AT_RULE)
@@ -2126,8 +2119,8 @@ describe('Core Nodes', () => {
 
 			test('@keyframes with percentages', () => {
 				let source = '@keyframes slide { 0% { left: 0; } 50% { left: 50%; } 100% { left: 100%; } }'
-				let parser = new Parser(source, { parse_atrule_preludes: false })
-				let root = parser.parse()
+				let root = parse(source, { parse_atrule_preludes: false })
+				
 
 				let keyframes = root.first_child!
 				let block = keyframes.block!
@@ -2143,8 +2136,8 @@ describe('Core Nodes', () => {
 
 			test('@keyframes with multiple selectors', () => {
 				let source = '@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }'
-				let parser = new Parser(source, { parse_atrule_preludes: false })
-				let root = parser.parse()
+				let root = parse(source, { parse_atrule_preludes: false })
+				
 
 				let keyframes = root.first_child!
 				let block = keyframes.block!
@@ -2156,8 +2149,8 @@ describe('Core Nodes', () => {
 
 			test('@keyframes with mixed percentages and keywords', () => {
 				let source = '@keyframes slide { from { left: 0; } 25%, 75% { left: 50%; } to { left: 100%; } }'
-				let parser = new Parser(source, { parse_atrule_preludes: false })
-				let root = parser.parse()
+				let root = parse(source, { parse_atrule_preludes: false })
+				
 
 				let keyframes = root.first_child!
 				let block = keyframes.block!
@@ -2168,8 +2161,8 @@ describe('Core Nodes', () => {
 		describe('@nest at-rule', () => {
 			test('@nest with & selector', () => {
 				let source = '.parent { @nest & .child { color: blue; } }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let parent = root.first_child!
 				let [_selector, block] = parent.children
@@ -2187,8 +2180,8 @@ describe('Core Nodes', () => {
 
 			test('@nest with complex selector', () => {
 				let source = '.a { @nest :not(&) { color: red; } }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let a = root.first_child!
 				let [_selector, block] = a.children
@@ -2202,24 +2195,24 @@ describe('Core Nodes', () => {
 		describe('Error recovery and edge cases', () => {
 			test('malformed rule without opening brace', () => {
 				let source = 'body color: red; } div { margin: 0; }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				expect(root.children.length).toBeGreaterThan(0)
 			})
 
 			test('rule without closing brace', () => {
 				let source = 'body { color: red; div { margin: 0; }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				expect(root.has_children).toBe(true)
 			})
 
 			test('empty rule block', () => {
 				let source = '.empty { }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let rule = root.first_child!
 				expect(rule.type).toBe(STYLE_RULE)
@@ -2228,8 +2221,8 @@ describe('Core Nodes', () => {
 
 			test('declaration without value', () => {
 				let source = 'body { color: }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let rule = root.first_child!
 				let [_selector, block] = rule.children
@@ -2239,8 +2232,8 @@ describe('Core Nodes', () => {
 
 			test('multiple semicolons', () => {
 				let source = 'body { color: red;;; margin: 0;; }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let rule = root.first_child!
 				expect(rule.children.length).toBe(2)
@@ -2248,8 +2241,8 @@ describe('Core Nodes', () => {
 
 			test('invalid tokens in declaration block', () => {
 				let source = 'body { color: red; @@@; margin: 0; }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let rule = root.first_child!
 				expect(rule.children.length).toBe(2)
@@ -2257,8 +2250,8 @@ describe('Core Nodes', () => {
 
 			test('declaration without colon', () => {
 				let source = 'body { color red; margin: 0; }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let rule = root.first_child!
 				expect(rule.children.length).toBe(2)
@@ -2266,16 +2259,16 @@ describe('Core Nodes', () => {
 
 			test('at-rule without name', () => {
 				let source = '@ { color: red; } body { margin: 0; }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				expect(root.children.length).toBeGreaterThan(0)
 			})
 
 			test('nested empty blocks', () => {
 				let source = '.a { .b { .c { } } }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let a = root.first_child!
 				expect(a.type).toBe(STYLE_RULE)
@@ -2283,8 +2276,8 @@ describe('Core Nodes', () => {
 
 			test('trailing comma in selector', () => {
 				let source = '.a, .b, { color: red; }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let rule = root.first_child!
 				expect(rule.type).toBe(STYLE_RULE)
@@ -2294,8 +2287,8 @@ describe('Core Nodes', () => {
 		describe('Comment handling', () => {
 			test('skip comments at top level', () => {
 				let source = '/* comment */ body { color: red; } /* another comment */'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				expect(root.children.length).toBe(1)
 				let rule = root.first_child!
@@ -2304,8 +2297,8 @@ describe('Core Nodes', () => {
 
 			test('skip comments in declaration block', () => {
 				let source = 'body { color: red; /* comment */ margin: 0; }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let rule = root.first_child!
 				expect(rule.type).toBe(STYLE_RULE)
@@ -2314,8 +2307,8 @@ describe('Core Nodes', () => {
 
 			test('skip comments in selector', () => {
 				let source = 'body /* comment */ , /* comment */ div { color: red; }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let rule = root.first_child!
 				expect(rule.type).toBe(STYLE_RULE)
@@ -2323,8 +2316,8 @@ describe('Core Nodes', () => {
 
 			test('comment between property and colon', () => {
 				let source = 'body { color /* comment */ : red; }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				expect(root.has_children).toBe(true)
 			})
@@ -2337,8 +2330,8 @@ describe('Core Nodes', () => {
 					 */
 					body { color: red; }
 				`
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				expect(root.children.length).toBe(1)
 			})
@@ -2347,8 +2340,8 @@ describe('Core Nodes', () => {
 		describe('Whitespace handling', () => {
 			test('excessive whitespace', () => {
 				let source = '  body  {  color  :  red  ;  }  '
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let rule = root.first_child!
 				expect(rule.type).toBe(STYLE_RULE)
@@ -2356,8 +2349,8 @@ describe('Core Nodes', () => {
 
 			test('tabs and newlines', () => {
 				let source = 'body\t{\n\tcolor:\tred;\n}\n'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let rule = root.first_child!
 				expect(rule.type).toBe(STYLE_RULE)
@@ -2365,8 +2358,8 @@ describe('Core Nodes', () => {
 
 			test('no whitespace', () => {
 				let source = 'body{color:red;margin:0}'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let rule = root.first_child!
 				let [_selector, block] = rule.children
@@ -2405,8 +2398,8 @@ describe('Core Nodes', () => {
 						}
 					}
 				`
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let card = root.first_child!
 				expect(card.type).toBe(STYLE_RULE)
@@ -2429,8 +2422,8 @@ describe('Core Nodes', () => {
 						}
 					}
 				`
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let [layer1, layer2] = root.children
 				expect(layer1.type).toBe(AT_RULE)
@@ -2439,8 +2432,8 @@ describe('Core Nodes', () => {
 
 			test('vendor prefixed properties', () => {
 				let source = '.box { -webkit-transform: scale(1); -moz-transform: scale(1); transform: scale(1); }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let rule = root.first_child!
 				let [_selector, block] = rule.children
@@ -2452,8 +2445,8 @@ describe('Core Nodes', () => {
 
 			test('complex selector list', () => {
 				let source = 'h1, h2, h3, h4, h5, h6, .heading, [role="heading"] { font-family: sans-serif; }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let rule = root.first_child!
 				let selector = rule.first_child!
@@ -2471,8 +2464,8 @@ describe('Core Nodes', () => {
 						}
 					}
 				`
-				let parser = new Parser(source, { parse_atrule_preludes: false })
-				let root = parser.parse()
+				let root = parse(source, { parse_atrule_preludes: false })
+				
 
 				let supports = root.first_child!
 				let supports_block = supports.block!
@@ -2486,8 +2479,8 @@ describe('Core Nodes', () => {
 
 			test('CSS with calc() and other functions', () => {
 				let source = '.box { width: calc(100% - 2rem); background: linear-gradient(to right, red, blue); }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let rule = root.first_child!
 				let [_selector, block] = rule.children
@@ -2498,8 +2491,8 @@ describe('Core Nodes', () => {
 
 			test('custom properties', () => {
 				let source = ':root { --primary-color: #007bff; --spacing: 1rem; } body { color: var(--primary-color); }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				expect(root.children.length).toBeGreaterThan(0)
 				let first_rule = root.first_child!
@@ -2508,8 +2501,8 @@ describe('Core Nodes', () => {
 
 			test('attribute selectors with operators', () => {
 				let source = '[href^="https"][href$=".pdf"][class*="doc"] { color: red; }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let rule = root.first_child!
 				let selector = rule.first_child!
@@ -2520,8 +2513,8 @@ describe('Core Nodes', () => {
 
 			test('pseudo-elements', () => {
 				let source = '.text::before { content: "→"; } .text::after { content: "←"; }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let [rule1, rule2] = root.children
 				expect(rule1.type).toBe(STYLE_RULE)
@@ -2530,8 +2523,8 @@ describe('Core Nodes', () => {
 
 			test('multiple !important declarations', () => {
 				let source = '.override { color: red !important; margin: 0 !important; padding: 0 !ie; }'
-				let parser = new Parser(source)
-				let root = parser.parse()
+				let root = parse(source)
+				
 
 				let rule = root.first_child!
 				let block = rule.block!
