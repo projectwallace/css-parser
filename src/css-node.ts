@@ -49,7 +49,7 @@ import { CHAR_MINUS_HYPHEN, CHAR_PLUS, is_whitespace } from './string-utils'
 import { parse_dimension } from './parse-utils'
 
 // Type name lookup table - maps numeric type to CSSTree-compatible strings
-export const TYPE_NAMES: Record<number, string> = {
+export const TYPE_NAMES = {
 	[STYLESHEET]: 'StyleSheet',
 	[STYLE_RULE]: 'Rule',
 	[AT_RULE]: 'Atrule',
@@ -87,6 +87,8 @@ export const TYPE_NAMES: Record<number, string> = {
 	[LAYER_NAME]: 'Layer',
 	[PRELUDE_OPERATOR]: 'Operator',
 } as const
+
+export type TypeName = (typeof TYPE_NAMES)[keyof typeof TYPE_NAMES] | 'unknown'
 
 // Node type constants (numeric for performance)
 export type CSSNodeType =
@@ -145,7 +147,7 @@ export interface CloneOptions {
 export type PlainCSSNode = {
 	// Core properties (always present)
 	type: number
-	type_name: string
+	type_name: TypeName
 	text: string
 	children: PlainCSSNode[]
 
@@ -196,7 +198,7 @@ export class CSSNode {
 	}
 
 	// Get node type as human-readable string
-	get type_name(): string {
+	get type_name(): TypeName {
 		return TYPE_NAMES[this.type] || 'unknown'
 	}
 
