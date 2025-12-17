@@ -105,23 +105,28 @@ export class Parser {
 		this.next_token()
 
 		// Create the root stylesheet node
-		let stylesheet = this.arena.create_node()
-		this.arena.set_type(stylesheet, STYLESHEET)
-		this.arena.set_start_offset(stylesheet, 0)
-		this.arena.set_length(stylesheet, this.source.length)
-		this.arena.set_start_line(stylesheet, 1)
-		this.arena.set_start_column(stylesheet, 1)
+		let stylesheet = this.arena.create_node(
+			STYLESHEET,
+			0,
+			this.source.length,
+			1,
+			1
+		)
 
 		// Parse all rules at the top level
+		let rules: number[] = []
 		while (!this.is_eof()) {
 			let rule = this.parse_rule()
 			if (rule !== null) {
-				this.arena.append_child(stylesheet, rule)
+				rules.push(rule)
 			} else {
 				// Skip unknown tokens
 				this.next_token()
 			}
 		}
+
+		// Link all rules as children
+		this.arena.append_children(stylesheet, rules)
 
 		// Return wrapped node
 		return new CSSNode(this.arena, this.source, stylesheet)
@@ -150,17 +155,17 @@ export class Parser {
 		let rule_line = this.lexer.token_line
 		let rule_column = this.lexer.token_column
 
-		// Create the style rule node
-		let style_rule = this.arena.create_node()
-		this.arena.set_type(style_rule, STYLE_RULE)
-		this.arena.set_start_line(style_rule, rule_line)
-		this.arena.set_start_column(style_rule, rule_column)
+		// Create the style rule node (length will be set later)
+		let style_rule = this.arena.create_node(
+			STYLE_RULE,
+			rule_start,
+			0, // length unknown yet
+			rule_line,
+			rule_column
+		)
 
 		// Parse selector (everything until '{')
 		let selector = this.parse_selector()
-		if (selector !== null) {
-			this.arena.append_child(style_rule, selector)
-		}
 
 		// Expect '{'
 		if (this.peek_type() !== TOKEN_LEFT_BRACE) {
@@ -172,16 +177,19 @@ export class Parser {
 		this.next_token() // consume '{'
 		this.arena.set_flag(style_rule, FLAG_HAS_BLOCK) // Style rules always have blocks
 
-		// Create block node
+		// Create block node (length will be set later)
 		let block_line = this.lexer.token_line
 		let block_column = this.lexer.token_column
-		let block_node = this.arena.create_node()
-		this.arena.set_type(block_node, BLOCK)
-		this.arena.set_start_offset(block_node, block_start)
-		this.arena.set_start_line(block_node, block_line)
-		this.arena.set_start_column(block_node, block_column)
+		let block_node = this.arena.create_node(
+			BLOCK,
+			block_start,
+			0, // length unknown yet
+			block_line,
+			block_column
+		)
 
 		// Parse declarations block (and nested rules for CSS Nesting)
+		let block_children: number[] = []
 		while (!this.is_eof()) {
 			let token_type = this.peek_type()
 			if (token_type === TOKEN_RIGHT_BRACE) break
@@ -190,7 +198,7 @@ export class Parser {
 			if (token_type === TOKEN_AT_KEYWORD) {
 				let nested_at_rule = this.parse_atrule()
 				if (nested_at_rule !== null) {
-					this.arena.append_child(block_node, nested_at_rule)
+					block_children.push(nested_at_rule)
 				} else {
 					this.next_token()
 				}
@@ -201,14 +209,14 @@ export class Parser {
 			let declaration = this.parse_declaration()
 			if (declaration !== null) {
 				this.arena.set_flag(style_rule, FLAG_HAS_DECLARATIONS)
-				this.arena.append_child(block_node, declaration)
+				block_children.push(declaration)
 				continue
 			}
 
 			// If not a declaration, try parsing as nested style rule
 			let nested_rule = this.parse_style_rule()
 			if (nested_rule !== null) {
-				this.arena.append_child(block_node, nested_rule)
+				block_children.push(nested_rule)
 			} else {
 				// Skip unknown tokens
 				this.next_token()
@@ -224,13 +232,18 @@ export class Parser {
 			this.next_token() // consume '}'
 		}
 
-		// Set block length and append to style rule
+		// Set block length and link its children
 		this.arena.set_length(block_node, block_end - block_start)
-		this.arena.append_child(style_rule, block_node)
+		this.arena.append_children(block_node, block_children)
 
-		// Set the rule's offsets
-		this.arena.set_start_offset(style_rule, rule_start)
+		// Set the rule's length and link children (selector + block)
 		this.arena.set_length(style_rule, rule_end - rule_start)
+		let style_rule_children: number[] = []
+		if (selector !== null) {
+			style_rule_children.push(selector)
+		}
+		style_rule_children.push(block_node)
+		this.arena.append_children(style_rule, style_rule_children)
 
 		return style_rule
 	}
@@ -259,12 +272,13 @@ export class Parser {
 		}
 
 		// Otherwise create a simple selector list node with just text offsets
-		let selector = this.arena.create_node()
-		this.arena.set_type(selector, SELECTOR_LIST)
-		this.arena.set_start_line(selector, selector_line)
-		this.arena.set_start_column(selector, selector_column)
-		this.arena.set_start_offset(selector, selector_start)
-		this.arena.set_length(selector, last_end - selector_start)
+		let selector = this.arena.create_node(
+			SELECTOR_LIST,
+			selector_start,
+			last_end - selector_start,
+			selector_line,
+			selector_column
+		)
 
 		return selector
 	}
@@ -294,15 +308,17 @@ export class Parser {
 		}
 		this.next_token() // consume ':'
 
-		// Create declaration node
-		let declaration = this.arena.create_node()
-		this.arena.set_type(declaration, DECLARATION)
-		this.arena.set_start_line(declaration, decl_line)
-		this.arena.set_start_column(declaration, decl_column)
-		this.arena.set_start_offset(declaration, prop_start)
+		// Create declaration node (length will be set later)
+		let declaration = this.arena.create_node(
+			DECLARATION,
+			prop_start,
+			0, // length unknown yet
+			decl_line,
+			decl_column
+		)
 
-		// Store property name position
-		this.arena.set_content_start(declaration, prop_start)
+		// Store property name position (delta = 0 since content starts at same offset as node)
+		this.arena.set_content_start_delta(declaration, 0)
 		this.arena.set_content_length(declaration, prop_end - prop_start)
 
 		// Check for vendor prefix and set flag if detected
@@ -352,7 +368,7 @@ export class Parser {
 		let trimmed = trim_boundaries(this.source, value_start, value_end)
 		if (trimmed) {
 			// Store raw value string offsets (for fast string access)
-			this.arena.set_value_start(declaration, trimmed[0])
+			this.arena.set_value_start_delta(declaration, trimmed[0] - prop_start)
 			this.arena.set_value_length(declaration, trimmed[1] - trimmed[0])
 
 			// Parse value into structured nodes (only if enabled)
@@ -360,15 +376,7 @@ export class Parser {
 				let valueNodes = this.value_parser.parse_value(trimmed[0], trimmed[1])
 
 				// Link value nodes as children of the declaration
-				if (valueNodes.length > 0) {
-					this.arena.set_first_child(declaration, valueNodes[0])
-					this.arena.set_last_child(declaration, valueNodes[valueNodes.length - 1])
-
-					// Chain value nodes as siblings
-					for (let i = 0; i < valueNodes.length - 1; i++) {
-						this.arena.set_next_sibling(valueNodes[i], valueNodes[i + 1])
-					}
-				}
+				this.arena.append_children(declaration, valueNodes)
 			}
 		}
 
@@ -406,15 +414,17 @@ export class Parser {
 
 		this.next_token() // consume @keyword
 
-		// Create at-rule node
-		let at_rule = this.arena.create_node()
-		this.arena.set_type(at_rule, AT_RULE)
-		this.arena.set_start_line(at_rule, at_rule_line)
-		this.arena.set_start_column(at_rule, at_rule_column)
-		this.arena.set_start_offset(at_rule, at_rule_start)
+		// Create at-rule node (length will be set later)
+		let at_rule = this.arena.create_node(
+			AT_RULE,
+			at_rule_start,
+			0, // length unknown yet
+			at_rule_line,
+			at_rule_column
+		)
 
 		// Store at-rule name in contentStart/contentLength
-		this.arena.set_content_start(at_rule, name_start)
+		this.arena.set_content_start_delta(at_rule, name_start - at_rule_start)
 		this.arena.set_content_length(at_rule, name_length)
 
 		// Track prelude start and end
@@ -431,16 +441,14 @@ export class Parser {
 
 		// Store prelude position (trimmed)
 		let trimmed = trim_boundaries(this.source, prelude_start, prelude_end)
+		let prelude_nodes: number[] = []
 		if (trimmed) {
-			this.arena.set_value_start(at_rule, trimmed[0])
+			this.arena.set_value_start_delta(at_rule, trimmed[0] - at_rule_start)
 			this.arena.set_value_length(at_rule, trimmed[1] - trimmed[0])
 
 			// Parse prelude if enabled
 			if (this.prelude_parser) {
-				let prelude_nodes = this.prelude_parser.parse_prelude(at_rule_name, trimmed[0], trimmed[1], at_rule_line, at_rule_column)
-				for (let prelude_node of prelude_nodes) {
-					this.arena.append_child(at_rule, prelude_node)
-				}
+				prelude_nodes = this.prelude_parser.parse_prelude(at_rule_name, trimmed[0], trimmed[1], at_rule_line, at_rule_column)
 			}
 		}
 
@@ -453,18 +461,21 @@ export class Parser {
 			this.next_token() // consume '{'
 			this.arena.set_flag(at_rule, FLAG_HAS_BLOCK) // At-rule has a block
 
-			// Create block node
+			// Create block node (length will be set later)
 			let block_line = this.lexer.token_line
 			let block_column = this.lexer.token_column
-			let block_node = this.arena.create_node()
-			this.arena.set_type(block_node, BLOCK)
-			this.arena.set_start_offset(block_node, block_start)
-			this.arena.set_start_line(block_node, block_line)
-			this.arena.set_start_column(block_node, block_column)
+			let block_node = this.arena.create_node(
+				BLOCK,
+				block_start,
+				0, // length unknown yet
+				block_line,
+				block_column
+			)
 
 			// Determine what to parse inside the block based on the at-rule name
 			let has_declarations = this.atrule_has_declarations(at_rule_name)
 			let is_conditional = this.atrule_is_conditional(at_rule_name)
+			let block_children: number[] = []
 
 			if (has_declarations) {
 				// Parse declarations only (like @font-face, @page)
@@ -474,7 +485,7 @@ export class Parser {
 
 					let declaration = this.parse_declaration()
 					if (declaration !== null) {
-						this.arena.append_child(block_node, declaration)
+						block_children.push(declaration)
 					} else {
 						this.next_token()
 					}
@@ -489,7 +500,7 @@ export class Parser {
 					if (token_type === TOKEN_AT_KEYWORD) {
 						let nested_at_rule = this.parse_atrule()
 						if (nested_at_rule !== null) {
-							this.arena.append_child(block_node, nested_at_rule)
+							block_children.push(nested_at_rule)
 						} else {
 							this.next_token()
 						}
@@ -499,14 +510,14 @@ export class Parser {
 					// Try to parse as declaration first
 					let declaration = this.parse_declaration()
 					if (declaration !== null) {
-						this.arena.append_child(block_node, declaration)
+						block_children.push(declaration)
 						continue
 					}
 
 					// If not a declaration, try parsing as nested style rule
 					let nested_rule = this.parse_style_rule()
 					if (nested_rule !== null) {
-						this.arena.append_child(block_node, nested_rule)
+						block_children.push(nested_rule)
 					} else {
 						// Skip unknown tokens
 						this.next_token()
@@ -520,7 +531,7 @@ export class Parser {
 
 					let rule = this.parse_rule()
 					if (rule !== null) {
-						this.arena.append_child(block_node, rule)
+						block_children.push(rule)
 					} else {
 						this.next_token()
 					}
@@ -540,15 +551,20 @@ export class Parser {
 				this.arena.set_length(block_node, last_end - block_start)
 			}
 
-			this.arena.append_child(at_rule, block_node)
+			// Link block children
+			this.arena.append_children(block_node, block_children)
+
+			// Add block to at-rule children
+			prelude_nodes.push(block_node)
 		} else if (this.peek_type() === TOKEN_SEMICOLON) {
 			// Statement at-rule (like @import, @namespace)
 			last_end = this.lexer.token_end
 			this.next_token() // consume ';'
 		}
 
-		// Set at-rule length
+		// Set at-rule length and link children (prelude nodes + optional block)
 		this.arena.set_length(at_rule, last_end - at_rule_start)
+		this.arena.append_children(at_rule, prelude_nodes)
 
 		return at_rule
 	}

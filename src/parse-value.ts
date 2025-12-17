@@ -121,13 +121,15 @@ export class ValueParser {
 	}
 
 	private create_node(node_type: number, start: number, end: number): number {
-		let node = this.arena.create_node()
-		this.arena.set_type(node, node_type)
-		this.arena.set_start_offset(node, start)
-		let length = end - start
-		this.arena.set_length(node, length)
-		// Skip set_content_start since it would compute delta = start - start = 0 (already zero-initialized)
-		this.arena.set_content_length(node, length)
+		let node = this.arena.create_node(
+			node_type,
+			start,
+			end - start,
+			this.lexer.line,
+			this.lexer.column
+		)
+		// Skip set_content_start_delta since delta = start - start = 0 (already zero-initialized)
+		this.arena.set_content_length(node, end - start)
 		return node
 	}
 
@@ -153,11 +155,15 @@ export class ValueParser {
 		// Get function name to check for special handling
 		let func_name = this.source.substring(start, name_end).toLowerCase()
 
-		// Create URL or function node based on function name
-		let node = this.arena.create_node()
-		this.arena.set_type(node, func_name === 'url' ? URL : FUNCTION)
-		this.arena.set_start_offset(node, start)
-		this.arena.set_content_start(node, start)
+		// Create URL or function node based on function name (length will be set later)
+		let node = this.arena.create_node(
+			func_name === 'url' ? URL : FUNCTION,
+			start,
+			0, // length unknown yet
+			this.lexer.line,
+			this.lexer.column
+		)
+		this.arena.set_content_start_delta(node, 0)
 		this.arena.set_content_length(node, name_end - start)
 
 		// Special handling for url() and src() functions with unquoted content:
@@ -218,7 +224,7 @@ export class ValueParser {
 				this.arena.set_length(node, func_end - start)
 
 				// Set value to the content between parentheses (accessible via node.value)
-				this.arena.set_value_start(node, content_start)
+				this.arena.set_value_start_delta(node, content_start - start)
 				this.arena.set_value_length(node, content_end - content_start)
 
 				return node
@@ -265,28 +271,24 @@ export class ValueParser {
 		this.arena.set_length(node, func_end - start)
 
 		// Set value to the content between parentheses (accessible via node.value)
-		this.arena.set_value_start(node, content_start)
+		this.arena.set_value_start_delta(node, content_start - start)
 		this.arena.set_value_length(node, content_end - content_start)
 
 		// Link arguments as children
-		if (args.length > 0) {
-			this.arena.set_first_child(node, args[0])
-			this.arena.set_last_child(node, args[args.length - 1])
-
-			// Chain arguments as siblings
-			for (let i = 0; i < args.length - 1; i++) {
-				this.arena.set_next_sibling(args[i], args[i + 1])
-			}
-		}
+		this.arena.append_children(node, args)
 
 		return node
 	}
 
 	private parse_parenthesis_node(start: number, end: number): number {
-		// Create parenthesis node
-		let node = this.arena.create_node()
-		this.arena.set_type(node, PARENTHESIS)
-		this.arena.set_start_offset(node, start)
+		// Create parenthesis node (length will be set later)
+		let node = this.arena.create_node(
+			PARENTHESIS,
+			start,
+			0, // length unknown yet
+			this.lexer.line,
+			this.lexer.column
+		)
 
 		// Parse parenthesized content (everything until matching ')')
 		let children: number[] = []
@@ -327,15 +329,7 @@ export class ValueParser {
 		this.arena.set_length(node, paren_end - start)
 
 		// Link children as siblings
-		if (children.length > 0) {
-			this.arena.set_first_child(node, children[0])
-			this.arena.set_last_child(node, children[children.length - 1])
-
-			// Chain children as siblings
-			for (let i = 0; i < children.length - 1; i++) {
-				this.arena.set_next_sibling(children[i], children[i + 1])
-			}
-		}
+		this.arena.append_children(node, children)
 
 		return node
 	}

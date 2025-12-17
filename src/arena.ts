@@ -238,10 +238,8 @@ export class CSSDataArena {
 		this.view.setUint16(this.node_offset(node_index) + 8, length, true)
 	}
 
-	// Write content start offset (stored as delta from startOffset)
-	set_content_start(node_index: number, offset: number): void {
-		const startOffset = this.get_start_offset(node_index)
-		const delta = offset - startOffset
+	// Write content start delta (offset from startOffset)
+	set_content_start_delta(node_index: number, delta: number): void {
 		this.view.setUint16(this.node_offset(node_index) + 12, delta, true)
 	}
 
@@ -285,10 +283,8 @@ export class CSSDataArena {
 		this.view.setUint16(this.node_offset(node_index) + 36, column, true)
 	}
 
-	// Write value start offset (stored as delta from startOffset, declaration value / at-rule prelude)
-	set_value_start(node_index: number, offset: number): void {
-		const startOffset = this.get_start_offset(node_index)
-		const delta = offset - startOffset
+	// Write value start delta (offset from startOffset, declaration value / at-rule prelude)
+	set_value_start_delta(node_index: number, delta: number): void {
 		this.view.setUint16(this.node_offset(node_index) + 16, delta, true)
 	}
 
@@ -313,35 +309,45 @@ export class CSSDataArena {
 		this.capacity = new_capacity
 	}
 
-	// Allocate a new node and return its index
-	// The node is zero-initialized by default (ArrayBuffer guarantees this)
+	// Allocate and initialize a new node with core properties
 	// Automatically grows the arena if capacity is exceeded
-	create_node(): number {
+	create_node(
+		type: number,
+		start_offset: number,
+		length: number,
+		start_line: number,
+		start_column: number
+	): number {
 		if (this.count >= this.capacity) {
 			this.grow()
 		}
-		let node_index = this.count
+		const node_index = this.count
 		this.count++
+
+		const offset = node_index * BYTES_PER_NODE
+		this.view.setUint8(offset, type) // +0: type
+		this.view.setUint32(offset + 4, start_offset, true) // +4: startOffset
+		this.view.setUint16(offset + 8, length, true) // +8: length
+		this.view.setUint32(offset + 32, start_line, true) // +32: startLine
+		this.view.setUint16(offset + 36, start_column, true) // +36: startColumn
+
 		return node_index
 	}
 
 	// --- Tree Building Helpers ---
 
-	// Add a child node to a parent node
-	// This appends to the end of the child list using the sibling chain
-	// O(1) operation using lastChild pointer
-	append_child(parentIndex: number, childIndex: number): void {
-		let last_child = this.get_last_child(parentIndex)
+	// Link multiple child nodes to a parent
+	// Children are linked as siblings in the order provided
+	append_children(parent_index: number, children: number[]): void {
+		if (children.length === 0) return
 
-		if (last_child === 0) {
-			// No children yet, make this the first and last child
-			this.set_first_child(parentIndex, childIndex)
-			this.set_last_child(parentIndex, childIndex)
-		} else {
-			// Append to the current last child's sibling chain
-			this.set_next_sibling(last_child, childIndex)
-			// Update parent's last child pointer
-			this.set_last_child(parentIndex, childIndex)
+		const offset = this.node_offset(parent_index)
+		this.view.setUint32(offset + 20, children[0], true) // firstChild
+		this.view.setUint32(offset + 24, children[children.length - 1], true) // lastChild
+
+		// Chain siblings
+		for (let i = 0; i < children.length - 1; i++) {
+			this.set_next_sibling(children[i], children[i + 1])
 		}
 	}
 

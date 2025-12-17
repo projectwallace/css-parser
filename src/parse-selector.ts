@@ -147,21 +147,16 @@ export class SelectorParser {
 
 		// Always wrap in selector list node, even for single selectors
 		if (selectors.length >= 1) {
-			let list_node = this.arena.create_node()
-			this.arena.set_type(list_node, SELECTOR_LIST)
-			this.arena.set_start_offset(list_node, list_start)
-			this.arena.set_length(list_node, this.lexer.pos - list_start)
-			this.arena.set_start_line(list_node, list_line)
-			this.arena.set_start_column(list_node, list_column)
+			let list_node = this.arena.create_node(
+				SELECTOR_LIST,
+				list_start,
+				this.lexer.pos - list_start,
+				list_line,
+				list_column
+			)
 
 			// Link selector wrapper nodes as children
-			this.arena.set_first_child(list_node, selectors[0])
-			this.arena.set_last_child(list_node, selectors[selectors.length - 1])
-
-			// Chain selector wrappers as siblings (simple since they're already wrapped)
-			for (let i = 0; i < selectors.length - 1; i++) {
-				this.arena.set_next_sibling(selectors[i], selectors[i + 1])
-			}
+			this.arena.append_children(list_node, selectors)
 
 			return list_node
 		}
@@ -370,7 +365,7 @@ export class SelectorParser {
 
 		let node = this.create_node(node_type, selector_start, this.lexer.token_end)
 		// Store namespace in content fields
-		this.arena.set_content_start(node, namespace_start)
+		this.arena.set_content_start_delta(node, namespace_start - selector_start)
 		this.arena.set_content_length(node, namespace_length)
 		return node
 	}
@@ -548,7 +543,7 @@ export class SelectorParser {
 
 		// Store attribute name in content fields
 		if (name_end > name_start) {
-			this.arena.set_content_start(node, name_start)
+			this.arena.set_content_start_delta(node, name_start - this.arena.get_start_offset(node))
 			this.arena.set_content_length(node, name_end - name_start)
 		}
 
@@ -644,7 +639,7 @@ export class SelectorParser {
 
 		// Store value in value fields
 		if (value_end > value_start) {
-			this.arena.set_value_start(node, value_start)
+			this.arena.set_value_start_delta(node, value_start - this.arena.get_start_offset(node))
 			this.arena.set_value_length(node, value_end - value_start)
 		}
 
@@ -687,7 +682,7 @@ export class SelectorParser {
 			let node = this.create_node(is_pseudo_element ? PSEUDO_ELEMENT_SELECTOR : PSEUDO_CLASS_SELECTOR, start, this.lexer.token_end)
 
 			// Content is the pseudo name (without colons)
-			this.arena.set_content_start(node, this.lexer.token_start)
+			this.arena.set_content_start_delta(node, this.lexer.token_start - start)
 			this.arena.set_content_length(node, this.lexer.token_end - this.lexer.token_start)
 			// Check for vendor prefix and set flag if detected
 			if (is_vendor_prefixed(this.source, this.lexer.token_start, this.lexer.token_end)) {
@@ -740,7 +735,7 @@ export class SelectorParser {
 
 		let node = this.create_node(is_pseudo_element ? PSEUDO_ELEMENT_SELECTOR : PSEUDO_CLASS_SELECTOR, start, end)
 		// Content is the function name (without colons and parentheses)
-		this.arena.set_content_start(node, func_name_start)
+		this.arena.set_content_start_delta(node, func_name_start - start)
 		this.arena.set_content_length(node, func_name_end - func_name_start)
 
 		// Set FLAG_HAS_PARENS to indicate this is a function syntax (even if empty)
@@ -900,11 +895,13 @@ export class SelectorParser {
 			this.lexer.restore_position(saved)
 
 			// Create NTH_OF wrapper
-			let of_node = this.arena.create_node()
-			this.arena.set_type(of_node, NTH_OF_SELECTOR)
-			this.arena.set_start_offset(of_node, start)
-			this.arena.set_length(of_node, end - start)
-			this.arena.set_start_line(of_node, this.lexer.line)
+			let of_node = this.arena.create_node(
+				NTH_OF_SELECTOR,
+				start,
+				end - start,
+				this.lexer.line,
+				1
+			)
 
 			// Link An+B and selector list
 			if (anplusb_node !== null && selector_list !== null) {
@@ -941,13 +938,14 @@ export class SelectorParser {
 	}
 
 	private create_node(type: number, start: number, end: number): number {
-		let node = this.arena.create_node()
-		this.arena.set_type(node, type)
-		this.arena.set_start_offset(node, start)
-		this.arena.set_length(node, end - start)
-		this.arena.set_start_line(node, this.lexer.line)
-		this.arena.set_start_column(node, this.lexer.column)
-		this.arena.set_content_start(node, start)
+		let node = this.arena.create_node(
+			type,
+			start,
+			end - start,
+			this.lexer.line,
+			this.lexer.column
+		)
+		this.arena.set_content_start_delta(node, 0)
 		this.arena.set_content_length(node, end - start)
 		return node
 	}
@@ -975,11 +973,7 @@ export function parse_selector(source: string): CSSNode {
 
 	if (selector_index === null) {
 		// Return empty selector list node if parsing failed
-		const empty = arena.create_node()
-		arena.set_type(empty, SELECTOR_LIST)
-		arena.set_start_offset(empty, 0)
-		arena.set_length(empty, 0)
-		arena.set_start_line(empty, 1)
+		const empty = arena.create_node(SELECTOR_LIST, 0, 0, 1, 1)
 		return new CSSNode(arena, source, empty)
 	}
 
