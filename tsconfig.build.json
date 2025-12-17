@@ -5,8 +5,15 @@
 		"emitDeclarationOnly": true,
 		"noEmit": false,
 		"outDir": "./dist",
-		"rootDir": "./src"
+		"rootDir": "./src",
+		"stripInternal": true
 	},
 	"include": ["src/**/*.ts"],
-	"exclude": ["node_modules", "dist", "**/*.test.ts", "benchmark"]
+	"exclude": [
+		"node_modules",
+		"dist",
+		"**/*.test.ts",
+		"benchmark",
+		"src/char-types.ts"
+	]
 }

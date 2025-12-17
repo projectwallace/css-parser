@@ -41,6 +41,7 @@ export interface ParserOptions {
 let DECLARATION_AT_RULES = new Set(['font-face', 'font-feature-values', 'page', 'property', 'counter-style'])
 let CONDITIONAL_AT_RULES = new Set(['media', 'supports', 'container', 'layer', 'nest'])
 
+/** @internal */
 export class Parser {
 	private source: string
 	private lexer: Lexer

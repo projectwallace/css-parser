@@ -28,6 +28,7 @@ import { str_equals } from './string-utils'
 import { trim_boundaries, skip_whitespace_forward } from './parse-utils'
 import { CSSNode } from './css-node'
 
+/** @internal */
 export class AtRulePreludeParser {
 	private lexer: Lexer
 	private arena: CSSDataArena

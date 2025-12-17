@@ -89,6 +89,7 @@ export const ATTR_FLAG_NONE = 0 // No flag
 export const ATTR_FLAG_CASE_INSENSITIVE = 1 // [attr=value i]
 export const ATTR_FLAG_CASE_SENSITIVE = 2 // [attr=value s]
 
+/** @internal */
 export class CSSDataArena {
 	private buffer: ArrayBuffer
 	private view: DataView

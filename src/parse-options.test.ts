@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { Parser } from './parse'
+import { parse } from './parse'
 import { SELECTOR_LIST, DECLARATION, IDENTIFIER } from './arena'
 
 describe('Parser Options', () => {
@@ -7,8 +7,7 @@ describe('Parser Options', () => {
 
 	describe('Default behavior (all parsing enabled)', () => {
 		it('should parse values and selectors by default', () => {
-			const parser = new Parser(css)
-			const root = parser.parse()
+			const root = parse(css)
 			const rule = root.first_child
 
 			// Check selector is parsed with detailed structure
@@ -27,8 +26,7 @@ describe('Parser Options', () => {
 		})
 
 		it('should parse values and selectors with explicit options', () => {
-			const parser = new Parser(css, { parse_values: true, parse_selectors: true })
-			const root = parser.parse()
+			const root = parse(css, { parse_values: true, parse_selectors: true })
 			const rule = root.first_child
 
 			// Check selector is parsed
@@ -46,8 +44,7 @@ describe('Parser Options', () => {
 
 	describe('parse_values disabled', () => {
 		it('should not parse value details when parse_values is false', () => {
-			const parser = new Parser(css, { parse_values: false })
-			const root = parser.parse()
+			const root = parse(css, { parse_values: false })
 			const rule = root.first_child
 
 			// Selector should still be parsed
@@ -67,8 +64,7 @@ describe('Parser Options', () => {
 		})
 
 		it('should handle complex values without parsing', () => {
-			const parser = new Parser('div { margin: 10px 20px; }', { parse_values: false })
-			const root = parser.parse()
+			const root = parse('div { margin: 10px 20px; }', { parse_values: false })
 			const rule = root.first_child
 			const selector = rule?.first_child
 			const block = selector?.next_sibling
@@ -80,8 +76,7 @@ describe('Parser Options', () => {
 		})
 
 		it('should handle function values without parsing', () => {
-			const parser = new Parser('div { color: rgb(255, 0, 0); }', { parse_values: false })
-			const root = parser.parse()
+			const root = parse('div { color: rgb(255, 0, 0); }', { parse_values: false })
 			const rule = root.first_child
 			const selector = rule?.first_child
 			const block = selector?.next_sibling
@@ -95,8 +90,7 @@ describe('Parser Options', () => {
 
 	describe('parseSelectors disabled', () => {
 		it('should not parse selector details when parseSelectors is false', () => {
-			const parser = new Parser(css, { parse_selectors: false })
-			const root = parser.parse()
+			const root = parse(css, { parse_selectors: false })
 			const rule = root.first_child
 
 			// Selector should exist but be simple (just NODE_SELECTOR_LIST, no detailed structure)
@@ -114,8 +108,7 @@ describe('Parser Options', () => {
 		})
 
 		it('should handle complex selectors without parsing', () => {
-			const parser = new Parser('div.container#app { color: red; }', { parse_selectors: false })
-			const root = parser.parse()
+			const root = parse('div.container#app { color: red; }', { parse_selectors: false })
 			const rule = root.first_child
 			const selector = rule?.first_child
 
@@ -125,8 +118,7 @@ describe('Parser Options', () => {
 		})
 
 		it('should handle selector lists without parsing', () => {
-			const parser = new Parser('div, p, span { color: red; }', { parse_selectors: false })
-			const root = parser.parse()
+			const root = parse('div, p, span { color: red; }', { parse_selectors: false })
 			const rule = root.first_child
 			const selector = rule?.first_child
 
@@ -138,8 +130,7 @@ describe('Parser Options', () => {
 
 	describe('Both parse_values and parseSelectors disabled', () => {
 		it('should not parse details for values or selectors', () => {
-			const parser = new Parser(css, { parse_values: false, parse_selectors: false })
-			const root = parser.parse()
+			const root = parse(css, { parse_values: false, parse_selectors: false })
 			const rule = root.first_child
 
 			// Selector should be simple
@@ -164,8 +155,7 @@ describe('Parser Options', () => {
 					color: rgb(255, 0, 0);
 				}
 			`
-			const parser = new Parser(css, { parse_values: false, parse_selectors: false })
-			const root = parser.parse()
+			const root = parse(css, { parse_values: false, parse_selectors: false })
 			const rule = root.first_child
 
 			const selector = rule?.first_child
@@ -194,8 +184,7 @@ describe('Parser Options', () => {
 					margin: 10px 20px 30px 40px;
 				}
 			`
-			const parser = new Parser(css, { parse_values: false })
-			const root = parser.parse()
+			const root = parse(css, { parse_values: false })
 			const rule = root.first_child
 			const selector = rule?.first_child
 
@@ -219,8 +208,7 @@ describe('Parser Options', () => {
 				.another-complex[data-attr~="value"] { margin: 0; }
 				#very-specific-id:not(.excluded) { padding: 10px; }
 			`
-			const parser = new Parser(css, { parse_selectors: false })
-			const root = parser.parse()
+			const root = parse(css, { parse_selectors: false })
 
 			// Can quickly count rules without parsing complex selectors
 			let count = 0
@@ -236,8 +224,7 @@ describe('Parser Options', () => {
 
 	describe('Options validation', () => {
 		it('should accept empty options object', () => {
-			const parser = new Parser(css, {})
-			const root = parser.parse()
+			const root = parse(css, {})
 			const rule = root.first_child
 			const selector = rule?.first_child
 			const block = selector?.next_sibling
@@ -249,8 +236,7 @@ describe('Parser Options', () => {
 		})
 
 		it('should accept partial options', () => {
-			const parser = new Parser(css, { parse_values: false })
-			const root = parser.parse()
+			const root = parse(css, { parse_values: false })
 			const rule = root.first_child
 			const selector = rule?.first_child
 			const block = selector?.next_sibling
@@ -263,11 +249,10 @@ describe('Parser Options', () => {
 		})
 
 		it('should accept skip_comments with parsing options', () => {
-			const parser = new Parser('/* test */ body { color: red; }', {
+			const root = parse('/* test */ body { color: red; }', {
 				skip_comments: true,
 				parse_values: false,
 			})
-			const root = parser.parse()
 			const rule = root.first_child
 
 			// Comment should be skipped
