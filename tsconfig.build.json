@@ -14,8 +14,6 @@
 		"dist",
 		"**/*.test.ts",
 		"benchmark",
-		"src/parse-utils.ts",
-		"src/string-utils.ts",
 		"src/char-types.ts"
 	]
 }

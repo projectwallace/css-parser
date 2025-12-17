@@ -24,15 +24,18 @@ export const CHAR_COLON = 0x3a // :
 
 /**
  * Check if a character code is whitespace (space, tab, newline, CR, or FF)
+ * @internal
  */
 export function is_whitespace(ch: number): boolean {
 	return ch === CHAR_SPACE || ch === CHAR_TAB || ch === CHAR_NEWLINE || ch === CHAR_CARRIAGE_RETURN || ch === CHAR_FORM_FEED
 }
 
+/** @internal */
 export function is_combinator(ch: number): boolean {
 	return ch === CHAR_GREATER_THAN || ch === CHAR_PLUS || ch === CHAR_TILDE
 }
 
+/** @internal */
 export function is_digit(ch: number): boolean {
 	return ch >= 0x30 && ch <= 0x39 // 0-9
 }

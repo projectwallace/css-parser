@@ -64,6 +64,7 @@ export function parse_dimension(text: string): { value: number; unit: string } {
  * @param pos - Starting position
  * @param end - End boundary (exclusive)
  * @returns New position after skipping whitespace
+ * @internal
  */
 export function skip_whitespace_forward(source: string, pos: number, end: number): number {
 	while (pos < end && is_whitespace(source.charCodeAt(pos))) {
@@ -79,6 +80,7 @@ export function skip_whitespace_forward(source: string, pos: number, end: number
  * @param pos - Starting position
  * @param end - End boundary (exclusive)
  * @returns New position after skipping whitespace/comments
+ * @internal
  */
 export function skip_whitespace_and_comments_forward(source: string, pos: number, end: number): number {
 	while (pos < end) {
@@ -115,6 +117,7 @@ export function skip_whitespace_and_comments_forward(source: string, pos: number
  * @param pos - Starting position (exclusive, scanning backward from pos-1)
  * @param start - Start boundary (inclusive, won't go before this)
  * @returns New position after skipping whitespace/comments backward
+ * @internal
  */
 export function skip_whitespace_and_comments_backward(source: string, pos: number, start: number): number {
 	while (pos > start) {
@@ -151,6 +154,7 @@ export function skip_whitespace_and_comments_backward(source: string, pos: numbe
  * @param start - Start offset in source
  * @param end - End offset in source
  * @returns [trimmed_start, trimmed_end] or null if all whitespace/comments
+ * @internal
  *
  * Skips whitespace (space, tab, newline, CR, FF) and CSS comments from both ends
  * of the specified range. Returns the trimmed boundaries or null if the range
