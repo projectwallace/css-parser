@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { CSSDataArena, STYLESHEET, DECLARATION, FLAG_IMPORTANT, FLAG_HAS_ERROR } from './arena'
+import { CSSDataArena, STYLESHEET, STYLE_RULE, DECLARATION, FLAG_IMPORTANT, FLAG_HAS_ERROR } from './arena'
 
 describe('CSSDataArena', () => {
 	describe('initialization', () => {
@@ -20,11 +20,11 @@ describe('CSSDataArena', () => {
 		test('should create nodes and increment count', () => {
 			const arena = new CSSDataArena(10)
 
-			const node1 = arena.create_node()
+			const node1 = arena.create_node(STYLESHEET, 0, 0, 1, 1)
 			expect(node1).toBe(1) // First node index is 1 (0 is reserved for "no node")
 			expect(arena.get_count()).toBe(2)
 
-			const node2 = arena.create_node()
+			const node2 = arena.create_node(STYLESHEET, 0, 0, 1, 1)
 			expect(node2).toBe(2)
 			expect(arena.get_count()).toBe(3)
 		})
@@ -32,12 +32,12 @@ describe('CSSDataArena', () => {
 		test('should automatically grow when capacity is exceeded', () => {
 			const arena = new CSSDataArena(3)
 
-			arena.create_node() // 1
-			arena.create_node() // 2
+			arena.create_node(STYLESHEET, 0, 0, 1, 1) // 1
+			arena.create_node(STYLESHEET, 0, 0, 1, 1) // 2
 			expect(arena.get_capacity()).toBe(3)
 
 			// This should trigger growth (count is now 3, capacity is 3)
-			const node3 = arena.create_node() // 3
+			const node3 = arena.create_node(STYLESHEET, 0, 0, 1, 1) // 3
 			expect(node3).toBe(3)
 			expect(arena.get_count()).toBe(4)
 			// Capacity should be ceil(3 * 1.3) = 4
@@ -47,17 +47,11 @@ describe('CSSDataArena', () => {
 		test('should preserve existing data when growing', () => {
 			const arena = new CSSDataArena(2)
 
-			const node1 = arena.create_node()
-			const node2 = arena.create_node()
-
-			// Set data on existing nodes
-			arena.set_type(node1, STYLESHEET)
-			arena.set_start_offset(node1, 100)
-			arena.set_type(node2, DECLARATION)
-			arena.set_start_offset(node2, 200)
+			const node1 = arena.create_node(STYLESHEET, 100, 0, 1, 1)
+			const node2 = arena.create_node(DECLARATION, 200, 0, 1, 1)
 
 			// Trigger growth
-			const node3 = arena.create_node()
+			const node3 = arena.create_node(STYLESHEET, 0, 0, 1, 1)
 
 			// Verify old data is preserved
 			expect(arena.get_type(node1)).toBe(STYLESHEET)
@@ -74,9 +68,9 @@ describe('CSSDataArena', () => {
 	describe('node reading and writing', () => {
 		test('should read default values for uninitialized nodes', () => {
 			const arena = new CSSDataArena(10)
-			const node = arena.create_node()
+			const node = arena.create_node(STYLESHEET, 0, 0, 1, 1)
 
-			expect(arena.get_type(node)).toBe(0)
+			expect(arena.get_type(node)).toBe(STYLESHEET)
 			expect(arena.get_flags(node)).toBe(0)
 			expect(arena.get_start_offset(node)).toBe(0)
 			expect(arena.get_length(node)).toBe(0)
@@ -84,7 +78,7 @@ describe('CSSDataArena', () => {
 
 		test('should write and read node type', () => {
 			const arena = new CSSDataArena(10)
-			const node = arena.create_node()
+			const node = arena.create_node(DECLARATION, 0, 0, 1, 1)
 
 			arena.set_type(node, STYLESHEET)
 			expect(arena.get_type(node)).toBe(STYLESHEET)
@@ -92,7 +86,7 @@ describe('CSSDataArena', () => {
 
 		test('should write and read node flags', () => {
 			const arena = new CSSDataArena(10)
-			const node = arena.create_node()
+			const node = arena.create_node(DECLARATION, 0, 0, 1, 1)
 
 			arena.set_flags(node, FLAG_IMPORTANT)
 			expect(arena.get_flags(node)).toBe(FLAG_IMPORTANT)
@@ -100,15 +94,11 @@ describe('CSSDataArena', () => {
 
 		test('should write and read all node properties', () => {
 			const arena = new CSSDataArena(10)
-			const node = arena.create_node()
+			const node = arena.create_node(DECLARATION, 100, 50, 5, 1)
 
-			arena.set_type(node, DECLARATION)
 			arena.set_flags(node, FLAG_IMPORTANT)
-			arena.set_start_offset(node, 100)
-			arena.set_length(node, 50)
-			arena.set_content_start(node, 110)
+			arena.set_content_start_delta(node, 10)
 			arena.set_content_length(node, 30)
-			arena.set_start_line(node, 5)
 
 			expect(arena.get_type(node)).toBe(DECLARATION)
 			expect(arena.get_flags(node)).toBe(FLAG_IMPORTANT)
@@ -121,14 +111,8 @@ describe('CSSDataArena', () => {
 
 		test('should handle multiple nodes independently', () => {
 			const arena = new CSSDataArena(10)
-			const node1 = arena.create_node()
-			const node2 = arena.create_node()
-
-			arena.set_type(node1, STYLESHEET)
-			arena.set_start_offset(node1, 0)
-
-			arena.set_type(node2, DECLARATION)
-			arena.set_start_offset(node2, 100)
+			const node1 = arena.create_node(STYLESHEET, 0, 0, 1, 1)
+			const node2 = arena.create_node(DECLARATION, 100, 0, 1, 1)
 
 			expect(arena.get_type(node1)).toBe(STYLESHEET)
 			expect(arena.get_start_offset(node1)).toBe(0)
@@ -140,10 +124,10 @@ describe('CSSDataArena', () => {
 	describe('tree linking', () => {
 		test('should append first child to parent', () => {
 			const arena = new CSSDataArena(10)
-			const parent = arena.create_node()
-			const child = arena.create_node()
+			const parent = arena.create_node(STYLESHEET, 0, 0, 1, 1)
+			const child = arena.create_node(STYLE_RULE, 0, 0, 1, 1)
 
-			arena.append_child(parent, child)
+			arena.append_children(parent, [child])
 
 			expect(arena.get_first_child(parent)).toBe(child)
 			expect(arena.has_children(parent)).toBe(true)
@@ -152,14 +136,12 @@ describe('CSSDataArena', () => {
 
 		test('should append multiple children as siblings', () => {
 			const arena = new CSSDataArena(10)
-			const parent = arena.create_node()
-			const child1 = arena.create_node()
-			const child2 = arena.create_node()
-			const child3 = arena.create_node()
+			const parent = arena.create_node(STYLESHEET, 0, 0, 1, 1)
+			const child1 = arena.create_node(STYLE_RULE, 0, 0, 1, 1)
+			const child2 = arena.create_node(STYLE_RULE, 0, 0, 1, 1)
+			const child3 = arena.create_node(STYLE_RULE, 0, 0, 1, 1)
 
-			arena.append_child(parent, child1)
-			arena.append_child(parent, child2)
-			arena.append_child(parent, child3)
+			arena.append_children(parent, [child1, child2, child3])
 
 			expect(arena.get_first_child(parent)).toBe(child1)
 			expect(arena.get_next_sibling(child1)).toBe(child2)
@@ -169,18 +151,16 @@ describe('CSSDataArena', () => {
 
 		test('should build complex tree structure', () => {
 			const arena = new CSSDataArena(10)
-			const root = arena.create_node()
-			const rule1 = arena.create_node()
-			const rule2 = arena.create_node()
-			const decl1 = arena.create_node()
-			const decl2 = arena.create_node()
+			const root = arena.create_node(STYLESHEET, 0, 0, 1, 1)
+			const rule1 = arena.create_node(STYLE_RULE, 0, 0, 1, 1)
+			const rule2 = arena.create_node(STYLE_RULE, 0, 0, 1, 1)
+			const decl1 = arena.create_node(DECLARATION, 0, 0, 1, 1)
+			const decl2 = arena.create_node(DECLARATION, 0, 0, 1, 1)
 
 			// Build tree: root -> [rule1, rule2]
 			//                        rule1 -> [decl1, decl2]
-			arena.append_child(root, rule1)
-			arena.append_child(root, rule2)
-			arena.append_child(rule1, decl1)
-			arena.append_child(rule1, decl2)
+			arena.append_children(root, [rule1, rule2])
+			arena.append_children(rule1, [decl1, decl2])
 
 			// Verify root level
 			expect(arena.get_first_child(root)).toBe(rule1)
@@ -198,7 +178,7 @@ describe('CSSDataArena', () => {
 
 		test('should handle nodes with no children or siblings', () => {
 			const arena = new CSSDataArena(10)
-			const node = arena.create_node()
+			const node = arena.create_node(STYLESHEET, 0, 0, 1, 1)
 
 			expect(arena.has_children(node)).toBe(false)
 			expect(arena.has_next_sibling(node)).toBe(false)
@@ -210,7 +190,7 @@ describe('CSSDataArena', () => {
 	describe('flag management', () => {
 		test('should set and check individual flags', () => {
 			const arena = new CSSDataArena(10)
-			const node = arena.create_node()
+			const node = arena.create_node(STYLESHEET, 0, 0, 1, 1)
 
 			expect(arena.has_flag(node, FLAG_IMPORTANT)).toBe(false)
 
@@ -220,7 +200,7 @@ describe('CSSDataArena', () => {
 
 		test('should set multiple flags independently', () => {
 			const arena = new CSSDataArena(10)
-			const node = arena.create_node()
+			const node = arena.create_node(STYLESHEET, 0, 0, 1, 1)
 
 			arena.set_flag(node, FLAG_IMPORTANT)
 
@@ -230,7 +210,7 @@ describe('CSSDataArena', () => {
 
 		test('should clear individual flags without affecting others', () => {
 			const arena = new CSSDataArena(10)
-			const node = arena.create_node()
+			const node = arena.create_node(STYLESHEET, 0, 0, 1, 1)
 
 			arena.set_flag(node, FLAG_IMPORTANT)
 			arena.set_flag(node, FLAG_HAS_ERROR)
@@ -241,7 +221,7 @@ describe('CSSDataArena', () => {
 
 		test('should handle all flag combinations', () => {
 			const arena = new CSSDataArena(10)
-			const node = arena.create_node()
+			const node = arena.create_node(STYLESHEET, 0, 0, 1, 1)
 
 			// Set all flags at once using setFlags
 			const allFlags = FLAG_IMPORTANT | FLAG_HAS_ERROR

@@ -99,13 +99,13 @@ export class AtRulePreludeParser {
 	}
 
 	private create_node(type: number, start: number, end: number): number {
-		let node = this.arena.create_node()
-		this.arena.set_type(node, type)
-		this.arena.set_start_offset(node, start)
-		this.arena.set_length(node, end - start)
-		this.arena.set_start_line(node, this.lexer.token_line)
-		this.arena.set_start_column(node, this.lexer.token_column)
-		return node
+		return this.arena.create_node(
+			type,
+			start,
+			end - start,
+			this.lexer.token_line,
+			this.lexer.token_column
+		)
 	}
 
 	private is_and_or_not(str: string): boolean {
@@ -182,9 +182,7 @@ export class AtRulePreludeParser {
 		let query_node = this.create_node(MEDIA_QUERY, query_start, this.lexer.pos)
 
 		// Append components as children
-		for (let component of components) {
-			this.arena.append_child(query_node, component)
-		}
+		this.arena.append_children(query_node, components)
 
 		return query_node
 	}
@@ -218,7 +216,7 @@ export class AtRulePreludeParser {
 		// Store feature content (without parentheses) in value fields, trimmed
 		let trimmed = trim_boundaries(this.source, content_start, content_end)
 		if (trimmed) {
-			this.arena.set_value_start(feature, trimmed[0])
+			this.arena.set_value_start_delta(feature, trimmed[0] - feature_start)
 			this.arena.set_value_length(feature, trimmed[1] - trimmed[0])
 		}
 
@@ -269,9 +267,7 @@ export class AtRulePreludeParser {
 		let query_node = this.create_node(CONTAINER_QUERY, query_start, this.lexer.pos)
 
 		// Append components as children
-		for (let component of components) {
-			this.arena.append_child(query_node, component)
-		}
+		this.arena.append_children(query_node, components)
 
 		nodes.push(query_node)
 		return nodes
@@ -316,7 +312,7 @@ export class AtRulePreludeParser {
 					// Store query content in value fields, trimmed
 					let trimmed = trim_boundaries(this.source, content_start, content_end)
 					if (trimmed) {
-						this.arena.set_value_start(query, trimmed[0])
+						this.arena.set_value_start_delta(query, trimmed[0] - feature_start)
 						this.arena.set_value_length(query, trimmed[1] - trimmed[0])
 					}
 
@@ -509,7 +505,7 @@ export class AtRulePreludeParser {
 				if (content_length > 0) {
 					let trimmed = trim_boundaries(this.source, content_start, content_start + content_length)
 					if (trimmed) {
-						this.arena.set_content_start(layer_node, trimmed[0])
+						this.arena.set_content_start_delta(layer_node, trimmed[0] - layer_start)
 						this.arena.set_content_length(layer_node, trimmed[1] - trimmed[0])
 					}
 				}

@@ -265,21 +265,23 @@ export class ANplusBParser {
 	}
 
 	private create_anplusb_node(start: number, a_start: number, a_end: number, b_start: number, b_end: number): number {
-		const node = this.arena.create_node()
-		this.arena.set_type(node, NTH_SELECTOR)
-		this.arena.set_start_offset(node, start)
-		this.arena.set_length(node, this.lexer.pos - start)
-		this.arena.set_start_line(node, this.lexer.line)
+		const node = this.arena.create_node(
+			NTH_SELECTOR,
+			start,
+			this.lexer.pos - start,
+			this.lexer.line,
+			1
+		)
 
 		// Store 'a' coefficient in content fields if it exists (length > 0)
 		if (a_end > a_start) {
-			this.arena.set_content_start(node, a_start)
+			this.arena.set_content_start_delta(node, a_start - start)
 			this.arena.set_content_length(node, a_end - a_start)
 		}
 
 		// Store 'b' coefficient in value fields if it exists (length > 0)
 		if (b_end > b_start) {
-			this.arena.set_value_start(node, b_start)
+			this.arena.set_value_start_delta(node, b_start - start)
 			this.arena.set_value_length(node, b_end - b_start)
 		}
 
