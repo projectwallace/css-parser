@@ -178,7 +178,7 @@ describe('CSSDataArena', () => {
 
 		test('should handle nodes with no children or siblings', () => {
 			const arena = new CSSDataArena(10)
-			const node = arena.create_node()
+			const node = arena.create_node(STYLESHEET, 0, 0, 1, 1)
 
 			expect(arena.has_children(node)).toBe(false)
 			expect(arena.has_next_sibling(node)).toBe(false)
