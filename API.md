@@ -36,7 +36,7 @@ function parse(source: string, options?: ParserOptions): CSSNode
 - `text` - Full text of the node from source
 - `name` - Property name, at-rule name, or layer name
 - `property` - Alias for `name` (for declarations)
-- `value` - Value text (for declarations) or `null`
+- `value` - Value text (for declarations), URL content (for URL nodes with quoted strings, includes quotes to match STRING node behavior), or `null`
 - `prelude` - At-rule prelude text or `null`
 - `line` - Starting line number (1-based)
 - `offset` - Starting offset in source
@@ -174,6 +174,7 @@ console.log(importRule.has_children) // true (has prelude nodes)
 const [url, layer, supports, media] = importRule.children
 console.log(url.type) // URL
 console.log(url.text) // 'url("styles.css")'
+console.log(url.value) // '"styles.css"'
 
 console.log(layer.type) // LAYER_NAME
 console.log(layer.name) // "base"

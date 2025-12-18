@@ -547,6 +547,8 @@ describe('Value Node Types', () => {
 				expect(decl?.values[0].children).toHaveLength(1)
 				expect(decl?.values[0].children[0].type).toBe(STRING)
 				expect(decl?.values[0].children[0].text).toBe('"image.png"')
+				// URL node with quoted string returns the string value with quotes
+				expect(decl?.values[0].value).toBe('"image.png"')
 			})
 
 			it('should parse url() function with unquoted URL containing dots', () => {
@@ -573,6 +575,20 @@ describe('Value Node Types', () => {
 				expect(func?.has_children).toBe(false)
 				expect(func?.text).toBe('src(myfont.woff2)')
 				expect(func?.value).toBe('myfont.woff2')
+			})
+
+			it('should parse url() function with single-quoted string', () => {
+				const root = parse("body { background: url('image.png'); }")
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+
+				expect(decl?.values).toHaveLength(1)
+				expect(decl?.values[0].type).toBe(URL)
+				expect(decl?.values[0].name).toBe('url')
+				expect(decl?.values[0].children).toHaveLength(1)
+				expect(decl?.values[0].children[0].type).toBe(STRING)
+				expect(decl?.values[0].children[0].text).toBe("'image.png'")
+				// URL node with single-quoted string returns the string value with quotes
+				expect(decl?.values[0].value).toBe("'image.png'")
 			})
 
 			it('should parse url() with base64 data URL', () => {

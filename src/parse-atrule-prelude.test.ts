@@ -674,6 +674,30 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(children[0].text).toBe('"styles.css"')
 			})
 
+
+		it('should have .value property for URL with quoted url() function', () => {
+			const css = '@import url("example.com");'
+			const ast = parse(css, { parse_atrule_preludes: true })
+			const atRule = ast.first_child
+			const url = atRule?.children[0]
+
+			expect(url?.type).toBe(URL)
+			expect(url?.text).toBe('url("example.com")')
+			// URL node in @import returns the content with quotes
+			expect(url?.value).toBe('"example.com"')
+		})
+
+		it('should have .value property for URL with quoted string', () => {
+			const css = '@import "example.com";'
+			const ast = parse(css, { parse_atrule_preludes: true })
+			const atRule = ast.first_child
+			const url = atRule?.children[0]
+
+			expect(url?.type).toBe(URL)
+			expect(url?.text).toBe('"example.com"')
+			// URL node in @import returns the string with quotes
+			expect(url?.value).toBe('"example.com"')
+		})
 			it('should parse with anonymous layer', () => {
 				const css = '@import url("styles.css") layer;'
 				const ast = parse(css, { parse_atrule_preludes: true })

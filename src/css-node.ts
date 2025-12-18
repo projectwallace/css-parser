@@ -226,7 +226,34 @@ export class CSSNode {
 	// Get the value text (for declarations: "blue" in "color: blue")
 	// For dimension/number nodes: returns the numeric value as a number
 	// For string nodes: returns the string content without quotes
+	// For URL nodes with quoted string: returns the string with quotes (consistent with STRING node)
+	// For URL nodes with unquoted URL: returns the URL content without quotes
 	get value(): string | number | null {
+		// Special handling for URL nodes
+		if (this.type === URL) {
+			const firstChild = this.first_child
+			if (firstChild && firstChild.type === STRING) {
+				// Return the string as-is (with quotes) - consistent with STRING node
+				return firstChild.text
+			}
+			// For URL nodes without children (e.g., @import url(...)), extract from text
+			// Handle both url("...") and url('...') and just "..." or '...'
+			const text = this.text
+			if (text.startsWith('url(')) {
+				// url("...") or url('...') or url(...) - extract content between parens
+				const openParen = text.indexOf('(')
+				const closeParen = text.lastIndexOf(')')
+				if (openParen !== -1 && closeParen !== -1 && closeParen > openParen) {
+					let content = text.substring(openParen + 1, closeParen).trim()
+					return content
+				}
+			} else if (text.startsWith('"') || text.startsWith("'")) {
+				// Just a quoted string: "..." or '...'
+				return text
+			}
+			// For unquoted URLs, fall through to value delta logic below
+		}
+
 		// For dimension and number nodes, parse and return as number
 		if (this.type === DIMENSION || this.type === NUMBER) {
 			return parse_dimension(this.text).value
