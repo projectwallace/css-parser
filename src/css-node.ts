@@ -45,7 +45,7 @@ import {
 	FLAG_HAS_PARENS,
 } from './arena'
 
-import { CHAR_MINUS_HYPHEN, CHAR_PLUS, is_whitespace } from './string-utils'
+import { CHAR_MINUS_HYPHEN, CHAR_PLUS, is_whitespace, str_starts_with } from './string-utils'
 import { parse_dimension } from './parse-utils'
 
 // Type name lookup table - maps numeric type to CSSTree-compatible strings
@@ -239,7 +239,7 @@ export class CSSNode {
 			// For URL nodes without children (e.g., @import url(...)), extract from text
 			// Handle both url("...") and url('...') and just "..." or '...'
 			const text = this.text
-			if (text.startsWith('url(')) {
+			if (str_starts_with(text, 'url(')) {
 				// url("...") or url('...') or url(...) - extract content between parens
 				const openParen = text.indexOf('(')
 				const closeParen = text.lastIndexOf(')')

@@ -7,7 +7,7 @@
 import { Lexer } from './lexer'
 import { NTH_SELECTOR, CSSDataArena } from './arena'
 import { TOKEN_IDENT, TOKEN_NUMBER, TOKEN_DIMENSION, TOKEN_DELIM, type TokenType } from './token-types'
-import { CHAR_MINUS_HYPHEN, CHAR_PLUS } from './string-utils'
+import { CHAR_MINUS_HYPHEN, CHAR_PLUS, str_equals, str_index_of } from './string-utils'
 import { skip_whitespace_forward } from './parse-utils'
 import { CSSNode } from './css-node'
 
@@ -53,9 +53,9 @@ export class ANplusBParser {
 
 		// Handle special keywords: odd, even
 		if (this.lexer.token_type === TOKEN_IDENT) {
-			const text = this.source.substring(this.lexer.token_start, this.lexer.token_end).toLowerCase()
+			const text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
 
-			if (text === 'odd' || text === 'even') {
+			if (str_equals('odd', text) || str_equals('even', text)) {
 				a_start = this.lexer.token_start
 				a_end = this.lexer.token_end
 				return this.create_anplusb_node(node_start, a_start, a_end, 0, 0)
@@ -168,7 +168,7 @@ export class ANplusBParser {
 		// Handle dimension tokens: 2n, 3n+1, -5n-2
 		if (this.lexer.token_type === TOKEN_DIMENSION) {
 			const token_text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
-			const n_index = token_text.toLowerCase().indexOf('n')
+			const n_index = str_index_of(token_text, 'n')
 
 			if (n_index !== -1) {
 				a_start = this.lexer.token_start

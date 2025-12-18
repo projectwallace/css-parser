@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
 	is_whitespace,
 	str_equals,
+	str_starts_with,
+	str_index_of,
 	is_vendor_prefixed,
 	CHAR_SPACE,
 	CHAR_TAB,
@@ -203,6 +205,69 @@ describe('string-utils', () => {
 		})
 	})
 
+	describe('str_starts_with', () => {
+		it('should match identical prefix', () => {
+			expect(str_starts_with('url(', 'url(')).toBe(true)
+		})
+
+		it('should match longer string with lowercase prefix', () => {
+			expect(str_starts_with('url(image.png)', 'url(')).toBe(true)
+		})
+
+		it('should match uppercase string with lowercase prefix', () => {
+			expect(str_starts_with('URL(image.png)', 'url(')).toBe(true)
+		})
+
+		it('should match mixed case string with lowercase prefix', () => {
+			expect(str_starts_with('Url(image.png)', 'url(')).toBe(true)
+			expect(str_starts_with('uRL(image.png)', 'url(')).toBe(true)
+		})
+
+		it('should not match when string is shorter than prefix', () => {
+			expect(str_starts_with('url', 'url(')).toBe(false)
+		})
+
+		it('should not match different prefix', () => {
+			expect(str_starts_with('src(image.png)', 'url(')).toBe(false)
+		})
+
+		it('should not match when prefix does not start string', () => {
+			expect(str_starts_with('image url()', 'url(')).toBe(false)
+		})
+
+		it('should work with function names for CSS parsing', () => {
+			expect(str_starts_with('CALC(1px + 2px)', 'calc')).toBe(true)
+			expect(str_starts_with('RGB(255, 0, 0)', 'rgb')).toBe(true)
+			expect(str_starts_with('RGBA(255, 0, 0, 0.5)', 'rgba')).toBe(true)
+		})
+
+		it('should work with pseudo-class functions', () => {
+			expect(str_starts_with('NTH-CHILD(2n)', 'nth-child')).toBe(true)
+			expect(str_starts_with('LANG(en, fr)', 'lang')).toBe(true)
+			expect(str_starts_with('HAS(> article)', 'has')).toBe(true)
+		})
+
+		it('should handle empty prefix', () => {
+			expect(str_starts_with('anything', '')).toBe(true)
+		})
+
+		it('should handle empty string', () => {
+			expect(str_starts_with('', 'url(')).toBe(false)
+		})
+
+		it('should handle empty both', () => {
+			expect(str_starts_with('', '')).toBe(true)
+		})
+
+		it('should be case-insensitive only on string side', () => {
+			// Prefix MUST be lowercase
+			expect(str_starts_with('URL(', 'url(')).toBe(true)
+			expect(str_starts_with('url(', 'url(')).toBe(true)
+			// The function doesn't normalize the prefix, so uppercase prefix won't match
+			expect(str_starts_with('url(', 'URL(')).toBe(false)
+		})
+	})
+
 	describe('is_vendor_prefixed', () => {
 		it('should detect -webkit- vendor prefix', () => {
 			const source = '-webkit-transform'
@@ -286,3 +351,62 @@ describe('string-utils', () => {
 		})
 	})
 })
+
+	describe('str_index_of', () => {
+		it('should find single character in string', () => {
+			expect(str_index_of('hello', 'e')).toBe(1)
+		})
+
+		it('should find character case-insensitively', () => {
+			expect(str_index_of('HELLO', 'e')).toBe(1)
+			expect(str_index_of('Hello', 'e')).toBe(1)
+		})
+
+		it('should return -1 for character not found', () => {
+			expect(str_index_of('hello', 'x')).toBe(-1)
+		})
+
+		it('should find first occurrence', () => {
+			expect(str_index_of('hello', 'l')).toBe(2)
+		})
+
+		it('should find multi-character substring', () => {
+			expect(str_index_of('2n+1', 'n')).toBe(1)
+			expect(str_index_of('2N+1', 'n')).toBe(1)
+		})
+
+		it('should find multi-character substring case-insensitively', () => {
+			expect(str_index_of('HELLO', 'lo')).toBe(3)
+			expect(str_index_of('Hello', 'lo')).toBe(3)
+		})
+
+		it('should return -1 for substring not found', () => {
+			expect(str_index_of('hello', 'xyz')).toBe(-1)
+		})
+
+		it('should work with An+B patterns', () => {
+			expect(str_index_of('2n', 'n')).toBe(1)
+			expect(str_index_of('2N', 'n')).toBe(1)
+			expect(str_index_of('-5n-2', 'n')).toBe(2)
+			expect(str_index_of('-5N-2', 'n')).toBe(2)
+		})
+
+		it('should handle empty search string', () => {
+			expect(str_index_of('hello', '')).toBe(-1)
+		})
+
+		it('should find at string start', () => {
+			expect(str_index_of('hello', 'h')).toBe(0)
+			expect(str_index_of('HELLO', 'h')).toBe(0)
+		})
+
+		it('should find at string end', () => {
+			expect(str_index_of('hello', 'o')).toBe(4)
+			expect(str_index_of('HELLO', 'o')).toBe(4)
+		})
+
+		it('should find exact match', () => {
+			expect(str_index_of('n', 'n')).toBe(0)
+			expect(str_index_of('N', 'n')).toBe(0)
+		})
+	})

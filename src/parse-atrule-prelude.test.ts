@@ -1361,3 +1361,63 @@ describe('parse_atrule_prelude()', () => {
 		})
 	})
 })
+
+describe('Case-insensitive at-rule keywords', () => {
+	it('should parse @MEDIA with uppercase', () => {
+		const root = parse('@MEDIA (min-width: 768px) { body { color: red; } }')
+		const atrule = root.first_child
+		expect(atrule?.name).toBe('MEDIA')
+	})
+
+	it('should parse @Media with mixed case', () => {
+		const root = parse('@Media (min-width: 768px) { body { color: red; } }')
+		const atrule = root.first_child
+		expect(atrule?.name).toBe('Media')
+	})
+
+	it('should parse @IMPORT with uppercase', () => {
+		const root = parse('@IMPORT url("style.css");')
+		const atrule = root.first_child
+		expect(atrule?.name).toBe('IMPORT')
+	})
+
+	it('should parse @SUPPORTS with uppercase', () => {
+		const root = parse('@SUPPORTS (display: grid) { body { display: grid; } }')
+		const atrule = root.first_child
+		expect(atrule?.name).toBe('SUPPORTS')
+	})
+
+	it('should parse @LAYER with uppercase', () => {
+		const root = parse('@LAYER base { }')
+		const atrule = root.first_child
+		expect(atrule?.name).toBe('LAYER')
+	})
+
+	it('should parse @CONTAINER with uppercase', () => {
+		const root = parse('@CONTAINER (min-width: 400px) { }')
+		const atrule = root.first_child
+		expect(atrule?.name).toBe('CONTAINER')
+	})
+
+	it('should parse media query operators in uppercase', () => {
+		const root = parse('@media (min-width: 768px) AND (max-width: 1024px) { }')
+		const atrule = root.first_child
+		expect(atrule?.name).toBe('media')
+		// Verify the prelude was parsed (operators are case-insensitive)
+		expect(atrule?.children.length).toBeGreaterThan(0)
+	})
+
+	it('should parse OR operator in uppercase', () => {
+		const root = parse('@supports (display: grid) OR (display: flex) { }')
+		const atrule = root.first_child
+		expect(atrule?.name).toBe('supports')
+		expect(atrule?.children.length).toBeGreaterThan(0)
+	})
+
+	it('should parse NOT operator in uppercase', () => {
+		const root = parse('@supports NOT (display: grid) { }')
+		const atrule = root.first_child
+		expect(atrule?.name).toBe('supports')
+		expect(atrule?.children.length).toBeGreaterThan(0)
+	})
+})

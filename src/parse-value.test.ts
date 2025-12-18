@@ -659,4 +659,62 @@ describe('Value Node Types', () => {
 			})
 		})
 	})
+
+	describe('Case-insensitive function names', () => {
+		const getValue = (css: string) => {
+			const root = parse(css)
+			const rule = root.first_child
+			const decl = rule?.first_child?.next_sibling?.first_child
+			return decl?.values[0]
+		}
+
+		it('should parse URL() with uppercase', () => {
+			const value = getValue('div { background: URL("image.png"); }')
+			expect(value?.type).toBe(URL)
+			expect(value?.text).toBe('URL("image.png")')
+		})
+
+		it('should parse Url() with mixed case', () => {
+			const value = getValue('div { background: Url("image.png"); }')
+			expect(value?.type).toBe(URL)
+			expect(value?.text).toBe('Url("image.png")')
+		})
+
+		it('should parse CALC() with uppercase', () => {
+			const value = getValue('div { width: CALC(100% - 20px); }')
+			expect(value?.type).toBe(FUNCTION)
+			expect(value?.text).toBe('CALC(100% - 20px)')
+		})
+
+		it('should parse Calc() with mixed case', () => {
+			const value = getValue('div { width: Calc(100% - 20px); }')
+			expect(value?.type).toBe(FUNCTION)
+			expect(value?.text).toBe('Calc(100% - 20px)')
+		})
+
+		it('should parse RGB() with uppercase', () => {
+			const value = getValue('div { color: RGB(255, 0, 0); }')
+			expect(value?.type).toBe(FUNCTION)
+			expect(value?.text).toBe('RGB(255, 0, 0)')
+		})
+
+		it('should parse RGBA() with uppercase', () => {
+			const value = getValue('div { color: RGBA(255, 0, 0, 0.5); }')
+			expect(value?.type).toBe(FUNCTION)
+			expect(value?.text).toBe('RGBA(255, 0, 0, 0.5)')
+		})
+
+		it('should parse unquoted URL() with uppercase', () => {
+			const value = getValue('div { background: URL(image.png); }')
+			expect(value?.type).toBe(URL)
+			expect(value?.text).toBe('URL(image.png)')
+			expect(value?.value).toBe('image.png')
+		})
+
+		it('should handle nested functions with uppercase', () => {
+			const value = getValue('div { width: CALC(MAX(100%, 50px) - 20px); }')
+			expect(value?.type).toBe(FUNCTION)
+			expect(value?.children[0].type).toBe(FUNCTION)
+		})
+	})
 })
