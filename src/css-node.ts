@@ -229,20 +229,29 @@ export class CSSNode {
 	// For URL nodes with quoted string: returns the string with quotes (consistent with STRING node)
 	// For URL nodes with unquoted URL: returns the URL content without quotes
 	get value(): string | number | null {
+		let { type, text } = this
+
+		if (type === DIMENSION) {
+			return parse_dimension(text).value
+		}
+
+		if (type === NUMBER) {
+			return Number.parseFloat(this.text)
+		}
+
 		// Special handling for URL nodes
-		if (this.type === URL) {
-			const firstChild = this.first_child
+		if (type === URL) {
+			let firstChild = this.first_child
 			if (firstChild && firstChild.type === STRING) {
 				// Return the string as-is (with quotes) - consistent with STRING node
 				return firstChild.text
 			}
 			// For URL nodes without children (e.g., @import url(...)), extract from text
 			// Handle both url("...") and url('...') and just "..." or '...'
-			const text = this.text
 			if (str_starts_with(text, 'url(')) {
 				// url("...") or url('...') or url(...) - extract content between parens
-				const openParen = text.indexOf('(')
-				const closeParen = text.lastIndexOf(')')
+				let openParen = text.indexOf('(')
+				let closeParen = text.lastIndexOf(')')
 				if (openParen !== -1 && closeParen !== -1 && closeParen > openParen) {
 					let content = text.substring(openParen + 1, closeParen).trim()
 					return content
@@ -252,11 +261,6 @@ export class CSSNode {
 				return text
 			}
 			// For unquoted URLs, fall through to value delta logic below
-		}
-
-		// For dimension and number nodes, parse and return as number
-		if (this.type === DIMENSION || this.type === NUMBER) {
-			return parse_dimension(this.text).value
 		}
 
 		// For other nodes, return as string
