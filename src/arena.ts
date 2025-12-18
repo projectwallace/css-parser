@@ -19,6 +19,30 @@
 //  32    |  4   | startLine
 //  36    |  2   | startColumn
 //  38    |  2   | (padding)
+//
+// HOW THE ARENA WORKS:
+// 1. BYTES_PER_NODE defines the size of each node (40 bytes). The ArrayBuffer size is calculated
+//    as: capacity × BYTES_PER_NODE. For example, 1024 nodes = 40,960 bytes (~40KB).
+//    Node indices map to byte offsets via: node_offset = node_index × 40.
+//
+// 2. We use a single DataView over the ArrayBuffer to read/write different types at specific offsets.
+//    - Uint8: 1-byte reads/writes for type, flags (e.g., view.getUint8(offset))
+//    - Uint16: 2-byte reads/writes for length, deltas, column (e.g., view.getUint16(offset, true))
+//    - Uint32: 4-byte reads/writes for startOffset, pointers, line (e.g., view.getUint32(offset, true))
+//    The 'true' parameter specifies little-endian byte order (native on x86/ARM CPUs).
+//
+// 3. Padding (6 bytes total at offsets 2-3, 10-11, 38-39) ensures memory alignment for performance:
+//    - Uint32 fields align to 4-byte boundaries (offsets 4, 20, 24, 28, 32)
+//    - Uint16 fields align to 2-byte boundaries (offsets 8, 10, 12, 14, 16, 18, 36, 38)
+//    Aligned access is faster (single CPU instruction) vs unaligned (multiple memory accesses).
+//    Modern CPUs penalize unaligned reads/writes, making padding essential for performance.
+//
+// 4. The padding at offset 2-3 is reused for attribute selector data (attr_operator, attr_flags),
+//    making efficient use of otherwise wasted bytes. This is a space optimization trick.
+//
+// 5. Delta offsets (contentStartDelta, valueStartDelta) save memory: instead of storing absolute
+//    positions as uint32 (4 bytes), we store relative offsets as uint16 (2 bytes). This reduced
+//    node size from 44→40 bytes (10% smaller), saving memory while maintaining performance.
 
 let BYTES_PER_NODE = 40
 
