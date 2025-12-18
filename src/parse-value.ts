@@ -15,7 +15,7 @@ import {
 	TOKEN_LEFT_PAREN,
 	TOKEN_RIGHT_PAREN,
 } from './token-types'
-import { is_whitespace, CHAR_MINUS_HYPHEN, CHAR_PLUS, CHAR_ASTERISK, CHAR_FORWARD_SLASH } from './string-utils'
+import { is_whitespace, CHAR_MINUS_HYPHEN, CHAR_PLUS, CHAR_ASTERISK, CHAR_FORWARD_SLASH, str_equals } from './string-utils'
 import { CSSNode } from './css-node'
 
 /** @internal */
@@ -154,11 +154,11 @@ export class ValueParser {
 		let name_end = end - 1 // Exclude the '('
 
 		// Get function name to check for special handling
-		let func_name = this.source.substring(start, name_end).toLowerCase()
+		let func_name_substr = this.source.substring(start, name_end)
 
 		// Create URL or function node based on function name (length will be set later)
 		let node = this.arena.create_node(
-			func_name === 'url' ? URL : FUNCTION,
+			str_equals('url', func_name_substr) ? URL : FUNCTION,
 			start,
 			0, // length unknown yet
 			this.lexer.line,
@@ -171,7 +171,7 @@ export class ValueParser {
 		// Don't parse contents to preserve URLs with dots, base64, inline SVGs, etc.
 		// Users can extract the full URL from the function's text property
 		// Note: Quoted urls like url("...") or url('...') parse normally
-		if (func_name === 'url' || func_name === 'src') {
+		if (str_equals('url', func_name_substr) || str_equals('src', func_name_substr)) {
 			// Peek at the next token to see if it's a string
 			// If it's a string, parse normally. Otherwise, skip parsing children.
 			let save_pos = this.lexer.save_position()

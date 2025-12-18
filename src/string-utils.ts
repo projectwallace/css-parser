@@ -65,6 +65,83 @@ export function str_equals(a: string, b: string): boolean {
 }
 
 /**
+ * Case-insensitive ASCII prefix check without allocations
+ * Returns true if string `str` starts with prefix (case-insensitive)
+ *
+ * IMPORTANT: prefix MUST be lowercase for correct comparison
+ *
+ * @param str - The string to check
+ * @param prefix - The lowercase prefix to match against
+ */
+export function str_starts_with(str: string, prefix: string): boolean {
+	if (str.length < prefix.length) {
+		return false
+	}
+
+	for (let i = 0; i < prefix.length; i++) {
+		let ca = str.charCodeAt(i)
+		let cb = prefix.charCodeAt(i)
+
+		// normalize only the string char (prefix is already lowercase)
+		if (ca >= 65 && ca <= 90) ca |= 32  // A-Z → a-z
+
+		if (ca !== cb) {
+			return false
+		}
+	}
+
+	return true
+}
+
+/**
+ * Case-insensitive character/substring search without allocations
+ * Returns the index of the first occurrence of searchChar (case-insensitive)
+ *
+ * IMPORTANT: searchChar MUST be lowercase for correct comparison
+ *
+ * @param str - The string to search in
+ * @param searchChar - The lowercase character/substring to find
+ * @returns The index of the first match, or -1 if not found
+ */
+export function str_index_of(str: string, searchChar: string): number {
+	if (searchChar.length === 0) {
+		return -1
+	}
+
+	// Optimize for single character search
+	if (searchChar.length === 1) {
+		const searchCode = searchChar.charCodeAt(0)
+		for (let i = 0; i < str.length; i++) {
+			let ca = str.charCodeAt(i)
+			// normalize only the string char (searchChar is already lowercase)
+			if (ca >= 65 && ca <= 90) ca |= 32  // A-Z → a-z
+			if (ca === searchCode) {
+				return i
+			}
+		}
+		return -1
+	}
+
+	// Multi-character search
+	for (let i = 0; i <= str.length - searchChar.length; i++) {
+		let match = true
+		for (let j = 0; j < searchChar.length; j++) {
+			let ca = str.charCodeAt(i + j)
+			let cb = searchChar.charCodeAt(j)
+			if (ca >= 65 && ca <= 90) ca |= 32  // A-Z → a-z
+			if (ca !== cb) {
+				match = false
+				break
+			}
+		}
+		if (match) {
+			return i
+		}
+	}
+	return -1
+}
+
+/**
  * Check if a string range has a vendor prefix
  *
  * @param source - The source string

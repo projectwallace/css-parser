@@ -47,6 +47,7 @@ import { skip_whitespace_forward, skip_whitespace_and_comments_forward, skip_whi
 import {
 	is_whitespace,
 	is_vendor_prefixed,
+	str_equals,
 	CHAR_PLUS,
 	CHAR_TILDE,
 	CHAR_GREATER_THAN,
@@ -751,16 +752,16 @@ export class SelectorParser {
 		// Parse the content inside the parentheses
 		if (content_end > content_start) {
 			// Check if this is an nth-* pseudo-class
-			let func_name = this.source.substring(func_name_start, func_name_end).toLowerCase()
+			let func_name_substr = this.source.substring(func_name_start, func_name_end)
 
-			if (this.is_nth_pseudo(func_name)) {
+			if (this.is_nth_pseudo(func_name_substr)) {
 				// Parse as An+B expression
 				let child = this.parse_nth_expression(content_start, content_end)
 				if (child !== null) {
 					this.arena.set_first_child(node, child)
 					this.arena.set_last_child(node, child)
 				}
-			} else if (func_name === 'lang') {
+			} else if (str_equals('lang', func_name_substr)) {
 				// Parse as :lang() - comma-separated language identifiers
 				this.parse_lang_identifiers(content_start, content_end, node)
 			} else {
@@ -771,7 +772,7 @@ export class SelectorParser {
 
 				// Recursively parse the content as a selector
 				// Only :has() accepts relative selectors (starting with combinator)
-				let allow_relative = func_name === 'has'
+				let allow_relative = str_equals('has', func_name_substr)
 				let child_selector = this.parse_selector(content_start, content_end, this.lexer.line, this.lexer.column, allow_relative)
 
 				// Restore lexer state and selector_end
@@ -792,12 +793,12 @@ export class SelectorParser {
 	// Check if pseudo-class name is an nth-* pseudo
 	private is_nth_pseudo(name: string): boolean {
 		return (
-			name === 'nth-child' ||
-			name === 'nth-last-child' ||
-			name === 'nth-of-type' ||
-			name === 'nth-last-of-type' ||
-			name === 'nth-col' ||
-			name === 'nth-last-col'
+			str_equals('nth-child', name) ||
+			str_equals('nth-last-child', name) ||
+			str_equals('nth-of-type', name) ||
+			str_equals('nth-last-of-type', name) ||
+			str_equals('nth-col', name) ||
+			str_equals('nth-last-col', name)
 		)
 	}
 
