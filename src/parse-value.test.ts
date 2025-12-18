@@ -660,6 +660,90 @@ describe('Value Node Types', () => {
 		})
 	})
 
+	describe('value_as_number getter', () => {
+		it('should return number for NUMBER nodes', () => {
+			const root = parse('div { opacity: 0.5; }')
+			const decl = root.first_child?.first_child?.next_sibling?.first_child
+			const numberNode = decl?.values[0]
+
+			expect(numberNode?.type).toBe(NUMBER)
+			expect(numberNode?.value_as_number).toBe(0.5)
+		})
+
+		it('should return number for DIMENSION nodes', () => {
+			const root = parse('div { width: 100px; }')
+			const decl = root.first_child?.first_child?.next_sibling?.first_child
+			const dimNode = decl?.values[0]
+
+			expect(dimNode?.type).toBe(DIMENSION)
+			expect(dimNode?.value_as_number).toBe(100)
+		})
+
+		it('should handle negative numbers', () => {
+			const root = parse('div { margin: -10px; }')
+			const decl = root.first_child?.first_child?.next_sibling?.first_child
+			const dimNode = decl?.values[0]
+
+			expect(dimNode?.type).toBe(DIMENSION)
+			expect(dimNode?.value_as_number).toBe(-10)
+		})
+
+		it('should handle zero', () => {
+			const root = parse('div { margin: 0; }')
+			const decl = root.first_child?.first_child?.next_sibling?.first_child
+			const numberNode = decl?.values[0]
+
+			expect(numberNode?.type).toBe(NUMBER)
+			expect(numberNode?.value_as_number).toBe(0)
+		})
+
+		it('should handle decimal numbers', () => {
+			const root = parse('div { line-height: 1.5; }')
+			const decl = root.first_child?.first_child?.next_sibling?.first_child
+			const numberNode = decl?.values[0]
+
+			expect(numberNode?.type).toBe(NUMBER)
+			expect(numberNode?.value_as_number).toBe(1.5)
+		})
+
+		it('should handle percentage dimensions', () => {
+			const root = parse('div { width: 50%; }')
+			const decl = root.first_child?.first_child?.next_sibling?.first_child
+			const dimNode = decl?.values[0]
+
+			expect(dimNode?.type).toBe(DIMENSION)
+			expect(dimNode?.value_as_number).toBe(50)
+			expect(dimNode?.unit).toBe('%')
+		})
+
+		it('should return null for IDENTIFIER nodes', () => {
+			const root = parse('div { color: red; }')
+			const decl = root.first_child?.first_child?.next_sibling?.first_child
+			const identNode = decl?.values[0]
+
+			expect(identNode?.type).toBe(IDENTIFIER)
+			expect(identNode?.value_as_number).toBeNull()
+		})
+
+		it('should return null for STRING nodes', () => {
+			const root = parse('div { content: "hello"; }')
+			const decl = root.first_child?.first_child?.next_sibling?.first_child
+			const stringNode = decl?.values[0]
+
+			expect(stringNode?.type).toBe(STRING)
+			expect(stringNode?.value_as_number).toBeNull()
+		})
+
+		it('should return null for FUNCTION nodes', () => {
+			const root = parse('div { width: calc(100% - 20px); }')
+			const decl = root.first_child?.first_child?.next_sibling?.first_child
+			const funcNode = decl?.values[0]
+
+			expect(funcNode?.type).toBe(FUNCTION)
+			expect(funcNode?.value_as_number).toBeNull()
+		})
+	})
+
 	describe('Case-insensitive function names', () => {
 		const getValue = (css: string) => {
 			const root = parse(css)

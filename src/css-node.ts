@@ -266,6 +266,17 @@ export class CSSNode {
 		return this.source.substring(start, start + length)
 	}
 
+	get value_as_number(): number | null {
+		let text = this.text
+		if (this.type === NUMBER) {
+			return Number.parseFloat(text)
+		}
+		if (this.type === DIMENSION) {
+			return parse_dimension(text).value
+		}
+		return null
+	}
+
 	// Get the prelude text (for at-rules: "(min-width: 768px)" in "@media (min-width: 768px)")
 	// This is an alias for `value` to make at-rule usage more semantic
 	get prelude(): string | null {
