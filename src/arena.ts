@@ -1,29 +1,28 @@
 // CSS Data Arena - Single contiguous ArrayBuffer for all AST nodes
 //
-// Each node occupies 40 bytes with the following layout:
+// Each node occupies 36 bytes with the following layout:
 // Offset | Size | Field
 // -------|------|-------------
 //   0    |  1   | type
 //   1    |  1   | flags
-//   2    |  2   | (padding)
+//   2    |  2   | length
 //   4    |  4   | startOffset
-//   8    |  2   | length
-//  10    |  2   | (padding)
-//  12    |  2   | contentStartDelta (offset from startOffset, property name / at-rule name)
-//  14    |  2   | contentLength
-//  16    |  2   | valueStartDelta (offset from startOffset, declaration value / at-rule prelude)
+//   8    |  2   | contentStartDelta (offset from startOffset, property name / at-rule name)
+//  10    |  2   | valueStartDelta (offset from startOffset, declaration value / at-rule prelude)
+//  12    |  4   | firstChild
+//  16    |  2   | contentLength
 //  18    |  2   | valueLength
-//  20    |  4   | firstChild
-//  24    |  4   | lastChild
-//  28    |  4   | nextSibling
-//  32    |  4   | startLine
-//  36    |  2   | startColumn
-//  38    |  2   | (padding)
+//  20    |  4   | nextSibling
+//  24    |  4   | startLine
+//  28    |  2   | startColumn
+//  30    |  1   | attr_operator (reusing padding)
+//  31    |  1   | attr_flags (reusing padding)
+//  32    |  4   | lastChild
 //
 // HOW THE ARENA WORKS:
-// 1. BYTES_PER_NODE defines the size of each node (40 bytes). The ArrayBuffer size is calculated
-//    as: capacity × BYTES_PER_NODE. For example, 1024 nodes = 40,960 bytes (~40KB).
-//    Node indices map to byte offsets via: node_offset = node_index × 40.
+// 1. BYTES_PER_NODE defines the size of each node (36 bytes). The ArrayBuffer size is calculated
+//    as: capacity × BYTES_PER_NODE. For example, 1024 nodes = 36,864 bytes (~36KB).
+//    Node indices map to byte offsets via: node_offset = node_index × 36.
 //
 // 2. We use a single DataView over the ArrayBuffer to read/write different types at specific offsets.
 //    - Uint8: 1-byte reads/writes for type, flags (e.g., view.getUint8(offset))
@@ -31,20 +30,20 @@
 //    - Uint32: 4-byte reads/writes for startOffset, pointers, line (e.g., view.getUint32(offset, true))
 //    The 'true' parameter specifies little-endian byte order (native on x86/ARM CPUs).
 //
-// 3. Padding (6 bytes total at offsets 2-3, 10-11, 38-39) ensures memory alignment for performance:
-//    - Uint32 fields align to 4-byte boundaries (offsets 4, 20, 24, 28, 32)
-//    - Uint16 fields align to 2-byte boundaries (offsets 8, 10, 12, 14, 16, 18, 36, 38)
+// 3. Padding (2 bytes total at offsets 30-31) ensures memory alignment for performance:
+//    - Uint32 fields align to 4-byte boundaries (offsets 4, 12, 20, 24, 32)
+//    - Uint16 fields align to 2-byte boundaries (offsets 2, 8, 10, 16, 18, 28)
 //    Aligned access is faster (single CPU instruction) vs unaligned (multiple memory accesses).
 //    Modern CPUs penalize unaligned reads/writes, making padding essential for performance.
 //
-// 4. The padding at offset 2-3 is reused for attribute selector data (attr_operator, attr_flags),
+// 4. The padding at offset 30-31 is reused for attribute selector data (attr_operator, attr_flags),
 //    making efficient use of otherwise wasted bytes. This is a space optimization trick.
 //
 // 5. Delta offsets (contentStartDelta, valueStartDelta) save memory: instead of storing absolute
 //    positions as uint32 (4 bytes), we store relative offsets as uint16 (2 bytes). This reduced
-//    node size from 44→40 bytes (10% smaller), saving memory while maintaining performance.
+//    node size from 44→40→36 bytes (18% smaller than original), saving memory while maintaining performance.
 
-let BYTES_PER_NODE = 40
+let BYTES_PER_NODE = 36
 
 // Node type constants
 export const STYLESHEET = 1
@@ -179,60 +178,60 @@ export class CSSDataArena {
 
 	// Read length in source
 	get_length(node_index: number): number {
-		return this.view.getUint16(this.node_offset(node_index) + 8, true)
+		return this.view.getUint16(this.node_offset(node_index) + 2, true)
 	}
 
 	// Read content start offset (stored as delta from startOffset)
 	get_content_start(node_index: number): number {
 		const startOffset = this.get_start_offset(node_index)
-		const delta = this.view.getUint16(this.node_offset(node_index) + 12, true)
+		const delta = this.view.getUint16(this.node_offset(node_index) + 8, true)
 		return startOffset + delta
 	}
 
 	// Read content length
 	get_content_length(node_index: number): number {
-		return this.view.getUint16(this.node_offset(node_index) + 14, true)
+		return this.view.getUint16(this.node_offset(node_index) + 16, true)
 	}
 
 	// Read attribute operator (for NODE_SELECTOR_ATTRIBUTE)
 	get_attr_operator(node_index: number): number {
-		return this.view.getUint8(this.node_offset(node_index) + 2)
+		return this.view.getUint8(this.node_offset(node_index) + 30)
 	}
 
 	// Read attribute flags (for NODE_SELECTOR_ATTRIBUTE)
 	get_attr_flags(node_index: number): number {
-		return this.view.getUint8(this.node_offset(node_index) + 3)
+		return this.view.getUint8(this.node_offset(node_index) + 31)
 	}
 
 	// Read first child index (0 = no children)
 	get_first_child(node_index: number): number {
-		return this.view.getUint32(this.node_offset(node_index) + 20, true)
+		return this.view.getUint32(this.node_offset(node_index) + 12, true)
 	}
 
 	// Read last child index (0 = no children)
 	get_last_child(node_index: number): number {
-		return this.view.getUint32(this.node_offset(node_index) + 24, true)
+		return this.view.getUint32(this.node_offset(node_index) + 32, true)
 	}
 
 	// Read next sibling index (0 = no sibling)
 	get_next_sibling(node_index: number): number {
-		return this.view.getUint32(this.node_offset(node_index) + 28, true)
+		return this.view.getUint32(this.node_offset(node_index) + 20, true)
 	}
 
 	// Read start line
 	get_start_line(node_index: number): number {
-		return this.view.getUint32(this.node_offset(node_index) + 32, true)
+		return this.view.getUint32(this.node_offset(node_index) + 24, true)
 	}
 
 	// Read start column
 	get_start_column(node_index: number): number {
-		return this.view.getUint16(this.node_offset(node_index) + 36, true)
+		return this.view.getUint16(this.node_offset(node_index) + 28, true)
 	}
 
 	// Read value start offset (stored as delta from startOffset, declaration value / at-rule prelude)
 	get_value_start(node_index: number): number {
 		const startOffset = this.get_start_offset(node_index)
-		const delta = this.view.getUint16(this.node_offset(node_index) + 16, true)
+		const delta = this.view.getUint16(this.node_offset(node_index) + 10, true)
 		return startOffset + delta
 	}
 
@@ -260,57 +259,57 @@ export class CSSDataArena {
 
 	// Write length in source
 	set_length(node_index: number, length: number): void {
-		this.view.setUint16(this.node_offset(node_index) + 8, length, true)
+		this.view.setUint16(this.node_offset(node_index) + 2, length, true)
 	}
 
 	// Write content start delta (offset from startOffset)
 	set_content_start_delta(node_index: number, delta: number): void {
-		this.view.setUint16(this.node_offset(node_index) + 12, delta, true)
+		this.view.setUint16(this.node_offset(node_index) + 8, delta, true)
 	}
 
 	// Write content length
 	set_content_length(node_index: number, length: number): void {
-		this.view.setUint16(this.node_offset(node_index) + 14, length, true)
+		this.view.setUint16(this.node_offset(node_index) + 16, length, true)
 	}
 
 	// Write attribute operator (for NODE_SELECTOR_ATTRIBUTE)
 	set_attr_operator(node_index: number, operator: number): void {
-		this.view.setUint8(this.node_offset(node_index) + 2, operator)
+		this.view.setUint8(this.node_offset(node_index) + 30, operator)
 	}
 
 	// Write attribute flags (for NODE_SELECTOR_ATTRIBUTE)
 	set_attr_flags(node_index: number, flags: number): void {
-		this.view.setUint8(this.node_offset(node_index) + 3, flags)
+		this.view.setUint8(this.node_offset(node_index) + 31, flags)
 	}
 
 	// Write first child index
 	set_first_child(node_index: number, childIndex: number): void {
-		this.view.setUint32(this.node_offset(node_index) + 20, childIndex, true)
+		this.view.setUint32(this.node_offset(node_index) + 12, childIndex, true)
 	}
 
 	// Write last child index
 	set_last_child(node_index: number, childIndex: number): void {
-		this.view.setUint32(this.node_offset(node_index) + 24, childIndex, true)
+		this.view.setUint32(this.node_offset(node_index) + 32, childIndex, true)
 	}
 
 	// Write next sibling index
 	set_next_sibling(node_index: number, siblingIndex: number): void {
-		this.view.setUint32(this.node_offset(node_index) + 28, siblingIndex, true)
+		this.view.setUint32(this.node_offset(node_index) + 20, siblingIndex, true)
 	}
 
 	// Write start line
 	set_start_line(node_index: number, line: number): void {
-		this.view.setUint32(this.node_offset(node_index) + 32, line, true)
+		this.view.setUint32(this.node_offset(node_index) + 24, line, true)
 	}
 
 	// Write start column
 	set_start_column(node_index: number, column: number): void {
-		this.view.setUint16(this.node_offset(node_index) + 36, column, true)
+		this.view.setUint16(this.node_offset(node_index) + 28, column, true)
 	}
 
 	// Write value start delta (offset from startOffset, declaration value / at-rule prelude)
 	set_value_start_delta(node_index: number, delta: number): void {
-		this.view.setUint16(this.node_offset(node_index) + 16, delta, true)
+		this.view.setUint16(this.node_offset(node_index) + 10, delta, true)
 	}
 
 	// Write value length
@@ -352,9 +351,9 @@ export class CSSDataArena {
 		const offset = node_index * BYTES_PER_NODE
 		this.view.setUint8(offset, type) // +0: type
 		this.view.setUint32(offset + 4, start_offset, true) // +4: startOffset
-		this.view.setUint16(offset + 8, length, true) // +8: length
-		this.view.setUint32(offset + 32, start_line, true) // +32: startLine
-		this.view.setUint16(offset + 36, start_column, true) // +36: startColumn
+		this.view.setUint16(offset + 2, length, true) // +2: length
+		this.view.setUint32(offset + 24, start_line, true) // +24: startLine
+		this.view.setUint16(offset + 28, start_column, true) // +28: startColumn
 
 		return node_index
 	}
@@ -367,8 +366,8 @@ export class CSSDataArena {
 		if (children.length === 0) return
 
 		const offset = this.node_offset(parent_index)
-		this.view.setUint32(offset + 20, children[0], true) // firstChild
-		this.view.setUint32(offset + 24, children[children.length - 1], true) // lastChild
+		this.view.setUint32(offset + 12, children[0], true) // firstChild
+		this.view.setUint32(offset + 32, children[children.length - 1], true) // lastChild
 
 		// Chain siblings
 		for (let i = 0; i < children.length - 1; i++) {
