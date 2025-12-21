@@ -136,7 +136,7 @@ export interface CloneOptions {
 	 */
 	deep?: boolean
 	/**
-	 * Include location information (line, column, offset, length)
+	 * Include location information (line, column, start, length)
 	 * @default false
 	 */
 	locations?: boolean
@@ -171,8 +171,9 @@ export type PlainCSSNode = {
 	// Location (only when locations: true)
 	line?: number
 	column?: number
-	offset?: number
+	start?: number
 	length?: number
+	end?: number
 }
 
 export class CSSNode {
@@ -689,7 +690,7 @@ export class CSSNode {
 	 *
 	 * @param options - Cloning configuration
 	 * @param options.deep - Recursively clone children (default: true)
-	 * @param options.locations - Include line/column/offset/length (default: false)
+	 * @param options.locations - Include line/column/start/length (default: false)
 	 * @returns Plain object with children as array
 	 *
 	 * @example
@@ -747,8 +748,9 @@ export class CSSNode {
 		if (locations) {
 			plain.line = this.line
 			plain.column = this.column
-			plain.offset = this.start
+			plain.start = this.start
 			plain.length = this.length
+			plain.end = this.end
 		}
 
 		// 8. Deep clone children - just push to array!
