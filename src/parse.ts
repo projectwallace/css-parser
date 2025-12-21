@@ -10,7 +10,6 @@ import {
 	BLOCK,
 	FLAG_IMPORTANT,
 	FLAG_HAS_BLOCK,
-	FLAG_VENDOR_PREFIXED,
 	FLAG_HAS_DECLARATIONS,
 } from './arena'
 import { CSSNode } from './css-node'
@@ -27,7 +26,6 @@ import {
 	TOKEN_DELIM,
 	TOKEN_AT_KEYWORD,
 } from './token-types'
-import { is_vendor_prefixed } from './string-utils'
 import { trim_boundaries } from './parse-utils'
 
 export interface ParserOptions {
@@ -321,11 +319,6 @@ export class Parser {
 		// Store property name position (delta = 0 since content starts at same offset as node)
 		this.arena.set_content_start_delta(declaration, 0)
 		this.arena.set_content_length(declaration, prop_end - prop_start)
-
-		// Check for vendor prefix and set flag if detected
-		if (is_vendor_prefixed(this.source, prop_start, prop_end)) {
-			this.arena.set_flag(declaration, FLAG_VENDOR_PREFIXED)
-		}
 
 		// Track value start (after colon, skipping whitespace)
 		let value_start = this.lexer.token_start

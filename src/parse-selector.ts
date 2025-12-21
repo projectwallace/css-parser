@@ -15,7 +15,6 @@ import {
 	NESTING_SELECTOR,
 	NTH_OF_SELECTOR,
 	LANG_SELECTOR,
-	FLAG_VENDOR_PREFIXED,
 	FLAG_HAS_PARENS,
 	ATTR_OPERATOR_NONE,
 	ATTR_OPERATOR_EQUAL,
@@ -46,7 +45,6 @@ import {
 import { skip_whitespace_forward, skip_whitespace_and_comments_forward, skip_whitespace_and_comments_backward } from './parse-utils'
 import {
 	is_whitespace,
-	is_vendor_prefixed,
 	str_equals,
 	CHAR_PLUS,
 	CHAR_TILDE,
@@ -686,10 +684,6 @@ export class SelectorParser {
 			// Content is the pseudo name (without colons)
 			this.arena.set_content_start_delta(node, this.lexer.token_start - start)
 			this.arena.set_content_length(node, this.lexer.token_end - this.lexer.token_start)
-			// Check for vendor prefix and set flag if detected
-			if (is_vendor_prefixed(this.source, this.lexer.token_start, this.lexer.token_end)) {
-				this.arena.set_flag(node, FLAG_VENDOR_PREFIXED)
-			}
 			return node
 		} else if (token_type === TOKEN_FUNCTION) {
 			// Pseudo-class function like :nth-child()
@@ -743,11 +737,6 @@ export class SelectorParser {
 		// Set FLAG_HAS_PARENS to indicate this is a function syntax (even if empty)
 		// This allows formatters to distinguish :lang() from :hover
 		this.arena.set_flag(node, FLAG_HAS_PARENS)
-
-		// Check for vendor prefix and set flag if detected
-		if (is_vendor_prefixed(this.source, func_name_start, func_name_end)) {
-			this.arena.set_flag(node, FLAG_VENDOR_PREFIXED)
-		}
 
 		// Parse the content inside the parentheses
 		if (content_end > content_start) {

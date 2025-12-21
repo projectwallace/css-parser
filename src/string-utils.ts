@@ -162,7 +162,17 @@ export function str_index_of(str: string, searchChar: string): number {
  * - `--custom-property` → false (CSS custom property)
  * - `border-radius` → false (doesn't start with hyphen)
  */
-export function is_vendor_prefixed(source: string, start: number, end: number): boolean {
+// Overload signatures
+export function is_vendor_prefixed(text: string): boolean
+export function is_vendor_prefixed(source: string, start: number, end: number): boolean
+// Implementation
+export function is_vendor_prefixed(source: string, start?: number, end?: number): boolean {
+	// Handle string-only overload
+	if (start === undefined || end === undefined) {
+		start = 0
+		end = source.length
+	}
+
 	// Must start with a hyphen
 	if (source.charCodeAt(start) !== CHAR_MINUS_HYPHEN) {
 		return false
