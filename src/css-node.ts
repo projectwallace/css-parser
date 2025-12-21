@@ -40,12 +40,11 @@ import {
 	FLAG_IMPORTANT,
 	FLAG_HAS_ERROR,
 	FLAG_HAS_BLOCK,
-	FLAG_VENDOR_PREFIXED,
 	FLAG_HAS_DECLARATIONS,
 	FLAG_HAS_PARENS,
 } from './arena'
 
-import { CHAR_MINUS_HYPHEN, CHAR_PLUS, is_whitespace, str_starts_with } from './string-utils'
+import { CHAR_MINUS_HYPHEN, CHAR_PLUS, is_whitespace, is_vendor_prefixed, str_starts_with } from './string-utils'
 import { parse_dimension } from './parse-utils'
 
 // Type name lookup table - maps numeric type to CSSTree-compatible strings
@@ -312,9 +311,28 @@ export class CSSNode {
 		return this.arena.has_flag(this.index, FLAG_IMPORTANT)
 	}
 
-	// Check if this has a vendor prefix (flag-based for performance)
+	// Check if this has a vendor prefix (computed on-demand)
 	get is_vendor_prefixed(): boolean {
-		return this.arena.has_flag(this.index, FLAG_VENDOR_PREFIXED)
+		switch (this.type) {
+			case DECLARATION:
+				// Check property name (e.g., -webkit-transform)
+				return is_vendor_prefixed(this.name)
+			case PSEUDO_CLASS_SELECTOR:
+			case PSEUDO_ELEMENT_SELECTOR:
+				// Check pseudo-class/element name without colons (e.g., -webkit-autofill, -webkit-scrollbar)
+				return is_vendor_prefixed(this.name)
+			case AT_RULE:
+				// Check at-rule name (e.g., -webkit-keyframes from @-webkit-keyframes)
+				return is_vendor_prefixed(this.name)
+			case FUNCTION:
+				// Check function name (e.g., -webkit-gradient from -webkit-gradient())
+				return is_vendor_prefixed(this.name)
+			case IDENTIFIER:
+				// Check identifier value (e.g., -webkit-sticky)
+				return is_vendor_prefixed(this.text)
+			default:
+				return false
+		}
 	}
 
 	// Check if this node has an error
