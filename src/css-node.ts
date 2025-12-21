@@ -436,13 +436,19 @@ export class CSSNode {
 	}
 
 	// Get start offset in source
-	get offset(): number {
+	get start(): number {
 		return this.arena.get_start_offset(this.index)
 	}
 
 	// Get length in source
 	get length(): number {
 		return this.arena.get_length(this.index)
+	}
+
+	// Get end offset in source
+	// End is not stored, must be calculated
+	get end(): number {
+		return this.start + this.length
 	}
 
 	// --- Tree Traversal ---
@@ -663,8 +669,8 @@ export class CSSNode {
 		while (child) {
 			if (child.type === COMBINATOR) break
 
-			if (start === -1) start = child.offset
-			end = child.offset + child.length
+			if (start === -1) start = child.start
+			end = child.start + child.length
 
 			child = child.next_sibling
 		}
@@ -741,7 +747,7 @@ export class CSSNode {
 		if (locations) {
 			plain.line = this.line
 			plain.column = this.column
-			plain.offset = this.offset
+			plain.offset = this.start
 			plain.length = this.length
 		}
 
