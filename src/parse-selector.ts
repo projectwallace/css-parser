@@ -125,7 +125,6 @@ export class SelectorParser {
 
 				// Set the complex selector chain as children
 				this.arena.set_first_child(selector_wrapper, complex_selector)
-				this.arena.set_last_child(selector_wrapper, last_component)
 
 				selectors.push(selector_wrapper)
 			}
@@ -748,7 +747,6 @@ export class SelectorParser {
 				let child = this.parse_nth_expression(content_start, content_end)
 				if (child !== null) {
 					this.arena.set_first_child(node, child)
-					this.arena.set_last_child(node, child)
 				}
 			} else if (str_equals('lang', func_name_substr)) {
 				// Parse as :lang() - comma-separated language identifiers
@@ -771,7 +769,6 @@ export class SelectorParser {
 				// Add as child if parsed successfully
 				if (child_selector !== null) {
 					this.arena.set_first_child(node, child_selector)
-					this.arena.set_last_child(node, child_selector)
 				}
 			}
 		}
@@ -847,7 +844,6 @@ export class SelectorParser {
 			this.arena.set_first_child(parent_node, first_child)
 		}
 		if (last_child !== null) {
-			this.arena.set_last_child(parent_node, last_child)
 		}
 
 		// Restore lexer state
@@ -897,11 +893,9 @@ export class SelectorParser {
 			// Link An+B and selector list
 			if (anplusb_node !== null && selector_list !== null) {
 				this.arena.set_first_child(of_node, anplusb_node)
-				this.arena.set_last_child(of_node, selector_list)
 				this.arena.set_next_sibling(anplusb_node, selector_list)
 			} else if (anplusb_node !== null) {
 				this.arena.set_first_child(of_node, anplusb_node)
-				this.arena.set_last_child(of_node, anplusb_node)
 			}
 
 			return of_node
