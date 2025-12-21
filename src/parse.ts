@@ -8,7 +8,6 @@ import {
 	DECLARATION,
 	AT_RULE,
 	BLOCK,
-	FLAG_IMPORTANT,
 	FLAG_HAS_BLOCK,
 	FLAG_HAS_DECLARATIONS,
 } from './arena'
@@ -325,7 +324,6 @@ export class Parser {
 		let value_end = value_start
 
 		// Parse value (everything until ';' or '}')
-		let has_important = false
 		let last_end = this.lexer.token_end
 
 		while (!this.is_eof()) {
@@ -346,7 +344,6 @@ export class Parser {
 				// Check if next token is an identifier
 				let next_type = this.lexer.next_token_fast()
 				if (next_type === TOKEN_IDENT) {
-					has_important = true
 					last_end = this.lexer.token_end
 					this.next_token() // Advance to next token after "important"
 					break
@@ -372,11 +369,6 @@ export class Parser {
 				// Link value nodes as children of the declaration
 				this.arena.append_children(declaration, valueNodes)
 			}
-		}
-
-		// Set !important flag if found
-		if (has_important) {
-			this.arena.set_flag(declaration, FLAG_IMPORTANT)
 		}
 
 		// Consume ';' if present

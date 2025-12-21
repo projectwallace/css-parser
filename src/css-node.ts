@@ -37,7 +37,6 @@ import {
 	SUPPORTS_QUERY,
 	LAYER_NAME,
 	PRELUDE_OPERATOR,
-	FLAG_IMPORTANT,
 	FLAG_HAS_ERROR,
 	FLAG_HAS_BLOCK,
 	FLAG_HAS_DECLARATIONS,
@@ -305,10 +304,13 @@ export class CSSNode {
 		return parse_dimension(this.text).unit
 	}
 
-	// Check if this declaration has !important
+	// Check if this declaration has !important (computed on-demand)
 	get is_important(): boolean | null {
 		if (this.type !== DECLARATION) return null
-		return this.arena.has_flag(this.index, FLAG_IMPORTANT)
+		// Check if full declaration text contains ! followed by identifier
+		// This matches !important, !ie (historic), and any other ! + identifier
+		// (value property excludes the ! part, so we check the full text)
+		return /!\s*\w+/.test(this.text)
 	}
 
 	// Check if this has a vendor prefix (computed on-demand)
