@@ -25,8 +25,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const mediaQuery = atRule.first_child!
 
 				expect(mediaQuery.type).toBe(MEDIA_QUERY)
-				expect(mediaQuery.offset).toBe(7)
+				expect(mediaQuery.start).toBe(7)
 				expect(mediaQuery.length).toBe(6)
+				expect(mediaQuery.end).toBe(13)
 			})
 
 			test('offset and length for media feature', () => {
@@ -36,8 +37,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const mediaQuery = atRule.first_child!
 
 				expect(mediaQuery.type).toBe(MEDIA_QUERY)
-				expect(mediaQuery.offset).toBe(7)
+				expect(mediaQuery.start).toBe(7)
 				expect(mediaQuery.length).toBe(18)
+				expect(mediaQuery.end).toBe(25)
 			})
 
 			test('offset and length for complex query', () => {
@@ -47,8 +49,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const mediaQuery = atRule.first_child!
 
 				expect(mediaQuery.type).toBe(MEDIA_QUERY)
-				expect(mediaQuery.offset).toBe(7)
+				expect(mediaQuery.start).toBe(7)
 				expect(mediaQuery.length).toBe(29)
+				expect(mediaQuery.end).toBe(36)
 			})
 		})
 
@@ -61,8 +64,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const mediaType = mediaQuery.first_child!
 
 				expect(mediaType.type).toBe(MEDIA_TYPE)
-				expect(mediaType.offset).toBe(7)
+				expect(mediaType.start).toBe(7)
 				expect(mediaType.length).toBe(6)
+				expect(mediaType.end).toBe(13)
 			})
 		})
 
@@ -75,8 +79,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const mediaFeature = mediaQuery.first_child!
 
 				expect(mediaFeature.type).toBe(MEDIA_FEATURE)
-				expect(mediaFeature.offset).toBe(7)
+				expect(mediaFeature.start).toBe(7)
 				expect(mediaFeature.length).toBe(18)
+				expect(mediaFeature.end).toBe(25)
 			})
 		})
 
@@ -88,8 +93,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const containerQuery = atRule.first_child!
 
 				expect(containerQuery.type).toBe(CONTAINER_QUERY)
-				expect(containerQuery.offset).toBe(11)
+				expect(containerQuery.start).toBe(11)
 				expect(containerQuery.length).toBe(18)
+				expect(containerQuery.end).toBe(29)
 			})
 
 			test('offset and length for named query', () => {
@@ -99,8 +105,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const containerQuery = atRule.first_child!
 
 				expect(containerQuery.type).toBe(CONTAINER_QUERY)
-				expect(containerQuery.offset).toBe(11)
+				expect(containerQuery.start).toBe(11)
 				expect(containerQuery.length).toBe(26)
+				expect(containerQuery.end).toBe(37)
 			})
 		})
 
@@ -112,8 +119,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const supportsQuery = atRule.first_child!
 
 				expect(supportsQuery.type).toBe(SUPPORTS_QUERY)
-				expect(supportsQuery.offset).toBe(10)
+				expect(supportsQuery.start).toBe(10)
 				expect(supportsQuery.length).toBe(15)
+				expect(supportsQuery.end).toBe(25)
 			})
 		})
 
@@ -125,8 +133,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const layerName = atRule.first_child!
 
 				expect(layerName.type).toBe(LAYER_NAME)
-				expect(layerName.offset).toBe(7)
+				expect(layerName.start).toBe(7)
 				expect(layerName.length).toBe(9)
+				expect(layerName.end).toBe(16)
 			})
 		})
 
@@ -138,8 +147,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const identifier = atRule.first_child!
 
 				expect(identifier.type).toBe(IDENTIFIER)
-				expect(identifier.offset).toBe(11)
+				expect(identifier.start).toBe(11)
 				expect(identifier.length).toBe(7)
+				expect(identifier.end).toBe(18)
 			})
 
 			test('offset and length in @property', () => {
@@ -149,8 +159,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const identifier = atRule.first_child!
 
 				expect(identifier.type).toBe(IDENTIFIER)
-				expect(identifier.offset).toBe(10)
+				expect(identifier.start).toBe(10)
 				expect(identifier.length).toBe(10)
+				expect(identifier.end).toBe(20)
 			})
 		})
 
@@ -163,8 +174,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const operator = mediaQuery.children[1]
 
 				expect(operator.type).toBe(PRELUDE_OPERATOR)
-				expect(operator.offset).toBe(14)
+				expect(operator.start).toBe(14)
 				expect(operator.length).toBe(3)
+				expect(operator.end).toBe(17)
 			})
 		})
 
@@ -176,8 +188,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const url = atRule.first_child!
 
 				expect(url.type).toBe(URL)
-				expect(url.offset).toBe(8)
+				expect(url.start).toBe(8)
 				expect(url.length).toBe(17)
+				expect(url.end).toBe(25)
 			})
 
 			test('offset and length with string', () => {
@@ -187,8 +200,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const url = atRule.first_child!
 
 				expect(url.type).toBe(URL)
-				expect(url.offset).toBe(8)
+				expect(url.start).toBe(8)
 				expect(url.length).toBe(12)
+				expect(url.end).toBe(20)
 			})
 		})
 	})
@@ -674,30 +688,29 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(children[0].text).toBe('"styles.css"')
 			})
 
+			it('should have .value property for URL with quoted url() function', () => {
+				const css = '@import url("example.com");'
+				const ast = parse(css, { parse_atrule_preludes: true })
+				const atRule = ast.first_child
+				const url = atRule?.children[0]
 
-		it('should have .value property for URL with quoted url() function', () => {
-			const css = '@import url("example.com");'
-			const ast = parse(css, { parse_atrule_preludes: true })
-			const atRule = ast.first_child
-			const url = atRule?.children[0]
+				expect(url?.type).toBe(URL)
+				expect(url?.text).toBe('url("example.com")')
+				// URL node in @import returns the content with quotes
+				expect(url?.value).toBe('"example.com"')
+			})
 
-			expect(url?.type).toBe(URL)
-			expect(url?.text).toBe('url("example.com")')
-			// URL node in @import returns the content with quotes
-			expect(url?.value).toBe('"example.com"')
-		})
+			it('should have .value property for URL with quoted string', () => {
+				const css = '@import "example.com";'
+				const ast = parse(css, { parse_atrule_preludes: true })
+				const atRule = ast.first_child
+				const url = atRule?.children[0]
 
-		it('should have .value property for URL with quoted string', () => {
-			const css = '@import "example.com";'
-			const ast = parse(css, { parse_atrule_preludes: true })
-			const atRule = ast.first_child
-			const url = atRule?.children[0]
-
-			expect(url?.type).toBe(URL)
-			expect(url?.text).toBe('"example.com"')
-			// URL node in @import returns the string with quotes
-			expect(url?.value).toBe('"example.com"')
-		})
+				expect(url?.type).toBe(URL)
+				expect(url?.text).toBe('"example.com"')
+				// URL node in @import returns the string with quotes
+				expect(url?.value).toBe('"example.com"')
+			})
 			it('should parse with anonymous layer', () => {
 				const css = '@import url("styles.css") layer;'
 				const ast = parse(css, { parse_atrule_preludes: true })

@@ -15,54 +15,55 @@ describe('Value Node Types', () => {
 		describe('IDENTIFIER', () => {
 			it('should have correct offset and length', () => {
 				const value = getValue('div { color: red; }')
-				expect(value?.offset).toBe(13)
+				expect(value?.start).toBe(13)
 				expect(value?.length).toBe(3)
+				expect(value?.end).toBe(16)
 			})
 		})
 
 		describe('NUMBER', () => {
 			it('should have correct offset and length', () => {
 				const value = getValue('div { opacity: 0.5; }')
-				expect(value?.offset).toBe(15)
+				expect(value?.start).toBe(15)
 				expect(value?.length).toBe(3)
+				expect(value?.end).toBe(18)
 			})
-
 		})
 
 		describe('DIMENSION', () => {
 			it('should have correct offset and length', () => {
 				const value = getValue('div { width: 100px; }')
-				expect(value?.offset).toBe(13)
+				expect(value?.start).toBe(13)
 				expect(value?.length).toBe(5)
+				expect(value?.end).toBe(18)
 			})
-
 		})
 
 		describe('STRING', () => {
 			it('should have correct offset and length', () => {
 				const value = getValue('div { content: "hello"; }')
-				expect(value?.offset).toBe(15)
+				expect(value?.start).toBe(15)
 				expect(value?.length).toBe(7)
+				expect(value?.end).toBe(22)
 			})
-
 		})
 
 		describe('HASH', () => {
 			it('should have correct offset and length', () => {
 				const value = getValue('div { color: #ff0000; }')
-				expect(value?.offset).toBe(13)
+				expect(value?.start).toBe(13)
 				expect(value?.length).toBe(7)
+				expect(value?.end).toBe(20)
 			})
-
 		})
 
 		describe('FUNCTION', () => {
 			it('should have correct offset and length', () => {
 				const value = getValue('div { color: rgb(255, 0, 0); }')
-				expect(value?.offset).toBe(13)
+				expect(value?.start).toBe(13)
 				expect(value?.length).toBe(14)
+				expect(value?.end).toBe(27)
 			})
-
 		})
 
 		describe('OPERATOR', () => {
@@ -70,10 +71,10 @@ describe('Value Node Types', () => {
 				const root = parse('div { font-family: Arial, sans-serif; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				const comma = decl?.values[1]
-				expect(comma?.offset).toBe(24)
+				expect(comma?.start).toBe(24)
 				expect(comma?.length).toBe(1)
+				expect(comma?.end).toBe(25)
 			})
-
 		})
 
 		describe('PARENTHESIS', () => {
@@ -81,18 +82,19 @@ describe('Value Node Types', () => {
 				const root = parse('div { width: calc((100% - 50px) / 2); }')
 				const func = root.first_child?.first_child?.next_sibling?.first_child?.values[0]
 				const paren = func?.children[0]
-				expect(paren?.offset).toBe(18)
+				expect(paren?.start).toBe(18)
 				expect(paren?.length).toBe(13)
+				expect(paren?.end).toBe(31)
 			})
 		})
 
 		describe('URL', () => {
 			it('should have correct offset and length', () => {
 				const value = getValue('div { background: url("image.png"); }')
-				expect(value?.offset).toBe(18)
+				expect(value?.start).toBe(18)
 				expect(value?.length).toBe(16)
+				expect(value?.end).toBe(34)
 			})
-
 		})
 	})
 

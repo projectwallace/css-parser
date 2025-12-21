@@ -58,149 +58,166 @@ function getChildren(arena: CSSDataArena, source: string, nodeIndex: number | nu
 describe('Selector Nodes', () => {
 	describe('Locations', () => {
 		describe('SELECTOR_LIST', () => {
-			test('offset and length for simple selector', () => {
+			test('start and length for simple selector', () => {
 				const node = parse_selector('div')
-				expect(node.offset).toBe(0)
+				expect(node.start).toBe(0)
 				expect(node.length).toBe(3)
+				expect(node.end).toBe(3)
 			})
 
-			test('offset and length for selector list', () => {
+			test('start and length for selector list', () => {
 				const node = parse_selector('h1, h2, h3')
-				expect(node.offset).toBe(0)
+				expect(node.start).toBe(0)
 				expect(node.length).toBe(10)
+				expect(node.end).toBe(10)
 			})
 		})
 
 		describe('TYPE_SELECTOR', () => {
-			test('offset and length', () => {
+			test('start and length', () => {
 				const node = parse_selector('div')
 				const selector = node.first_child!
 				const typeSelector = selector.first_child!
-				expect(typeSelector.offset).toBe(0)
+				expect(typeSelector.start).toBe(0)
 				expect(typeSelector.length).toBe(3)
+				expect(typeSelector.end).toBe(3)
 			})
 		})
 
 		describe('CLASS_SELECTOR', () => {
-			test('offset and length', () => {
+			test('start and length', () => {
 				const node = parse_selector('.my-class')
 				const selector = node.first_child!
 				const classSelector = selector.first_child!
-				expect(classSelector.offset).toBe(0)
+				expect(classSelector.start).toBe(0)
 				expect(classSelector.length).toBe(9)
+				expect(classSelector.end).toBe(9)
 			})
 		})
 
 		describe('ID_SELECTOR', () => {
-			test('offset and length', () => {
+			test('start and length', () => {
 				const node = parse_selector('#my-id')
 				const selector = node.first_child!
 				const idSelector = selector.first_child!
-				expect(idSelector.offset).toBe(0)
+				expect(idSelector.start).toBe(0)
 				expect(idSelector.length).toBe(6)
+				expect(idSelector.end).toBe(6)
 			})
 		})
 
 		describe('ATTRIBUTE_SELECTOR', () => {
-			test('offset and length', () => {
+			test('start and length', () => {
 				const node = parse_selector('[disabled]')
 				const selector = node.first_child!
 				const attrSelector = selector.first_child!
-				expect(attrSelector.offset).toBe(0)
+				expect(attrSelector.start).toBe(0)
 				expect(attrSelector.length).toBe(10)
+				expect(attrSelector.end).toBe(10)
 			})
 
-			test('offset and length with value', () => {
+			test('start and length with value', () => {
 				const node = parse_selector('[type="text"]')
 				const selector = node.first_child!
 				const attrSelector = selector.first_child!
-				expect(attrSelector.offset).toBe(0)
+				expect(attrSelector.start).toBe(0)
 				expect(attrSelector.length).toBe(13)
+				expect(attrSelector.end).toBe(13)
 			})
 		})
 
 		describe('PSEUDO_CLASS_SELECTOR', () => {
-			test('offset and length for simple pseudo-class', () => {
+			test('start and length for simple pseudo-class', () => {
 				const node = parse_selector('a:hover')
 				const selector = node.first_child!
 				const [_type, pseudoClass] = selector.children
-				expect(pseudoClass.offset).toBe(1)
+				expect(pseudoClass.start).toBe(1)
 				expect(pseudoClass.length).toBe(6)
+				expect(pseudoClass.end).toBe(7)
 			})
 
-			test('offset and length for pseudo-class with function', () => {
+			test('start and length for pseudo-class with function', () => {
 				const node = parse_selector('li:nth-child(2n+1)')
 				const selector = node.first_child!
 				const [_type, pseudoClass] = selector.children
-				expect(pseudoClass.offset).toBe(2)
+				expect(pseudoClass.start).toBe(2)
 				expect(pseudoClass.length).toBe(16)
+				expect(pseudoClass.end).toBe(18)
 			})
 		})
 
 		describe('PSEUDO_ELEMENT_SELECTOR', () => {
-			test('offset and length', () => {
+			test('start and length', () => {
 				const node = parse_selector('p::before')
 				const selector = node.first_child!
 				const [_type, pseudoElement] = selector.children
-				expect(pseudoElement.offset).toBe(1)
+				expect(pseudoElement.start).toBe(1)
 				expect(pseudoElement.length).toBe(8)
+				expect(pseudoElement.end).toBe(9)
 			})
 		})
 
 		describe('COMBINATOR', () => {
-			test('offset and length for child combinator', () => {
+			test('start and length for child combinator', () => {
 				const node = parse_selector('div > p')
 				const selector = node.first_child!
 				const [_div, combinator, _p] = selector.children
-				expect(combinator.offset).toBeGreaterThan(2)
+				expect(combinator.start).toBeGreaterThan(2)
 				expect(combinator.length).toBeGreaterThan(0)
+				expect(combinator.end).toBeGreaterThan(0)
 			})
 		})
 
 		describe('UNIVERSAL_SELECTOR', () => {
-			test('offset and length', () => {
+			test('start and length', () => {
 				const node = parse_selector('*')
 				const selector = node.first_child!
 				const universalSelector = selector.first_child!
-				expect(universalSelector.offset).toBe(0)
+				expect(universalSelector.start).toBe(0)
 				expect(universalSelector.length).toBe(1)
+				expect(universalSelector.end).toBe(1)
 			})
 		})
 
 		describe('NESTING_SELECTOR', () => {
-			test('offset and length', () => {
+			test('start and length', () => {
 				const node = parse_selector('&')
 				const selector = node.first_child!
 				const nestingSelector = selector.first_child!
-				expect(nestingSelector.offset).toBe(0)
+				expect(nestingSelector.start).toBe(0)
 				expect(nestingSelector.length).toBe(1)
+				expect(nestingSelector.end).toBe(1)
 			})
 		})
 
 		describe('NTH_SELECTOR', () => {
-			test('offset and length in :nth-child()', () => {
+			test('start and length in :nth-child()', () => {
 				const node = parse_selector(':nth-child(2n+1)')
 				const selector = node.first_child!
 				const pseudoClass = selector.first_child!
 				const nthNode = pseudoClass.first_child!
 				expect(nthNode.type).toBe(NTH_SELECTOR)
-				expect(nthNode.length).toBeGreaterThan(0)
+				expect(nthNode.start).toBe(11)
+				expect(nthNode.length).toBe(4)
+				expect(nthNode.end).toBe(15)
 			})
 		})
 
 		describe('NTH_OF_SELECTOR', () => {
-			test('offset and length in :nth-child() with "of" syntax', () => {
+			test('start and length in :nth-child() with "of" syntax', () => {
 				const node = parse_selector(':nth-child(2n of .selector)')
 				const selector = node.first_child!
 				const pseudoClass = selector.first_child!
 				const nthOfNode = pseudoClass.first_child!
 				expect(nthOfNode.type).toBe(NTH_OF_SELECTOR)
-				expect(nthOfNode.length).toBeGreaterThan(0)
+				expect(nthOfNode.start).toBe(11)
+				expect(nthOfNode.length).toBe(15)
+				expect(nthOfNode.end).toBe(26)
 			})
 		})
 
 		describe('LANG_SELECTOR', () => {
-			test('offset and length in :lang()', () => {
+			test('start and length in :lang()', () => {
 				const node = parse_selector(':lang(en)')
 				const selector = node.first_child!
 				const pseudoClass = selector.first_child!

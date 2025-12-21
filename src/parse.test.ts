@@ -20,15 +20,17 @@ describe('Core Nodes', () => {
 		describe('STYLESHEET', () => {
 			test('offset and length for empty stylesheet', () => {
 				const ast = parse('')
-				expect(ast.offset).toBe(0)
+				expect(ast.start).toBe(0)
 				expect(ast.length).toBe(0)
+				expect(ast.end).toBe(0)
 			})
 
 			test('offset and length for stylesheet with rules', () => {
 				const css = 'body { color: red; }'
 				const ast = parse(css)
-				expect(ast.offset).toBe(0)
+				expect(ast.start).toBe(0)
 				expect(ast.length).toBe(css.length)
+				expect(ast.end).toBe(css.length)
 			})
 
 			test('line and column for stylesheet', () => {
@@ -43,18 +45,22 @@ describe('Core Nodes', () => {
 				const source = 'body { color: red; }'
 				const ast = parse(source)
 				const rule = ast.first_child!
-				expect(rule.offset).toBe(0)
+				expect(rule.start).toBe(0)
 				expect(rule.length).toBe(source.length)
+				expect(rule.end).toBe(source.length)
 			})
 
 			test('offset and length for multiple rules', () => {
 				const css = 'body { } div { }'
 				const ast = parse(css)
 				const [rule1, rule2] = ast.children
-				expect(rule1.offset).toBe(0)
+				expect(rule1.start).toBe(0)
 				expect(rule1.length).toBe(8) // 'body { }'
-				expect(rule2.offset).toBe(9)
+				expect(rule1.end).toBe(8)
+
+				expect(rule2.start).toBe(9)
 				expect(rule2.length).toBe(7) // 'div { }'
+				expect(rule2.end).toBe(16)
 			})
 
 			test('line and column for rules on single line', () => {
@@ -109,16 +115,18 @@ describe('Core Nodes', () => {
 				const source = '@import url("style.css");'
 				const ast = parse(source, { parse_atrule_preludes: false })
 				const atRule = ast.first_child!
-				expect(atRule.offset).toBe(0)
+				expect(atRule.start).toBe(0)
 				expect(atRule.length).toBe(25)
+				expect(atRule.end).toBe(25)
 			})
 
 			test('offset and length for @media', () => {
 				const source = '@media (min-width: 768px) { body { color: red; } }'
 				const ast = parse(source, { parse_atrule_preludes: false })
 				const media = ast.first_child!
-				expect(media.offset).toBe(0)
+				expect(media.start).toBe(0)
 				expect(media.length).toBe(50)
+				expect(media.end).toBe(50)
 			})
 
 			test('line and column for at-rule', () => {
@@ -144,7 +152,7 @@ describe('Core Nodes', () => {
 				const rule = ast.first_child!
 				const block = rule.block!
 				const decl = block.first_child!
-				expect(decl.offset).toBeGreaterThan(0)
+				expect(decl.start).toBeGreaterThan(0)
 				expect(decl.length).toBeGreaterThan(0)
 			})
 
@@ -179,7 +187,7 @@ describe('Core Nodes', () => {
 				const rule = ast.first_child!
 				const block = rule.block!
 				const [decl1, decl2] = block.children
-				expect(decl1.offset).toBeLessThan(decl2.offset)
+				expect(decl1.start).toBeLessThan(decl2.start)
 			})
 		})
 
@@ -189,7 +197,7 @@ describe('Core Nodes', () => {
 				const ast = parse(css)
 				const rule = ast.first_child!
 				const block = rule.block!
-				expect(block.offset).toBeGreaterThan(0)
+				expect(block.start).toBeGreaterThan(0)
 				expect(block.length).toBeGreaterThan(0)
 			})
 		})
@@ -641,8 +649,9 @@ describe('Core Nodes', () => {
 					const selector = rule.first_child!
 					expect(selector.text).toBe('body')
 					expect(selector.line).toBe(1)
-					expect(selector.offset).toBe(0)
+					expect(selector.start).toBe(0)
 					expect(selector.length).toBe(4)
+					expect(selector.end).toBe(4)
 				})
 
 				test('should parse complex selector', () => {
@@ -652,8 +661,9 @@ describe('Core Nodes', () => {
 					const rule = root.first_child!
 					const selectorlist = rule.first_child!
 
-					expect(selectorlist.offset).toBe(0)
+					expect(selectorlist.start).toBe(0)
 					expect(selectorlist.length).toBe(16)
+					expect(selectorlist.end).toBe(16)
 					expect(selectorlist.text).toBe('div.class > p#id')
 
 					const selector = selectorlist.first_child!

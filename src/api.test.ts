@@ -1189,7 +1189,8 @@ describe('CSSNode', () => {
 
 				expect(clone.line).toBeUndefined()
 				expect(clone.column).toBeUndefined()
-				expect(clone.offset).toBeUndefined()
+				expect(clone.start).toBeUndefined()
+				expect(clone.end).toBeUndefined()
 				expect(clone.length).toBeUndefined()
 			})
 
@@ -1201,7 +1202,8 @@ describe('CSSNode', () => {
 
 				expect(clone.line).toBeDefined()
 				expect(clone.column).toBeDefined()
-				expect(clone.offset).toBeDefined()
+				expect(clone.start).toBeDefined()
+				expect(clone.end).toBeDefined()
 				expect(clone.length).toBeDefined()
 			})
 
