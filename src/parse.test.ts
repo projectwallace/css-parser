@@ -382,7 +382,7 @@ describe('Core Nodes', () => {
 					for (let i = 0; i < children.length - 1; i++) {
 						const nextSibling = children[i].next_sibling
 						expect(nextSibling).not.toBeNull()
-						expect(nextSibling!.get_index()).toBe(children[i + 1].get_index())
+						expect(nextSibling.start).toBe(children[i + 1].start)
 					}
 
 					expect(children[children.length - 1].next_sibling).toBeNull()
@@ -478,7 +478,7 @@ describe('Core Nodes', () => {
 
 					for (let i = 0; i < children.length - 1; i++) {
 						expect(children[i].next_sibling).not.toBeNull()
-						expect(children[i].next_sibling!.get_index()).toBe(children[i + 1].get_index())
+						expect(children[i].next_sibling!.start).toBe(children[i + 1].start)
 					}
 
 					expect(children[children.length - 1].next_sibling).toBeNull()
@@ -516,7 +516,7 @@ describe('Core Nodes', () => {
 					for (let i = 0; i < children.length - 1; i++) {
 						const nextSibling = children[i].next_sibling
 						expect(nextSibling).not.toBeNull()
-						expect(nextSibling!.get_index()).toBe(children[i + 1].get_index())
+						expect(nextSibling.start).toBe(children[i + 1].start)
 					}
 
 					expect(children[children.length - 1].next_sibling).toBeNull()
@@ -549,7 +549,7 @@ describe('Core Nodes', () => {
 
 					for (let i = 0; i < children.length - 1; i++) {
 						expect(children[i].next_sibling).not.toBeNull()
-						expect(children[i].next_sibling!.get_index()).toBe(children[i + 1].get_index())
+						expect(children[i].next_sibling!.start).toBe(children[i + 1].start)
 					}
 
 					expect(children[children.length - 1].next_sibling).toBeNull()
@@ -582,7 +582,7 @@ describe('Core Nodes', () => {
 
 					for (let i = 0; i < children.length - 1; i++) {
 						expect(children[i].next_sibling).not.toBeNull()
-						expect(children[i].next_sibling!.get_index()).toBe(children[i + 1].get_index())
+						expect(children[i].next_sibling!.start).toBe(children[i + 1].start)
 					}
 
 					expect(children[children.length - 1].next_sibling).toBeNull()
