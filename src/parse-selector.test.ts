@@ -727,6 +727,24 @@ describe('Selector Nodes', () => {
 				expect(getNodeContent(arena, source, children[1])).toBe('is')
 			})
 
+			it('should parse trailing space in :is() pseudo-class', () => {
+				const root = parse_selector(':is(a )')
+				const selector = root.first_child
+				const pseudo = selector?.first_child!
+				const [list] = pseudo.children
+				const [a] = list.children
+				expect(a.text).toBe('a')
+			})
+
+			it('should parse trailing tab in :is() pseudo-class', () => {
+				const root = parse_selector(':is(a	)')
+				const selector = root.first_child
+				const pseudo = selector?.first_child!
+				const [list] = pseudo.children
+				const [a] = list.children
+				expect(a.text).toBe('a')
+			})
+
 			it('should parse :not() pseudo-class', () => {
 				const { arena, rootNode, source } = parseSelectorInternal('div:not(.disabled)')
 
