@@ -1221,3 +1221,29 @@ describe('CSSNode', () => {
 		})
 	})
 })
+
+describe('NODE_TYPES namespace', () => {
+	test('should work as alternative to individual imports', async () => {
+		// Import namespace object
+		const { NODE_TYPES } = await import('./constants')
+
+		const ast = parse('body { color: red; }', { parse_values: false })
+
+		// Use namespace for type checks
+		expect(ast.type).toBe(NODE_TYPES.STYLESHEET)
+		expect(ast.first_child!.type).toBe(NODE_TYPES.STYLE_RULE)
+		expect(ast.first_child!.first_child!.type).toBe(NODE_TYPES.SELECTOR_LIST)
+		expect(ast.first_child!.block!.type).toBe(NODE_TYPES.BLOCK)
+		expect(ast.first_child!.block!.first_child!.type).toBe(NODE_TYPES.DECLARATION)
+	})
+
+	test('namespace values should match individual constants', async () => {
+		const { NODE_TYPES } = await import('./constants')
+
+		// Verify they're the same values
+		expect(NODE_TYPES.STYLE_RULE).toBe(STYLE_RULE)
+		expect(NODE_TYPES.DECLARATION).toBe(DECLARATION)
+		expect(NODE_TYPES.AT_RULE).toBe(AT_RULE)
+		expect(NODE_TYPES.SELECTOR_LIST).toBe(SELECTOR_LIST)
+	})
+})

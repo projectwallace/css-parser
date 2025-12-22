@@ -32,3 +32,6 @@ export {
 // This improves tree-shaking by avoiding the parse module if only constants are needed
 export * from './constants'
 export * from './token-types'
+
+// Namespace object exports for convenience
+export { NODE_TYPES } from './constants'
