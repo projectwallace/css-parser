@@ -730,16 +730,16 @@ describe('Selector Nodes', () => {
 			it('should parse trailing space in :is() pseudo-class', () => {
 				const root = parse_selector(':is(a )')
 				const selector = root.first_child
-				const pseudo = selector?.first_child!
-				const [list] = pseudo.children
+				const pseudo = selector?.first_child
+				const [list] = pseudo!.children
 				const [a] = list.children
 				expect(a.text).toBe('a')
 			})
 
 			it('should parse trailing tab in :is() pseudo-class', () => {
 				const root = parse_selector(':is(a	)')
-				const selector = root.first_child
-				const pseudo = selector?.first_child!
+				const selector = root.first_child!
+				const pseudo = selector.first_child!
 				const [list] = pseudo.children
 				const [a] = list.children
 				expect(a.text).toBe('a')
