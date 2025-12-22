@@ -187,29 +187,24 @@ export class CSSNode {
 		this.index = index
 	}
 
-	// Get the node index (for internal use)
-	get_index(): number {
-		return this.index
-	}
-
-	// Get node type as number (for performance)
+	/** Get node type as number (for performance) */
 	get type(): CSSNodeType {
 		return this.arena.get_type(this.index) as CSSNodeType
 	}
 
-	// Get node type as human-readable string
+	/** Get node type as human-readable string */
 	get type_name(): TypeName {
 		return TYPE_NAMES[this.type] || 'unknown'
 	}
 
-	// Get the full text of this node from source
+	/** Get the full text of this node from source */
 	get text(): string {
 		let start = this.arena.get_start_offset(this.index)
 		let length = this.arena.get_length(this.index)
 		return this.source.substring(start, start + length)
 	}
 
-	// Get the "content" text (property name for declarations, at-rule name for at-rules, layer name for import layers)
+	/** Get the "content" text (property name for declarations, at-rule name for at-rules, layer name for import layers) */
 	get name(): string {
 		let start = this.arena.get_content_start(this.index)
 		let length = this.arena.get_content_length(this.index)
@@ -217,17 +212,21 @@ export class CSSNode {
 		return this.source.substring(start, start + length)
 	}
 
-	// Alias for name (for declarations: "color" in "color: blue")
-	// More semantic than `name` for declaration nodes
+	/**
+	 * Alias for name (for declarations: "color" in "color: blue")
+	 * More semantic than `name` for declaration nodes
+	 */
 	get property(): string {
 		return this.name
 	}
 
-	// Get the value text (for declarations: "blue" in "color: blue")
-	// For dimension/number nodes: returns the numeric value as a number
-	// For string nodes: returns the string content without quotes
-	// For URL nodes with quoted string: returns the string with quotes (consistent with STRING node)
-	// For URL nodes with unquoted URL: returns the URL content without quotes
+	/**
+	 * Get the value text (for declarations: "blue" in "color: blue")
+	 * For dimension/number nodes: returns the numeric value as a number
+	 * For string nodes: returns the string content without quotes
+	 * For URL nodes with quoted string: returns the string with quotes (consistent with STRING node)
+	 * For URL nodes with unquoted URL: returns the URL content without quotes
+	 */
 	get value(): string | number | null {
 		let { type, text } = this
 
@@ -270,6 +269,7 @@ export class CSSNode {
 		return this.source.substring(start, start + length)
 	}
 
+	/** Get the numeric value for NUMBER and DIMENSION nodes, or null for other node types */
 	get value_as_number(): number | null {
 		let text = this.text
 		if (this.type === NUMBER) {
@@ -281,38 +281,44 @@ export class CSSNode {
 		return null
 	}
 
-	// Get the prelude text (for at-rules: "(min-width: 768px)" in "@media (min-width: 768px)")
-	// This is an alias for `value` to make at-rule usage more semantic
+	/**
+	 * Get the prelude text (for at-rules: "(min-width: 768px)" in "@media (min-width: 768px)")
+	 * This is an alias for `value` to make at-rule usage more semantic
+	 */
 	get prelude(): string | null {
 		let val = this.value
 		return typeof val === 'string' ? val : null
 	}
 
-	// Get the attribute operator (for attribute selectors: =, ~=, |=, ^=, $=, *=)
-	// Returns one of the ATTR_OPERATOR_* constants
+	/**
+	 * Get the attribute operator (for attribute selectors: =, ~=, |=, ^=, $=, *=)
+	 * Returns one of the ATTR_OPERATOR_* constants
+	 */
 	get attr_operator(): number {
 		return this.arena.get_attr_operator(this.index)
 	}
 
-	// Get the attribute flags (for attribute selectors: i, s)
-	// Returns one of the ATTR_FLAG_* constants
+	/**
+	 * Get the attribute flags (for attribute selectors: i, s)
+	 * Returns one of the ATTR_FLAG_* constants
+	 */
 	get attr_flags(): number {
 		return this.arena.get_attr_flags(this.index)
 	}
 
-	// Get the unit for dimension nodes (e.g., "px" from "100px", "%" from "50%")
+	/** Get the unit for dimension nodes (e.g., "px" from "100px", "%" from "50%") */
 	get unit(): string | null {
 		if (this.type !== DIMENSION) return null
 		return parse_dimension(this.text).unit
 	}
 
-	// Check if this declaration has !important
+	/** Check if this declaration has !important */
 	get is_important(): boolean | null {
 		if (this.type !== DECLARATION) return null
 		return this.arena.has_flag(this.index, FLAG_IMPORTANT)
 	}
 
-	// Check if this has a vendor prefix (computed on-demand)
+	/** Check if this has a vendor prefix (computed on-demand) */
 	get is_vendor_prefixed(): boolean {
 		switch (this.type) {
 			case DECLARATION:
@@ -336,27 +342,27 @@ export class CSSNode {
 		}
 	}
 
-	// Check if this node has an error
+	/** Check if this node has an error */
 	get has_error(): boolean {
 		return this.arena.has_flag(this.index, FLAG_HAS_ERROR)
 	}
 
-	// Check if this at-rule has a prelude
+	/** Check if this at-rule has a prelude */
 	get has_prelude(): boolean {
 		return this.arena.get_value_length(this.index) > 0
 	}
 
-	// Check if this rule has a block { }
+	/** Check if this rule has a block { } */
 	get has_block(): boolean {
 		return this.arena.has_flag(this.index, FLAG_HAS_BLOCK)
 	}
 
-	// Check if this style rule has declarations
+	/** Check if this style rule has declarations */
 	get has_declarations(): boolean {
 		return this.arena.has_flag(this.index, FLAG_HAS_DECLARATIONS)
 	}
 
-	// Get the block node (for style rules and at-rules with blocks)
+	/** Get the block node (for style rules and at-rules with blocks) */
 	get block(): CSSNode | null {
 		// For StyleRule: block is sibling after selector list
 		if (this.type === STYLE_RULE) {
@@ -386,7 +392,7 @@ export class CSSNode {
 		return null
 	}
 
-	// Check if this block is empty (no declarations or rules, only comments allowed)
+	/** Check if this block is empty (no declarations or rules, only comments allowed) */
 	get is_empty(): boolean {
 		// Only valid on block nodes
 		if (this.type !== BLOCK) return false
@@ -404,7 +410,7 @@ export class CSSNode {
 
 	// --- Value Node Access (for declarations) ---
 
-	// Get array of parsed value nodes (for declarations only)
+	/** Get array of parsed value nodes (for declarations only) */
 	get values(): CSSNode[] {
 		let result: CSSNode[] = []
 		let child = this.first_child
@@ -415,67 +421,61 @@ export class CSSNode {
 		return result
 	}
 
-	// Get count of value nodes
-	get value_count(): number {
-		let count = 0
-		let child = this.first_child
-		while (child) {
-			count++
-			child = child.next_sibling
-		}
-		return count
-	}
-
-	// Get start line number
+	/** Get start line number */
 	get line(): number {
 		return this.arena.get_start_line(this.index)
 	}
 
-	// Get start column number
+	/** Get start column number */
 	get column(): number {
 		return this.arena.get_start_column(this.index)
 	}
 
-	// Get start offset in source
+	/** Get start offset in source */
 	get start(): number {
 		return this.arena.get_start_offset(this.index)
 	}
 
-	// Get length in source
+	/** Get length in source */
 	get length(): number {
 		return this.arena.get_length(this.index)
 	}
 
-	// Get end offset in source
-	// End is not stored, must be calculated
+	/**
+	 * Get end offset in source
+	 * End is not stored, must be calculated
+	 */
 	get end(): number {
 		return this.start + this.length
 	}
 
 	// --- Tree Traversal ---
 
-	// Get first child node
+	/** Get first child node */
 	get first_child(): CSSNode | null {
 		let child_index = this.arena.get_first_child(this.index)
 		if (child_index === 0) return null
 		return new CSSNode(this.arena, this.source, child_index)
 	}
 
-	// Get next sibling node
+	/** Get next sibling node */
 	get next_sibling(): CSSNode | null {
 		let sibling_index = this.arena.get_next_sibling(this.index)
 		if (sibling_index === 0) return null
 		return new CSSNode(this.arena, this.source, sibling_index)
 	}
 
+	/** Check if this node has a next sibling */
 	get has_next(): boolean {
 		let sibling_index = this.arena.get_next_sibling(this.index)
 		return sibling_index !== 0
 	}
 
-	// Check if this node has children
-	// For pseudo-class/pseudo-element functions, returns true if FLAG_HAS_PARENS is set
-	// This allows formatters to distinguish :lang() from :hover
+	/**
+	 * Check if this node has children
+	 * For pseudo-class/pseudo-element functions, returns true if FLAG_HAS_PARENS is set
+	 * This allows formatters to distinguish :lang() from :hover
+	 */
 	get has_children(): boolean {
 		// For pseudo-class/pseudo-element nodes, check if they have function syntax
 		if (this.type === PSEUDO_CLASS_SELECTOR || this.type === PSEUDO_ELEMENT_SELECTOR) {
@@ -488,7 +488,7 @@ export class CSSNode {
 		return this.arena.has_children(this.index)
 	}
 
-	// Get all children as an array
+	/** Get all children as an array */
 	get children(): CSSNode[] {
 		let result: CSSNode[] = []
 		let child = this.first_child
@@ -499,7 +499,7 @@ export class CSSNode {
 		return result
 	}
 
-	// Make CSSNode iterable over its children
+	/** Make CSSNode iterable over its children */
 	*[Symbol.iterator](): Iterator<CSSNode> {
 		let child = this.first_child
 		while (child) {
@@ -510,7 +510,7 @@ export class CSSNode {
 
 	// --- An+B Expression Helpers (for NODE_SELECTOR_NTH) ---
 
-	// Get the 'a' coefficient from An+B expression (e.g., "2n" from "2n+1", "odd" from "odd")
+	/** Get the 'a' coefficient from An+B expression (e.g., "2n" from "2n+1", "odd" from "odd") */
 	get nth_a(): string | null {
 		if (this.type !== NTH_SELECTOR) return null
 
@@ -520,7 +520,7 @@ export class CSSNode {
 		return this.source.substring(start, start + len)
 	}
 
-	// Get the 'b' coefficient from An+B expression (e.g., "+1" from "2n+1")
+	/** Get the 'b' coefficient from An+B expression (e.g., "+1" from "2n+1") */
 	get nth_b(): string | null {
 		if (this.type !== NTH_SELECTOR) return null
 
@@ -552,13 +552,13 @@ export class CSSNode {
 
 	// --- Pseudo-Class Nth-Of Helpers (for NODE_SELECTOR_NTH_OF) ---
 
-	// Get the An+B formula node from :nth-child(2n+1 of .foo)
+	/** Get the An+B formula node from :nth-child(2n+1 of .foo) */
 	get nth(): CSSNode | null {
 		if (this.type !== NTH_OF_SELECTOR) return null
 		return this.first_child // First child is always NODE_SELECTOR_NTH
 	}
 
-	// Get the selector list from :nth-child(2n+1 of .foo)
+	/** Get the selector list from :nth-child(2n+1 of .foo) */
 	get selector(): CSSNode | null {
 		if (this.type !== NTH_OF_SELECTOR) return null
 		let first = this.first_child
@@ -567,8 +567,10 @@ export class CSSNode {
 
 	// --- Pseudo-Class Selector List Helper ---
 
-	// Get selector list from pseudo-class functions
-	// Works for :is(.a), :not(.b), :has(.c), :where(.d), :nth-child(2n of .e)
+	/**
+	 * Get selector list from pseudo-class functions
+	 * Works for :is(.a), :not(.b), :has(.c), :where(.d), :nth-child(2n of .e)
+	 */
 	get selector_list(): CSSNode | null {
 		if (this.type !== PSEUDO_CLASS_SELECTOR) return null
 
@@ -591,8 +593,10 @@ export class CSSNode {
 
 	// --- Compound Selector Helpers (for NODE_SELECTOR) ---
 
-	// Iterator over first compound selector parts (zero allocation)
-	// Yields parts before the first combinator
+	/**
+	 * Iterator over first compound selector parts (zero allocation)
+	 * Yields parts before the first combinator
+	 */
 	*compound_parts(): IterableIterator<CSSNode> {
 		if (this.type !== SELECTOR) return
 
@@ -604,8 +608,10 @@ export class CSSNode {
 		}
 	}
 
-	// Get first compound selector as array
-	// Returns array of parts before first combinator
+	/**
+	 * Get first compound selector as array
+	 * Returns array of parts before first combinator
+	 */
 	get first_compound(): CSSNode[] {
 		if (this.type !== SELECTOR) return []
 
@@ -619,8 +625,10 @@ export class CSSNode {
 		return result
 	}
 
-	// Split selector into compound selectors
-	// Returns array of compound arrays split by combinators
+	/**
+	 * Split selector into compound selectors
+	 * Returns array of compound arrays split by combinators
+	 */
 	get all_compounds(): CSSNode[][] {
 		if (this.type !== SELECTOR) return []
 
@@ -647,7 +655,7 @@ export class CSSNode {
 		return compounds
 	}
 
-	// Check if selector is compound (no combinators)
+	/** Check if selector is compound (no combinators) */
 	get is_compound(): boolean {
 		if (this.type !== SELECTOR) return false
 
@@ -659,7 +667,7 @@ export class CSSNode {
 		return true
 	}
 
-	// Get text of first compound selector (no node allocation)
+	/** Get text of first compound selector (no node allocation) */
 	get first_compound_text(): string {
 		if (this.type !== SELECTOR) return ''
 
