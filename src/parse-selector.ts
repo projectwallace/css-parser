@@ -64,6 +64,7 @@ import {
 	CHAR_FORM_FEED,
 	CHAR_NEWLINE,
 	CHAR_SPACE,
+	CHAR_TAB,
 } from './string-utils'
 import { ANplusBParser } from './parse-anplusb'
 import { CSSNode } from './css-node'
@@ -219,7 +220,10 @@ export class SelectorParser {
 			// Peek ahead for comma or end
 			const saved = this.lexer.save_position()
 			this.skip_whitespace()
-			if (this.lexer.pos >= this.selector_end) break
+			if (this.lexer.pos >= this.selector_end) {
+				this.lexer.restore_position(saved)
+				break
+			}
 
 			this.lexer.next_token_fast(false)
 			let token_type = this.lexer.token_type
@@ -417,7 +421,7 @@ export class SelectorParser {
 		while (this.lexer.pos < this.selector_end) {
 			let ch = this.source.charCodeAt(this.lexer.pos)
 			// no calling is_whitespace() because of function call overhead
-			if (ch === CHAR_SPACE || ch === CHAR_NEWLINE || ch === CHAR_CARRIAGE_RETURN || ch === CHAR_FORM_FEED) {
+			if (ch === CHAR_SPACE || ch === CHAR_TAB || ch === CHAR_NEWLINE || ch === CHAR_CARRIAGE_RETURN || ch === CHAR_FORM_FEED) {
 				has_whitespace = true
 				this.lexer.pos++
 			} else {
@@ -425,7 +429,10 @@ export class SelectorParser {
 			}
 		}
 
-		if (this.lexer.pos >= this.selector_end) return null
+		if (this.lexer.pos >= this.selector_end) {
+			this.lexer.pos = whitespace_start
+			return null
+		}
 
 		this.lexer.next_token_fast(false)
 
@@ -445,7 +452,7 @@ export class SelectorParser {
 			while (this.lexer.pos < this.selector_end) {
 				let ch = this.source.charCodeAt(this.lexer.pos)
 				// no calling is_whitespace() because of function call overhead
-				if (ch === CHAR_SPACE || ch === CHAR_NEWLINE || ch === CHAR_CARRIAGE_RETURN || ch === CHAR_FORM_FEED) {
+				if (ch === CHAR_SPACE || ch === CHAR_TAB || ch === CHAR_NEWLINE || ch === CHAR_CARRIAGE_RETURN || ch === CHAR_FORM_FEED) {
 					this.lexer.pos++
 				} else {
 					break
