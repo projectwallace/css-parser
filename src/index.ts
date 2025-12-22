@@ -6,7 +6,7 @@ export { parse_selector } from './parse-selector'
 export { parse_atrule_prelude } from './parse-atrule-prelude'
 export { parse_value } from './parse-value'
 export { tokenize } from './tokenize'
-export { walk, traverse } from './walk'
+export { walk, traverse, SKIP, BREAK } from './walk'
 
 // Advanced/class-based API
 export { type ParserOptions } from './parse'

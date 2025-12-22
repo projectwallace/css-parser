@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { parse } from './parse'
 import { STYLESHEET, STYLE_RULE, SELECTOR_LIST, DECLARATION, AT_RULE, BLOCK, IDENTIFIER, NUMBER, DIMENSION } from './constants'
-import { walk, traverse } from './walk'
+import { walk, traverse, SKIP, BREAK } from './walk'
 
 describe('walk', () => {
 	it('should visit single node', () => {
@@ -251,6 +251,201 @@ describe('walk', () => {
 	})
 })
 
+describe('walk with SKIP and BREAK', () => {
+	it('should skip children when SKIP is returned', () => {
+		const root = parse('body { color: red; margin: 0; } div { padding: 1rem; }', {
+			parse_selectors: false,
+			parse_values: true,
+		})
+		const visited: number[] = []
+
+		walk(root, (node) => {
+			visited.push(node.type)
+			// Skip STYLE_RULE children
+			if (node.type === STYLE_RULE) {
+				return SKIP
+			}
+		})
+
+		// Should visit STYLESHEET and both STYLE_RULE nodes, but not their children
+		expect(visited).toEqual([STYLESHEET, STYLE_RULE, STYLE_RULE])
+	})
+
+	it('should skip AT_RULE children when SKIP is returned', () => {
+		const root = parse('@media screen { body { color: red; } }', {
+			parse_selectors: false,
+			parse_values: false,
+			parse_atrule_preludes: false,
+		})
+		const visited: number[] = []
+
+		walk(root, (node) => {
+			visited.push(node.type)
+			if (node.type === AT_RULE) {
+				return SKIP
+			}
+		})
+
+		// Should visit STYLESHEET and AT_RULE, but not the BLOCK or anything inside
+		expect(visited).toEqual([STYLESHEET, AT_RULE])
+	})
+
+	it('should allow SKIP on leaf node (no effect)', () => {
+		const root = parse('body { color: red; }', { parse_selectors: false, parse_values: true })
+		const visited: number[] = []
+
+		walk(root, (node) => {
+			visited.push(node.type)
+			// Skip IDENTIFIER (leaf node)
+			if (node.type === IDENTIFIER) {
+				return SKIP
+			}
+		})
+
+		// All nodes should be visited (SKIP on leaf has no effect)
+		expect(visited).toEqual([STYLESHEET, STYLE_RULE, SELECTOR_LIST, BLOCK, DECLARATION, IDENTIFIER])
+	})
+
+	it('should stop traversal when BREAK is returned', () => {
+		const root = parse('body { color: red; } div { padding: 1rem; }', {
+			parse_selectors: false,
+			parse_values: false,
+		})
+		const visited: number[] = []
+
+		walk(root, (node) => {
+			visited.push(node.type)
+			// Break on first STYLE_RULE
+			if (node.type === STYLE_RULE) {
+				return BREAK
+			}
+		})
+
+		// Should visit STYLESHEET and first STYLE_RULE, then stop
+		expect(visited).toEqual([STYLESHEET, STYLE_RULE])
+	})
+
+	it('should stop traversal on DECLARATION', () => {
+		const root = parse('body { color: red; margin: 0; } div { padding: 1rem; }', {
+			parse_selectors: false,
+			parse_values: false,
+		})
+		const visited: number[] = []
+
+		walk(root, (node) => {
+			visited.push(node.type)
+			// Break on first DECLARATION
+			if (node.type === DECLARATION) {
+				return BREAK
+			}
+		})
+
+		// Should visit down to first DECLARATION then stop
+		expect(visited).toEqual([STYLESHEET, STYLE_RULE, SELECTOR_LIST, BLOCK, DECLARATION])
+	})
+
+	it('should propagate BREAK from deep in tree', () => {
+		const root = parse('.a { .b { .c { color: red; } } } .d { margin: 0; }', {
+			parse_selectors: false,
+			parse_values: false,
+		})
+		const visited: number[] = []
+
+		walk(root, (node) => {
+			visited.push(node.type)
+			// Break on DECLARATION (deep in tree)
+			if (node.type === DECLARATION) {
+				return BREAK
+			}
+		})
+
+		// Should stop at first DECLARATION and not visit .d
+		expect(visited).toEqual([
+			STYLESHEET,
+			STYLE_RULE, // .a
+			SELECTOR_LIST,
+			BLOCK,
+			STYLE_RULE, // .b
+			SELECTOR_LIST,
+			BLOCK,
+			STYLE_RULE, // .c
+			SELECTOR_LIST,
+			BLOCK,
+			DECLARATION, // color: red - BREAK here
+		])
+	})
+
+	it('should maintain backward compatibility (no return value)', () => {
+		const root = parse('body { color: red; }', { parse_selectors: false, parse_values: true })
+		const visited: number[] = []
+
+		walk(root, (node) => {
+			visited.push(node.type)
+			// No return value - should continue normally
+		})
+
+		expect(visited).toEqual([STYLESHEET, STYLE_RULE, SELECTOR_LIST, BLOCK, DECLARATION, IDENTIFIER])
+	})
+
+	it('should find first declaration with specific property using BREAK', () => {
+		const root = parse('body { color: red; margin: 0; } div { margin: 1rem; }', {
+			parse_selectors: false,
+			parse_values: false,
+		})
+		let found: string | null = null
+
+		walk(root, (node) => {
+			if (node.type === DECLARATION && node.name === 'margin') {
+				found = node.name
+				return BREAK
+			}
+		})
+
+		expect(found).toBe('margin')
+	})
+
+	it('should skip media query contents using SKIP', () => {
+		const root = parse('@media screen { body { color: red; } } div { margin: 0; }', {
+			parse_selectors: false,
+			parse_values: false,
+			parse_atrule_preludes: false,
+		})
+		const ruleCount = { media: 0, style: 0 }
+
+		walk(root, (node) => {
+			if (node.type === AT_RULE) {
+				ruleCount.media++
+				return SKIP // Skip media query contents
+			}
+			if (node.type === STYLE_RULE) {
+				ruleCount.style++
+			}
+		})
+
+		// Should count 1 media query and only 1 style rule (div, not body)
+		expect(ruleCount.media).toBe(1)
+		expect(ruleCount.style).toBe(1)
+	})
+
+	it('should track depth correctly with SKIP', () => {
+		const root = parse('body { color: red; } div { margin: 0; }', {
+			parse_selectors: false,
+			parse_values: true,
+		})
+		const depths: number[] = []
+
+		walk(root, (node, depth) => {
+			depths.push(depth)
+			if (node.type === STYLE_RULE) {
+				return SKIP
+			}
+		})
+
+		// STYLESHEET (0), STYLE_RULE (1), STYLE_RULE (1)
+		expect(depths).toEqual([0, 1, 1])
+	})
+})
+
 describe('walk enter/leave', () => {
 	const root = parse('@media screen { body { color: red; } }', {
 		parse_selectors: false,
@@ -301,5 +496,229 @@ describe('walk enter/leave', () => {
 
 	test('neither', () => {
 		expect(() => traverse(root)).not.toThrow()
+	})
+})
+
+describe('traverse with SKIP and BREAK', () => {
+	it('should skip children but call leave when SKIP is returned from enter', () => {
+		const root = parse('@media screen { body { color: red; } }', {
+			parse_selectors: false,
+			parse_values: false,
+			parse_atrule_preludes: false,
+		})
+		const enter: number[] = []
+		const leave: number[] = []
+
+		traverse(root, {
+			enter(node) {
+				enter.push(node.type)
+				if (node.type === AT_RULE) {
+					return SKIP // Skip children but leave should still be called
+				}
+			},
+			leave(node) {
+				leave.push(node.type)
+			},
+		})
+
+		// Enter: STYLESHEET, AT_RULE (then skip children)
+		expect(enter).toEqual([STYLESHEET, AT_RULE])
+		// Leave: AT_RULE, STYLESHEET (leave called for AT_RULE despite SKIP)
+		expect(leave).toEqual([AT_RULE, STYLESHEET])
+	})
+
+	it('should allow SKIP in leave (no effect)', () => {
+		const root = parse('body { color: red; }', {
+			parse_selectors: false,
+			parse_values: false,
+		})
+		const enter: number[] = []
+		const leave: number[] = []
+
+		traverse(root, {
+			enter(node) {
+				enter.push(node.type)
+			},
+			leave(node) {
+				leave.push(node.type)
+				if (node.type === DECLARATION) {
+					return SKIP // No effect in leave
+				}
+			},
+		})
+
+		// All nodes should be visited normally
+		expect(enter).toEqual([STYLESHEET, STYLE_RULE, SELECTOR_LIST, BLOCK, DECLARATION])
+		expect(leave).toEqual([SELECTOR_LIST, DECLARATION, BLOCK, STYLE_RULE, STYLESHEET])
+	})
+
+	it('should stop traversal and not call leave when BREAK is returned from enter', () => {
+		const root = parse('@media screen { body { color: red; } }', {
+			parse_selectors: false,
+			parse_values: false,
+			parse_atrule_preludes: false,
+		})
+		const enter: number[] = []
+		const leave: number[] = []
+
+		traverse(root, {
+			enter(node) {
+				enter.push(node.type)
+				if (node.type === AT_RULE) {
+					return BREAK // Stop immediately
+				}
+			},
+			leave(node) {
+				leave.push(node.type)
+			},
+		})
+
+		// Enter: STYLESHEET, AT_RULE (then break)
+		expect(enter).toEqual([STYLESHEET, AT_RULE])
+		// Leave: NOT called for AT_RULE or STYLESHEET
+		expect(leave).toEqual([])
+	})
+
+	it('should stop traversal when BREAK is returned from leave', () => {
+		const root = parse('body { color: red; } div { margin: 0; }', {
+			parse_selectors: false,
+			parse_values: false,
+		})
+		const enter: number[] = []
+		const leave: number[] = []
+
+		traverse(root, {
+			enter(node) {
+				enter.push(node.type)
+			},
+			leave(node) {
+				leave.push(node.type)
+				if (node.type === DECLARATION) {
+					return BREAK // Stop after leaving first declaration
+				}
+			},
+		})
+
+		// Enter all nodes of first rule down to DECLARATION
+		expect(enter).toEqual([STYLESHEET, STYLE_RULE, SELECTOR_LIST, BLOCK, DECLARATION])
+		// Leave SELECTOR_LIST (sibling, already left) and DECLARATION (then break)
+		expect(leave).toEqual([SELECTOR_LIST, DECLARATION])
+	})
+
+	it('should handle SKIP in enter with normal leave', () => {
+		const root = parse('.a { .b { color: red; } }', {
+			parse_selectors: false,
+			parse_values: false,
+		})
+		const enter: number[] = []
+		const leave: number[] = []
+
+		traverse(root, {
+			enter(node) {
+				enter.push(node.type)
+				if (node.type === STYLE_RULE && enter.filter((t) => t === STYLE_RULE).length === 2) {
+					return SKIP // Skip .b's children
+				}
+			},
+			leave(node) {
+				leave.push(node.type)
+			},
+		})
+
+		// Enter: STYLESHEET, .a (STYLE_RULE), SELECTOR_LIST, BLOCK, .b (STYLE_RULE then SKIP)
+		expect(enter).toEqual([STYLESHEET, STYLE_RULE, SELECTOR_LIST, BLOCK, STYLE_RULE])
+		// Leave: SELECTOR_LIST (sibling of BLOCK), .b (STYLE_RULE), BLOCK, .a (STYLE_RULE), STYLESHEET
+		expect(leave).toEqual([SELECTOR_LIST, STYLE_RULE, BLOCK, STYLE_RULE, STYLESHEET])
+	})
+
+	it('should verify enter/leave call counts match when using SKIP', () => {
+		const root = parse('@media screen { body { color: red; } } div { margin: 0; }', {
+			parse_selectors: false,
+			parse_values: false,
+			parse_atrule_preludes: false,
+		})
+		const enterCount: Record<number, number> = {}
+		const leaveCount: Record<number, number> = {}
+
+		traverse(root, {
+			enter(node) {
+				enterCount[node.type] = (enterCount[node.type] || 0) + 1
+				if (node.type === AT_RULE) {
+					return SKIP
+				}
+			},
+			leave(node) {
+				leaveCount[node.type] = (leaveCount[node.type] || 0) + 1
+			},
+		})
+
+		// Every node that was entered should also be left
+		expect(enterCount[STYLESHEET]).toBe(1)
+		expect(leaveCount[STYLESHEET]).toBe(1)
+		expect(enterCount[AT_RULE]).toBe(1)
+		expect(leaveCount[AT_RULE]).toBe(1)
+		expect(enterCount[STYLE_RULE]).toBe(1)
+		expect(leaveCount[STYLE_RULE]).toBe(1)
+	})
+
+	it('should stop when BREAK is returned from nested enter', () => {
+		const root = parse('.a { .b { .c { color: red; } } }', {
+			parse_selectors: false,
+			parse_values: false,
+		})
+		const enter: number[] = []
+		const leave: number[] = []
+
+		traverse(root, {
+			enter(node) {
+				enter.push(node.type)
+				if (node.type === DECLARATION) {
+					return BREAK
+				}
+			},
+			leave(node) {
+				leave.push(node.type)
+			},
+		})
+
+		// Should enter down to DECLARATION and break
+		expect(enter).toEqual([
+			STYLESHEET,
+			STYLE_RULE, // .a
+			SELECTOR_LIST,
+			BLOCK,
+			STYLE_RULE, // .b
+			SELECTOR_LIST,
+			BLOCK,
+			STYLE_RULE, // .c
+			SELECTOR_LIST,
+			BLOCK,
+			DECLARATION,
+		])
+		// SELECTOR_LIST nodes have no children, so they're left before siblings are processed
+		expect(leave).toEqual([SELECTOR_LIST, SELECTOR_LIST, SELECTOR_LIST])
+	})
+
+	it('should maintain backward compatibility with traverse', () => {
+		const root = parse('body { color: red; }', {
+			parse_selectors: false,
+			parse_values: false,
+		})
+		const enter: number[] = []
+		const leave: number[] = []
+
+		traverse(root, {
+			enter(node) {
+				enter.push(node.type)
+				// No return value
+			},
+			leave(node) {
+				leave.push(node.type)
+				// No return value
+			},
+		})
+
+		expect(enter).toEqual([STYLESHEET, STYLE_RULE, SELECTOR_LIST, BLOCK, DECLARATION])
+		expect(leave).toEqual([SELECTOR_LIST, DECLARATION, BLOCK, STYLE_RULE, STYLESHEET])
 	})
 })
