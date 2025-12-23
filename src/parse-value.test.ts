@@ -18,6 +18,17 @@ describe('Value Node Types', () => {
 				expect(value?.start).toBe(13)
 				expect(value?.length).toBe(3)
 				expect(value?.end).toBe(16)
+				expect(value?.line).toBe(1)
+				expect(value?.column).toBe(14)
+			})
+
+			it('should have correct line and column on line 2', () => {
+				const value = getValue('div {\n  color: red;\n}')
+				expect(value?.start).toBe(15)
+				expect(value?.length).toBe(3)
+				expect(value?.end).toBe(18)
+				expect(value?.line).toBe(2)
+				expect(value?.column).toBe(10)
 			})
 		})
 
@@ -27,6 +38,17 @@ describe('Value Node Types', () => {
 				expect(value?.start).toBe(15)
 				expect(value?.length).toBe(3)
 				expect(value?.end).toBe(18)
+				expect(value?.line).toBe(1)
+				expect(value?.column).toBe(16)
+			})
+
+			it('should have correct line and column on line 3', () => {
+				const value = getValue('div {\n  /* comment */\n  opacity: 0.5;\n}')
+				expect(value?.start).toBe(33)
+				expect(value?.length).toBe(3)
+				expect(value?.end).toBe(36)
+				expect(value?.line).toBe(3)
+				expect(value?.column).toBe(12)
 			})
 		})
 
@@ -36,6 +58,17 @@ describe('Value Node Types', () => {
 				expect(value?.start).toBe(13)
 				expect(value?.length).toBe(5)
 				expect(value?.end).toBe(18)
+				expect(value?.line).toBe(1)
+				expect(value?.column).toBe(14)
+			})
+
+			it('should have correct line and column on line 2', () => {
+				const value = getValue('div {\n  width: 100px;\n}')
+				expect(value?.start).toBe(15)
+				expect(value?.length).toBe(5)
+				expect(value?.end).toBe(20)
+				expect(value?.line).toBe(2)
+				expect(value?.column).toBe(10)
 			})
 		})
 
@@ -45,6 +78,17 @@ describe('Value Node Types', () => {
 				expect(value?.start).toBe(15)
 				expect(value?.length).toBe(7)
 				expect(value?.end).toBe(22)
+				expect(value?.line).toBe(1)
+				expect(value?.column).toBe(16)
+			})
+
+			it('should have correct line and column on line 4', () => {
+				const value = getValue('div {\n  /* line 2 */\n  /* line 3 */\n  content: "hello";\n}')
+				expect(value?.start).toBe(47)
+				expect(value?.length).toBe(7)
+				expect(value?.end).toBe(54)
+				expect(value?.line).toBe(4)
+				expect(value?.column).toBe(12)
 			})
 		})
 
@@ -54,6 +98,17 @@ describe('Value Node Types', () => {
 				expect(value?.start).toBe(13)
 				expect(value?.length).toBe(7)
 				expect(value?.end).toBe(20)
+				expect(value?.line).toBe(1)
+				expect(value?.column).toBe(14)
+			})
+
+			it('should have correct line and column on line 2', () => {
+				const value = getValue('div {\n  color: #ff0000;\n}')
+				expect(value?.start).toBe(15)
+				expect(value?.length).toBe(7)
+				expect(value?.end).toBe(22)
+				expect(value?.line).toBe(2)
+				expect(value?.column).toBe(10)
 			})
 		})
 
@@ -63,6 +118,17 @@ describe('Value Node Types', () => {
 				expect(value?.start).toBe(13)
 				expect(value?.length).toBe(14)
 				expect(value?.end).toBe(27)
+				expect(value?.line).toBe(1)
+				expect(value?.column).toBe(14)
+			})
+
+			it('should have correct line and column on line 3', () => {
+				const value = getValue('div {\n  /* comment */\n  color: rgb(255, 0, 0);\n}')
+				expect(value?.start).toBe(31)
+				expect(value?.length).toBe(14)
+				expect(value?.end).toBe(45)
+				expect(value?.line).toBe(3)
+				expect(value?.column).toBe(10)
 			})
 		})
 
@@ -74,6 +140,19 @@ describe('Value Node Types', () => {
 				expect(comma?.start).toBe(24)
 				expect(comma?.length).toBe(1)
 				expect(comma?.end).toBe(25)
+				expect(comma?.line).toBe(1)
+				expect(comma?.column).toBe(25)
+			})
+
+			it('should have correct line and column on line 2', () => {
+				const root = parse('div {\n  font-family: Arial, sans-serif;\n}')
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+				const comma = decl?.values[1]
+				expect(comma?.start).toBe(26)
+				expect(comma?.length).toBe(1)
+				expect(comma?.end).toBe(27)
+				expect(comma?.line).toBe(2)
+				expect(comma?.column).toBe(21)
 			})
 		})
 
@@ -85,6 +164,19 @@ describe('Value Node Types', () => {
 				expect(paren?.start).toBe(18)
 				expect(paren?.length).toBe(13)
 				expect(paren?.end).toBe(31)
+				expect(paren?.line).toBe(1)
+				expect(paren?.column).toBe(19)
+			})
+
+			it('should have correct line and column on line 2', () => {
+				const root = parse('div {\n  width: calc((100% - 50px) / 2);\n}')
+				const func = root.first_child?.first_child?.next_sibling?.first_child?.values[0]
+				const paren = func?.children[0]
+				expect(paren?.start).toBe(20)
+				expect(paren?.length).toBe(13)
+				expect(paren?.end).toBe(33)
+				expect(paren?.line).toBe(2)
+				expect(paren?.column).toBe(15)
 			})
 		})
 
@@ -94,6 +186,17 @@ describe('Value Node Types', () => {
 				expect(value?.start).toBe(18)
 				expect(value?.length).toBe(16)
 				expect(value?.end).toBe(34)
+				expect(value?.line).toBe(1)
+				expect(value?.column).toBe(19)
+			})
+
+			it('should have correct line and column on line 2', () => {
+				const value = getValue('div {\n  background: url("image.png");\n}')
+				expect(value?.start).toBe(20)
+				expect(value?.length).toBe(16)
+				expect(value?.end).toBe(36)
+				expect(value?.line).toBe(2)
+				expect(value?.column).toBe(15)
 			})
 		})
 	})
