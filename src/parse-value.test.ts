@@ -130,6 +130,24 @@ describe('Value Node Types', () => {
 				expect(value?.line).toBe(3)
 				expect(value?.column).toBe(10)
 			})
+
+			it('should have correct offset and length for var()', () => {
+				const value = getValue('div { color: var(--item); }')
+				expect(value?.start).toBe(13)
+				expect(value?.length).toBe(11)
+				expect(value?.end).toBe(24)
+				expect(value?.line).toBe(1)
+				expect(value?.column).toBe(14)
+			})
+
+			it('should have correct offset and length for var() with fallback', () => {
+				const value = getValue('div { color: var(--item1, var(--item2)); }')
+				expect(value?.start).toBe(13)
+				expect(value?.length).toBe(26)
+				expect(value?.end).toBe(39)
+				expect(value?.line).toBe(1)
+				expect(value?.column).toBe(14)
+			})
 		})
 
 		describe('OPERATOR', () => {
@@ -510,6 +528,18 @@ describe('Value Node Types', () => {
 				expect(func?.name).toBe('var')
 				expect(func?.text).toBe('var(--primary-color)')
 				expect(func?.value).toBe('--primary-color')
+				expect(func?.has_children).toBe(true)
+			})
+
+			it('should provide node.value for var() function with fallback', () => {
+				const root = parse('body { color: var(--primary-color, 1); }')
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+				const func = decl?.values[0]
+
+				expect(func?.type).toBe(FUNCTION)
+				expect(func?.name).toBe('var')
+				expect(func?.text).toBe('var(--primary-color, 1)')
+				expect(func?.value).toBe('--primary-color, 1')
 				expect(func?.has_children).toBe(true)
 			})
 
