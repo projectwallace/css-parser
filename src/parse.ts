@@ -322,6 +322,8 @@ export class Parser {
 
 		// Track value start (after colon, skipping whitespace)
 		let value_start = this.lexer.token_start
+		let value_start_line = this.lexer.token_line
+		let value_start_column = this.lexer.token_column
 		let value_end = value_start
 
 		// Parse value (everything until ';' or '}')
@@ -367,7 +369,8 @@ export class Parser {
 
 			// Parse value into structured nodes (only if enabled)
 			if (this.parse_values_enabled && this.value_parser) {
-				let valueNodes = this.value_parser.parse_value(trimmed[0], trimmed[1])
+				// Let the lexer track line/column as it advances through whitespace
+				let valueNodes = this.value_parser.parse_value(value_start, trimmed[1], value_start_line, value_start_column)
 
 				// Link value nodes as children of the declaration
 				this.arena.append_children(declaration, valueNodes)

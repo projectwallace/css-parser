@@ -35,12 +35,13 @@ export class ValueParser {
 
 	// Parse a declaration value range into value nodes
 	// Returns array of value node indices
-	parse_value(start: number, end: number): number[] {
+	parse_value(start: number, end: number, start_line: number, start_column: number): number[] {
 		this.value_end = end
 
-		// Position lexer at value start
+		// Position lexer at value start with provided line/column
 		this.lexer.pos = start
-		this.lexer.line = 1
+		this.lexer.line = start_line
+		this.lexer.column = start_column
 
 		let nodes: number[] = []
 
@@ -126,8 +127,8 @@ export class ValueParser {
 			node_type,
 			start,
 			end - start,
-			this.lexer.line,
-			this.lexer.column
+			this.lexer.token_line,
+			this.lexer.token_column
 		)
 		// Skip set_content_start_delta since delta = start - start = 0 (already zero-initialized)
 		this.arena.set_content_length(node, end - start)
@@ -161,8 +162,8 @@ export class ValueParser {
 			str_equals('url', func_name_substr) ? URL : FUNCTION,
 			start,
 			0, // length unknown yet
-			this.lexer.line,
-			this.lexer.column
+			this.lexer.token_line,
+			this.lexer.token_column
 		)
 		this.arena.set_content_start_delta(node, 0)
 		this.arena.set_content_length(node, name_end - start)
@@ -287,8 +288,8 @@ export class ValueParser {
 			PARENTHESIS,
 			start,
 			0, // length unknown yet
-			this.lexer.line,
-			this.lexer.column
+			this.lexer.token_line,
+			this.lexer.token_column
 		)
 
 		// Parse parenthesized content (everything until matching ')')
@@ -348,8 +349,8 @@ export function parse_value(value_string: string): CSSNode[] {
 	// Create value parser
 	const value_parser = new ValueParser(arena, value_string)
 
-	// Parse the entire source as a value
-	const node_indices = value_parser.parse_value(0, value_string.length)
+	// Parse the entire source as a value (starting at line 1, column 1)
+	const node_indices = value_parser.parse_value(0, value_string.length, 1, 1)
 
 	// Wrap each node index in a CSSNode
 	return node_indices.map((index) => new CSSNode(arena, value_string, index))
