@@ -247,10 +247,10 @@ export class ValueParser {
 			if (token_type === TOKEN_EOF) break
 			if (this.lexer.token_start >= this.value_end) break
 
-			// Track parentheses depth
-			if (token_type === TOKEN_LEFT_PAREN || token_type === TOKEN_FUNCTION) {
-				paren_depth++
-			} else if (token_type === TOKEN_RIGHT_PAREN) {
+			// Check for closing paren
+			// Note: We don't track paren_depth for TOKEN_LEFT_PAREN or TOKEN_FUNCTION here
+			// because parse_value_node() will recursively handle them
+			if (token_type === TOKEN_RIGHT_PAREN) {
 				paren_depth--
 				if (paren_depth === 0) {
 					content_end = this.lexer.token_start // Position of ')'
