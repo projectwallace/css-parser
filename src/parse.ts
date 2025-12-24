@@ -5,17 +5,15 @@ import {
 	STYLESHEET,
 	STYLE_RULE,
 	SELECTOR_LIST,
-	DECLARATION,
 	AT_RULE,
 	BLOCK,
-	FLAG_IMPORTANT,
 	FLAG_HAS_BLOCK,
 	FLAG_HAS_DECLARATIONS,
 } from './arena'
 import { CSSNode } from './css-node'
-import { ValueParser } from './parse-value'
 import { SelectorParser } from './parse-selector'
 import { AtRulePreludeParser } from './parse-atrule-prelude'
+import { DeclarationParser } from './parse-declaration'
 import {
 	TOKEN_EOF,
 	TOKEN_LEFT_BRACE,
@@ -23,7 +21,6 @@ import {
 	TOKEN_COLON,
 	TOKEN_SEMICOLON,
 	TOKEN_IDENT,
-	TOKEN_DELIM,
 	TOKEN_AT_KEYWORD,
 } from './token-types'
 import { trim_boundaries } from './parse-utils'
@@ -44,9 +41,9 @@ export class Parser {
 	private source: string
 	private lexer: Lexer
 	private arena: CSSDataArena
-	private value_parser: ValueParser | null
 	private selector_parser: SelectorParser | null
 	private prelude_parser: AtRulePreludeParser | null
+	private declaration_parser: DeclarationParser
 	private parse_values_enabled: boolean
 	private parse_selectors_enabled: boolean
 	private parse_atrule_preludes_enabled: boolean
@@ -68,9 +65,9 @@ export class Parser {
 		this.arena = new CSSDataArena(capacity)
 
 		// Only create parsers if needed
-		this.value_parser = this.parse_values_enabled ? new ValueParser(this.arena, source) : null
 		this.selector_parser = this.parse_selectors_enabled ? new SelectorParser(this.arena, source) : null
 		this.prelude_parser = this.parse_atrule_preludes_enabled ? new AtRulePreludeParser(this.arena, source) : null
+		this.declaration_parser = new DeclarationParser(this.arena, source, this.parse_values_enabled)
 	}
 
 	// Get the arena (for internal/advanced use only)
@@ -289,8 +286,7 @@ export class Parser {
 			return null
 		}
 
-		let prop_start = this.lexer.token_start
-		let prop_end = this.lexer.token_end
+		let decl_start = this.lexer.token_start
 		let decl_line = this.lexer.token_line
 		let decl_column = this.lexer.token_column
 
@@ -307,27 +303,7 @@ export class Parser {
 		}
 		this.next_token() // consume ':'
 
-		// Create declaration node (length will be set later)
-		let declaration = this.arena.create_node(
-			DECLARATION,
-			prop_start,
-			0, // length unknown yet
-			decl_line,
-			decl_column
-		)
-
-		// Store property name position (delta = 0 since content starts at same offset as node)
-		this.arena.set_content_start_delta(declaration, 0)
-		this.arena.set_content_length(declaration, prop_end - prop_start)
-
-		// Track value start (after colon, skipping whitespace)
-		let value_start = this.lexer.token_start
-		let value_start_line = this.lexer.token_line
-		let value_start_column = this.lexer.token_column
-		let value_end = value_start
-
-		// Parse value (everything until ';' or '}')
-		let has_important = false
+		// Scan to find declaration end
 		let last_end = this.lexer.token_end
 
 		while (!this.is_eof()) {
@@ -341,45 +317,8 @@ export class Parser {
 				return null
 			}
 
-			// Check for ! followed by any identifier (optimized: only check when we see '!')
-			if (token_type === TOKEN_DELIM && this.source[this.lexer.token_start] === '!') {
-				// Mark end of value before !important
-				value_end = this.lexer.token_start
-				// Check if next token is an identifier
-				let next_type = this.lexer.next_token_fast()
-				if (next_type === TOKEN_IDENT) {
-					has_important = true
-					last_end = this.lexer.token_end
-					this.next_token() // Advance to next token after "important"
-					break
-				}
-			}
-
 			last_end = this.lexer.token_end
-			value_end = last_end
 			this.next_token()
-		}
-
-		// Store value position (trimmed) and parse value nodes
-		let trimmed = trim_boundaries(this.source, value_start, value_end)
-		if (trimmed) {
-			// Store raw value string offsets (for fast string access)
-			this.arena.set_value_start_delta(declaration, trimmed[0] - prop_start)
-			this.arena.set_value_length(declaration, trimmed[1] - trimmed[0])
-
-			// Parse value into structured nodes (only if enabled)
-			if (this.parse_values_enabled && this.value_parser) {
-				// Let the lexer track line/column as it advances through whitespace
-				let valueNodes = this.value_parser.parse_value(value_start, trimmed[1], value_start_line, value_start_column)
-
-				// Link value nodes as children of the declaration
-				this.arena.append_children(declaration, valueNodes)
-			}
-		}
-
-		// Set !important flag if found
-		if (has_important) {
-			this.arena.set_flag(declaration, FLAG_IMPORTANT)
 		}
 
 		// Consume ';' if present
@@ -388,10 +327,8 @@ export class Parser {
 			this.next_token()
 		}
 
-		// Set declaration length
-		this.arena.set_length(declaration, last_end - prop_start)
-
-		return declaration
+		// Use DeclarationParser to parse the declaration range
+		return this.declaration_parser.parse_declaration(decl_start, last_end, decl_line, decl_column)
 	}
 
 	// Parse an at-rule: @media, @import, @font-face, etc.
