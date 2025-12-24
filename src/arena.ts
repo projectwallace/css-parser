@@ -118,20 +118,22 @@ export class CSSDataArena {
 	private view: DataView
 	private capacity: number // Number of nodes that can fit
 	private count: number // Number of nodes currently allocated
+	private growth_count: number // Number of times the arena has grown
 
 	// Growth multiplier when capacity is exceeded
 	private static readonly GROWTH_FACTOR = 1.3
 
 	// Estimated nodes per KB of CSS (based on real-world data)
-	private static readonly NODES_PER_KB = 60
+	private static readonly NODES_PER_KB = 270
 
 	// Buffer to avoid frequent growth (15%)
-	private static readonly CAPACITY_BUFFER = 1.15
+	private static readonly CAPACITY_BUFFER = 1.2
 
 	constructor(initial_capacity: number = 1024) {
 		this.capacity = initial_capacity
 		// Start count at 1 since 0 is reserved for "no node"
 		this.count = 1
+		this.growth_count = 0
 		this.buffer = new ArrayBuffer(initial_capacity * BYTES_PER_NODE)
 		this.view = new DataView(this.buffer)
 	}
@@ -154,6 +156,11 @@ export class CSSDataArena {
 	// Get the capacity (max nodes without reallocation)
 	get_capacity(): number {
 		return this.capacity
+	}
+
+	// Get the number of times the arena has grown
+	get_growth_count(): number {
+		return this.growth_count
 	}
 
 	// Calculate byte offset for a node
@@ -311,6 +318,7 @@ export class CSSDataArena {
 
 	// Grow the arena by 1.3x when capacity is exceeded
 	private grow(): void {
+		this.growth_count++
 		let new_capacity = Math.ceil(this.capacity * CSSDataArena.GROWTH_FACTOR)
 		let new_buffer = new ArrayBuffer(new_capacity * BYTES_PER_NODE)
 
@@ -325,13 +333,7 @@ export class CSSDataArena {
 
 	// Allocate and initialize a new node with core properties
 	// Automatically grows the arena if capacity is exceeded
-	create_node(
-		type: number,
-		start_offset: number,
-		length: number,
-		start_line: number,
-		start_column: number
-	): number {
+	create_node(type: number, start_offset: number, length: number, start_line: number, start_column: number): number {
 		if (this.count >= this.capacity) {
 			this.grow()
 		}
