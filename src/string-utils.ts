@@ -83,7 +83,7 @@ export function str_starts_with(str: string, prefix: string): boolean {
 		let cb = prefix.charCodeAt(i)
 
 		// normalize only the string char (prefix is already lowercase)
-		if (ca >= 65 && ca <= 90) ca |= 32  // A-Z → a-z
+		if (ca >= 65 && ca <= 90) ca |= 32 // A-Z → a-z
 
 		if (ca !== cb) {
 			return false
@@ -114,7 +114,7 @@ export function str_index_of(str: string, searchChar: string): number {
 		for (let i = 0; i < str.length; i++) {
 			let ca = str.charCodeAt(i)
 			// normalize only the string char (searchChar is already lowercase)
-			if (ca >= 65 && ca <= 90) ca |= 32  // A-Z → a-z
+			if (ca >= 65 && ca <= 90) ca |= 32 // A-Z → a-z
 			if (ca === searchCode) {
 				return i
 			}
@@ -128,7 +128,7 @@ export function str_index_of(str: string, searchChar: string): number {
 		for (let j = 0; j < searchChar.length; j++) {
 			let ca = str.charCodeAt(i + j)
 			let cb = searchChar.charCodeAt(j)
-			if (ca >= 65 && ca <= 90) ca |= 32  // A-Z → a-z
+			if (ca >= 65 && ca <= 90) ca |= 32 // A-Z → a-z
 			if (ca !== cb) {
 				match = false
 				break

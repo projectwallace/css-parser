@@ -46,25 +46,6 @@ export class ValueParser {
 		return this.parse_value_tokens()
 	}
 
-	// Parse value using a provided lexer (used by DeclarationParser to avoid re-tokenization)
-	parse_value_with_lexer(lexer: Lexer, end: number): number[] {
-		// Temporarily use provided lexer
-		const saved_lexer = this.lexer
-		const saved_end = this.value_end
-
-		this.lexer = lexer
-		this.value_end = end
-
-		// Parse value (lexer already positioned by caller)
-		const result = this.parse_value_tokens()
-
-		// Restore original lexer
-		this.lexer = saved_lexer
-		this.value_end = saved_end
-
-		return result
-	}
-
 	// Core token parsing logic
 	private parse_value_tokens(): number[] {
 		let nodes: number[] = []
@@ -147,13 +128,7 @@ export class ValueParser {
 	}
 
 	private create_node(node_type: number, start: number, end: number): number {
-		let node = this.arena.create_node(
-			node_type,
-			start,
-			end - start,
-			this.lexer.token_line,
-			this.lexer.token_column
-		)
+		let node = this.arena.create_node(node_type, start, end - start, this.lexer.token_line, this.lexer.token_column)
 		// Skip set_content_start_delta since delta = start - start = 0 (already zero-initialized)
 		this.arena.set_content_length(node, end - start)
 		return node
@@ -187,7 +162,7 @@ export class ValueParser {
 			start,
 			0, // length unknown yet
 			this.lexer.token_line,
-			this.lexer.token_column
+			this.lexer.token_column,
 		)
 		this.arena.set_content_start_delta(node, 0)
 		this.arena.set_content_length(node, name_end - start)
@@ -313,7 +288,7 @@ export class ValueParser {
 			start,
 			0, // length unknown yet
 			this.lexer.token_line,
-			this.lexer.token_column
+			this.lexer.token_column,
 		)
 
 		// Parse parenthesized content (everything until matching ')')

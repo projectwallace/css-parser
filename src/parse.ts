@@ -1,27 +1,11 @@
 // CSS Parser - Builds AST using the arena
 import { Lexer } from './lexer'
-import {
-	CSSDataArena,
-	STYLESHEET,
-	STYLE_RULE,
-	SELECTOR_LIST,
-	AT_RULE,
-	BLOCK,
-	FLAG_HAS_BLOCK,
-	FLAG_HAS_DECLARATIONS,
-} from './arena'
+import { CSSDataArena, STYLESHEET, STYLE_RULE, SELECTOR_LIST, AT_RULE, BLOCK, FLAG_HAS_BLOCK, FLAG_HAS_DECLARATIONS } from './arena'
 import { CSSNode } from './css-node'
 import { SelectorParser } from './parse-selector'
 import { AtRulePreludeParser } from './parse-atrule-prelude'
 import { DeclarationParser } from './parse-declaration'
-import {
-	TOKEN_EOF,
-	TOKEN_LEFT_BRACE,
-	TOKEN_RIGHT_BRACE,
-	TOKEN_SEMICOLON,
-	TOKEN_IDENT,
-	TOKEN_AT_KEYWORD,
-} from './token-types'
+import { TOKEN_EOF, TOKEN_LEFT_BRACE, TOKEN_RIGHT_BRACE, TOKEN_SEMICOLON, TOKEN_IDENT, TOKEN_AT_KEYWORD } from './token-types'
 import { trim_boundaries } from './parse-utils'
 
 export interface ParserOptions {
@@ -100,13 +84,7 @@ export class Parser {
 		this.next_token()
 
 		// Create the root stylesheet node
-		let stylesheet = this.arena.create_node(
-			STYLESHEET,
-			0,
-			this.source.length,
-			1,
-			1
-		)
+		let stylesheet = this.arena.create_node(STYLESHEET, 0, this.source.length, 1, 1)
 
 		// Parse all rules at the top level
 		let rules: number[] = []
@@ -156,7 +134,7 @@ export class Parser {
 			rule_start,
 			0, // length unknown yet
 			rule_line,
-			rule_column
+			rule_column,
 		)
 
 		// Parse selector (everything until '{')
@@ -180,7 +158,7 @@ export class Parser {
 			block_start,
 			0, // length unknown yet
 			block_line,
-			block_column
+			block_column,
 		)
 
 		// Parse declarations block (and nested rules for CSS Nesting)
@@ -267,13 +245,7 @@ export class Parser {
 		}
 
 		// Otherwise create a simple selector list node with just text offsets
-		let selector = this.arena.create_node(
-			SELECTOR_LIST,
-			selector_start,
-			last_end - selector_start,
-			selector_line,
-			selector_column
-		)
+		let selector = this.arena.create_node(SELECTOR_LIST, selector_start, last_end - selector_start, selector_line, selector_column)
 
 		return selector
 	}
@@ -313,7 +285,7 @@ export class Parser {
 			at_rule_start,
 			0, // length unknown yet
 			at_rule_line,
-			at_rule_column
+			at_rule_column,
 		)
 
 		// Store at-rule name in contentStart/contentLength
@@ -362,7 +334,7 @@ export class Parser {
 				block_start,
 				0, // length unknown yet
 				block_line,
-				block_column
+				block_column,
 			)
 
 			// Determine what to parse inside the block based on the at-rule name

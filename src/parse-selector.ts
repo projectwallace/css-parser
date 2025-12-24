@@ -99,25 +99,6 @@ export class SelectorParser {
 		return this.parse_selector_list(allow_relative)
 	}
 
-	// Parse a selector using a provided lexer (used by Parser to avoid re-tokenization)
-	parse_selector_with_lexer(lexer: Lexer, end: number, allow_relative: boolean = true): number | null {
-		// Temporarily use provided lexer
-		const saved_lexer = this.lexer
-		const saved_end = this.selector_end
-
-		this.lexer = lexer
-		this.selector_end = end
-
-		// Parse selector list (lexer already positioned by caller)
-		const result = this.parse_selector_list(allow_relative)
-
-		// Restore original lexer
-		this.lexer = saved_lexer
-		this.selector_end = saved_end
-
-		return result
-	}
-
 	// Parse comma-separated selectors
 	private parse_selector_list(allow_relative: boolean = true): number | null {
 		let selectors: number[] = []
@@ -166,13 +147,7 @@ export class SelectorParser {
 
 		// Always wrap in selector list node, even for single selectors
 		if (selectors.length >= 1) {
-			let list_node = this.arena.create_node(
-				SELECTOR_LIST,
-				list_start,
-				this.lexer.pos - list_start,
-				list_line,
-				list_column
-			)
+			let list_node = this.arena.create_node(SELECTOR_LIST, list_start, this.lexer.pos - list_start, list_line, list_column)
 
 			// Link selector wrapper nodes as children
 			this.arena.append_children(list_node, selectors)
@@ -908,13 +883,7 @@ export class SelectorParser {
 			this.lexer.restore_position(saved)
 
 			// Create NTH_OF wrapper
-			let of_node = this.arena.create_node(
-				NTH_OF_SELECTOR,
-				start,
-				end - start,
-				this.lexer.line,
-				1
-			)
+			let of_node = this.arena.create_node(NTH_OF_SELECTOR, start, end - start, this.lexer.line, 1)
 
 			// Link An+B and selector list
 			if (anplusb_node !== null && selector_list !== null) {
@@ -949,13 +918,7 @@ export class SelectorParser {
 	}
 
 	private create_node(type: number, start: number, end: number): number {
-		let node = this.arena.create_node(
-			type,
-			start,
-			end - start,
-			this.lexer.line,
-			this.lexer.column
-		)
+		let node = this.arena.create_node(type, start, end - start, this.lexer.line, this.lexer.column)
 		this.arena.set_content_start_delta(node, 0)
 		this.arena.set_content_length(node, end - start)
 		return node

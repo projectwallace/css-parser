@@ -266,13 +266,7 @@ export class ANplusBParser {
 	}
 
 	private create_anplusb_node(start: number, a_start: number, a_end: number, b_start: number, b_end: number): number {
-		const node = this.arena.create_node(
-			NTH_SELECTOR,
-			start,
-			this.lexer.pos - start,
-			this.lexer.line,
-			1
-		)
+		const node = this.arena.create_node(NTH_SELECTOR, start, this.lexer.pos - start, this.lexer.line, 1)
 
 		// Store 'a' coefficient in content fields if it exists (length > 0)
 		if (a_end > a_start) {

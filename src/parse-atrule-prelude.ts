@@ -55,25 +55,6 @@ export class AtRulePreludeParser {
 		return this.parse_prelude_dispatch(at_rule_name)
 	}
 
-	// Parse an at-rule prelude using a provided lexer (used by Parser to avoid re-tokenization)
-	parse_prelude_with_lexer(at_rule_name: string, lexer: Lexer, end: number): number[] {
-		// Temporarily use provided lexer
-		const saved_lexer = this.lexer
-		const saved_end = this.prelude_end
-
-		this.lexer = lexer
-		this.prelude_end = end
-
-		// Parse prelude (lexer already positioned by caller)
-		const result = this.parse_prelude_dispatch(at_rule_name)
-
-		// Restore original lexer
-		this.lexer = saved_lexer
-		this.prelude_end = saved_end
-
-		return result
-	}
-
 	// Dispatch to appropriate parser based on at-rule type
 	private parse_prelude_dispatch(at_rule_name: string): number[] {
 		if (str_equals('media', at_rule_name)) {
@@ -123,13 +104,7 @@ export class AtRulePreludeParser {
 	}
 
 	private create_node(type: number, start: number, end: number): number {
-		return this.arena.create_node(
-			type,
-			start,
-			end - start,
-			this.lexer.token_line,
-			this.lexer.token_column
-		)
+		return this.arena.create_node(type, start, end - start, this.lexer.token_line, this.lexer.token_column)
 	}
 
 	private is_and_or_not(str: string): boolean {

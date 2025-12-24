@@ -71,7 +71,7 @@ export class DeclarationParser {
 			prop_start,
 			0, // length unknown yet
 			decl_line,
-			decl_column
+			decl_column,
 		)
 
 		// Store property name position (delta = 0 since content starts at same offset as node)
