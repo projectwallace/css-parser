@@ -9,6 +9,7 @@ export default defineConfig({
 				parse: './src/parse.ts',
 				'parse-selector': './src/parse-selector.ts',
 				'parse-atrule-prelude': './src/parse-atrule-prelude.ts',
+				'parse-declaration': './src/parse-declaration.ts',
 				'parse-value': './src/parse-value.ts',
 				'parse-anplusb': './src/parse-anplusb.ts',
 			},

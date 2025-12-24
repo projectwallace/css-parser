@@ -35,6 +35,10 @@
 			"types": "./dist/parse-atrule-prelude.d.ts",
 			"import": "./dist/parse-atrule-prelude.js"
 		},
+		"./parse-declaration": {
+			"types": "./dist/parse-declaration.d.ts",
+			"import": "./dist/parse-declaration.js"
+		},
 		"./parse-value": {
 			"types": "./dist/parse-value.d.ts",
 			"import": "./dist/parse-value.js"

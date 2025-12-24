@@ -529,6 +529,35 @@ for (const part of selector.first_child) {
 
 ---
 
+## `parse_declaration(source)`
+
+Parse a CSS declaration string into a detailed AST.
+
+```typescript
+function parse_declaration(source: string): CSSNode
+```
+
+**Example:**
+
+```typescript
+import { parse_declaration } from '@projectwallace/css-parser'
+
+const decl = parse_declaration('color: red !important')
+
+console.log(decl.type) // DECLARATION
+console.log(decl.name) // "color"
+console.log(decl.value) // "red"
+console.log(decl.is_important) // true
+
+// Iterate over value nodes
+for (const valueNode of decl.children) {
+	console.log(valueNode.type, valueNode.text)
+}
+// IDENTIFIER "red"
+```
+
+---
+
 ## `parse_atrule_prelude(at_rule_name, prelude)`
 
 Parse an at-rule prelude into structured nodes.
