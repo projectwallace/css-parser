@@ -43,7 +43,7 @@ export class AtRulePreludeParser {
 		this.prelude_end = 0
 	}
 
-	// Parse an at-rule prelude into nodes based on the at-rule type
+	// Parse an at-rule prelude into nodes (standalone use)
 	parse_prelude(at_rule_name: string, start: number, end: number, line: number = 1, column: number = 1): number[] {
 		this.prelude_end = end
 
@@ -52,7 +52,30 @@ export class AtRulePreludeParser {
 		this.lexer.line = line
 		this.lexer.column = column
 
-		// Dispatch to appropriate parser based on at-rule type
+		return this.parse_prelude_dispatch(at_rule_name)
+	}
+
+	// Parse an at-rule prelude using a provided lexer (used by Parser to avoid re-tokenization)
+	parse_prelude_with_lexer(at_rule_name: string, lexer: Lexer, end: number): number[] {
+		// Temporarily use provided lexer
+		const saved_lexer = this.lexer
+		const saved_end = this.prelude_end
+
+		this.lexer = lexer
+		this.prelude_end = end
+
+		// Parse prelude (lexer already positioned by caller)
+		const result = this.parse_prelude_dispatch(at_rule_name)
+
+		// Restore original lexer
+		this.lexer = saved_lexer
+		this.prelude_end = saved_end
+
+		return result
+	}
+
+	// Dispatch to appropriate parser based on at-rule type
+	private parse_prelude_dispatch(at_rule_name: string): number[] {
 		if (str_equals('media', at_rule_name)) {
 			return this.parse_media_query_list()
 		} else if (str_equals('container', at_rule_name)) {

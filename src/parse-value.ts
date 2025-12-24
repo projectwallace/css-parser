@@ -33,7 +33,7 @@ export class ValueParser {
 		this.value_end = 0
 	}
 
-	// Parse a declaration value range into value nodes
+	// Parse a declaration value range into value nodes (standalone use)
 	// Returns array of value node indices
 	parse_value(start: number, end: number, start_line: number, start_column: number): number[] {
 		this.value_end = end
@@ -43,6 +43,30 @@ export class ValueParser {
 		this.lexer.line = start_line
 		this.lexer.column = start_column
 
+		return this.parse_value_tokens()
+	}
+
+	// Parse value using a provided lexer (used by DeclarationParser to avoid re-tokenization)
+	parse_value_with_lexer(lexer: Lexer, end: number): number[] {
+		// Temporarily use provided lexer
+		const saved_lexer = this.lexer
+		const saved_end = this.value_end
+
+		this.lexer = lexer
+		this.value_end = end
+
+		// Parse value (lexer already positioned by caller)
+		const result = this.parse_value_tokens()
+
+		// Restore original lexer
+		this.lexer = saved_lexer
+		this.value_end = saved_end
+
+		return result
+	}
+
+	// Core token parsing logic
+	private parse_value_tokens(): number[] {
 		let nodes: number[] = []
 
 		// Parse all tokens in the value range

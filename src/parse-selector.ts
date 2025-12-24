@@ -84,7 +84,7 @@ export class SelectorParser {
 		this.selector_end = 0
 	}
 
-	// Parse a selector range into selector nodes
+	// Parse a selector range into selector nodes (standalone use)
 	// Always returns a NODE_SELECTOR_LIST with selector components as children
 	parse_selector(start: number, end: number, line: number = 1, column: number = 1, allow_relative: boolean = true): number | null {
 		this.selector_end = end
@@ -97,6 +97,25 @@ export class SelectorParser {
 		// Parse selector list (comma-separated selectors)
 		// Returns NODE_SELECTOR_LIST directly (no wrapper)
 		return this.parse_selector_list(allow_relative)
+	}
+
+	// Parse a selector using a provided lexer (used by Parser to avoid re-tokenization)
+	parse_selector_with_lexer(lexer: Lexer, end: number, allow_relative: boolean = true): number | null {
+		// Temporarily use provided lexer
+		const saved_lexer = this.lexer
+		const saved_end = this.selector_end
+
+		this.lexer = lexer
+		this.selector_end = end
+
+		// Parse selector list (lexer already positioned by caller)
+		const result = this.parse_selector_list(allow_relative)
+
+		// Restore original lexer
+		this.lexer = saved_lexer
+		this.selector_end = saved_end
+
+		return result
 	}
 
 	// Parse comma-separated selectors

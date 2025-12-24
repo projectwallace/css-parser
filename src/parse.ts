@@ -18,7 +18,6 @@ import {
 	TOKEN_EOF,
 	TOKEN_LEFT_BRACE,
 	TOKEN_RIGHT_BRACE,
-	TOKEN_COLON,
 	TOKEN_SEMICOLON,
 	TOKEN_IDENT,
 	TOKEN_AT_KEYWORD,
@@ -286,49 +285,9 @@ export class Parser {
 			return null
 		}
 
-		let decl_start = this.lexer.token_start
-		let decl_line = this.lexer.token_line
-		let decl_column = this.lexer.token_column
-
-		// Lookahead: save lexer state before consuming
-		const saved = this.lexer.save_position()
-
-		this.next_token() // consume property name
-
-		// Expect ':'
-		if (this.peek_type() !== TOKEN_COLON) {
-			// Restore lexer state and return null
-			this.lexer.restore_position(saved)
-			return null
-		}
-		this.next_token() // consume ':'
-
-		// Scan to find declaration end
-		let last_end = this.lexer.token_end
-
-		while (!this.is_eof()) {
-			let token_type = this.peek_type()
-			if (token_type === TOKEN_SEMICOLON || token_type === TOKEN_RIGHT_BRACE) break
-
-			// If we encounter '{', this is actually a style rule, not a declaration
-			if (token_type === TOKEN_LEFT_BRACE) {
-				// Restore lexer state and return null
-				this.lexer.restore_position(saved)
-				return null
-			}
-
-			last_end = this.lexer.token_end
-			this.next_token()
-		}
-
-		// Consume ';' if present
-		if (this.peek_type() === TOKEN_SEMICOLON) {
-			last_end = this.lexer.token_end
-			this.next_token()
-		}
-
-		// Use DeclarationParser to parse the declaration range
-		return this.declaration_parser.parse_declaration(decl_start, last_end, decl_line, decl_column)
+		// Use DeclarationParser with shared lexer (no re-tokenization)
+		// DeclarationParser will handle all parsing and advance the lexer to the right position
+		return this.declaration_parser.parse_declaration_with_lexer(this.lexer, this.source.length)
 	}
 
 	// Parse an at-rule: @media, @import, @font-face, etc.
