@@ -1,5 +1,7 @@
 import { describe, test, expect } from 'vitest'
+import { readFileSync } from 'fs'
 import { CSSDataArena, STYLESHEET, STYLE_RULE, DECLARATION, FLAG_IMPORTANT, FLAG_HAS_ERROR } from './arena'
+import { parse } from './parse'
 
 describe('CSSDataArena', () => {
 	describe('initialization', () => {
@@ -237,34 +239,99 @@ describe('CSSDataArena', () => {
 		})
 	})
 
-	describe('capacity planning', () => {
-		test('should have minimum capacity for empty files', () => {
-			const capacity = CSSDataArena.capacity_for_source(0)
-			expect(capacity).toBe(16)
+	describe('growth tracking', () => {
+		test('should initialize growth count to zero', () => {
+			const arena = new CSSDataArena()
+			expect(arena.get_growth_count()).toBe(0)
 		})
 
-		test('should calculate capacity for small CSS files', () => {
-			// 1KB CSS = 60 nodes * 1.15 buffer = 69 nodes
-			const capacity = CSSDataArena.capacity_for_source(1024)
-			expect(capacity).toBe(69)
+		test('should track single growth event', () => {
+			const arena = new CSSDataArena(2)
+			expect(arena.get_growth_count()).toBe(0)
+
+			// Create nodes to trigger growth
+			arena.create_node(STYLESHEET, 0, 0, 1, 1) // count = 2
+			expect(arena.get_growth_count()).toBe(0)
+
+			arena.create_node(STYLESHEET, 0, 0, 1, 1) // count = 3, triggers growth
+			expect(arena.get_growth_count()).toBe(1)
 		})
 
-		test('should calculate capacity for medium CSS files', () => {
-			// 100KB CSS = 6000 nodes * 1.15 buffer = 6900 nodes
-			const capacity = CSSDataArena.capacity_for_source(100 * 1024)
-			expect(capacity).toBe(6900)
+		test('should track multiple growth events', () => {
+			const arena = new CSSDataArena(2)
+			expect(arena.get_growth_count()).toBe(0)
+
+			// First growth: 2 -> 3
+			arena.create_node(STYLESHEET, 0, 0, 1, 1)
+			arena.create_node(STYLESHEET, 0, 0, 1, 1)
+			expect(arena.get_growth_count()).toBe(1)
+			expect(arena.get_capacity()).toBe(3) // ceil(2 * 1.3) = 3
+
+			// Second growth: 3 -> 4
+			arena.create_node(STYLESHEET, 0, 0, 1, 1)
+			expect(arena.get_growth_count()).toBe(2)
+			expect(arena.get_capacity()).toBe(4) // ceil(3 * 1.3) = 4
+
+			// Third growth: 4 -> 6
+			arena.create_node(STYLESHEET, 0, 0, 1, 1)
+			expect(arena.get_growth_count()).toBe(3)
+			expect(arena.get_capacity()).toBe(6) // ceil(4 * 1.3) = 6
 		})
 
-		test('should calculate capacity for large CSS files', () => {
-			// 10MB = 10240 KB CSS = 614400 nodes * 1.15 buffer = 706560 nodes
-			const capacity = CSSDataArena.capacity_for_source(10 * 1024 * 1024)
-			expect(capacity).toBe(706560)
+		test('should not increment growth count when capacity is sufficient', () => {
+			const arena = new CSSDataArena(100)
+
+			// Create many nodes without exceeding capacity
+			for (let i = 0; i < 50; i++) {
+				arena.create_node(STYLESHEET, 0, 0, 1, 1)
+			}
+
+			expect(arena.get_growth_count()).toBe(0)
+			expect(arena.get_count()).toBe(51) // 50 created + 1 initial
+		})
+	})
+
+	describe('real-world CSS frameworks', () => {
+		test('should not grow for Bootstrap CSS', () => {
+			const css = readFileSync('node_modules/bootstrap/dist/css/bootstrap.css', 'utf-8')
+			const result = parse(css)
+
+			expect(result.__get_arena().get_growth_count()).toBe(0)
+			const utilization = (result.__get_arena().get_count() / result.__get_arena().get_capacity()) * 100
+			expect(utilization).toBeLessThan(85)
+			expect(utilization).toBeGreaterThan(30)
 		})
 
-		test('should round up for partial KBs', () => {
-			// 1.5KB = ceil(1.5 * 60) * 1.15 = 90 * 1.15 = 104 (rounded up)
-			const capacity = CSSDataArena.capacity_for_source(1536)
-			expect(capacity).toBe(104)
+		test('should not grow for Bootstrap minified CSS', () => {
+			const css = readFileSync('node_modules/bootstrap/dist/css/bootstrap.min.css', 'utf-8')
+			const result = parse(css)
+			const arena = result.__get_arena()
+
+			expect(arena.get_growth_count()).toBe(0)
+			const utilization = (arena.get_count() / arena.get_capacity()) * 100
+			expect(utilization).toBeLessThan(85)
+			expect(utilization).toBeGreaterThan(30)
+		})
+
+		test('should not grow for Tailwind CSS', () => {
+			const css = readFileSync('node_modules/tailwindcss/dist/tailwind.css', 'utf-8')
+			const result = parse(css)
+			const arena = result.__get_arena()
+
+			expect(arena.get_growth_count()).toBe(0)
+			const utilization = (arena.get_count() / arena.get_capacity()) * 100
+			expect(utilization).toBeLessThan(85)
+			expect(utilization).toBeGreaterThan(30)
+		})
+
+		test('should not grow for Tailwind minified CSS', () => {
+			const css = readFileSync('node_modules/tailwindcss/dist/tailwind.min.css', 'utf-8')
+			const result = parse(css)
+
+			expect(result.__get_arena().get_growth_count()).toBe(0)
+			const utilization = (result.__get_arena().get_count() / result.__get_arena().get_capacity()) * 100
+			expect(utilization).toBeLessThan(85)
+			expect(utilization).toBeGreaterThan(30)
 		})
 	})
 })

@@ -187,6 +187,11 @@ export class CSSNode {
 		this.index = index
 	}
 
+	/** Get the arena (for internal/advanced use only) */
+	__get_arena(): CSSDataArena {
+		return this.arena
+	}
+
 	/** Get node type as number (for performance) */
 	get type(): CSSNodeType {
 		return this.arena.get_type(this.index) as CSSNodeType
