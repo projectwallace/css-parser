@@ -33,7 +33,7 @@ export class ValueParser {
 		this.value_end = 0
 	}
 
-	// Parse a declaration value range into value nodes
+	// Parse a declaration value range into value nodes (standalone use)
 	// Returns array of value node indices
 	parse_value(start: number, end: number, start_line: number, start_column: number): number[] {
 		this.value_end = end
@@ -43,6 +43,11 @@ export class ValueParser {
 		this.lexer.line = start_line
 		this.lexer.column = start_column
 
+		return this.parse_value_tokens()
+	}
+
+	// Core token parsing logic
+	private parse_value_tokens(): number[] {
 		let nodes: number[] = []
 
 		// Parse all tokens in the value range
@@ -123,13 +128,7 @@ export class ValueParser {
 	}
 
 	private create_node(node_type: number, start: number, end: number): number {
-		let node = this.arena.create_node(
-			node_type,
-			start,
-			end - start,
-			this.lexer.token_line,
-			this.lexer.token_column
-		)
+		let node = this.arena.create_node(node_type, start, end - start, this.lexer.token_line, this.lexer.token_column)
 		// Skip set_content_start_delta since delta = start - start = 0 (already zero-initialized)
 		this.arena.set_content_length(node, end - start)
 		return node
@@ -163,7 +162,7 @@ export class ValueParser {
 			start,
 			0, // length unknown yet
 			this.lexer.token_line,
-			this.lexer.token_column
+			this.lexer.token_column,
 		)
 		this.arena.set_content_start_delta(node, 0)
 		this.arena.set_content_length(node, name_end - start)
@@ -289,7 +288,7 @@ export class ValueParser {
 			start,
 			0, // length unknown yet
 			this.lexer.token_line,
-			this.lexer.token_column
+			this.lexer.token_column,
 		)
 
 		// Parse parenthesized content (everything until matching ')')

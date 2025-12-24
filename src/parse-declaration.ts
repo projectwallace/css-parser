@@ -10,7 +10,6 @@ import {
 	TOKEN_EOF,
 	TOKEN_LEFT_BRACE,
 	TOKEN_RIGHT_BRACE,
-	TOKEN_WHITESPACE,
 	type TokenType,
 } from './token-types'
 import { trim_boundaries } from './parse-utils'
@@ -28,21 +27,21 @@ export class DeclarationParser {
 		this.value_parser = parse_values ? new ValueParser(arena, source) : null
 	}
 
-	// Parse a declaration range into a declaration node
+	// Parse a declaration range into a declaration node (standalone use)
 	parse_declaration(start: number, end: number, line: number = 1, column: number = 1): number | null {
-		// Create a fresh lexer instance for each parse
+		// Create a fresh lexer instance for standalone parsing
 		const lexer = new Lexer(this.source, false)
 		lexer.pos = start
 		lexer.line = line
 		lexer.column = column
-		lexer.next_token()
+		lexer.next_token_fast(true) // skip whitespace like Parser does
 
-		// Skip leading whitespace/comments (Lexer doesn't skip them automatically)
-		while ((lexer.token_type as TokenType) === TOKEN_WHITESPACE && lexer.token_start < end) {
-			lexer.next_token()
-		}
+		return this.parse_declaration_with_lexer(lexer, end)
+	}
 
-		// Expect identifier (property name)
+	// Parse a declaration using a provided lexer (used by Parser to avoid re-tokenization)
+	parse_declaration_with_lexer(lexer: Lexer, end: number): number | null {
+		// Expect identifier (property name) - whitespace already skipped by caller
 		if (lexer.token_type !== TOKEN_IDENT) {
 			return null
 		}
@@ -56,12 +55,7 @@ export class DeclarationParser {
 		// Lookahead: save lexer state before consuming
 		const saved = lexer.save_position()
 
-		lexer.next_token() // consume property name
-
-		// Skip whitespace between property name and colon
-		while ((lexer.token_type as TokenType) === TOKEN_WHITESPACE && lexer.token_start < end) {
-			lexer.next_token()
-		}
+		lexer.next_token_fast(true) // consume property name, skip whitespace
 
 		// Expect ':' (type assertion needed because TS doesn't know next_token mutates token_type)
 		if ((lexer.token_type as TokenType) !== TOKEN_COLON) {
@@ -69,7 +63,7 @@ export class DeclarationParser {
 			lexer.restore_position(saved)
 			return null
 		}
-		lexer.next_token() // consume ':'
+		lexer.next_token_fast(true) // consume ':', skip whitespace
 
 		// Create declaration node (length will be set later)
 		let declaration = this.arena.create_node(
@@ -77,7 +71,7 @@ export class DeclarationParser {
 			prop_start,
 			0, // length unknown yet
 			decl_line,
-			decl_column
+			decl_column,
 		)
 
 		// Store property name position (delta = 0 since content starts at same offset as node)
@@ -100,26 +94,31 @@ export class DeclarationParser {
 		while ((lexer.token_type as TokenType) !== TOKEN_EOF && lexer.token_start < end) {
 			let token_type = lexer.token_type as TokenType
 			if (token_type === TOKEN_SEMICOLON) break
-			// Also stop at braces (in case input is malformed)
-			if (token_type === TOKEN_RIGHT_BRACE || token_type === TOKEN_LEFT_BRACE) break
+			if (token_type === TOKEN_RIGHT_BRACE) break
+
+			// If we encounter '{', this is actually a style rule, not a declaration
+			if (token_type === TOKEN_LEFT_BRACE) {
+				lexer.restore_position(saved)
+				return null
+			}
 
 			// Check for ! followed by any identifier (optimized: only check when we see '!')
 			if (token_type === TOKEN_DELIM && this.source[lexer.token_start] === '!') {
 				// Mark end of value before !important
 				value_end = lexer.token_start
 				// Check if next token is an identifier
-				let next_type = lexer.next_token_fast()
+				let next_type = lexer.next_token_fast(true) // skip whitespace
 				if (next_type === TOKEN_IDENT) {
 					has_important = true
 					last_end = lexer.token_end
-					lexer.next_token() // Advance to next token after "important"
+					lexer.next_token_fast(true) // Advance to next token after "important", skip whitespace
 					break
 				}
 			}
 
 			last_end = lexer.token_end
 			value_end = last_end
-			lexer.next_token()
+			lexer.next_token_fast(true) // skip whitespace
 		}
 
 		// Store value position (trimmed) and parse value nodes
@@ -151,7 +150,7 @@ export class DeclarationParser {
 		// Consume ';' if present
 		if ((lexer.token_type as TokenType) === TOKEN_SEMICOLON) {
 			last_end = lexer.token_end
-			lexer.next_token()
+			lexer.next_token_fast(true) // skip whitespace
 		}
 
 		// Set declaration length

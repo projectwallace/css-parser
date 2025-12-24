@@ -1,28 +1,11 @@
 // CSS Parser - Builds AST using the arena
 import { Lexer } from './lexer'
-import {
-	CSSDataArena,
-	STYLESHEET,
-	STYLE_RULE,
-	SELECTOR_LIST,
-	AT_RULE,
-	BLOCK,
-	FLAG_HAS_BLOCK,
-	FLAG_HAS_DECLARATIONS,
-} from './arena'
+import { CSSDataArena, STYLESHEET, STYLE_RULE, SELECTOR_LIST, AT_RULE, BLOCK, FLAG_HAS_BLOCK, FLAG_HAS_DECLARATIONS } from './arena'
 import { CSSNode } from './css-node'
 import { SelectorParser } from './parse-selector'
 import { AtRulePreludeParser } from './parse-atrule-prelude'
 import { DeclarationParser } from './parse-declaration'
-import {
-	TOKEN_EOF,
-	TOKEN_LEFT_BRACE,
-	TOKEN_RIGHT_BRACE,
-	TOKEN_COLON,
-	TOKEN_SEMICOLON,
-	TOKEN_IDENT,
-	TOKEN_AT_KEYWORD,
-} from './token-types'
+import { TOKEN_EOF, TOKEN_LEFT_BRACE, TOKEN_RIGHT_BRACE, TOKEN_SEMICOLON, TOKEN_IDENT, TOKEN_AT_KEYWORD } from './token-types'
 import { trim_boundaries } from './parse-utils'
 
 export interface ParserOptions {
@@ -101,13 +84,7 @@ export class Parser {
 		this.next_token()
 
 		// Create the root stylesheet node
-		let stylesheet = this.arena.create_node(
-			STYLESHEET,
-			0,
-			this.source.length,
-			1,
-			1
-		)
+		let stylesheet = this.arena.create_node(STYLESHEET, 0, this.source.length, 1, 1)
 
 		// Parse all rules at the top level
 		let rules: number[] = []
@@ -157,7 +134,7 @@ export class Parser {
 			rule_start,
 			0, // length unknown yet
 			rule_line,
-			rule_column
+			rule_column,
 		)
 
 		// Parse selector (everything until '{')
@@ -181,7 +158,7 @@ export class Parser {
 			block_start,
 			0, // length unknown yet
 			block_line,
-			block_column
+			block_column,
 		)
 
 		// Parse declarations block (and nested rules for CSS Nesting)
@@ -268,13 +245,7 @@ export class Parser {
 		}
 
 		// Otherwise create a simple selector list node with just text offsets
-		let selector = this.arena.create_node(
-			SELECTOR_LIST,
-			selector_start,
-			last_end - selector_start,
-			selector_line,
-			selector_column
-		)
+		let selector = this.arena.create_node(SELECTOR_LIST, selector_start, last_end - selector_start, selector_line, selector_column)
 
 		return selector
 	}
@@ -286,49 +257,9 @@ export class Parser {
 			return null
 		}
 
-		let decl_start = this.lexer.token_start
-		let decl_line = this.lexer.token_line
-		let decl_column = this.lexer.token_column
-
-		// Lookahead: save lexer state before consuming
-		const saved = this.lexer.save_position()
-
-		this.next_token() // consume property name
-
-		// Expect ':'
-		if (this.peek_type() !== TOKEN_COLON) {
-			// Restore lexer state and return null
-			this.lexer.restore_position(saved)
-			return null
-		}
-		this.next_token() // consume ':'
-
-		// Scan to find declaration end
-		let last_end = this.lexer.token_end
-
-		while (!this.is_eof()) {
-			let token_type = this.peek_type()
-			if (token_type === TOKEN_SEMICOLON || token_type === TOKEN_RIGHT_BRACE) break
-
-			// If we encounter '{', this is actually a style rule, not a declaration
-			if (token_type === TOKEN_LEFT_BRACE) {
-				// Restore lexer state and return null
-				this.lexer.restore_position(saved)
-				return null
-			}
-
-			last_end = this.lexer.token_end
-			this.next_token()
-		}
-
-		// Consume ';' if present
-		if (this.peek_type() === TOKEN_SEMICOLON) {
-			last_end = this.lexer.token_end
-			this.next_token()
-		}
-
-		// Use DeclarationParser to parse the declaration range
-		return this.declaration_parser.parse_declaration(decl_start, last_end, decl_line, decl_column)
+		// Use DeclarationParser with shared lexer (no re-tokenization)
+		// DeclarationParser will handle all parsing and advance the lexer to the right position
+		return this.declaration_parser.parse_declaration_with_lexer(this.lexer, this.source.length)
 	}
 
 	// Parse an at-rule: @media, @import, @font-face, etc.
@@ -354,7 +285,7 @@ export class Parser {
 			at_rule_start,
 			0, // length unknown yet
 			at_rule_line,
-			at_rule_column
+			at_rule_column,
 		)
 
 		// Store at-rule name in contentStart/contentLength
@@ -403,7 +334,7 @@ export class Parser {
 				block_start,
 				0, // length unknown yet
 				block_line,
-				block_column
+				block_column,
 			)
 
 			// Determine what to parse inside the block based on the at-rule name

@@ -43,7 +43,7 @@ export class AtRulePreludeParser {
 		this.prelude_end = 0
 	}
 
-	// Parse an at-rule prelude into nodes based on the at-rule type
+	// Parse an at-rule prelude into nodes (standalone use)
 	parse_prelude(at_rule_name: string, start: number, end: number, line: number = 1, column: number = 1): number[] {
 		this.prelude_end = end
 
@@ -52,7 +52,11 @@ export class AtRulePreludeParser {
 		this.lexer.line = line
 		this.lexer.column = column
 
-		// Dispatch to appropriate parser based on at-rule type
+		return this.parse_prelude_dispatch(at_rule_name)
+	}
+
+	// Dispatch to appropriate parser based on at-rule type
+	private parse_prelude_dispatch(at_rule_name: string): number[] {
 		if (str_equals('media', at_rule_name)) {
 			return this.parse_media_query_list()
 		} else if (str_equals('container', at_rule_name)) {
@@ -100,13 +104,7 @@ export class AtRulePreludeParser {
 	}
 
 	private create_node(type: number, start: number, end: number): number {
-		return this.arena.create_node(
-			type,
-			start,
-			end - start,
-			this.lexer.token_line,
-			this.lexer.token_column
-		)
+		return this.arena.create_node(type, start, end - start, this.lexer.token_line, this.lexer.token_column)
 	}
 
 	private is_and_or_not(str: string): boolean {

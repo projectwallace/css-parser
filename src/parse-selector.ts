@@ -84,7 +84,7 @@ export class SelectorParser {
 		this.selector_end = 0
 	}
 
-	// Parse a selector range into selector nodes
+	// Parse a selector range into selector nodes (standalone use)
 	// Always returns a NODE_SELECTOR_LIST with selector components as children
 	parse_selector(start: number, end: number, line: number = 1, column: number = 1, allow_relative: boolean = true): number | null {
 		this.selector_end = end
@@ -147,13 +147,7 @@ export class SelectorParser {
 
 		// Always wrap in selector list node, even for single selectors
 		if (selectors.length >= 1) {
-			let list_node = this.arena.create_node(
-				SELECTOR_LIST,
-				list_start,
-				this.lexer.pos - list_start,
-				list_line,
-				list_column
-			)
+			let list_node = this.arena.create_node(SELECTOR_LIST, list_start, this.lexer.pos - list_start, list_line, list_column)
 
 			// Link selector wrapper nodes as children
 			this.arena.append_children(list_node, selectors)
@@ -889,13 +883,7 @@ export class SelectorParser {
 			this.lexer.restore_position(saved)
 
 			// Create NTH_OF wrapper
-			let of_node = this.arena.create_node(
-				NTH_OF_SELECTOR,
-				start,
-				end - start,
-				this.lexer.line,
-				1
-			)
+			let of_node = this.arena.create_node(NTH_OF_SELECTOR, start, end - start, this.lexer.line, 1)
 
 			// Link An+B and selector list
 			if (anplusb_node !== null && selector_list !== null) {
@@ -930,13 +918,7 @@ export class SelectorParser {
 	}
 
 	private create_node(type: number, start: number, end: number): number {
-		let node = this.arena.create_node(
-			type,
-			start,
-			end - start,
-			this.lexer.line,
-			this.lexer.column
-		)
+		let node = this.arena.create_node(type, start, end - start, this.lexer.line, this.lexer.column)
 		this.arena.set_content_start_delta(node, 0)
 		this.arena.set_content_length(node, end - start)
 		return node
