@@ -12,6 +12,7 @@ import {
 	TYPE_SELECTOR,
 	ATTRIBUTE_SELECTOR,
 	NESTING_SELECTOR,
+	URL,
 } from './constants'
 import { ATTR_OPERATOR_PIPE_EQUAL } from './arena'
 
@@ -2506,6 +2507,51 @@ describe('Core Nodes', () => {
 				expect(declaration.property).toBe('--is')
 				expect(declaration.value).toBe('this')
 			})
+		})
+	})
+
+	describe('Large inline SVG', () => {
+		test('should correctly parse declaration with huge inline SVG background-image', () => {
+			// Generate a very long SVG string (> 65535 chars)
+			const svgPart = '<svg xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="red"/></svg>'
+			const longSvg = svgPart.repeat(1000) // 89,000 chars
+			const css = `.test { background-image: url("data:image/svg+xml,${longSvg}"); }`
+
+			expect(longSvg.length).toBeGreaterThan(65535) // Verify SVG is long enough
+
+			const ast = parse(css)
+			const rule = ast.first_child!
+			const declaration = rule.block!.first_child!
+
+			// Verify declaration is parsed correctly
+			expect(declaration.type).toBe(DECLARATION)
+			expect(declaration.property).toBe('background-image')
+
+			// Verify the full length is accessible (not truncated)
+			const expectedDeclLength = css.length - '.test { '.length - ' }'.length
+			expect(declaration.length).toBe(expectedDeclLength)
+			expect(declaration.length).toBeGreaterThan(65535)
+
+			// Verify we can access the full declaration text
+			expect(declaration.text.length).toBe(expectedDeclLength)
+			expect(declaration.text).toContain('background-image:')
+			expect(declaration.text).toContain(longSvg.substring(0, 100))
+			expect(declaration.text).toContain(longSvg.substring(longSvg.length - 100))
+
+			// Verify the value is parsed into nodes
+			const urlNode = declaration.first_child!
+			expect(urlNode.type).toBe(URL)
+			expect(urlNode.name).toBe('url')
+
+			// Verify the URL node text (full url(...) including function name and parens)
+			const expectedUrlText = `url("data:image/svg+xml,${longSvg}")`
+			expect(urlNode.text).toBe(expectedUrlText)
+			expect(urlNode.text.length).toBe(expectedUrlText.length)
+
+			// Verify the URL node length matches its text length
+			expect(urlNode.length).toBe(urlNode.text.length)
+			expect(urlNode.length).toBe(expectedUrlText.length)
+			expect(urlNode.length).toBeGreaterThan(65535)
 		})
 	})
 })

@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { readFileSync } from 'fs'
-import { CSSDataArena, STYLESHEET, STYLE_RULE, DECLARATION, FLAG_IMPORTANT, FLAG_HAS_ERROR } from './arena'
+import { CSSDataArena, STYLESHEET, STYLE_RULE, DECLARATION, FLAG_IMPORTANT, FLAG_HAS_ERROR, FLAG_LENGTH_OVERFLOW } from './arena'
 import { parse } from './parse'
 
 describe('CSSDataArena', () => {
@@ -236,6 +236,27 @@ describe('CSSDataArena', () => {
 			// Clear all flags
 			arena.set_flags(node, 0)
 			expect(arena.get_flags(node)).toBe(0)
+		})
+
+		test('should set FLAG_LENGTH_OVERFLOW when length > 65535', () => {
+			const arena = new CSSDataArena(10)
+			const node = arena.create_node(DECLARATION, 0, 0, 1, 1)
+
+			// Set length to exceed Uint16 max (65535)
+			arena.set_length(node, 70000)
+
+			expect(arena.get_length(node)).toBe(70000) // Should return actual length from Map
+			expect(arena.has_flag(node, FLAG_LENGTH_OVERFLOW)).toBe(true)
+		})
+
+		test('should not set FLAG_LENGTH_OVERFLOW when length <= 65535', () => {
+			const arena = new CSSDataArena(10)
+			const node = arena.create_node(DECLARATION, 0, 0, 1, 1)
+
+			arena.set_length(node, 65535)
+
+			expect(arena.get_length(node)).toBe(65535)
+			expect(arena.has_flag(node, FLAG_LENGTH_OVERFLOW)).toBe(false)
 		})
 	})
 

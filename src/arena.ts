@@ -119,6 +119,7 @@ export class CSSDataArena {
 	private capacity: number // Number of nodes that can fit
 	private count: number // Number of nodes currently allocated
 	private growth_count: number // Number of times the arena has grown
+	private overflow_lengths: Map<number, number> // Stores actual lengths for nodes > 65535 chars
 
 	// Growth multiplier when capacity is exceeded
 	private static readonly GROWTH_FACTOR = 1.3
@@ -136,6 +137,7 @@ export class CSSDataArena {
 		this.growth_count = 0
 		this.buffer = new ArrayBuffer(initial_capacity * BYTES_PER_NODE)
 		this.view = new DataView(this.buffer)
+		this.overflow_lengths = new Map()
 	}
 
 	// Calculate recommended initial capacity based on CSS source size
@@ -185,6 +187,13 @@ export class CSSDataArena {
 
 	// Read length in source
 	get_length(node_index: number): number {
+		// Check if this node has overflow length stored
+		if (this.has_flag(node_index, FLAG_LENGTH_OVERFLOW)) {
+			const overflow_length = this.overflow_lengths.get(node_index)
+			if (overflow_length !== undefined) {
+				return overflow_length
+			}
+		}
 		return this.view.getUint16(this.node_offset(node_index) + 2, true)
 	}
 
@@ -261,7 +270,15 @@ export class CSSDataArena {
 
 	// Write length in source
 	set_length(node_index: number, length: number): void {
-		this.view.setUint16(this.node_offset(node_index) + 2, length, true)
+		// Uint16 max value is 65535
+		if (length > 65535) {
+			this.view.setUint16(this.node_offset(node_index) + 2, 65535, true)
+			this.set_flag(node_index, FLAG_LENGTH_OVERFLOW)
+			// Store the actual length in the overflow map
+			this.overflow_lengths.set(node_index, length)
+		} else {
+			this.view.setUint16(this.node_offset(node_index) + 2, length, true)
+		}
 	}
 
 	// Write content start delta (offset from startOffset)
