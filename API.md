@@ -31,38 +31,65 @@ function parse(source: string, options?: ParserOptions): CSSNode
 
 `CSSNode` - Root stylesheet node with the following properties:
 
+**Core Properties:**
 - `type` - Node type constant (e.g., `STYLESHEET`, `STYLE_RULE`)
 - `type_name` - CSSTree-compatible type name (e.g., `'StyleSheet'`, `'Rule'`)
 - `text` - Full text of the node from source
-- `name` - Property name, at-rule name, or layer name
-- `property` - Alias for `name` (for declarations)
-- `value` - Value text (for declarations), URL content (for URL nodes with quoted strings, includes quotes to match STRING node behavior), or `null`
+
+**Content Properties:**
+- `name` - Property name for declarations, at-rule name for at-rules, layer name for import layers
+- `property` - Alias for `name` (for declarations, more semantic)
+- `value` - Value text (for declarations), numeric value (for NUMBER/DIMENSION), string content without quotes (for STRING), URL content (for URL), or `null`
+- `value_as_number` - Numeric value for NUMBER and DIMENSION nodes, or `null` for other types
+- `unit` - Unit string for DIMENSION nodes (e.g., `"px"`, `"%"`), or `null` for other types
 - `prelude` - At-rule prelude text or `null`
+
+**Location Properties:**
 - `line` - Starting line number (1-based)
-- `offset` - Starting offset in source
+- `column` - Starting column number (1-based)
+- `start` - Starting offset in source (0-based)
 - `length` - Length in source
-- `is_important` - Whether declaration has `!important`
-- `is_vendor_prefixed` - Whether name has vendor prefix
+- `end` - End offset in source (calculated as `start + length`)
+
+**Flags:**
+- `is_important` - Whether declaration has `!important` (DECLARATION only)
+- `is_vendor_prefixed` - Whether node has vendor prefix (checks name/text based on type)
 - `has_error` - Whether node has syntax error
 - `has_prelude` - Whether at-rule has a prelude
 - `has_block` - Whether rule has a `{ }` block
-- `has_children` - Whether node has child nodes (for pseudo-class/pseudo-element functions, returns `true` even if empty to indicate function syntax)
-- `block` - Block node containing declarations/nested rules (for style rules and at-rules with blocks)
-- `is_empty` - Whether block has no declarations or rules (only comments allowed)
+- `has_declarations` - Whether style rule has declarations
+- `has_children` - Whether node has child nodes (for pseudo-class/pseudo-element, returns `true` even if empty to indicate function syntax)
+- `has_next` - Whether node has a next sibling
+
+**Tree Structure:**
 - `first_child` - First child node or `null`
 - `next_sibling` - Next sibling node or `null`
 - `children` - Array of all child nodes
+- `block` - Block node containing declarations/nested rules (for style rules and at-rules with blocks)
+- `is_empty` - Whether block has no declarations or rules (only comments allowed)
+
+**Value Access (Declarations):**
 - `values` - Array of value nodes (for declarations)
+
+**Selector Properties:**
 - `selector_list` - Selector list from pseudo-classes like `:is()`, `:not()`, `:has()`, `:where()`, or `:nth-child(of)`
 - `nth` - An+B formula node from `:nth-child(of)` wrapper (for NTH_OF_SELECTOR nodes)
 - `selector` - Selector list from `:nth-child(of)` wrapper (for NTH_OF_SELECTOR nodes)
-- `nth_a` - The 'a' coefficient from An+B expressions like `2n` from `:nth-child(2n+1)`
-- `nth_b` - The 'b' coefficient from An+B expressions like `+1` from `:nth-child(2n+1)`
-- `compound_parts()` - Iterator over first compound selector parts (zero allocation, for SELECTOR)
-- `first_compound` - Array of parts before first combinator (for SELECTOR)
-- `all_compounds` - Array of compound arrays split by combinators (for SELECTOR)
-- `is_compound` - Whether selector has no combinators (for SELECTOR)
-- `first_compound_text` - Text of first compound selector (for SELECTOR)
+- `nth_a` - The 'a' coefficient from An+B expressions like `"2n"` from `:nth-child(2n+1)` (for NTH_SELECTOR)
+- `nth_b` - The 'b' coefficient from An+B expressions like `"+1"` from `:nth-child(2n+1)` (for NTH_SELECTOR)
+
+**Attribute Selector Properties:**
+- `attr_operator` - Attribute operator constant (for ATTRIBUTE_SELECTOR): `ATTR_OPERATOR_NONE`, `ATTR_OPERATOR_EQUAL`, etc.
+- `attr_flags` - Attribute flags constant (for ATTRIBUTE_SELECTOR): `ATTR_FLAG_NONE`, `ATTR_FLAG_CASE_INSENSITIVE`, `ATTR_FLAG_CASE_SENSITIVE`
+
+**Compound Selector Helpers (SELECTOR nodes):**
+- `compound_parts()` - Iterator over first compound selector parts (zero allocation)
+- `first_compound` - Array of parts before first combinator
+- `all_compounds` - Array of compound arrays split by combinators
+- `is_compound` - Whether selector has no combinators
+- `first_compound_text` - Text of first compound selector (no node allocation)
+
+**Methods:**
 - `clone(options?)` - Clone node as a mutable plain object with children as arrays
 
 ### Example 1: Basic Parsing
@@ -470,7 +497,8 @@ console.log(deep.children[1].value) // 20
 const withLocation = marginDecl.clone({ locations: true })
 console.log(withLocation.line) // 1
 console.log(withLocation.column) // 6
-console.log(withLocation.offset) // 6
+console.log(withLocation.start) // 6
+console.log(withLocation.end) // 28
 
 // Cloned objects are mutable
 const clone = marginDecl.clone()
@@ -489,7 +517,7 @@ clone.children.push({ type: 99, text: 'test', children: [] })
 **Options**:
 
 - `deep?: boolean` (default: `true`) - Recursively clone children
-- `locations?: boolean` (default: `false`) - Include line/column/offset/length
+- `locations?: boolean` (default: `false`) - Include line/column/start/length/end
 
 **Return Type**: Plain object with:
 
