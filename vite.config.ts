@@ -1,6 +1,14 @@
 import { defineConfig } from 'vite'
+import { codecovVitePlugin } from '@codecov/vite-plugin'
 
 export default defineConfig({
+	plugins: [
+		codecovVitePlugin({
+			enableBundleAnalysis: process.env.CODECOV_TOKEN !== undefined,
+			bundleName: '@projectwallace/css-parser',
+			uploadToken: process.env.CODECOV_TOKEN,
+		}),
+	],
 	build: {
 		lib: {
 			entry: {
@@ -21,7 +29,6 @@ export default defineConfig({
 			output: {
 				preserveModules: true,
 				entryFileNames: '[name].js',
-				sourcemap: false,
 			},
 		},
 	},
