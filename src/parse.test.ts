@@ -2515,25 +2515,27 @@ describe('Core Nodes', () => {
 			// Generate a very long SVG string (> 65535 chars)
 			const svgPart = '<svg xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="red"/></svg>'
 			const longSvg = svgPart.repeat(1000) // 89,000 chars
-			const css = `.test { background-image: url("data:image/svg+xml,${longSvg}"); }`
+			// Add a second declaration after the huge SVG to test startColumn overflow
+			const css = `.test { background-image: url("data:image/svg+xml,${longSvg}"); color: red; }`
 
 			expect(longSvg.length).toBeGreaterThan(65535) // Verify SVG is long enough
 
 			const ast = parse(css)
 			const rule = ast.first_child!
-			const declaration = rule.block!.first_child!
+			const block = rule.block!
+			const declaration = block.first_child!
 
 			// Verify declaration is parsed correctly
 			expect(declaration.type).toBe(DECLARATION)
 			expect(declaration.property).toBe('background-image')
 
 			// Verify the full length is accessible (not truncated)
-			const expectedDeclLength = css.length - '.test { '.length - ' }'.length
-			expect(declaration.length).toBe(expectedDeclLength)
+			const declText = `background-image: url("data:image/svg+xml,${longSvg}");`
+			expect(declaration.length).toBe(declText.length)
 			expect(declaration.length).toBeGreaterThan(65535)
 
 			// Verify we can access the full declaration text
-			expect(declaration.text.length).toBe(expectedDeclLength)
+			expect(declaration.text).toBe(declText)
 			expect(declaration.text).toContain('background-image:')
 			expect(declaration.text).toContain(longSvg.substring(0, 100))
 			expect(declaration.text).toContain(longSvg.substring(longSvg.length - 100))
@@ -2552,6 +2554,20 @@ describe('Core Nodes', () => {
 			expect(urlNode.length).toBe(urlNode.text.length)
 			expect(urlNode.length).toBe(expectedUrlText.length)
 			expect(urlNode.length).toBeGreaterThan(65535)
+
+			// Test startColumn overflow: second declaration starts at column > 65535
+			const secondDecl = declaration.next_sibling!
+			expect(secondDecl).toBeTruthy()
+			expect(secondDecl.type).toBe(DECLARATION)
+			expect(secondDecl.property).toBe('color')
+			expect(secondDecl.value).toBe('red')
+
+			// Calculate expected column: '.test { ' + declaration.text + ' ' + 1 (columns are 1-indexed)
+			const expectedColumn = '.test { '.length + declText.length + ' '.length + 1
+			expect(expectedColumn).toBeGreaterThan(65535)
+
+			// Verify column is correctly stored (Uint32, no overflow needed)
+			expect(secondDecl.column).toBe(expectedColumn)
 		})
 	})
 })
