@@ -4,6 +4,7 @@
 - `parse_selector`
 - `parse_atrule_prelude`
 - `walk`
+- `is_custom`
 - `tokenize`
 
 ---
@@ -795,6 +796,49 @@ traverse(ast, {
 // Output:
 // Rule: .top
 // Rule: .nested in @media
+```
+
+---
+
+## `is_custom(str)`
+
+Check if a string is a CSS custom property (starts with `--`).
+
+### Signature
+
+```typescript
+function is_custom(str: string): boolean
+```
+
+### Parameters
+
+- **`str`** (`string`) - The string to check
+
+### Returns
+
+`boolean` - `true` if the string starts with `--` (custom property), `false` otherwise
+
+### Examples
+
+```typescript
+import { parse, is_custom } from '@projectwallace/css-parser'
+
+const ast = parse(':root { --primary: blue; color: red; }')
+const block = ast.first_child.block
+
+for (const decl of block.children) {
+	if (is_custom(decl.name)) {
+		console.log('Custom property:', decl.name) // Logs: "--primary"
+	} else {
+		console.log('Standard property:', decl.name) // Logs: "color"
+	}
+}
+
+// Direct usage
+is_custom('--primary-color')  // true
+is_custom('--my-var')         // true
+is_custom('color')            // false
+is_custom('-webkit-transform') // false (vendor prefix, not custom)
 ```
 
 ---

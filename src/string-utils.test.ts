@@ -5,6 +5,7 @@ import {
 	str_starts_with,
 	str_index_of,
 	is_vendor_prefixed,
+	is_custom,
 	CHAR_SPACE,
 	CHAR_TAB,
 	CHAR_NEWLINE,
@@ -348,6 +349,52 @@ describe('string-utils', () => {
 		it('should work with various offsets', () => {
 			const source = 'prefix-webkit-suffix-rest'
 			expect(is_vendor_prefixed(source, 6, 20)).toBe(true) // "-webkit-suffix"
+		})
+	})
+
+	describe('is_custom', () => {
+		it('should detect custom property with --', () => {
+			expect(is_custom('--primary-color')).toBe(true)
+		})
+
+		it('should detect another custom property', () => {
+			expect(is_custom('--my-var')).toBe(true)
+		})
+
+		it('should detect shortest valid custom property', () => {
+			expect(is_custom('--x')).toBe(true)
+		})
+
+		it('should not detect exactly two hyphens', () => {
+			expect(is_custom('--')).toBe(false)
+		})
+
+		it('should not detect vendor prefix as custom', () => {
+			expect(is_custom('-webkit-transform')).toBe(false)
+		})
+
+		it('should not detect -moz- vendor prefix as custom', () => {
+			expect(is_custom('-moz-appearance')).toBe(false)
+		})
+
+		it('should not detect standard property with hyphen as custom', () => {
+			expect(is_custom('border-radius')).toBe(false)
+		})
+
+		it('should not detect standard property as custom', () => {
+			expect(is_custom('color')).toBe(false)
+		})
+
+		it('should not detect single hyphen as custom', () => {
+			expect(is_custom('-')).toBe(false)
+		})
+
+		it('should not detect empty string as custom', () => {
+			expect(is_custom('')).toBe(false)
+		})
+
+		it('should not detect single character as custom', () => {
+			expect(is_custom('a')).toBe(false)
 		})
 	})
 })
