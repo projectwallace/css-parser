@@ -8,34 +8,12 @@ export const BREAK = Symbol('BREAK')
 type WalkCallback = (node: CSSNode, depth: number) => void | typeof SKIP | typeof BREAK
 
 /**
- * Walk the AST in depth-first order, calling the callback for each node
+ * Walk the AST in depth-first order, calling the callback for each node.
+ * Return SKIP to skip children, BREAK to stop traversal. See API.md for examples.
  *
  * @param node - The root node to start walking from
- * @param callback - Function to call for each node visited. Receives the node and its depth (0 for root).
- *                   Return SKIP to skip children of current node, or BREAK to stop traversal entirely.
+ * @param callback - Function called for each node. Receives the node and its depth (0 for root).
  * @param depth - Starting depth (default: 0)
- *
- * @example
- * import { parse, walk, SKIP, BREAK } from '@projectwallace/css-parser'
- *
- * const ast = parse('.a { .b { .c { color: red; } } }')
- *
- * // Skip nested rules
- * walk(ast, (node) => {
- *   if (node.type === STYLE_RULE) {
- *     console.log(node.text)
- *     return SKIP // Don't visit nested rules
- *   }
- * })
- * // Output: .a { ... }, but not .b or .c
- *
- * // Stop on first declaration
- * walk(ast, (node) => {
- *   if (node.type === DECLARATION) {
- *     console.log(node.name)
- *     return BREAK // Stop traversal
- *   }
- * })
  */
 export function walk(node: CSSNode, callback: WalkCallback, depth = 0): boolean {
 	// Call callback for current node
@@ -74,36 +52,11 @@ interface WalkEnterLeaveOptions {
 }
 
 /**
- * Walk the AST in depth-first order, calling enter before visiting children and leave after
+ * Walk the AST in depth-first order, calling enter before visiting children and leave after.
+ * Return SKIP in enter to skip children (leave still called), BREAK to stop (leave NOT called). See API.md for examples.
  *
  * @param node - The root node to start walking from
  * @param options - Object with optional enter and leave callback functions
- * @param options.enter - Called before visiting children. Return SKIP to skip children (leave still called),
- *                        or BREAK to stop traversal entirely (leave NOT called).
- * @param options.leave - Called after visiting children. Return BREAK to stop traversal.
- *
- * @example
- * import { parse, traverse, SKIP, BREAK } from '@projectwallace/css-parser'
- *
- * const ast = parse('@media screen { .a { color: red; } }')
- *
- * // Track context with skip
- * let depth = 0
- * traverse(ast, {
- *   enter(node) {
- *     depth++
- *     if (node.type === AT_RULE) {
- *       console.log('Entering media query at depth', depth)
- *       return SKIP // Skip contents but still call leave
- *     }
- *   },
- *   leave(node) {
- *     if (node.type === AT_RULE) {
- *       console.log('Leaving media query at depth', depth)
- *     }
- *     depth--
- *   }
- * })
  */
 export function traverse(node: CSSNode, { enter = NOOP, leave = NOOP }: WalkEnterLeaveOptions = {}): boolean {
 	// Call enter callback before processing children
