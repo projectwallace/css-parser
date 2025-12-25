@@ -4,6 +4,18 @@ export default defineConfig({
 	test: {
 		globals: true,
 		environment: 'node',
-		exclude: ['**/node_modules/**', '**/dist/**', '**/test/build/**']
+		exclude: ['**/node_modules/**', '**/dist/**', '**/test/build/**'],
+		coverage: {
+			provider: 'v8',
+			reporter: ['text', 'json', 'html'],
+			exclude: [
+				'**/node_modules/**',
+				'**/dist/**',
+				'**/test/**',
+				'**/benchmark/**',
+				'**/*.test.ts',
+				'**/*.config.ts',
+			]
+		}
 	}
 })

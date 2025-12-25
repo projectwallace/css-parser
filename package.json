@@ -70,6 +70,7 @@
 		"ast"
 	],
 	"devDependencies": {
+		"@codecov/vite-plugin": "^1.9.1",
 		"@projectwallace/preset-oxlint": "^0.0.7",
 		"@types/node": "^24.10.1",
 		"@vitest/coverage-v8": "^4.0.8",
@@ -84,5 +85,10 @@
 		"typescript": "^5.9.3",
 		"vite": "^7.2.2",
 		"vitest": "^4.0.8"
+	},
+	"overrides": {
+		"@codecov/vite-plugin": {
+			"vite": "$vite"
+		}
 	}
 }
