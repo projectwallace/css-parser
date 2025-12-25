@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { Lexer } from './lexer'
+import { Lexer } from './tokenize'
 import {
 	TOKEN_IDENT,
 	TOKEN_FUNCTION,

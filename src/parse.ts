@@ -1,5 +1,5 @@
 // CSS Parser - Builds AST using the arena
-import { Lexer } from './lexer'
+import { Lexer } from './tokenize'
 import { CSSDataArena, STYLESHEET, STYLE_RULE, SELECTOR_LIST, AT_RULE, BLOCK, FLAG_HAS_BLOCK, FLAG_HAS_DECLARATIONS } from './arena'
 import { CSSNode } from './css-node'
 import { SelectorParser } from './parse-selector'

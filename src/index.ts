@@ -14,7 +14,7 @@ export { type ParserOptions } from './parse'
 
 // Types
 export { CSSNode, type CSSNodeType, TYPE_NAMES, type CloneOptions, type PlainCSSNode } from './css-node'
-export type { LexerPosition } from './lexer'
+export type { LexerPosition } from './tokenize'
 
 export {
 	ATTR_OPERATOR_NONE,

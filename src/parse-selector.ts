@@ -1,5 +1,5 @@
 // Selector Parser - Parses CSS selectors into structured AST nodes
-import { Lexer } from './lexer'
+import { Lexer } from './tokenize'
 import { CSSDataArena } from './arena'
 import {
 	SELECTOR,

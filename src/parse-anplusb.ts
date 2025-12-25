@@ -4,7 +4,7 @@
 // Much inspiration taken from CSSTree (Roman Dvornov) - MIT License
 // https://github.com/csstree/csstree/blob/56afb6dd761149099cd3cdfb0a38e15e8cc0a71a/lib/syntax/node/AnPlusB.js#L106-L271
 
-import { Lexer } from './lexer'
+import { Lexer } from './tokenize'
 import { NTH_SELECTOR, CSSDataArena } from './arena'
 import { TOKEN_IDENT, TOKEN_NUMBER, TOKEN_DIMENSION, TOKEN_DELIM, type TokenType } from './token-types'
 import { CHAR_MINUS_HYPHEN, CHAR_PLUS, str_equals, str_index_of } from './string-utils'

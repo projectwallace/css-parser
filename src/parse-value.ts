@@ -1,5 +1,5 @@
 // Value Parser - Parses CSS declaration values into structured AST nodes
-import { Lexer } from './lexer'
+import { Lexer } from './tokenize'
 import { CSSDataArena, IDENTIFIER, NUMBER, DIMENSION, STRING, HASH, FUNCTION, OPERATOR, PARENTHESIS, URL } from './arena'
 import {
 	TOKEN_IDENT,
