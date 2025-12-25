@@ -1,5 +1,5 @@
 // Declaration Parser - Parses CSS declarations into structured AST nodes
-import { Lexer } from './lexer'
+import { Lexer } from './tokenize'
 import { CSSDataArena, DECLARATION, FLAG_IMPORTANT } from './arena'
 import { ValueParser } from './parse-value'
 import {

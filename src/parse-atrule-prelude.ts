@@ -1,5 +1,5 @@
 // At-Rule Prelude Parser - Parses at-rule preludes into structured AST nodes
-import { Lexer } from './lexer'
+import { Lexer } from './tokenize'
 import {
 	CSSDataArena,
 	MEDIA_QUERY,
