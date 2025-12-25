@@ -580,15 +580,32 @@ console.log(nodes[0].text) // "(min-width: 768px)"
 
 ---
 
-## `walk(ast, callback)`
+## `walk(ast, callback, depth?)`
 
-Walk the AST in depth-first order.
+Walk the AST in depth-first order, calling the callback for each node.
 
 ```typescript
-function walk(node: CSSNode, callback: (node: CSSNode, depth: number) => void): void
+function walk(
+	node: CSSNode,
+	callback: (node: CSSNode, depth: number) => void | typeof SKIP | typeof BREAK,
+	depth?: number
+): boolean
 ```
 
-**Example:**
+### Parameters
+
+- **`node`** - The root node to start walking from
+- **`callback`** - Function to call for each node visited. Receives the node and its depth (0 for root).
+  - Return `SKIP` to skip children of current node
+  - Return `BREAK` to stop traversal entirely
+  - Return nothing to continue normal traversal
+- **`depth`** - Starting depth (default: 0)
+
+### Returns
+
+`boolean` - Returns `false` if traversal was stopped with `BREAK`, otherwise `true`
+
+### Example 1: Basic Walking
 
 ```typescript
 import { parse, walk } from '@projectwallace/css-parser'
@@ -605,6 +622,151 @@ walk(ast, (node, depth) => {
 //     BLOCK
 //       DECLARATION
 //         IDENTIFIER
+```
+
+### Example 2: Skip Nested Rules
+
+```typescript
+import { parse, walk, SKIP, STYLE_RULE } from '@projectwallace/css-parser'
+
+const ast = parse('.a { .b { .c { color: red; } } }')
+
+walk(ast, (node) => {
+	if (node.type === STYLE_RULE) {
+		console.log(node.text)
+		return SKIP // Don't visit nested rules
+	}
+})
+// Output: .a { ... }, but not .b or .c
+```
+
+### Example 3: Stop on First Declaration
+
+```typescript
+import { parse, walk, BREAK, DECLARATION } from '@projectwallace/css-parser'
+
+const ast = parse('.a { color: red; margin: 10px; }')
+
+walk(ast, (node) => {
+	if (node.type === DECLARATION) {
+		console.log(node.name)
+		return BREAK // Stop traversal
+	}
+})
+// Output: "color" (stops before "margin")
+```
+
+---
+
+## `traverse(ast, options?)`
+
+Walk the AST in depth-first order, calling enter before visiting children and leave after.
+
+```typescript
+function traverse(
+	node: CSSNode,
+	options?: {
+		enter?: (node: CSSNode) => void | typeof SKIP | typeof BREAK
+		leave?: (node: CSSNode) => void | typeof SKIP | typeof BREAK
+	}
+): boolean
+```
+
+### Parameters
+
+- **`node`** - The root node to start walking from
+- **`options`** - Object with optional enter and leave callback functions
+  - **`enter`** - Called before visiting children
+    - Return `SKIP` to skip children (leave still called)
+    - Return `BREAK` to stop traversal entirely (leave NOT called)
+  - **`leave`** - Called after visiting children
+    - Return `BREAK` to stop traversal
+
+### Returns
+
+`boolean` - Returns `false` if traversal was stopped with `BREAK`, otherwise `true`
+
+### Example 1: Track Context with Enter/Leave
+
+```typescript
+import { parse, traverse, AT_RULE } from '@projectwallace/css-parser'
+
+const ast = parse('@media screen { .a { color: red; } }')
+
+let depth = 0
+traverse(ast, {
+	enter(node) {
+		depth++
+		console.log(`${'  '.repeat(depth)}Entering ${node.type_name}`)
+	},
+	leave(node) {
+		console.log(`${'  '.repeat(depth)}Leaving ${node.type_name}`)
+		depth--
+	}
+})
+```
+
+### Example 2: Skip Media Query Contents
+
+```typescript
+import { parse, traverse, SKIP, AT_RULE } from '@projectwallace/css-parser'
+
+const ast = parse('@media screen { .a { color: red; } }')
+
+let depth = 0
+traverse(ast, {
+	enter(node) {
+		depth++
+		if (node.type === AT_RULE) {
+			console.log('Entering media query at depth', depth)
+			return SKIP // Skip contents but still call leave
+		}
+	},
+	leave(node) {
+		if (node.type === AT_RULE) {
+			console.log('Leaving media query at depth', depth)
+		}
+		depth--
+	}
+})
+// Output:
+// Entering media query at depth 2
+// Leaving media query at depth 2
+```
+
+### Example 3: Context-Aware Processing
+
+```typescript
+import { parse, traverse, STYLE_RULE, AT_RULE } from '@projectwallace/css-parser'
+
+const ast = parse(`
+	.top { color: red; }
+	@media screen {
+		.nested { color: blue; }
+	}
+`)
+
+const context = []
+
+traverse(ast, {
+	enter(node) {
+		if (node.type === AT_RULE) {
+			context.push(`@${node.name}`)
+		} else if (node.type === STYLE_RULE) {
+			const selector = node.first_child.text
+			const ctx = context.length ? ` in ${context.join(' ')}` : ''
+			console.log(`Rule: ${selector}${ctx}`)
+		}
+	},
+	leave(node) {
+		if (node.type === AT_RULE) {
+			context.pop()
+		}
+	}
+})
+// Output:
+// Rule: .top
+// Rule: .nested in @media
 ```
 
 ---

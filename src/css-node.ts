@@ -696,25 +696,12 @@ export class CSSNode {
 	// --- Node Cloning ---
 
 	/**
-	 * Clone this node as a mutable plain JavaScript object
-	 *
-	 * Extracts all properties from the arena into a plain object with children as an array.
-	 * The resulting object can be freely modified.
+	 * Clone this node as a mutable plain JavaScript object with children as arrays.
+	 * See API.md for examples.
 	 *
 	 * @param options - Cloning configuration
 	 * @param options.deep - Recursively clone children (default: true)
 	 * @param options.locations - Include line/column/start/length (default: false)
-	 * @returns Plain object with children as array
-	 *
-	 * @example
-	 * const ast = parse('div { color: red; }')
-	 * const decl = ast.first_child.block.first_child
-	 * const plain = decl.clone()
-	 *
-	 * // Access children as array
-	 * plain.children.length
-	 * plain.children[0]
-	 * plain.children.push(newChild)
 	 */
 	clone(options: CloneOptions = {}): PlainCSSNode {
 		const { deep = true, locations = false } = options
