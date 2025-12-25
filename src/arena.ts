@@ -261,11 +261,6 @@ export class CSSDataArena {
 		this.view.setUint8(this.node_offset(node_index) + 1, flags)
 	}
 
-	// Write start offset in source
-	set_start_offset(node_index: number, offset: number): void {
-		this.view.setUint32(this.node_offset(node_index) + 12, offset, true)
-	}
-
 	// Write length in source
 	set_length(node_index: number, length: number): void {
 		// Uint16 max value is 65535
@@ -307,16 +302,6 @@ export class CSSDataArena {
 	// Write next sibling index
 	set_next_sibling(node_index: number, siblingIndex: number): void {
 		this.view.setUint32(this.node_offset(node_index) + 8, siblingIndex, true)
-	}
-
-	// Write start line
-	set_start_line(node_index: number, line: number): void {
-		this.view.setUint32(this.node_offset(node_index) + 24, line, true)
-	}
-
-	// Write start column
-	set_start_column(node_index: number, column: number): void {
-		this.view.setUint32(this.node_offset(node_index) + 28, column, true)
 	}
 
 	// Write value start delta (offset from startOffset, declaration value / at-rule prelude)
