@@ -199,3 +199,22 @@ export function is_vendor_prefixed(source: string, start?: number, end?: number)
 	}
 	return false
 }
+
+/**
+ * Check if a string is a CSS custom property (starts with --)
+ *
+ * @param str - The string to check
+ * @returns true if the string starts with -- (custom property)
+ *
+ * Examples:
+ * - `--primary-color` → true
+ * - `--my-var` → true
+ * - `-webkit-transform` → false (vendor prefix, not custom)
+ * - `border-radius` → false (standard property)
+ * - `color` → false
+ */
+export function is_custom(str: string): boolean {
+	// Must start with two hyphens and have at least one character after
+	if (str.length < 3) return false
+	return str.charCodeAt(0) === CHAR_MINUS_HYPHEN && str.charCodeAt(1) === CHAR_MINUS_HYPHEN
+}
