@@ -4,7 +4,6 @@
 - `parse_selector`
 - `parse_atrule_prelude`
 - `walk`
-- `is_custom`
 - `tokenize`
 
 ---
@@ -33,11 +32,13 @@ function parse(source: string, options?: ParserOptions): CSSNode
 `CSSNode` - Root stylesheet node with the following properties:
 
 **Core Properties:**
+
 - `type` - Node type constant (e.g., `STYLESHEET`, `STYLE_RULE`)
 - `type_name` - CSSTree-compatible type name (e.g., `'StyleSheet'`, `'Rule'`)
 - `text` - Full text of the node from source
 
 **Content Properties:**
+
 - `name` - Property name for declarations, at-rule name for at-rules, layer name for import layers
 - `property` - Alias for `name` (for declarations, more semantic)
 - `value` - Value text (for declarations), numeric value (for NUMBER/DIMENSION), string content without quotes (for STRING), URL content (for URL), or `null`
@@ -46,6 +47,7 @@ function parse(source: string, options?: ParserOptions): CSSNode
 - `prelude` - At-rule prelude text or `null`
 
 **Location Properties:**
+
 - `line` - Starting line number (1-based)
 - `column` - Starting column number (1-based)
 - `start` - Starting offset in source (0-based)
@@ -53,6 +55,7 @@ function parse(source: string, options?: ParserOptions): CSSNode
 - `end` - End offset in source (calculated as `start + length`)
 
 **Flags:**
+
 - `is_important` - Whether declaration has `!important` (DECLARATION only)
 - `is_vendor_prefixed` - Whether node has vendor prefix (checks name/text based on type)
 - `has_error` - Whether node has syntax error
@@ -63,6 +66,7 @@ function parse(source: string, options?: ParserOptions): CSSNode
 - `has_next` - Whether node has a next sibling
 
 **Tree Structure:**
+
 - `first_child` - First child node or `null`
 - `next_sibling` - Next sibling node or `null`
 - `children` - Array of all child nodes
@@ -70,9 +74,11 @@ function parse(source: string, options?: ParserOptions): CSSNode
 - `is_empty` - Whether block has no declarations or rules (only comments allowed)
 
 **Value Access (Declarations):**
+
 - `values` - Array of value nodes (for declarations)
 
 **Selector Properties:**
+
 - `selector_list` - Selector list from pseudo-classes like `:is()`, `:not()`, `:has()`, `:where()`, or `:nth-child(of)`
 - `nth` - An+B formula node from `:nth-child(of)` wrapper (for NTH_OF_SELECTOR nodes)
 - `selector` - Selector list from `:nth-child(of)` wrapper (for NTH_OF_SELECTOR nodes)
@@ -80,10 +86,12 @@ function parse(source: string, options?: ParserOptions): CSSNode
 - `nth_b` - The 'b' coefficient from An+B expressions like `"+1"` from `:nth-child(2n+1)` (for NTH_SELECTOR)
 
 **Attribute Selector Properties:**
+
 - `attr_operator` - Attribute operator constant (for ATTRIBUTE_SELECTOR): `ATTR_OPERATOR_NONE`, `ATTR_OPERATOR_EQUAL`, etc.
 - `attr_flags` - Attribute flags constant (for ATTRIBUTE_SELECTOR): `ATTR_FLAG_NONE`, `ATTR_FLAG_CASE_INSENSITIVE`, `ATTR_FLAG_CASE_SENSITIVE`
 
 **Compound Selector Helpers (SELECTOR nodes):**
+
 - `compound_parts()` - Iterator over first compound selector parts (zero allocation)
 - `first_compound` - Array of parts before first combinator
 - `all_compounds` - Array of compound arrays split by combinators
@@ -91,6 +99,7 @@ function parse(source: string, options?: ParserOptions): CSSNode
 - `first_compound_text` - Text of first compound selector (no node allocation)
 
 **Methods:**
+
 - `clone(options?)` - Clone node as a mutable plain object with children as arrays
 
 ### Example 1: Basic Parsing
@@ -614,11 +623,7 @@ console.log(nodes[0].text) // "(min-width: 768px)"
 Walk the AST in depth-first order, calling the callback for each node.
 
 ```typescript
-function walk(
-	node: CSSNode,
-	callback: (node: CSSNode, depth: number) => void | typeof SKIP | typeof BREAK,
-	depth?: number
-): boolean
+function walk(node: CSSNode, callback: (node: CSSNode, depth: number) => void | typeof SKIP | typeof BREAK, depth?: number): boolean
 ```
 
 ### Parameters
@@ -697,7 +702,7 @@ function traverse(
 	options?: {
 		enter?: (node: CSSNode) => void | typeof SKIP | typeof BREAK
 		leave?: (node: CSSNode) => void | typeof SKIP | typeof BREAK
-	}
+	},
 ): boolean
 ```
 
@@ -731,7 +736,7 @@ traverse(ast, {
 	leave(node) {
 		console.log(`${'  '.repeat(depth)}Leaving ${node.type_name}`)
 		depth--
-	}
+	},
 })
 ```
 
@@ -756,7 +761,7 @@ traverse(ast, {
 			console.log('Leaving media query at depth', depth)
 		}
 		depth--
-	}
+	},
 })
 // Output:
 // Entering media query at depth 2
@@ -791,54 +796,11 @@ traverse(ast, {
 		if (node.type === AT_RULE) {
 			context.pop()
 		}
-	}
+	},
 })
 // Output:
 // Rule: .top
 // Rule: .nested in @media
-```
-
----
-
-## `is_custom(str)`
-
-Check if a string is a CSS custom property (starts with `--`).
-
-### Signature
-
-```typescript
-function is_custom(str: string): boolean
-```
-
-### Parameters
-
-- **`str`** (`string`) - The string to check
-
-### Returns
-
-`boolean` - `true` if the string starts with `--` (custom property), `false` otherwise
-
-### Examples
-
-```typescript
-import { parse, is_custom } from '@projectwallace/css-parser'
-
-const ast = parse(':root { --primary: blue; color: red; }')
-const block = ast.first_child.block
-
-for (const decl of block.children) {
-	if (is_custom(decl.name)) {
-		console.log('Custom property:', decl.name) // Logs: "--primary"
-	} else {
-		console.log('Standard property:', decl.name) // Logs: "color"
-	}
-}
-
-// Direct usage
-is_custom('--primary-color')  // true
-is_custom('--my-var')         // true
-is_custom('color')            // false
-is_custom('-webkit-transform') // false (vendor prefix, not custom)
 ```
 
 ---
@@ -1005,4 +967,92 @@ for (let node of ast) {
 		console.log(node.attr_flags === ATTR_FLAG_CASE_INSENSITIVE) // true
 	}
 }
+```
+
+---
+
+## `@projectwallace/css-parser/string-utils`
+
+### `is_custom(str)`
+
+Check if a string is a CSS custom property (starts with `--`).
+
+```typescript
+import { parse } from '@projectwallace/css-parser'
+import { is_custom } from '@projectwallace/css-parser/string-utils'
+
+const ast = parse(':root { --primary: blue; color: red; }')
+const block = ast.first_child.block
+
+for (const decl of block.children) {
+	if (is_custom(decl.name)) {
+		console.log('Custom property:', decl.name) // Logs: "--primary"
+	}
+}
+
+// Direct usage
+is_custom('--primary-color') // true
+is_custom('--my-var') // true
+is_custom('color') // false
+is_custom('-webkit-transform') // false (vendor prefix, not custom)
+```
+
+### `is_vendor_prefixed(str)`
+
+Check if a string has a vendor prefix (`-webkit-`, `-moz-`, `-ms-`, `-o-`).
+
+```typescript
+import { is_vendor_prefixed } from '@projectwallace/css-parser/string-utils'
+
+// Detect vendor prefixes
+is_vendor_prefixed('-webkit-transform') // true
+is_vendor_prefixed('-moz-appearance') // true
+is_vendor_prefixed('-ms-filter') // true
+is_vendor_prefixed('-o-border-image') // true
+
+// Not vendor prefixes
+is_vendor_prefixed('--custom-property') // false (custom property)
+is_vendor_prefixed('border-radius') // false (standard property)
+is_vendor_prefixed('transform') // false (no prefix)
+```
+
+### `str_equals(a, b)`
+
+Case-insensitive string equality check without allocations. The first parameter must be lowercase.
+
+```typescript
+import { str_equals } from '@projectwallace/css-parser/string-utils'
+
+// First parameter MUST be lowercase
+str_equals('media', 'MEDIA') // true
+str_equals('media', 'Media') // true
+str_equals('media', 'media') // true
+str_equals('media', 'print') // false
+```
+
+### `str_starts_with(str, prefix)`
+
+Case-insensitive prefix check without allocations. The prefix parameter must be lowercase.
+
+```typescript
+import { str_starts_with } from '@projectwallace/css-parser/string-utils'
+
+// prefix MUST be lowercase
+str_starts_with('WEBKIT-transform', 'webkit') // true
+str_starts_with('Mozilla', 'moz') // true
+str_starts_with('transform', 'trans') // true
+str_starts_with('color', 'border') // false
+```
+
+### `str_index_of(str, search)`
+
+Case-insensitive substring search without allocations. Returns the index of the first occurrence. The search parameter must be lowercase.
+
+```typescript
+import { str_index_of } from '@projectwallace/css-parser/string-utils'
+
+// search MUST be lowercase
+str_index_of('background-COLOR', 'color') // 11
+str_index_of('HELLO', 'e') // 1
+str_index_of('transform', 'x') // -1 (not found)
 ```
