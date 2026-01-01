@@ -11,6 +11,7 @@ import {
 	IDENTIFIER,
 	PRELUDE_OPERATOR,
 	URL,
+	FUNCTION,
 } from './arena'
 import {
 	TOKEN_IDENT,
@@ -243,6 +244,46 @@ export class AtRulePreludeParser {
 				if (feature !== null) {
 					components.push(feature)
 				}
+			}
+			// Function: style(--custom: 1)
+			else if (token_type === TOKEN_FUNCTION) {
+				let func_name = this.source.substring(this.lexer.token_start, this.lexer.token_end - 1) // -1 to exclude '('
+
+				// For now, treat all functions (like style()) as FUNCTION nodes
+				let func_start = this.lexer.token_start
+				let content_start = this.lexer.token_end // After '('
+
+				// Find matching closing paren
+				let paren_depth = 1
+				let func_end = this.lexer.token_end
+				let content_end = content_start
+
+				while (this.lexer.pos < this.prelude_end && paren_depth > 0) {
+					this.next_token()
+					let inner_token = this.lexer.token_type
+					if (inner_token === TOKEN_LEFT_PAREN || inner_token === TOKEN_FUNCTION) {
+						paren_depth++
+					} else if (inner_token === TOKEN_RIGHT_PAREN) {
+						paren_depth--
+						if (paren_depth === 0) {
+							content_end = this.lexer.token_start
+							func_end = this.lexer.token_end
+						}
+					} else if (inner_token === TOKEN_EOF) {
+						break
+					}
+				}
+
+				// Create function node
+				let func_node = this.create_node(FUNCTION, func_start, func_end)
+				// Set content fields to function name
+				this.arena.set_content_start_delta(func_node, 0)
+				this.arena.set_content_length(func_node, func_name.length)
+				// Set value fields to content inside parentheses
+				this.arena.set_value_start_delta(func_node, content_start - func_start)
+				this.arena.set_value_length(func_node, content_end - content_start)
+
+				components.push(func_node)
 			}
 			// Identifier: operator (and, or, not) or container name
 			else if (token_type === TOKEN_IDENT) {

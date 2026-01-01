@@ -13,6 +13,7 @@ import {
 	IDENTIFIER,
 	PRELUDE_OPERATOR,
 	URL,
+	FUNCTION,
 } from './arena'
 
 describe('At-Rule Prelude Nodes', () => {
@@ -498,10 +499,74 @@ describe('At-Rule Prelude Nodes', () => {
 
 				expect(children[0].type).toBe(CONTAINER_QUERY)
 
-				const queryChildren = children[0].children
+				const [ident, media_feature] = children[0].children
 				// Should have name and feature
-				expect(queryChildren.some((c) => c.type === IDENTIFIER)).toBe(true)
-				expect(queryChildren.some((c) => c.type === MEDIA_FEATURE)).toBe(true)
+				expect(ident.type).toBe(IDENTIFIER)
+				expect(media_feature.type).toBe(MEDIA_FEATURE)
+			})
+
+			it('should parse style container query', () => {
+				const css = '@container style(--custom: 1) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+				const children = atRule?.children || []
+
+				expect(children[0].type).toBe(CONTAINER_QUERY)
+
+				const [fn] = children[0].children
+				expect(fn.type_name).toBe('Function')
+				expect(fn.text).toBe('style(--custom: 1)')
+				expect(fn.value).toBe('--custom: 1')
+			})
+
+			it('should parse named style container query', () => {
+				const css = '@container mytest style(--custom: 1) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+				const children = atRule?.children || []
+
+				expect(children[0].type).toBe(CONTAINER_QUERY)
+
+				const [ident, fn] = children[0].children
+				expect(ident.type_name).toBe('Identifier')
+				expect(ident.text).toBe('mytest')
+				expect(fn.type_name).toBe('Function')
+				expect(fn.text).toBe('style(--custom: 1)')
+				expect(fn.value).toBe('--custom: 1')
+			})
+
+			it('should handle a very complex container query', () => {
+				const css = `@container style(--themeBackground),
+						not style(background-color: red),
+						style(color: green) and style(background-color: transparent),
+						style(--themeColor: blue) or style(--themeColor: purple) {
+					/* <stylesheet> */
+				}`
+				const ast = parse(css)
+				const atRule = ast.first_child
+				const children = atRule?.children || []
+				expect(children[0].type).toBe(CONTAINER_QUERY)
+
+				const container = children[0]
+				const [style1, not1, style2, style3, and, style4, style5, or, style6] = container.children
+				expect(style1.type_name).toBe('Function')
+				expect(style1.name).toBe('style')
+				expect(not1.type_name).toBe('Operator')
+				expect(not1.text).toBe('not')
+				expect(style2.type_name).toBe('Function')
+				expect(style2.name).toBe('style')
+				expect(style3.type_name).toBe('Function')
+				expect(style3.name).toBe('style')
+				expect(and.type_name).toBe('Operator')
+				expect(and.text).toBe('and')
+				expect(style4.type_name).toBe('Function')
+				expect(style4.name).toBe('style')
+				expect(style5.type_name).toBe('Function')
+				expect(style5.name).toBe('style')
+				expect(or.type_name).toBe('Operator')
+				expect(or.text).toBe('or')
+				expect(style6.type_name).toBe('Function')
+				expect(style6.name).toBe('style')
 			})
 		})
 
