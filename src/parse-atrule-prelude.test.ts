@@ -14,6 +14,8 @@ import {
 	PRELUDE_OPERATOR,
 	URL,
 	FUNCTION,
+	DIMENSION,
+	FEATURE_RANGE,
 } from './arena'
 
 describe('At-Rule Prelude Nodes', () => {
@@ -425,7 +427,7 @@ describe('At-Rule Prelude Nodes', () => {
 
 				// Feature should have content
 				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE)
-				expect(feature?.value).toContain('min-width')
+				expect(feature?.name).toBe('min-width')
 			})
 
 			it('should trim whitespace and comments from media features', () => {
@@ -436,7 +438,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const queryChildren = children[0].children
 				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE)
 
-				expect(feature?.value).toBe('min-width: 768px')
+				expect(feature?.name).toBe('min-width')
 			})
 
 			it('should parse complex media query with and operator', () => {
@@ -465,6 +467,128 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(features.length).toBe(2)
 			})
 
+			it('should extract feature name from standard feature', () => {
+				const css = '@media (orientation: portrait) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+				const queryChildren = atRule?.children[0].children || []
+				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE)
+
+				expect(feature?.name).toBe('orientation')
+				expect(feature?.children.length).toBe(1)
+				expect(feature?.children[0].type).toBe(IDENTIFIER)
+			})
+
+			it('should extract feature name from boolean feature', () => {
+				const css = '@media (hover) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+				const queryChildren = atRule?.children[0].children || []
+				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE)
+
+				expect(feature?.name).toBe('hover')
+			})
+
+			it('should parse feature values as typed children', () => {
+				const css = '@media (min-width: 768px) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+				const queryChildren = atRule?.children[0].children || []
+				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE)
+
+				expect(feature?.name).toBe('min-width')
+				expect(feature?.children.length).toBe(1)
+				expect(feature?.children[0].type).toBe(DIMENSION)
+			})
+
+			it('should parse identifier value as child', () => {
+				const css = '@media (orientation: portrait) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+				const queryChildren = atRule?.children[0].children || []
+				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE)
+
+				expect(feature?.children.length).toBe(1)
+				expect(feature?.children[0].type).toBe(IDENTIFIER)
+				expect(feature?.children[0].text).toBe('portrait')
+			})
+
+			it('should have no children for boolean features', () => {
+				const css = '@media (hover) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+				const queryChildren = atRule?.children[0].children || []
+				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE)
+
+				expect(feature?.children.length).toBe(0)
+			})
+
+			it('should parse range syntax with single comparison', () => {
+				const css = '@media (width >= 400px) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+				const queryChildren = atRule?.children[0].children || []
+				const range = queryChildren.find((c) => c.type === FEATURE_RANGE)
+
+				expect(range?.type).toBe(FEATURE_RANGE)
+				expect(range?.name).toBe('width')
+				expect(range?.children.length).toBe(2) // dimension + operator
+
+				// Verify child types
+				expect(range?.children[0].type).toBe(PRELUDE_OPERATOR) // >=
+				expect(range?.children[1].type).toBe(DIMENSION) // 400px
+			})
+
+			it('should parse range syntax with double comparison', () => {
+				const css = '@media (50px <= width <= 100px) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+				const queryChildren = atRule?.children[0].children || []
+				const range = queryChildren.find((c) => c.type === FEATURE_RANGE)
+
+				expect(range?.type).toBe(FEATURE_RANGE)
+				expect(range?.name).toBe('width')
+				expect(range?.children.length).toBe(4) // dim, op, op, dim
+
+				// Verify child types
+				expect(range?.children[0].type).toBe(DIMENSION) // 50px
+				expect(range?.children[1].type).toBe(PRELUDE_OPERATOR) // <=
+				expect(range?.children[2].type).toBe(PRELUDE_OPERATOR) // <=
+				expect(range?.children[3].type).toBe(DIMENSION) // 100px
+			})
+
+			it('should parse range syntax with less-than', () => {
+				const css = '@media (400px < width) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+				const queryChildren = atRule?.children[0].children || []
+				const range = queryChildren.find((c) => c.type === FEATURE_RANGE)
+
+				expect(range?.type).toBe(FEATURE_RANGE)
+				expect(range?.name).toBe('width')
+				expect(range?.children.length).toBe(2)
+
+				// Verify child types
+				expect(range?.children[0].type).toBe(DIMENSION) // 400px
+				expect(range?.children[1].type).toBe(PRELUDE_OPERATOR) // <
+			})
+
+			it('should parse range syntax with equals', () => {
+				const css = '@media (width = 500px) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child
+				const queryChildren = atRule?.children[0].children || []
+				const range = queryChildren.find((c) => c.type === FEATURE_RANGE)
+
+				expect(range?.type).toBe(FEATURE_RANGE)
+				expect(range?.name).toBe('width')
+				expect(range?.children.length).toBe(2)
+
+				// Verify child types
+				expect(range?.children[0].type).toBe(PRELUDE_OPERATOR) // =
+				expect(range?.children[1].type).toBe(DIMENSION) // 500px
+			})
+
 			it('should parse comma-separated media queries', () => {
 				const css = '@media screen, print { }'
 				const ast = parse(css)
@@ -474,6 +598,11 @@ describe('At-Rule Prelude Nodes', () => {
 				// Should have 2 media query nodes
 				const queries = children.filter((c) => c.type === MEDIA_QUERY)
 				expect(queries.length).toBe(2)
+				const [screen, print] = queries
+				expect(screen.type_name).toBe('MediaQuery')
+				expect(screen.text).toBe('screen')
+				expect(print.type_name).toBe('MediaQuery')
+				expect(print.text).toBe('print')
 			})
 		})
 

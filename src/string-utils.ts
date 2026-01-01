@@ -21,6 +21,7 @@ export const CHAR_PIPE = 0x7c // |
 export const CHAR_DOLLAR = 0x24 // $
 export const CHAR_CARET = 0x5e // ^
 export const CHAR_COLON = 0x3a // :
+export const CHAR_LESS_THAN = 0x3c // <
 
 /**
  * Check if a character code is whitespace (space, tab, newline, CR, or FF)
