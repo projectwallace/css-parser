@@ -518,8 +518,7 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(children.some((c) => c.type === SUPPORTS_QUERY)).toBe(true)
 
 				const query = children.find((c) => c.type === SUPPORTS_QUERY)
-				expect(query?.value).toContain('display')
-				expect(query?.value).toContain('flex')
+				expect(query?.value).toContain('display: flex')
 			})
 
 			it('should trim whitespace and comments from supports queries', () => {
@@ -560,7 +559,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const children = atRule?.children.filter((c) => c.type !== BLOCK) || []
 				expect(children.length).toBe(1)
 				expect(children[0].type).toBe(LAYER_NAME)
+				expect(children[0].type_name).toBe('Layer')
 				expect(children[0].text).toBe('base')
+				expect(children[0].value).toBe('base')
 			})
 
 			it('should parse comma-separated layer names', () => {
@@ -573,12 +574,15 @@ describe('At-Rule Prelude Nodes', () => {
 
 				expect(children[0].type).toBe(LAYER_NAME)
 				expect(children[0].text).toBe('base')
+				expect(children[0].value).toBe('base')
 
 				expect(children[1].type).toBe(LAYER_NAME)
 				expect(children[1].text).toBe('components')
+				expect(children[1].value).toBe('components')
 
 				expect(children[2].type).toBe(LAYER_NAME)
 				expect(children[2].text).toBe('utilities')
+				expect(children[2].value).toBe('utilities')
 			})
 		})
 

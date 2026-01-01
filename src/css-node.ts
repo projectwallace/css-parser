@@ -189,7 +189,10 @@ export class CSSNode {
 		this.index = index
 	}
 
-	/** Get the arena (for internal/advanced use only) */
+	/**
+	 * @internal
+	 * Get the arena (for internal/advanced use only)
+	 */
 	__get_arena(): CSSDataArena {
 		return this.arena
 	}

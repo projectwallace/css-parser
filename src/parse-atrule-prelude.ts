@@ -346,6 +346,9 @@ export class AtRulePreludeParser {
 			if (token_type === TOKEN_IDENT) {
 				// Layer name
 				let layer = this.create_node(LAYER_NAME, this.lexer.token_start, this.lexer.token_end)
+				// Set value to the layer name text (same as the full node text)
+				this.arena.set_value_start_delta(layer, 0)
+				this.arena.set_value_length(layer, this.lexer.token_end - this.lexer.token_start)
 				nodes.push(layer)
 			} else if (token_type === TOKEN_COMMA) {
 				// Skip comma separator
