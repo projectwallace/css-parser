@@ -504,8 +504,11 @@ export class AtRulePreludeParser {
 				if (content_length > 0) {
 					let trimmed = trim_boundaries(this.source, content_start, content_start + content_length)
 					if (trimmed) {
+						// Set both content fields (for .name) and value fields (for .value)
 						this.arena.set_content_start_delta(layer_node, trimmed[0] - layer_start)
 						this.arena.set_content_length(layer_node, trimmed[1] - trimmed[0])
+						this.arena.set_value_start_delta(layer_node, trimmed[0] - layer_start)
+						this.arena.set_value_length(layer_node, trimmed[1] - trimmed[0])
 					}
 				}
 
@@ -530,10 +533,12 @@ export class AtRulePreludeParser {
 			let text = this.source.substring(this.lexer.token_start, this.lexer.token_end - 1) // -1 to exclude '('
 			if (str_equals('supports', text)) {
 				let supports_start = this.lexer.token_start
+				let content_start = this.lexer.token_end // After the opening '('
 
 				// Find matching closing parenthesis
 				let paren_depth = 1
 				let supports_end = this.lexer.token_end
+				let content_end = content_start
 
 				while (this.lexer.pos < this.prelude_end && paren_depth > 0) {
 					let tokenType = this.next_token()
@@ -542,6 +547,7 @@ export class AtRulePreludeParser {
 					} else if (tokenType === TOKEN_RIGHT_PAREN) {
 						paren_depth--
 						if (paren_depth === 0) {
+							content_end = this.lexer.token_start // Before the closing ')'
 							supports_end = this.lexer.token_end
 						}
 					} else if (tokenType === TOKEN_EOF) {
@@ -551,6 +557,13 @@ export class AtRulePreludeParser {
 
 				// Create supports node
 				let supports_node = this.create_node(SUPPORTS_QUERY, supports_start, supports_end)
+
+				// Store query content in value fields, trimmed
+				let trimmed = trim_boundaries(this.source, content_start, content_end)
+				if (trimmed) {
+					this.arena.set_value_start_delta(supports_node, trimmed[0] - supports_start)
+					this.arena.set_value_length(supports_node, trimmed[1] - trimmed[0])
+				}
 
 				return supports_node
 			}
