@@ -206,6 +206,11 @@ describe('parse_declaration', () => {
 			const node = parse_declaration('-o-color: red')
 			expect(node.is_browserhack).toBe(false)
 		})
+
+		test('custom property is not a browserhack', () => {
+			const node = parse_declaration('--custom: red')
+			expect(node.is_browserhack).toBe(false)
+		})
 	})
 
 	describe('Value Parsing', () => {

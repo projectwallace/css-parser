@@ -74,9 +74,13 @@ export class DeclarationParser {
 				browser_hack_line = lexer.token_line
 				browser_hack_column = lexer.token_column
 			} else if (first_char === 45) {
-				// '-' - hyphen prefix could be vendor prefix or browser hack
+				// '-' - hyphen prefix could be vendor prefix, custom property, or browser hack
+				// Check if it's a custom property (starts with --)
+				const second_char = this.source.charCodeAt(lexer.token_start + 1)
+				const is_custom_property = second_char === 45 // '--'
+
 				// Use fast vendor prefix check (no allocations)
-				if (!is_vendor_prefixed(this.source, lexer.token_start, lexer.token_end)) {
+				if (!is_custom_property && !is_vendor_prefixed(this.source, lexer.token_start, lexer.token_end)) {
 					// This is a browser hack like -property
 					has_browser_hack = true
 					browser_hack_start = lexer.token_start
