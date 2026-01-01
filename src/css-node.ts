@@ -37,6 +37,7 @@ import {
 	SUPPORTS_QUERY,
 	LAYER_NAME,
 	PRELUDE_OPERATOR,
+	FEATURE_RANGE,
 	FLAG_IMPORTANT,
 	FLAG_HAS_ERROR,
 	FLAG_HAS_BLOCK,
@@ -86,6 +87,7 @@ export const TYPE_NAMES = {
 	[SUPPORTS_QUERY]: 'SupportsQuery',
 	[LAYER_NAME]: 'Layer',
 	[PRELUDE_OPERATOR]: 'Operator',
+	[FEATURE_RANGE]: 'MediaFeatureRange',
 } as const
 
 export type TypeName = (typeof TYPE_NAMES)[keyof typeof TYPE_NAMES] | 'unknown'
@@ -128,6 +130,7 @@ export type CSSNodeType =
 	| typeof SUPPORTS_QUERY
 	| typeof LAYER_NAME
 	| typeof PRELUDE_OPERATOR
+	| typeof FEATURE_RANGE
 
 // Options for cloning nodes
 export interface CloneOptions {

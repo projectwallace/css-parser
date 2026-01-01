@@ -86,6 +86,7 @@ export const CONTAINER_QUERY = 35 // container query: sidebar (min-width: 400px)
 export const SUPPORTS_QUERY = 36 // supports query: (display: flex)
 export const LAYER_NAME = 37 // layer name: base, components
 export const PRELUDE_OPERATOR = 38 // logical operator: and, or, not
+export const FEATURE_RANGE = 39 // Range syntax: (50px <= width <= 100px)
 
 // Flag constants (bit-packed in 1 byte)
 export const FLAG_IMPORTANT = 1 << 0 // Has !important

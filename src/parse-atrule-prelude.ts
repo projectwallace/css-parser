@@ -12,6 +12,10 @@ import {
 	PRELUDE_OPERATOR,
 	URL,
 	FUNCTION,
+	NUMBER,
+	DIMENSION,
+	STRING,
+	FEATURE_RANGE,
 } from './arena'
 import {
 	TOKEN_IDENT,
@@ -23,9 +27,12 @@ import {
 	TOKEN_STRING,
 	TOKEN_URL,
 	TOKEN_FUNCTION,
+	TOKEN_NUMBER,
+	TOKEN_PERCENTAGE,
+	TOKEN_DIMENSION,
 	type TokenType,
 } from './token-types'
-import { str_equals } from './string-utils'
+import { str_equals, is_whitespace, CHAR_COLON, CHAR_LESS_THAN, CHAR_GREATER_THAN, CHAR_EQUALS } from './string-utils'
 import { trim_boundaries, skip_whitespace_forward } from './parse-utils'
 import { CSSNode } from './css-node'
 
@@ -187,7 +194,7 @@ export class AtRulePreludeParser {
 		return query_node
 	}
 
-	// Parse media feature: (min-width: 768px)
+	// Parse media feature: (min-width: 768px) or range: (50px <= width <= 100px)
 	private parse_media_feature(): number | null {
 		let feature_start = this.lexer.token_start // '(' position
 
@@ -210,14 +217,55 @@ export class AtRulePreludeParser {
 		let content_end = this.lexer.token_start // Before ')'
 		let feature_end = this.lexer.token_end // After ')'
 
-		// Create media feature node
+		// Check for range syntax (has comparison operators)
+		let has_comparison = false
+		for (let i = content_start; i < content_end; i++) {
+			let ch = this.source.charCodeAt(i)
+			if (ch === CHAR_LESS_THAN || ch === CHAR_GREATER_THAN || ch === CHAR_EQUALS) {
+				has_comparison = true
+				break
+			}
+		}
+
+		if (has_comparison) {
+			return this.parse_feature_range(feature_start, feature_end, content_start, content_end)
+		}
+
+		// Standard feature or boolean feature
 		let feature = this.create_node(MEDIA_FEATURE, feature_start, feature_end)
 
-		// Store feature content (without parentheses) in value fields, trimmed
-		let trimmed = trim_boundaries(this.source, content_start, content_end)
-		if (trimmed) {
-			this.arena.set_value_start_delta(feature, trimmed[0] - feature_start)
-			this.arena.set_value_length(feature, trimmed[1] - trimmed[0])
+		// Find colon to separate name from value
+		let colon_pos = -1
+		for (let i = content_start; i < content_end; i++) {
+			if (this.source.charCodeAt(i) === CHAR_COLON) {
+				colon_pos = i
+				break
+			}
+		}
+
+		if (colon_pos !== -1) {
+			// Standard feature: (name: value)
+			let name_trimmed = trim_boundaries(this.source, content_start, colon_pos)
+			if (name_trimmed) {
+				this.arena.set_content_start_delta(feature, name_trimmed[0] - feature_start)
+				this.arena.set_content_length(feature, name_trimmed[1] - name_trimmed[0])
+			}
+
+			// Parse value portion
+			let value_trimmed = trim_boundaries(this.source, colon_pos + 1, content_end)
+			if (value_trimmed) {
+				let value_nodes = this.parse_feature_value(value_trimmed[0], value_trimmed[1])
+				if (value_nodes.length > 0) {
+					this.arena.append_children(feature, value_nodes)
+				}
+			}
+		} else {
+			// Boolean feature: (hover), (color)
+			let trimmed = trim_boundaries(this.source, content_start, content_end)
+			if (trimmed) {
+				this.arena.set_content_start_delta(feature, trimmed[0] - feature_start)
+				this.arena.set_content_length(feature, trimmed[1] - trimmed[0])
+			}
 		}
 
 		return feature
@@ -642,6 +690,111 @@ export class AtRulePreludeParser {
 			return TOKEN_EOF
 		}
 		return this.lexer.next_token_fast(false)
+	}
+
+	// Helper: Parse a single value token into a node
+	private parse_value_token(): number | null {
+		switch (this.lexer.token_type) {
+			case TOKEN_IDENT:
+				return this.create_node(IDENTIFIER, this.lexer.token_start, this.lexer.token_end)
+			case TOKEN_NUMBER:
+				return this.create_node(NUMBER, this.lexer.token_start, this.lexer.token_end)
+			case TOKEN_PERCENTAGE:
+			case TOKEN_DIMENSION:
+				return this.create_node(DIMENSION, this.lexer.token_start, this.lexer.token_end)
+			case TOKEN_STRING:
+				return this.create_node(STRING, this.lexer.token_start, this.lexer.token_end)
+			default:
+				return null
+		}
+	}
+
+	// Helper: Parse feature value portion into typed nodes
+	private parse_feature_value(start: number, end: number): number[] {
+		let saved_pos = this.lexer.save_position()
+		this.lexer.pos = start
+
+		let nodes: number[] = []
+
+		while (this.lexer.pos < end) {
+			this.lexer.next_token_fast(false)
+			if (this.lexer.token_start >= end) break
+
+			// Skip whitespace tokens
+			let all_whitespace = true
+			for (let i = this.lexer.token_start; i < this.lexer.token_end && i < end; i++) {
+				if (!is_whitespace(this.source.charCodeAt(i))) {
+					all_whitespace = false
+					break
+				}
+			}
+			if (all_whitespace) continue
+
+			// Create node based on token type
+			let node = this.parse_value_token()
+			if (node !== null) nodes.push(node)
+		}
+
+		this.lexer.restore_position(saved_pos)
+		return nodes
+	}
+
+	// Parse media feature range syntax: (50px <= width <= 100px)
+	private parse_feature_range(
+		feature_start: number,
+		feature_end: number,
+		content_start: number,
+		content_end: number
+	): number {
+		let range_node = this.create_node(FEATURE_RANGE, feature_start, feature_end)
+		let children: number[] = []
+		let feature_name_start = -1
+		let feature_name_end = -1
+
+		let pos = content_start
+
+		while (pos < content_end) {
+			pos = skip_whitespace_forward(this.source, pos, content_end)
+			if (pos >= content_end) break
+
+			let ch = this.source.charCodeAt(pos)
+
+			// Comparison operator
+			if (ch === CHAR_LESS_THAN || ch === CHAR_GREATER_THAN || ch === CHAR_EQUALS) {
+				let op_start = pos++
+				if (pos < content_end && this.source.charCodeAt(pos) === CHAR_EQUALS) pos++
+
+				let op = this.create_node(PRELUDE_OPERATOR, op_start, pos)
+				children.push(op)
+			} else {
+				// Value or feature name
+				let saved = this.lexer.save_position()
+				this.lexer.pos = pos
+				this.next_token()
+
+				if (this.lexer.token_type === TOKEN_IDENT) {
+					// Feature name
+					feature_name_start = this.lexer.token_start
+					feature_name_end = this.lexer.token_end
+				} else {
+					// Value
+					let value_nodes = this.parse_feature_value(this.lexer.token_start, this.lexer.token_end)
+					children.push(...value_nodes)
+				}
+
+				pos = this.lexer.pos
+				this.lexer.restore_position(saved)
+			}
+		}
+
+		// Store feature name in content fields
+		if (feature_name_start !== -1) {
+			this.arena.set_content_start_delta(range_node, feature_name_start - feature_start)
+			this.arena.set_content_length(range_node, feature_name_end - feature_name_start)
+		}
+
+		this.arena.append_children(range_node, children)
+		return range_node
 	}
 }
 
