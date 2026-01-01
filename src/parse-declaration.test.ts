@@ -182,6 +182,32 @@ describe('parse_declaration', () => {
 		})
 	})
 
+	describe('browser hacks', () => {
+		const HACK_PREFIXES = '-_!$&*()=%+@,./`[]#~?:<>|'.split('')
+
+		test.each(HACK_PREFIXES)('%s property hack', (char) => {
+			const node = parse_declaration(`${char}property: value;`)
+			expect(node.property).toBe(`${char}property`)
+			expect(node.is_browserhack).toBe(true)
+		})
+
+		test('value\\9', () => {
+			const node = parse_declaration('property: value\\9')
+			expect(node.value).toBe('value\\9')
+			expect(node.is_browserhack).toBe(false)
+		})
+
+		test('normal property is not a browserhack', () => {
+			const node = parse_declaration('color: red')
+			expect(node.is_browserhack).toBe(false)
+		})
+
+		test('vendor prefixed property is not a browserhack', () => {
+			const node = parse_declaration('-o-color: red')
+			expect(node.is_browserhack).toBe(false)
+		})
+	})
+
 	describe('Value Parsing', () => {
 		test('identifier value', () => {
 			const node = parse_declaration('display: flex')

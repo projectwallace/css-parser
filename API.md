@@ -57,6 +57,7 @@ function parse(source: string, options?: ParserOptions): CSSNode
 **Flags:**
 
 - `is_important` - Whether declaration has `!important` (DECLARATION only)
+- `is_browserhack` - Whether declaration property has a browser hack prefix like `*`, `_`, `!`, etc. (DECLARATION only)
 - `is_vendor_prefixed` - Whether node has vendor prefix (checks name/text based on type)
 - `has_error` - Whether node has syntax error
 - `has_prelude` - Whether at-rule has a prelude
@@ -575,7 +576,7 @@ Parse a CSS declaration string into a detailed AST.
 function parse_declaration(source: string): CSSNode
 ```
 
-**Example:**
+**Example 1: Basic Declaration:**
 
 ```typescript
 import { parse_declaration } from '@projectwallace/css-parser'
@@ -592,6 +593,30 @@ for (const valueNode of decl.children) {
 	console.log(valueNode.type, valueNode.text)
 }
 // IDENTIFIER "red"
+```
+
+**Example 2: Browser Hacks:**
+
+```typescript
+import { parse_declaration } from '@projectwallace/css-parser'
+
+// Browser hack with * prefix (IE 6/7 hack)
+const hack = parse_declaration('*width: 100px')
+console.log(hack.property) // "*width"
+console.log(hack.is_browserhack) // true
+
+// Browser hack with _ prefix (IE 6 hack)
+const underscore = parse_declaration('_height: 50px')
+console.log(underscore.is_browserhack) // true
+
+// Normal property (not a browser hack)
+const normal = parse_declaration('width: 100px')
+console.log(normal.is_browserhack) // false
+
+// Vendor prefix (not a browser hack)
+const vendor = parse_declaration('-webkit-transform: scale(1)')
+console.log(vendor.is_browserhack) // false
+console.log(vendor.is_vendor_prefixed) // true
 ```
 
 ---

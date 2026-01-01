@@ -1,7 +1,8 @@
 // Declaration Parser - Parses CSS declarations into structured AST nodes
 import { Lexer } from './tokenize'
-import { CSSDataArena, DECLARATION, FLAG_IMPORTANT } from './arena'
+import { CSSDataArena, DECLARATION, FLAG_IMPORTANT, FLAG_BROWSERHACK } from './arena'
 import { ValueParser } from './parse-value'
+import { is_vendor_prefixed } from './string-utils'
 import {
 	TOKEN_IDENT,
 	TOKEN_COLON,
@@ -10,6 +11,13 @@ import {
 	TOKEN_EOF,
 	TOKEN_LEFT_BRACE,
 	TOKEN_RIGHT_BRACE,
+	TOKEN_LEFT_PAREN,
+	TOKEN_RIGHT_PAREN,
+	TOKEN_LEFT_BRACKET,
+	TOKEN_RIGHT_BRACKET,
+	TOKEN_COMMA,
+	TOKEN_HASH,
+	TOKEN_AT_KEYWORD,
 	type TokenType,
 } from './token-types'
 import { trim_boundaries } from './parse-utils'
@@ -41,16 +49,86 @@ export class DeclarationParser {
 
 	// Parse a declaration using a provided lexer (used by Parser to avoid re-tokenization)
 	parse_declaration_with_lexer(lexer: Lexer, end: number): number | null {
-		// Expect identifier (property name) - whitespace already skipped by caller
-		if (lexer.token_type !== TOKEN_IDENT) {
+		// Check for browser hack prefix (single delimiter/special character before identifier)
+		let has_browser_hack = false
+		let browser_hack_start = 0
+		let browser_hack_line = 1
+		let browser_hack_column = 1
+
+		// Handle @property and #property (tokenized as single tokens)
+		if (lexer.token_type === TOKEN_AT_KEYWORD || lexer.token_type === TOKEN_HASH) {
+			// These tokens already include the @ or # prefix in their text
+			// Mark as browser hack since @ and # prefixes are not standard CSS
+			has_browser_hack = true
+			browser_hack_start = lexer.token_start
+			browser_hack_line = lexer.token_line
+			browser_hack_column = lexer.token_column
+		} else if (lexer.token_type === TOKEN_IDENT) {
+			// Check if identifier starts with browser hack character
+			// Some hacks like -property, _property are tokenized as single identifiers
+			const first_char = this.source.charCodeAt(lexer.token_start)
+			if (first_char === 95) {
+				// '_' - underscore prefix is always a browser hack
+				has_browser_hack = true
+				browser_hack_start = lexer.token_start
+				browser_hack_line = lexer.token_line
+				browser_hack_column = lexer.token_column
+			} else if (first_char === 45) {
+				// '-' - hyphen prefix could be vendor prefix or browser hack
+				// Use fast vendor prefix check (no allocations)
+				if (!is_vendor_prefixed(this.source, lexer.token_start, lexer.token_end)) {
+					// This is a browser hack like -property
+					has_browser_hack = true
+					browser_hack_start = lexer.token_start
+					browser_hack_line = lexer.token_line
+					browser_hack_column = lexer.token_column
+				}
+			}
+		} else {
+			// Browser hacks can use various token types as prefixes
+			const is_browser_hack_token =
+				lexer.token_type === TOKEN_DELIM ||
+				lexer.token_type === TOKEN_LEFT_PAREN ||
+				lexer.token_type === TOKEN_RIGHT_PAREN ||
+				lexer.token_type === TOKEN_LEFT_BRACKET ||
+				lexer.token_type === TOKEN_RIGHT_BRACKET ||
+				lexer.token_type === TOKEN_COMMA ||
+				lexer.token_type === TOKEN_COLON
+
+			if (is_browser_hack_token) {
+				// Save position in case this isn't a browser hack
+				const delim_saved = lexer.save_position()
+				browser_hack_start = lexer.token_start
+				browser_hack_line = lexer.token_line
+				browser_hack_column = lexer.token_column
+
+				// Consume delimiter and check if next token is identifier
+				lexer.next_token_fast(true) // skip whitespace
+
+				if ((lexer.token_type as TokenType) === TOKEN_IDENT) {
+					// This is a browser hack!
+					has_browser_hack = true
+				} else {
+					// Not a browser hack, restore position
+					lexer.restore_position(delim_saved)
+				}
+			}
+		}
+
+		// Expect identifier, at-keyword, or hash token (property name) - whitespace already skipped by caller
+		if (
+			lexer.token_type !== TOKEN_IDENT &&
+			lexer.token_type !== TOKEN_AT_KEYWORD &&
+			lexer.token_type !== TOKEN_HASH
+		) {
 			return null
 		}
 
-		let prop_start = lexer.token_start
+		let prop_start = has_browser_hack ? browser_hack_start : lexer.token_start
 		let prop_end = lexer.token_end
 		// CRITICAL: Capture line/column BEFORE consuming property token
-		let decl_line = lexer.token_line
-		let decl_column = lexer.token_column
+		let decl_line = has_browser_hack ? browser_hack_line : lexer.token_line
+		let decl_column = has_browser_hack ? browser_hack_column : lexer.token_column
 
 		// Lookahead: save lexer state before consuming
 		const saved = lexer.save_position()
@@ -145,6 +223,11 @@ export class DeclarationParser {
 		// Set !important flag if found
 		if (has_important) {
 			this.arena.set_flag(declaration, FLAG_IMPORTANT)
+		}
+
+		// Set browser hack flag if found
+		if (has_browser_hack) {
+			this.arena.set_flag(declaration, FLAG_BROWSERHACK)
 		}
 
 		// Consume ';' if present
