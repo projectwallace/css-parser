@@ -42,6 +42,7 @@ import {
 	FLAG_HAS_BLOCK,
 	FLAG_HAS_DECLARATIONS,
 	FLAG_HAS_PARENS,
+	FLAG_BROWSERHACK,
 } from './arena'
 
 import { CHAR_MINUS_HYPHEN, CHAR_PLUS, is_whitespace, is_vendor_prefixed, str_starts_with } from './string-utils'
@@ -160,6 +161,7 @@ export type PlainCSSNode = {
 	// Flags (only when true)
 	is_important?: boolean
 	is_vendor_prefixed?: boolean
+	is_browserhack?: boolean
 	has_error?: boolean
 
 	// Selector-specific
@@ -321,6 +323,12 @@ export class CSSNode {
 	get is_important(): boolean | null {
 		if (this.type !== DECLARATION) return null
 		return this.arena.has_flag(this.index, FLAG_IMPORTANT)
+	}
+
+	/** Check if this declaration has a browser hack prefix */
+	get is_browserhack(): boolean | null {
+		if (this.type !== DECLARATION) return null
+		return this.arena.has_flag(this.index, FLAG_BROWSERHACK)
 	}
 
 	/** Check if this has a vendor prefix (computed on-demand) */
@@ -730,7 +738,10 @@ export class CSSNode {
 		}
 
 		// 5. Extract flags
-		if (this.type === DECLARATION) plain.is_important = this.is_important
+		if (this.type === DECLARATION) {
+			plain.is_important = this.is_important
+			plain.is_browserhack = this.is_browserhack
+		}
 		plain.is_vendor_prefixed = this.is_vendor_prefixed
 		plain.has_error = this.has_error
 

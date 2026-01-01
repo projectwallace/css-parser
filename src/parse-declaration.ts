@@ -1,7 +1,8 @@
 // Declaration Parser - Parses CSS declarations into structured AST nodes
 import { Lexer } from './tokenize'
-import { CSSDataArena, DECLARATION, FLAG_IMPORTANT } from './arena'
+import { CSSDataArena, DECLARATION, FLAG_IMPORTANT, FLAG_BROWSERHACK } from './arena'
 import { ValueParser } from './parse-value'
+import { is_vendor_prefixed } from './string-utils'
 import {
 	TOKEN_IDENT,
 	TOKEN_COLON,
@@ -57,8 +58,32 @@ export class DeclarationParser {
 		// Handle @property and #property (tokenized as single tokens)
 		if (lexer.token_type === TOKEN_AT_KEYWORD || lexer.token_type === TOKEN_HASH) {
 			// These tokens already include the @ or # prefix in their text
-			// Just use them as the property name
-			has_browser_hack = false // Not a separate prefix, already part of the token
+			// Mark as browser hack since @ and # prefixes are not standard CSS
+			has_browser_hack = true
+			browser_hack_start = lexer.token_start
+			browser_hack_line = lexer.token_line
+			browser_hack_column = lexer.token_column
+		} else if (lexer.token_type === TOKEN_IDENT) {
+			// Check if identifier starts with browser hack character
+			// Some hacks like -property, _property are tokenized as single identifiers
+			const first_char = this.source.charCodeAt(lexer.token_start)
+			if (first_char === 95) {
+				// '_' - underscore prefix is always a browser hack
+				has_browser_hack = true
+				browser_hack_start = lexer.token_start
+				browser_hack_line = lexer.token_line
+				browser_hack_column = lexer.token_column
+			} else if (first_char === 45) {
+				// '-' - hyphen prefix could be vendor prefix or browser hack
+				// Use fast vendor prefix check (no allocations)
+				if (!is_vendor_prefixed(this.source, lexer.token_start, lexer.token_end)) {
+					// This is a browser hack like -property
+					has_browser_hack = true
+					browser_hack_start = lexer.token_start
+					browser_hack_line = lexer.token_line
+					browser_hack_column = lexer.token_column
+				}
+			}
 		} else {
 			// Browser hacks can use various token types as prefixes
 			const is_browser_hack_token =
@@ -80,7 +105,7 @@ export class DeclarationParser {
 				// Consume delimiter and check if next token is identifier
 				lexer.next_token_fast(true) // skip whitespace
 
-				if (lexer.token_type === TOKEN_IDENT) {
+				if ((lexer.token_type as TokenType) === TOKEN_IDENT) {
 					// This is a browser hack!
 					has_browser_hack = true
 				} else {
@@ -198,6 +223,11 @@ export class DeclarationParser {
 		// Set !important flag if found
 		if (has_important) {
 			this.arena.set_flag(declaration, FLAG_IMPORTANT)
+		}
+
+		// Set browser hack flag if found
+		if (has_browser_hack) {
+			this.arena.set_flag(declaration, FLAG_BROWSERHACK)
 		}
 
 		// Consume ';' if present

@@ -5,8 +5,9 @@ import { CSSNode } from './css-node'
 import { SelectorParser } from './parse-selector'
 import { AtRulePreludeParser } from './parse-atrule-prelude'
 import { DeclarationParser } from './parse-declaration'
-import { TOKEN_EOF, TOKEN_LEFT_BRACE, TOKEN_RIGHT_BRACE, TOKEN_SEMICOLON, TOKEN_IDENT, TOKEN_AT_KEYWORD } from './token-types'
+import { TOKEN_EOF, TOKEN_LEFT_BRACE, TOKEN_RIGHT_BRACE, TOKEN_SEMICOLON, TOKEN_IDENT, TOKEN_AT_KEYWORD, TOKEN_HASH, TOKEN_DELIM, TOKEN_LEFT_PAREN, TOKEN_RIGHT_PAREN, TOKEN_LEFT_BRACKET, TOKEN_RIGHT_BRACKET, TOKEN_COMMA, TOKEN_COLON } from './token-types'
 import { trim_boundaries } from './parse-utils'
+import { CHAR_PERIOD, CHAR_GREATER_THAN, CHAR_PLUS, CHAR_TILDE, CHAR_AMPERSAND } from './string-utils'
 
 export interface ParserOptions {
 	skip_comments?: boolean
@@ -252,14 +253,36 @@ export class Parser {
 
 	// Parse a declaration: property: value;
 	private parse_declaration(): number | null {
-		// Expect identifier (property name)
-		if (this.peek_type() !== TOKEN_IDENT) {
-			return null
+		// Check if this could be a declaration (identifier or browser hack prefix)
+		const token_type = this.peek_type()
+
+		// Accept identifiers, at-keywords, and hash tokens
+		if (token_type === TOKEN_IDENT || token_type === TOKEN_AT_KEYWORD || token_type === TOKEN_HASH) {
+			return this.declaration_parser.parse_declaration_with_lexer(this.lexer, this.source.length)
 		}
 
-		// Use DeclarationParser with shared lexer (no re-tokenization)
-		// DeclarationParser will handle all parsing and advance the lexer to the right position
-		return this.declaration_parser.parse_declaration_with_lexer(this.lexer, this.source.length)
+		// For delimiters and special tokens, check if they could be browser hack prefixes
+		// Only accept single-character prefixes that are not CSS selector syntax
+		if (
+			token_type === TOKEN_DELIM ||
+			token_type === TOKEN_LEFT_PAREN ||
+			token_type === TOKEN_RIGHT_PAREN ||
+			token_type === TOKEN_LEFT_BRACKET ||
+			token_type === TOKEN_RIGHT_BRACKET ||
+			token_type === TOKEN_COMMA ||
+			token_type === TOKEN_COLON
+		) {
+			// Check if this delimiter could be a browser hack (not a selector combinator)
+			const char_code = this.source.charCodeAt(this.lexer.token_start)
+			// Exclude selector-specific delimiters: . (class), > (child), + (adjacent), ~ (general), & (nesting)
+			if (char_code === CHAR_PERIOD || char_code === CHAR_GREATER_THAN || char_code === CHAR_PLUS || char_code === CHAR_TILDE || char_code === CHAR_AMPERSAND) {
+				return null
+			}
+			// Let DeclarationParser try to parse it and return null if it's not a valid declaration
+			return this.declaration_parser.parse_declaration_with_lexer(this.lexer, this.source.length)
+		}
+
+		return null
 	}
 
 	// Parse an at-rule: @media, @import, @font-face, etc.
