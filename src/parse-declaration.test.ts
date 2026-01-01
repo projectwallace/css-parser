@@ -182,6 +182,20 @@ describe('parse_declaration', () => {
 		})
 	})
 
+	describe('browser hacks', () => {
+		const HACK_PREFIXES = '-_!$&*()=%+@,./`[]#~?:<>|'.split('')
+
+		test.each(HACK_PREFIXES)('%s property hack', (char) => {
+			const node = parse_declaration(`${char}property: value;`)
+			expect(node.property).toBe(`${char}property`)
+		})
+
+		test('value\\9', () => {
+			const node = parse_declaration('property: value\\9')
+			expect(node.value).toBe('value\\9')
+		})
+	})
+
 	describe('Value Parsing', () => {
 		test('identifier value', () => {
 			const node = parse_declaration('display: flex')
