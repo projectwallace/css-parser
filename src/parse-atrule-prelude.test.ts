@@ -812,6 +812,7 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(children.length).toBe(2)
 				expect(children[0].type).toBe(URL)
 				expect(children[1].type).toBe(MEDIA_QUERY)
+				expect(children[1].text).toBe('(min-width: 768px)')
 			})
 
 			it('should parse with combined media query', () => {
@@ -834,6 +835,9 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(children.length).toBe(3)
 				expect(children[0].type).toBe(URL)
 				expect(children[1].type).toBe(LAYER_NAME)
+				expect(children[1].text).toBe('layer(base)')
+				expect(children[1].value).toBe('base')
+				expect(children[1].name).toBe('base')
 				expect(children[2].type).toBe(MEDIA_QUERY)
 			})
 
@@ -845,8 +849,13 @@ describe('At-Rule Prelude Nodes', () => {
 
 				expect(children.length).toBe(3)
 				expect(children[0].type).toBe(URL)
+				expect(children[0].value).toBe('"styles.css"')
 				expect(children[1].type).toBe(LAYER_NAME)
+				expect(children[1].value).toBe('base')
+				expect(children[1].name).toBe('base')
 				expect(children[2].type).toBe(SUPPORTS_QUERY)
+				expect(children[2].value).toBe('display: grid')
+				expect(children[2].text).toBe('supports(display: grid)')
 			})
 
 			it('should parse with supports and media query', () => {
@@ -883,7 +892,8 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(children.length).toBe(2)
 				expect(children[0].type).toBe(URL)
 				expect(children[1].type).toBe(SUPPORTS_QUERY)
-				expect(children[1].text).toContain('supports(')
+				expect(children[1].text).toBe('supports((display: grid) and (gap: 1rem))')
+				expect(children[1].value).toBe('(display: grid) and (gap: 1rem)')
 			})
 
 			it('should preserve prelude text', () => {
