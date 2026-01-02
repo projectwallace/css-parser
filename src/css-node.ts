@@ -246,9 +246,10 @@ export class CSSNode {
 	get value(): CSSNode | string | number | null {
 		let { type, text } = this
 
-		// For DECLARATION nodes, return the VALUE node
-		if (type === DECLARATION) {
-			return this.first_child // VALUE node
+		// For DECLARATION nodes with parsed values, return the VALUE node
+		// For DECLARATION nodes without parsed values, fall through to get raw text
+		if (type === DECLARATION && this.first_child) {
+			return this.first_child // VALUE node (when parse_values=true)
 		}
 
 		if (type === DIMENSION) {

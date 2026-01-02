@@ -752,7 +752,6 @@ describe('Value Node Types', () => {
 				const root = parse('body { background: url("bg.png") no-repeat center center / cover; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 			expect(decl?.value.children.length).toBeGreaterThan(1)
-				expect(decl?.values.length).toBeGreaterThan(1)
 				expect(decl?.value.children[0].type).toBe(URL)
 				expect(decl?.value.children[0].name).toBe('url')
 				expect(decl?.value.children[1].type).toBe(IDENTIFIER)

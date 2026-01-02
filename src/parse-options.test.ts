@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { parse } from './parse'
-import { SELECTOR_LIST, DECLARATION, IDENTIFIER } from './arena'
+import { SELECTOR_LIST, DECLARATION, IDENTIFIER, VALUE } from './arena'
 
 describe('Parser Options', () => {
 	const css = 'body { color: red; }'
@@ -22,7 +22,7 @@ describe('Parser Options', () => {
 			expect(declaration).not.toBeNull()
 			expect(declaration?.type).toBe(DECLARATION)
 			expect(declaration?.has_children).toBe(true)
-			expect(declaration?.first_child?.type).toBe(IDENTIFIER)
+			expect(declaration?.first_child?.type).toBe(VALUE)
 		})
 
 		it('should parse values and selectors with explicit options', () => {
@@ -38,7 +38,7 @@ describe('Parser Options', () => {
 			const block = selector?.next_sibling
 			const declaration = block?.first_child
 			expect(declaration?.has_children).toBe(true)
-			expect(declaration?.first_child?.type).toBe(IDENTIFIER)
+			expect(declaration?.first_child?.type).toBe(VALUE)
 		})
 	})
 
@@ -104,7 +104,7 @@ describe('Parser Options', () => {
 			const block = selector?.next_sibling
 			const declaration = block?.first_child
 			expect(declaration?.has_children).toBe(true)
-			expect(declaration?.first_child?.type).toBe(IDENTIFIER)
+			expect(declaration?.first_child?.type).toBe(VALUE)
 		})
 
 		it('should handle complex selectors without parsing', () => {

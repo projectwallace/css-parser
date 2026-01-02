@@ -1245,7 +1245,7 @@ describe('Core Nodes', () => {
 					let decl = block.first_child!
 
 					expect(decl.name).toBe('color')
-					expect(decl.value).toBe('blue')
+					expect(decl.value.text).toBe('blue')
 				})
 
 				test('extract value with spaces', () => {
@@ -1257,7 +1257,7 @@ describe('Core Nodes', () => {
 					let decl = block.first_child!
 
 					expect(decl.name).toBe('padding')
-					expect(decl.value).toBe('1rem 2rem 3rem 4rem')
+					expect(decl.value.text).toBe('1rem 2rem 3rem 4rem')
 				})
 
 				test('extract function value', () => {
@@ -1269,7 +1269,7 @@ describe('Core Nodes', () => {
 					let decl = block.first_child!
 
 					expect(decl.name).toBe('background')
-					expect(decl.value).toBe('linear-gradient(to bottom, red, blue)')
+					expect(decl.value.text).toBe('linear-gradient(to bottom, red, blue)')
 				})
 
 				test('extract calc value', () => {
@@ -1281,7 +1281,7 @@ describe('Core Nodes', () => {
 					let decl = block.first_child!
 
 					expect(decl.name).toBe('width')
-					expect(decl.value).toBe('calc(100% - 2rem)')
+					expect(decl.value.text).toBe('calc(100% - 2rem)')
 				})
 
 				test('exclude !important from value', () => {
@@ -1293,7 +1293,7 @@ describe('Core Nodes', () => {
 					let decl = block.first_child!
 
 					expect(decl.name).toBe('color')
-					expect(decl.value).toBe('blue')
+					expect(decl.value.text).toBe('blue')
 					expect(decl.is_important).toBe(true)
 				})
 
@@ -1306,7 +1306,7 @@ describe('Core Nodes', () => {
 					let decl = block.first_child!
 
 					expect(decl.name).toBe('color')
-					expect(decl.value).toBe('blue')
+					expect(decl.value.text).toBe('blue')
 				})
 
 				test('CSS custom property value', () => {
@@ -1318,7 +1318,7 @@ describe('Core Nodes', () => {
 					let decl = block.first_child!
 
 					expect(decl.name).toBe('--brand-color')
-					expect(decl.value).toBe('rgb(0% 10% 50% / 0.5)')
+					expect(decl.value.text).toBe('rgb(0% 10% 50% / 0.5)')
 				})
 
 				test('var() reference value', () => {
@@ -1330,7 +1330,7 @@ describe('Core Nodes', () => {
 					let decl = block.first_child!
 
 					expect(decl.name).toBe('color')
-					expect(decl.value).toBe('var(--primary-color)')
+					expect(decl.value.text).toBe('var(--primary-color)')
 				})
 
 				test('nested function value', () => {
@@ -1342,7 +1342,7 @@ describe('Core Nodes', () => {
 					let decl = block.first_child!
 
 					expect(decl.name).toBe('transform')
-					expect(decl.value).toBe('translate(calc(50% - 1rem), 0)')
+					expect(decl.value.text).toBe('translate(calc(50% - 1rem), 0)')
 				})
 
 				test('value without semicolon', () => {
@@ -1354,7 +1354,7 @@ describe('Core Nodes', () => {
 					let decl = block.first_child!
 
 					expect(decl.name).toBe('color')
-					expect(decl.value).toBe('blue')
+					expect(decl.value.text).toBe('blue')
 				})
 
 				test('empty value', () => {
@@ -1366,7 +1366,7 @@ describe('Core Nodes', () => {
 					let decl = block.first_child!
 
 					expect(decl.name).toBe('color')
-					expect(decl.value).toBe(null)
+					expect(decl.value.text).toBe('')
 				})
 
 				test('URL value', () => {
@@ -1378,7 +1378,7 @@ describe('Core Nodes', () => {
 					let decl = block.first_child!
 
 					expect(decl.name).toBe('background')
-					expect(decl.value).toBe('url("image.png")')
+					expect(decl.value.text).toBe('url("image.png")')
 				})
 			})
 
@@ -2505,7 +2505,7 @@ describe('Core Nodes', () => {
 				const declaration = nestingRule.block!.first_child!
 				expect(declaration.type).toBe(DECLARATION)
 				expect(declaration.property).toBe('--is')
-				expect(declaration.value).toBe('this')
+				expect(declaration.value.text).toBe('this')
 			})
 		})
 	})
@@ -2541,7 +2541,7 @@ describe('Core Nodes', () => {
 			expect(declaration.text).toContain(longSvg.substring(longSvg.length - 100))
 
 			// Verify the value is parsed into nodes
-			const urlNode = declaration.first_child!
+			const urlNode = declaration.first_child!.first_child!
 			expect(urlNode.type).toBe(URL)
 			expect(urlNode.name).toBe('url')
 
@@ -2560,7 +2560,7 @@ describe('Core Nodes', () => {
 			expect(secondDecl).toBeTruthy()
 			expect(secondDecl.type).toBe(DECLARATION)
 			expect(secondDecl.property).toBe('color')
-			expect(secondDecl.value).toBe('red')
+			expect(secondDecl.value.text).toBe('red')
 
 			// Calculate expected column: '.test { ' + declaration.text + ' ' + 1 (columns are 1-indexed)
 			const expectedColumn = '.test { '.length + declText.length + ' '.length + 1
