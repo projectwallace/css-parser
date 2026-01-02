@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { parse } from './parse'
-import { STYLESHEET, STYLE_RULE, SELECTOR_LIST, DECLARATION, AT_RULE, BLOCK, IDENTIFIER, NUMBER, DIMENSION } from './constants'
+import { STYLESHEET, STYLE_RULE, SELECTOR_LIST, DECLARATION, AT_RULE, BLOCK, IDENTIFIER, NUMBER, DIMENSION, VALUE } from './constants'
 import { walk, traverse, SKIP, BREAK } from './walk'
 
 describe('walk', () => {
@@ -29,6 +29,7 @@ describe('walk', () => {
 			SELECTOR_LIST,
 			BLOCK,
 			DECLARATION,
+			VALUE,
 			IDENTIFIER, // red
 		])
 	})
@@ -47,13 +48,16 @@ describe('walk', () => {
 			SELECTOR_LIST, // body selector
 			BLOCK, // body block
 			DECLARATION, // color: red
+			VALUE,
 			IDENTIFIER, // red
 			DECLARATION, // margin: 0
+			VALUE,
 			NUMBER, // 0
 			STYLE_RULE, // div rule
 			SELECTOR_LIST, // div selector
 			BLOCK, // div block
 			DECLARATION, // padding: 1rem
+			VALUE,
 			DIMENSION, // 1rem
 		])
 	})
@@ -171,8 +175,8 @@ describe('walk', () => {
 			depths.push(depth)
 		})
 
-		// STYLESHEET (0), STYLE_RULE (1), SELECTOR_LIST (2), BLOCK (2), DECLARATION (3), IDENTIFIER (4)
-		expect(depths).toEqual([0, 1, 2, 2, 3, 4])
+		// STYLESHEET (0), STYLE_RULE (1), SELECTOR_LIST (2), BLOCK (2), DECLARATION (3), VALUE (4), IDENTIFIER (5)
+		expect(depths).toEqual([0, 1, 2, 2, 3, 4, 5])
 	})
 
 	it('should track depth in nested structures', () => {
@@ -303,7 +307,7 @@ describe('walk with SKIP and BREAK', () => {
 		})
 
 		// All nodes should be visited (SKIP on leaf has no effect)
-		expect(visited).toEqual([STYLESHEET, STYLE_RULE, SELECTOR_LIST, BLOCK, DECLARATION, IDENTIFIER])
+		expect(visited).toEqual([STYLESHEET, STYLE_RULE, SELECTOR_LIST, BLOCK, DECLARATION, VALUE, IDENTIFIER])
 	})
 
 	it('should stop traversal when BREAK is returned', () => {
@@ -384,7 +388,7 @@ describe('walk with SKIP and BREAK', () => {
 			// No return value - should continue normally
 		})
 
-		expect(visited).toEqual([STYLESHEET, STYLE_RULE, SELECTOR_LIST, BLOCK, DECLARATION, IDENTIFIER])
+		expect(visited).toEqual([STYLESHEET, STYLE_RULE, SELECTOR_LIST, BLOCK, DECLARATION, VALUE, IDENTIFIER])
 	})
 
 	it('should find first declaration with specific property using BREAK', () => {

@@ -62,6 +62,7 @@ export const FUNCTION = 15 // function: calc(), var()
 export const OPERATOR = 16 // operator: +, -, *, /, comma
 export const PARENTHESIS = 17 // parenthesized expression: (100% - 50px)
 export const URL = 18 // URL: url("file.css"), url(image.png), used in values and @import
+export const VALUE = 19 // Wrapper for declaration values
 
 // Selector node type constants (for detailed selector parsing)
 export const SELECTOR_LIST = 20 // comma-separated selectors
@@ -125,7 +126,9 @@ export class CSSDataArena {
 	private static readonly GROWTH_FACTOR = 1.3
 
 	// Estimated nodes per KB of CSS (based on real-world data)
-	private static readonly NODES_PER_KB = 270
+	// Increased from 270 to 325 to account for VALUE wrapper nodes
+	// (~20% of nodes are declarations, +1 VALUE node per declaration = +20% nodes)
+	private static readonly NODES_PER_KB = 325
 
 	// Buffer to avoid frequent growth (15%)
 	private static readonly CAPACITY_BUFFER = 1.2

@@ -1,6 +1,6 @@
 // Value Parser - Parses CSS declaration values into structured AST nodes
 import { Lexer } from './tokenize'
-import { CSSDataArena, IDENTIFIER, NUMBER, DIMENSION, STRING, HASH, FUNCTION, OPERATOR, PARENTHESIS, URL } from './arena'
+import { CSSDataArena, IDENTIFIER, NUMBER, DIMENSION, STRING, HASH, FUNCTION, OPERATOR, PARENTHESIS, URL, VALUE } from './arena'
 import {
 	TOKEN_IDENT,
 	TOKEN_NUMBER,
@@ -33,9 +33,9 @@ export class ValueParser {
 		this.value_end = 0
 	}
 
-	// Parse a declaration value range into value nodes (standalone use)
-	// Returns array of value node indices
-	parse_value(start: number, end: number, start_line: number, start_column: number): number[] {
+	// Parse a declaration value range into a VALUE wrapper node
+	// Returns single VALUE node index
+	parse_value(start: number, end: number, start_line: number, start_column: number): number {
 		this.value_end = end
 
 		// Position lexer at value start with provided line/column
@@ -43,7 +43,28 @@ export class ValueParser {
 		this.lexer.line = start_line
 		this.lexer.column = start_column
 
-		return this.parse_value_tokens()
+		// Parse individual value tokens
+		let value_nodes = this.parse_value_tokens()
+
+		// Wrap in VALUE node
+		if (value_nodes.length === 0) {
+			// Empty value - create VALUE node with no children
+			let value_node = this.arena.create_node(VALUE, start, 0, start_line, start_column)
+			return value_node
+		}
+
+		// Create VALUE wrapper node spanning all value tokens
+		let first_node_start = this.arena.get_start_offset(value_nodes[0])
+		let last_node_index = value_nodes[value_nodes.length - 1]
+		let last_node_end =
+			this.arena.get_start_offset(last_node_index) + this.arena.get_length(last_node_index)
+
+		let value_node = this.arena.create_node(VALUE, first_node_start, last_node_end - first_node_start, start_line, start_column)
+
+		// Link value tokens as children
+		this.arena.append_children(value_node, value_nodes)
+
+		return value_node
 	}
 
 	// Core token parsing logic
@@ -337,11 +358,11 @@ export class ValueParser {
 }
 
 /**
- * Parse a CSS declaration value string and return an array of value AST nodes
+ * Parse a CSS declaration value string and return a VALUE node
  * @param value_string - The CSS value to parse (e.g., "1px solid red")
- * @returns An array of CSSNode objects representing the parsed value
+ * @returns A CSSNode VALUE wrapper containing the parsed value tokens as children
  */
-export function parse_value(value_string: string): CSSNode[] {
+export function parse_value(value_string: string): CSSNode {
 	// Create an arena for the value nodes
 	const arena = new CSSDataArena(CSSDataArena.capacity_for_source(value_string.length))
 
@@ -349,8 +370,9 @@ export function parse_value(value_string: string): CSSNode[] {
 	const value_parser = new ValueParser(arena, value_string)
 
 	// Parse the entire source as a value (starting at line 1, column 1)
-	const node_indices = value_parser.parse_value(0, value_string.length, 1, 1)
+	// Returns single VALUE node index now
+	const value_node_index = value_parser.parse_value(0, value_string.length, 1, 1)
 
-	// Wrap each node index in a CSSNode
-	return node_indices.map((index) => new CSSNode(arena, value_string, index))
+	// Wrap the VALUE node in a CSSNode
+	return new CSSNode(arena, value_string, value_node_index)
 }
