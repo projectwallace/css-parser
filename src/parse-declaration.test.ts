@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { parse_declaration } from './parse-declaration'
-import { DECLARATION, IDENTIFIER, DIMENSION, NUMBER, FUNCTION } from './arena'
+import { DECLARATION, IDENTIFIER, DIMENSION, NUMBER, FUNCTION, VALUE } from './arena'
 
 describe('parse_declaration', () => {
 	describe('Location Tracking', () => {
@@ -41,7 +41,7 @@ describe('parse_declaration', () => {
 
 		test('value nodes have correct line/column', () => {
 			const node = parse_declaration('color: red blue')
-			const [value1, value2] = node.children
+			const [value1, value2] = node.value.children
 			expect(value1.line).toBe(1)
 			expect(value1.column).toBe(8) // Position of 'red'
 			expect(value2.line).toBe(1)
@@ -50,7 +50,7 @@ describe('parse_declaration', () => {
 
 		test('value nodes on multi-line have correct positions', () => {
 			const node = parse_declaration('margin:\n  10px 20px')
-			const [value1, value2] = node.children
+			const [value1, value2] = node.value.children
 			expect(value1.line).toBe(2)
 			expect(value1.column).toBe(3) // Position of '10px'
 			expect(value2.line).toBe(2)
@@ -63,7 +63,7 @@ describe('parse_declaration', () => {
 			const node = parse_declaration('color: red')
 			expect(node.type).toBe(DECLARATION)
 			expect(node.name).toBe('color')
-			expect(node.value).toBe('red')
+			expect(node.value.text).toBe('red')
 			expect(node.is_important).toBe(false)
 		})
 
@@ -71,41 +71,41 @@ describe('parse_declaration', () => {
 			const node = parse_declaration('color: red;')
 			expect(node.type).toBe(DECLARATION)
 			expect(node.name).toBe('color')
-			expect(node.value).toBe('red')
+			expect(node.value.text).toBe('red')
 		})
 
 		test('declaration without semicolon', () => {
 			const node = parse_declaration('color: red')
 			expect(node.type).toBe(DECLARATION)
 			expect(node.name).toBe('color')
-			expect(node.value).toBe('red')
+			expect(node.value.text).toBe('red')
 		})
 
 		test('declaration with whitespace variations', () => {
 			const node = parse_declaration('color : red')
 			expect(node.name).toBe('color')
-			expect(node.value).toBe('red')
+			expect(node.value.text).toBe('red')
 		})
 
 		test('declaration with leading and trailing whitespace', () => {
 			const node = parse_declaration('  color: red  ')
 			expect(node.name).toBe('color')
-			expect(node.value).toBe('red')
+			expect(node.value.text).toBe('red')
 		})
 
 		test('empty value', () => {
 			const node = parse_declaration('color:')
 			expect(node.name).toBe('color')
 			// Empty values return null (consistent with main parser)
-			expect(node.value).toBe(null)
-			expect(node.children).toHaveLength(0)
+			expect(node.value.text).toBe("")
+			expect(node.value.children).toHaveLength(0)
 		})
 
 		test('empty value with semicolon', () => {
 			const node = parse_declaration('color:;')
 			expect(node.name).toBe('color')
 			// Empty values return null (consistent with main parser)
-			expect(node.value).toBe(null)
+			expect(node.value.text).toBe("")
 		})
 	})
 
@@ -113,28 +113,28 @@ describe('parse_declaration', () => {
 		test('declaration with !important', () => {
 			const node = parse_declaration('color: red !important')
 			expect(node.name).toBe('color')
-			expect(node.value).toBe('red')
+			expect(node.value.text).toBe('red')
 			expect(node.is_important).toBe(true)
 		})
 
 		test('declaration with !important and semicolon', () => {
 			const node = parse_declaration('color: red !important;')
 			expect(node.name).toBe('color')
-			expect(node.value).toBe('red')
+			expect(node.value.text).toBe('red')
 			expect(node.is_important).toBe(true)
 		})
 
 		test('historic !ie variant', () => {
 			const node = parse_declaration('color: red !ie')
 			expect(node.name).toBe('color')
-			expect(node.value).toBe('red')
+			expect(node.value.text).toBe('red')
 			expect(node.is_important).toBe(true)
 		})
 
 		test('any identifier after ! is treated as important', () => {
 			const node = parse_declaration('color: red !foo')
 			expect(node.name).toBe('color')
-			expect(node.value).toBe('red')
+			expect(node.value.text).toBe('red')
 			expect(node.is_important).toBe(true)
 		})
 
@@ -193,7 +193,7 @@ describe('parse_declaration', () => {
 
 		test('value\\9', () => {
 			const node = parse_declaration('property: value\\9')
-			expect(node.value).toBe('value\\9')
+			expect(node.value.text).toBe('value\\9')
 			expect(node.is_browserhack).toBe(false)
 		})
 
@@ -216,63 +216,63 @@ describe('parse_declaration', () => {
 	describe('Value Parsing', () => {
 		test('identifier value', () => {
 			const node = parse_declaration('display: flex')
-			expect(node.children).toHaveLength(1)
-			expect(node.children[0].type).toBe(IDENTIFIER)
-			expect(node.children[0].text).toBe('flex')
+			expect(node.value.children).toHaveLength(1)
+			expect(node.value.children[0].type).toBe(IDENTIFIER)
+			expect(node.value.children[0].text).toBe('flex')
 		})
 
 		test('number value', () => {
 			const node = parse_declaration('opacity: 0.5')
-			expect(node.children).toHaveLength(1)
-			expect(node.children[0].type).toBe(NUMBER)
-			expect(node.children[0].value).toBe(0.5)
+			expect(node.value.children).toHaveLength(1)
+			expect(node.value.children[0].type).toBe(NUMBER)
+			expect(node.value.children[0].value).toBe(0.5)
 		})
 
 		test('dimension value', () => {
 			const node = parse_declaration('width: 100px')
-			expect(node.children).toHaveLength(1)
-			expect(node.children[0].type).toBe(DIMENSION)
-			expect(node.children[0].value).toBe(100)
-			expect(node.children[0].unit).toBe('px')
+			expect(node.value.children).toHaveLength(1)
+			expect(node.value.children[0].type).toBe(DIMENSION)
+			expect(node.value.children[0].value).toBe(100)
+			expect(node.value.children[0].unit).toBe('px')
 		})
 
 		test('multiple values', () => {
 			const node = parse_declaration('margin: 10px 20px 30px 40px')
-			expect(node.children).toHaveLength(4)
-			expect(node.children[0].type).toBe(DIMENSION)
-			expect(node.children[0].text).toBe('10px')
-			expect(node.children[1].text).toBe('20px')
-			expect(node.children[2].text).toBe('30px')
-			expect(node.children[3].text).toBe('40px')
+			expect(node.value.children).toHaveLength(4)
+			expect(node.value.children[0].type).toBe(DIMENSION)
+			expect(node.value.children[0].text).toBe('10px')
+			expect(node.value.children[1].text).toBe('20px')
+			expect(node.value.children[2].text).toBe('30px')
+			expect(node.value.children[3].text).toBe('40px')
 		})
 
 		test('function value', () => {
 			const node = parse_declaration('transform: rotate(45deg)')
-			expect(node.children).toHaveLength(1)
-			expect(node.children[0].type).toBe(FUNCTION)
-			expect(node.children[0].name).toBe('rotate')
+			expect(node.value.children).toHaveLength(1)
+			expect(node.value.children[0].type).toBe(FUNCTION)
+			expect(node.value.children[0].name).toBe('rotate')
 		})
 
 		test('nested functions', () => {
 			const node = parse_declaration('width: calc(100% - 20px)')
-			expect(node.children).toHaveLength(1)
-			expect(node.children[0].type).toBe(FUNCTION)
-			expect(node.children[0].name).toBe('calc')
-			expect(node.children[0].children.length).toBeGreaterThan(0)
+			expect(node.value.children).toHaveLength(1)
+			expect(node.value.children[0].type).toBe(FUNCTION)
+			expect(node.value.children[0].name).toBe('calc')
+			expect(node.value.children[0].children.length).toBeGreaterThan(0)
 		})
 
 		test('complex value with multiple functions', () => {
 			const node = parse_declaration('background: linear-gradient(to bottom, red, blue)')
-			expect(node.children).toHaveLength(1)
-			expect(node.children[0].type).toBe(FUNCTION)
-			expect(node.children[0].name).toBe('linear-gradient')
+			expect(node.value.children).toHaveLength(1)
+			expect(node.value.children[0].type).toBe(FUNCTION)
+			expect(node.value.children[0].name).toBe('linear-gradient')
 		})
 
 		test('CSS variable', () => {
 			const node = parse_declaration('color: var(--primary-color)')
-			expect(node.children).toHaveLength(1)
-			expect(node.children[0].type).toBe(FUNCTION)
-			expect(node.children[0].name).toBe('var')
+			expect(node.value.children).toHaveLength(1)
+			expect(node.value.children[0].type).toBe(FUNCTION)
+			expect(node.value.children[0].name).toBe('var')
 		})
 	})
 
@@ -302,7 +302,7 @@ describe('parse_declaration', () => {
 		test('property with colon but value with invalid token', () => {
 			const node = parse_declaration('color: red')
 			expect(node.name).toBe('color')
-			expect(node.value).toBe('red')
+			expect(node.value.text).toBe('red')
 		})
 	})
 
@@ -319,7 +319,7 @@ describe('parse_declaration', () => {
 
 		test('node.value returns raw value string', () => {
 			const node = parse_declaration('margin: 10px 20px')
-			expect(node.value).toBe('10px 20px')
+			expect(node.value.text).toBe('10px 20px')
 		})
 
 		test('node.is_important returns boolean', () => {
@@ -340,9 +340,9 @@ describe('parse_declaration', () => {
 
 		test('node.children returns value nodes', () => {
 			const node = parse_declaration('margin: 10px 20px')
-			expect(node.children).toHaveLength(2)
-			expect(node.children[0].type).toBe(DIMENSION)
-			expect(node.children[1].type).toBe(DIMENSION)
+			expect(node.value.children).toHaveLength(2)
+			expect(node.value.children[0].type).toBe(DIMENSION)
+			expect(node.value.children[1].type).toBe(DIMENSION)
 		})
 
 		test('node.text returns full declaration text', () => {

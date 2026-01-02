@@ -213,15 +213,21 @@ export class DeclarationParser {
 			// Parse value into structured nodes (only if enabled)
 			if (this.value_parser) {
 				// CRITICAL: Pass value_start_line and value_start_column to value parser
-				let valueNodes = this.value_parser.parse_value(value_start, trimmed[1], value_start_line, value_start_column)
+				let valueNode = this.value_parser.parse_value(value_start, trimmed[1], value_start_line, value_start_column)
 
-				// Link value nodes as children of the declaration
-				this.arena.append_children(declaration, valueNodes)
+				// Link VALUE node as single child of the declaration
+				this.arena.append_children(declaration, [valueNode])
 			}
 		} else {
 			// Empty value - set zero-length value field so node.value returns "" instead of null
 			this.arena.set_value_start_delta(declaration, value_start - prop_start)
 			this.arena.set_value_length(declaration, 0)
+
+			// Create empty VALUE node for consistency
+			if (this.value_parser) {
+				let valueNode = this.value_parser.parse_value(value_start, value_start, value_start_line, value_start_column)
+				this.arena.append_children(declaration, [valueNode])
+			}
 		}
 
 		// Set !important flag if found

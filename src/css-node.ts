@@ -17,6 +17,7 @@ import {
 	OPERATOR,
 	PARENTHESIS,
 	URL,
+	VALUE,
 	SELECTOR_LIST,
 	TYPE_SELECTOR,
 	CLASS_SELECTOR,
@@ -67,6 +68,7 @@ export const TYPE_NAMES = {
 	[OPERATOR]: 'Operator',
 	[PARENTHESIS]: 'Parentheses',
 	[URL]: 'Url',
+	[VALUE]: 'Value',
 	[SELECTOR_LIST]: 'SelectorList',
 	[TYPE_SELECTOR]: 'TypeSelector',
 	[CLASS_SELECTOR]: 'ClassSelector',
@@ -110,6 +112,7 @@ export type CSSNodeType =
 	| typeof OPERATOR
 	| typeof PARENTHESIS
 	| typeof URL
+	| typeof VALUE
 	| typeof SELECTOR_LIST
 	| typeof TYPE_SELECTOR
 	| typeof CLASS_SELECTOR
@@ -240,8 +243,13 @@ export class CSSNode {
 	 * For URL nodes with quoted string: returns the string with quotes (consistent with STRING node)
 	 * For URL nodes with unquoted URL: returns the URL content without quotes
 	 */
-	get value(): string | number | null {
+	get value(): CSSNode | string | number | null {
 		let { type, text } = this
+
+		// For DECLARATION nodes, return the VALUE node
+		if (type === DECLARATION) {
+			return this.first_child // VALUE node
+		}
 
 		if (type === DIMENSION) {
 			return parse_dimension(text).value
@@ -425,19 +433,6 @@ export class CSSNode {
 			child = child.next_sibling
 		}
 		return true
-	}
-
-	// --- Value Node Access (for declarations) ---
-
-	/** Get array of parsed value nodes (for declarations only) */
-	get values(): CSSNode[] {
-		let result: CSSNode[] = []
-		let child = this.first_child
-		while (child) {
-			result.push(child)
-			child = child.next_sibling
-		}
-		return result
 	}
 
 	/** Get start line number */
