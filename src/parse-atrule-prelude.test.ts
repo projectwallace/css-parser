@@ -13,7 +13,6 @@ import {
 	IDENTIFIER,
 	PRELUDE_OPERATOR,
 	URL,
-	FUNCTION,
 	DIMENSION,
 	FEATURE_RANGE,
 } from './arena'

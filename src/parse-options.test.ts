@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { parse } from './parse'
-import { SELECTOR_LIST, DECLARATION, IDENTIFIER, VALUE } from './arena'
+import { SELECTOR_LIST, DECLARATION, VALUE } from './arena'
 
 describe('Parser Options', () => {
 	const css = 'body { color: red; }'
