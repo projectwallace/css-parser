@@ -165,7 +165,7 @@ export type PlainCSSNode = {
 	property?: string
 	value?: string | number | null
 	unit?: string
-	prelude?: string
+	prelude?: PlainCSSNode | null
 
 	// Flags (only when true)
 	is_important?: boolean
@@ -307,16 +307,24 @@ export class CSSNode {
 	}
 
 	/**
-	 * Get the prelude node (for at-rules: structured prelude with media queries, layer names, etc.)
-	 * Returns the AT_RULE_PRELUDE wrapper node containing prelude children, or null if no prelude
+	 * Get the prelude node:
+	 * - For at-rules: AT_RULE_PRELUDE wrapper containing structured prelude children (media queries, layer names, etc.)
+	 * - For style rules: SELECTOR_LIST or SELECTOR node
+	 * Returns null if no prelude exists
 	 */
-	get prelude(): CSSNode | null {
-		if (this.type !== AT_RULE) return null
-		let first = this.first_child
-		if (first && first.type === AT_RULE_PRELUDE) {
-			return first
+	get prelude(): CSSNode | null | undefined {
+		if (this.type === AT_RULE) {
+			let first = this.first_child
+			if (first && first.type === AT_RULE_PRELUDE) {
+				return first
+			}
+			return null
 		}
-		return null
+		if (this.type === STYLE_RULE) {
+			// For style rules, prelude is the selector (first child)
+			return this.first_child
+		}
+		return undefined
 	}
 
 	/**
@@ -382,9 +390,15 @@ export class CSSNode {
 		return this.arena.has_flag(this.index, FLAG_HAS_ERROR)
 	}
 
-	/** Check if this at-rule has a prelude */
+	/** Check if this node has a prelude (at-rules and style rules) */
 	get has_prelude(): boolean {
-		return this.arena.get_value_length(this.index) > 0
+		if (this.type === AT_RULE) {
+			return this.arena.get_value_length(this.index) > 0
+		}
+		if (this.type === STYLE_RULE) {
+			return this.first_child !== null
+		}
+		return false
 	}
 
 	/** Check if this rule has a block { } */
