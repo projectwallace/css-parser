@@ -331,7 +331,8 @@ export class CSSNode {
 	 * Get the attribute operator (for attribute selectors: =, ~=, |=, ^=, $=, *=)
 	 * Returns one of the ATTR_OPERATOR_* constants
 	 */
-	get attr_operator(): number {
+	get attr_operator(): number | undefined {
+		if (this.type !== ATTRIBUTE_SELECTOR) return undefined
 		return this.arena.get_attr_operator(this.index)
 	}
 
@@ -339,25 +340,26 @@ export class CSSNode {
 	 * Get the attribute flags (for attribute selectors: i, s)
 	 * Returns one of the ATTR_FLAG_* constants
 	 */
-	get attr_flags(): number {
+	get attr_flags(): number | undefined {
+		if (this.type !== ATTRIBUTE_SELECTOR) return undefined
 		return this.arena.get_attr_flags(this.index)
 	}
 
 	/** Get the unit for dimension nodes (e.g., "px" from "100px", "%" from "50%") */
-	get unit(): string | null {
-		if (this.type !== DIMENSION) return null
+	get unit(): string | undefined {
+		if (this.type !== DIMENSION) return undefined
 		return parse_dimension(this.text).unit
 	}
 
 	/** Check if this declaration has !important */
-	get is_important(): boolean | null {
-		if (this.type !== DECLARATION) return null
+	get is_important(): boolean | undefined {
+		if (this.type !== DECLARATION) return undefined
 		return this.arena.has_flag(this.index, FLAG_IMPORTANT)
 	}
 
 	/** Check if this declaration has a browser hack prefix */
-	get is_browserhack(): boolean | null {
-		if (this.type !== DECLARATION) return null
+	get is_browserhack(): boolean | undefined {
+		if (this.type !== DECLARATION) return undefined
 		return this.arena.has_flag(this.index, FLAG_BROWSERHACK)
 	}
 
@@ -442,9 +444,9 @@ export class CSSNode {
 	}
 
 	/** Check if this block is empty (no declarations or rules, only comments allowed) */
-	get is_empty(): boolean {
+	get is_empty(): boolean | undefined {
 		// Only valid on block nodes
-		if (this.type !== BLOCK) return false
+		if (this.type !== BLOCK) return undefined
 
 		// Empty if no children, or all children are comments
 		let child = this.first_child
@@ -547,21 +549,21 @@ export class CSSNode {
 	// --- An+B Expression Helpers (for NODE_SELECTOR_NTH) ---
 
 	/** Get the 'a' coefficient from An+B expression (e.g., "2n" from "2n+1", "odd" from "odd") */
-	get nth_a(): string | null {
-		if (this.type !== NTH_SELECTOR) return null
+	get nth_a(): string | undefined {
+		if (this.type !== NTH_SELECTOR && this.type !== NTH_OF_SELECTOR) return undefined
 
 		let len = this.arena.get_content_length(this.index)
-		if (len === 0) return null
+		if (len === 0) return undefined
 		let start = this.arena.get_content_start(this.index)
 		return this.source.substring(start, start + len)
 	}
 
 	/** Get the 'b' coefficient from An+B expression (e.g., "+1" from "2n+1") */
-	get nth_b(): string | null {
-		if (this.type !== NTH_SELECTOR) return null
+	get nth_b(): string | undefined {
+		if (this.type !== NTH_SELECTOR && this.type !== NTH_OF_SELECTOR) return undefined
 
 		let len = this.arena.get_value_length(this.index)
-		if (len === 0) return null
+		if (len === 0) return undefined
 		let start = this.arena.get_value_start(this.index)
 		let value = this.source.substring(start, start + len)
 
@@ -589,16 +591,16 @@ export class CSSNode {
 	// --- Pseudo-Class Nth-Of Helpers (for NODE_SELECTOR_NTH_OF) ---
 
 	/** Get the An+B formula node from :nth-child(2n+1 of .foo) */
-	get nth(): CSSNode | null {
-		if (this.type !== NTH_OF_SELECTOR) return null
-		return this.first_child // First child is always NODE_SELECTOR_NTH
+	get nth(): CSSNode | undefined {
+		if (this.type !== NTH_OF_SELECTOR) return undefined
+		return this.first_child ?? undefined // First child is always NODE_SELECTOR_NTH
 	}
 
 	/** Get the selector list from :nth-child(2n+1 of .foo) */
-	get selector(): CSSNode | null {
-		if (this.type !== NTH_OF_SELECTOR) return null
+	get selector(): CSSNode | undefined {
+		if (this.type !== NTH_OF_SELECTOR) return undefined
 		let first = this.first_child
-		return first ? first.next_sibling : null // Second child is NODE_SELECTOR_LIST
+		return first?.next_sibling ?? undefined // Second child is NODE_SELECTOR_LIST
 	}
 
 	// --- Pseudo-Class Selector List Helper ---
@@ -607,11 +609,11 @@ export class CSSNode {
 	 * Get selector list from pseudo-class functions
 	 * Works for :is(.a), :not(.b), :has(.c), :where(.d), :nth-child(2n of .e)
 	 */
-	get selector_list(): CSSNode | null {
-		if (this.type !== PSEUDO_CLASS_SELECTOR) return null
+	get selector_list(): CSSNode | undefined {
+		if (this.type !== PSEUDO_CLASS_SELECTOR) return undefined
 
 		let child = this.first_child
-		if (!child) return null
+		if (!child) return undefined
 
 		// For simple cases (:is, :not, :where, :has), first_child is the selector list
 		if (child.type === SELECTOR_LIST) {
@@ -624,7 +626,7 @@ export class CSSNode {
 			return child.selector
 		}
 
-		return null
+		return undefined
 	}
 
 	// --- Compound Selector Helpers (for NODE_SELECTOR) ---
@@ -648,8 +650,8 @@ export class CSSNode {
 	 * Get first compound selector as array
 	 * Returns array of parts before first combinator
 	 */
-	get first_compound(): CSSNode[] {
-		if (this.type !== SELECTOR) return []
+	get first_compound(): CSSNode[] | undefined {
+		if (this.type !== SELECTOR) return undefined
 
 		let result: CSSNode[] = []
 		let child = this.first_child
@@ -665,8 +667,8 @@ export class CSSNode {
 	 * Split selector into compound selectors
 	 * Returns array of compound arrays split by combinators
 	 */
-	get all_compounds(): CSSNode[][] {
-		if (this.type !== SELECTOR) return []
+	get all_compounds(): CSSNode[][] | undefined {
+		if (this.type !== SELECTOR) return undefined
 
 		let compounds: CSSNode[][] = []
 		let current_compound: CSSNode[] = []
@@ -692,8 +694,8 @@ export class CSSNode {
 	}
 
 	/** Check if selector is compound (no combinators) */
-	get is_compound(): boolean {
-		if (this.type !== SELECTOR) return false
+	get is_compound(): boolean | undefined {
+		if (this.type !== SELECTOR) return undefined
 
 		let child = this.first_child
 		while (child) {
@@ -704,8 +706,8 @@ export class CSSNode {
 	}
 
 	/** Get text of first compound selector (no node allocation) */
-	get first_compound_text(): string {
-		if (this.type !== SELECTOR) return ''
+	get first_compound_text(): string | undefined {
+		if (this.type !== SELECTOR) return undefined
 
 		let start = -1
 		let end = -1
@@ -720,7 +722,7 @@ export class CSSNode {
 			child = child.next_sibling
 		}
 
-		if (start === -1) return ''
+		if (start === -1) return undefined
 		return this.source.substring(start, end)
 	}
 
