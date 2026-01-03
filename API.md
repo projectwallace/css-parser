@@ -91,14 +91,6 @@ function parse(source: string, options?: ParserOptions): CSSNode
 - `attr_operator` - Attribute operator constant (for ATTRIBUTE_SELECTOR): `ATTR_OPERATOR_NONE`, `ATTR_OPERATOR_EQUAL`, etc.
 - `attr_flags` - Attribute flags constant (for ATTRIBUTE_SELECTOR): `ATTR_FLAG_NONE`, `ATTR_FLAG_CASE_INSENSITIVE`, `ATTR_FLAG_CASE_SENSITIVE`
 
-**Compound Selector Helpers (SELECTOR nodes):**
-
-- `compound_parts()` - Iterator over first compound selector parts (zero allocation)
-- `first_compound` - Array of parts before first combinator
-- `all_compounds` - Array of compound arrays split by combinators
-- `is_compound` - Whether selector has no combinators
-- `first_compound_text` - Text of first compound selector (no node allocation)
-
 **Methods:**
 
 - `clone(options?)` - Clone node as a mutable plain object with children as arrays
@@ -408,80 +400,7 @@ if (pseudo.selector_list) {
 }
 ```
 
-### Example 10: Extracting Compound Selectors
-
-Compound selectors (parts between combinators) can be extracted without reparsing:
-
-```typescript
-import { parse_selector, ID_SELECTOR, CLASS_SELECTOR, TYPE_SELECTOR } from '@projectwallace/css-parser'
-
-const root = parse_selector('div.container#app > p.text + span')
-const selector = root.first_child
-
-// Hot path: Calculate specificity (zero allocations)
-let [id, cls, type] = [0, 0, 0]
-for (let part of selector.compound_parts()) {
-	if (part.type === ID_SELECTOR) id++
-	else if (part.type === CLASS_SELECTOR) cls++
-	else if (part.type === TYPE_SELECTOR) type++
-}
-console.log('Specificity:', [id, cls, type]) // [1, 1, 1]
-
-// Convenience: Array access
-const first = selector.first_compound
-console.log('Parts:', first.length) // 3
-console.log('First:', first[0].text) // "div"
-console.log('Last:', first[2].text) // "#app"
-
-// Advanced: All compounds
-const all = selector.all_compounds
-console.log('Compounds:', all.length) // 3
-// [[div, .container, #app], [p, .text], [span]]
-
-for (let compound of all) {
-	console.log('Compound:', compound.map((n) => n.text).join(''))
-}
-// Output:
-// Compound: div.container#app
-// Compound: p.text
-// Compound: span
-
-// Helpers
-console.log('Is simple?', selector.is_compound) // false (has combinators)
-console.log('First text:', selector.first_compound_text) // "div.container#app"
-```
-
-**Before (required manual traversal + reparsing)**:
-
-```typescript
-const compoundParts = []
-let selectorPart = selector.first_child
-while (selectorPart) {
-	if (selectorPart.type === COMBINATOR) break
-	compoundParts.push(selectorPart)
-	selectorPart = selectorPart.next_sibling
-}
-// Then... REPARSING! ❌
-const text = compoundParts.map((n) => n.text).join('')
-const result = parse_selector(text) // Expensive!
-```
-
-**After (no reparsing)**:
-
-```typescript
-const parts = selector.first_compound // ✅ Existing nodes!
-// Or for hot path:
-for (let part of selector.compound_parts()) { ... } // Zero allocations
-```
-
-**Performance Benefits**:
-
-- `compound_parts()` iterator: 0 allocations, lazy evaluation
-- `first_compound`: Small array allocation (~40-200 bytes typical)
-- **10-20x faster** than reparsing approach
-- All operations O(n) where n = number of child nodes
-
-### Example 11: Node Cloning
+### Example 10: Node Cloning
 
 Convert arena-backed immutable nodes into mutable plain JavaScript objects for manipulation:
 
