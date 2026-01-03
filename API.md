@@ -44,7 +44,7 @@ function parse(source: string, options?: ParserOptions): CSSNode
 - `value` - Value text (for declarations), numeric value (for NUMBER/DIMENSION), string content without quotes (for STRING), URL content (for URL), or `null`
 - `value_as_number` - Numeric value for NUMBER and DIMENSION nodes, or `null` for other types
 - `unit` - Unit string for DIMENSION nodes (e.g., `"px"`, `"%"`), or `null` for other types
-- `prelude` - At-rule prelude text or `null`
+- `prelude` - Prelude node (AT_RULE_PRELUDE for at-rules, SELECTOR_LIST for style rules), or `null`. Use `.prelude.text` to get the text representation.
 
 **Location Properties:**
 
@@ -172,17 +172,20 @@ const ast = parse('@media (min-width: 768px) { body { color: blue; } }')
 
 const mediaRule = ast.first_child
 console.log(mediaRule.name) // "media"
-console.log(mediaRule.prelude) // "(min-width: 768px)"
+console.log(mediaRule.prelude?.text) // "(min-width: 768px)"
 console.log(mediaRule.has_prelude) // true
 console.log(mediaRule.has_block) // true
 console.log(mediaRule.has_children) // true
 
-// Access prelude nodes when parse_atrule_preludes is true
-// (Prelude nodes are first children, before the block)
-const mediaQuery = mediaRule.first_child
-console.log(mediaQuery.type) // MEDIA_QUERY
-console.log(mediaQuery.text) // "(min-width: 768px)"
-console.log(mediaQuery.value) // "min-width: 768px" (without parentheses)
+// Access prelude node (AT_RULE_PRELUDE wrapper)
+const prelude = mediaRule.prelude
+console.log(prelude?.text) // "(min-width: 768px)"
+
+// Access prelude children (media query nodes)
+const mediaQuery = prelude?.first_child
+console.log(mediaQuery?.type) // MEDIA_QUERY
+console.log(mediaQuery?.text) // "(min-width: 768px)"
+console.log(mediaQuery?.value) // "min-width: 768px" (without parentheses)
 
 // Access block content (nested rules/declarations)
 const block = mediaRule.block
@@ -203,13 +206,13 @@ const ast = parse('@import url("styles.css") layer(base) supports(display: flex)
 
 const importRule = ast.first_child
 console.log(importRule.name) // "import"
-console.log(importRule.prelude) // Full prelude text
+console.log(importRule.prelude?.text) // Full prelude text
 console.log(importRule.has_prelude) // true
 console.log(importRule.has_block) // false (no { } block)
-console.log(importRule.has_children) // true (has prelude nodes)
+console.log(importRule.has_children) // true (has prelude node)
 
-// Access parsed import components
-const [url, layer, supports, media] = importRule.children
+// Access parsed import components from prelude
+const [url, layer, supports, media] = importRule.prelude?.children || []
 console.log(url.type) // URL
 console.log(url.text) // 'url("styles.css")'
 console.log(url.value) // '"styles.css"'
