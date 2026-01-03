@@ -184,6 +184,17 @@ describe('CSSNode', () => {
 			expect(hasPrelude).toBe(true)
 		})
 
+		test('should return true for style rules with selectors', () => {
+			const source = 'body { color: red; }'
+			const root = parse(source)
+			const rule = root.first_child!
+
+			expect(rule.type).toBe(STYLE_RULE)
+			expect(rule.has_prelude).toBe(true)
+			expect(rule.prelude).not.toBeNull()
+			expect(rule.prelude?.type_name).toBe('SelectorList')
+		})
+
 		test('should work for other node types that use value field', () => {
 			const source = 'body { color: red; }'
 			const root = parse(source, { parse_values: false })
@@ -193,12 +204,9 @@ describe('CSSNode', () => {
 			const declaration = block.first_child!
 
 			// Rules and selectors don't use value field
-			expect(rule.has_prelude).toBe(false)
-			expect(selector.has_prelude).toBe(false)
+			expect(rule.has_prelude).toBe(true) // has selector
 
-			// Declarations use value field for their value (same arena fields as prelude)
-			// So has_prelude returns true for declarations with values
-			expect(declaration.has_prelude).toBe(true)
+			expect(declaration.has_prelude).toBe(false)
 			expect(declaration.value).toBe('red')
 		})
 	})
