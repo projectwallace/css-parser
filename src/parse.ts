@@ -1,11 +1,36 @@
 // CSS Parser - Builds AST using the arena
 import { Lexer } from './tokenize'
-import { CSSDataArena, STYLESHEET, STYLE_RULE, SELECTOR_LIST, AT_RULE, BLOCK, AT_RULE_PRELUDE, FLAG_HAS_BLOCK, FLAG_HAS_DECLARATIONS } from './arena'
+import {
+	CSSDataArena,
+	STYLESHEET,
+	STYLE_RULE,
+	SELECTOR_LIST,
+	AT_RULE,
+	BLOCK,
+	AT_RULE_PRELUDE,
+	FLAG_HAS_BLOCK,
+	FLAG_HAS_DECLARATIONS,
+} from './arena'
 import { CSSNode } from './css-node'
 import { SelectorParser } from './parse-selector'
 import { AtRulePreludeParser } from './parse-atrule-prelude'
 import { DeclarationParser } from './parse-declaration'
-import { TOKEN_EOF, TOKEN_LEFT_BRACE, TOKEN_RIGHT_BRACE, TOKEN_SEMICOLON, TOKEN_IDENT, TOKEN_AT_KEYWORD, TOKEN_HASH, TOKEN_DELIM, TOKEN_LEFT_PAREN, TOKEN_RIGHT_PAREN, TOKEN_LEFT_BRACKET, TOKEN_RIGHT_BRACKET, TOKEN_COMMA, TOKEN_COLON } from './token-types'
+import {
+	TOKEN_EOF,
+	TOKEN_LEFT_BRACE,
+	TOKEN_RIGHT_BRACE,
+	TOKEN_SEMICOLON,
+	TOKEN_IDENT,
+	TOKEN_AT_KEYWORD,
+	TOKEN_HASH,
+	TOKEN_DELIM,
+	TOKEN_LEFT_PAREN,
+	TOKEN_RIGHT_PAREN,
+	TOKEN_LEFT_BRACKET,
+	TOKEN_RIGHT_BRACKET,
+	TOKEN_COMMA,
+	TOKEN_COLON,
+} from './token-types'
 import { trim_boundaries } from './parse-utils'
 import { CHAR_PERIOD, CHAR_GREATER_THAN, CHAR_PLUS, CHAR_TILDE, CHAR_AMPERSAND } from './string-utils'
 
@@ -239,16 +264,15 @@ export class Parser {
 
 		// If detailed selector parsing is enabled, use SelectorParser
 		if (this.parse_selectors_enabled && this.selector_parser) {
-			let selectorNode = this.selector_parser.parse_selector(selector_start, last_end, selector_line, selector_column)
-			if (selectorNode !== null) {
-				return selectorNode
+			let selector = this.selector_parser.parse_selector(selector_start, last_end, selector_line, selector_column)
+			if (selector !== null) {
+				return selector
 			}
 		}
 
 		// Otherwise create a simple selector list node with just text offsets
-		let selector = this.arena.create_node(SELECTOR_LIST, selector_start, last_end - selector_start, selector_line, selector_column)
-
-		return selector
+		let selector_list = this.arena.create_node(SELECTOR_LIST, selector_start, last_end - selector_start, selector_line, selector_column)
+		return selector_list
 	}
 
 	// Parse a declaration: property: value;
@@ -275,7 +299,13 @@ export class Parser {
 			// Check if this delimiter could be a browser hack (not a selector combinator)
 			const char_code = this.source.charCodeAt(this.lexer.token_start)
 			// Exclude selector-specific delimiters: . (class), > (child), + (adjacent), ~ (general), & (nesting)
-			if (char_code === CHAR_PERIOD || char_code === CHAR_GREATER_THAN || char_code === CHAR_PLUS || char_code === CHAR_TILDE || char_code === CHAR_AMPERSAND) {
+			if (
+				char_code === CHAR_PERIOD ||
+				char_code === CHAR_GREATER_THAN ||
+				char_code === CHAR_PLUS ||
+				char_code === CHAR_TILDE ||
+				char_code === CHAR_AMPERSAND
+			) {
 				return null
 			}
 			// Let DeclarationParser try to parse it and return null if it's not a valid declaration

@@ -109,6 +109,23 @@ describe('Core Nodes', () => {
 				expect(nestedRule.line).toBe(1)
 				expect(nestedRule.column).toBe(17)
 			})
+
+			test('line, column for rule with multiple selectors', () => {
+				const css = `
+					first#selector,
+					#second.selector {}
+				`
+				const ast = parse(css)
+				const rule = ast.first_child!
+				const selectorlist = rule.prelude!
+				const [first, second] = selectorlist.children
+				expect(first.line).toBe(2)
+				expect(first.column).toBe(6)
+				expect(first.start).toBe(7)
+				expect(second.line).toBe(3)
+				expect(second.column).toBe(6)
+				expect(second.start).toBe(29)
+			})
 		})
 
 		describe('AT_RULE', () => {
