@@ -76,7 +76,7 @@ describe('CSSNode', () => {
 
 			expect(media.type).toBe(AT_RULE)
 			expect(media.has_prelude).toBe(true)
-			expect(media.prelude).not.toBeNull()
+			expect(media.prelude).not.toBeUndefined()
 			expect(media.prelude?.text).toBe('(min-width: 768px)')
 		})
 
@@ -87,7 +87,7 @@ describe('CSSNode', () => {
 			const prelude = media.prelude!
 
 			// Prelude is a wrapper node containing the structured children
-			expect(prelude).not.toBeNull()
+			expect(prelude).not.toBeUndefined()
 			expect(prelude.has_children).toBe(true)
 
 			// Can iterate over prelude children (media queries)
@@ -107,7 +107,7 @@ describe('CSSNode', () => {
 
 			expect(supports.type).toBe(AT_RULE)
 			expect(supports.has_prelude).toBe(true)
-			expect(supports.prelude).not.toBeNull()
+			expect(supports.prelude).not.toBeUndefined()
 			expect(supports.prelude?.text).toBe('(display: grid)')
 		})
 
@@ -118,7 +118,7 @@ describe('CSSNode', () => {
 
 			expect(layer.type).toBe(AT_RULE)
 			expect(layer.has_prelude).toBe(true)
-			expect(layer.prelude).not.toBeNull()
+			expect(layer.prelude).not.toBeUndefined()
 			expect(layer.prelude?.text).toBe('utilities')
 		})
 
@@ -129,7 +129,7 @@ describe('CSSNode', () => {
 
 			expect(layer.type).toBe(AT_RULE)
 			expect(layer.has_prelude).toBe(false)
-			expect(layer.prelude).toBeNull()
+			expect(layer.prelude).toBe(null)
 		})
 
 		test('should return true for @keyframes with name', () => {
@@ -139,7 +139,7 @@ describe('CSSNode', () => {
 
 			expect(keyframes.type).toBe(AT_RULE)
 			expect(keyframes.has_prelude).toBe(true)
-			expect(keyframes.prelude).not.toBeNull()
+			expect(keyframes.prelude).not.toBeUndefined()
 			expect(keyframes.prelude?.text).toBe('fadeIn')
 		})
 
@@ -150,7 +150,7 @@ describe('CSSNode', () => {
 
 			expect(fontFace.type).toBe(AT_RULE)
 			expect(fontFace.has_prelude).toBe(false)
-			expect(fontFace.prelude).toBeNull()
+			expect(fontFace.prelude).toBe(null)
 		})
 
 		test('should return false for @page without prelude', () => {
@@ -160,7 +160,7 @@ describe('CSSNode', () => {
 
 			expect(page.type).toBe(AT_RULE)
 			expect(page.has_prelude).toBe(false)
-			expect(page.prelude).toBeNull()
+			expect(page.prelude).toBe(null)
 		})
 
 		test('should return true for @import with options', () => {
@@ -170,7 +170,7 @@ describe('CSSNode', () => {
 
 			expect(importRule.type).toBe(AT_RULE)
 			expect(importRule.has_prelude).toBe(true)
-			expect(importRule.prelude).not.toBeNull()
+			expect(importRule.prelude).not.toBeUndefined()
 		})
 
 		test('should work efficiently without creating strings', () => {
@@ -191,7 +191,7 @@ describe('CSSNode', () => {
 
 			expect(rule.type).toBe(STYLE_RULE)
 			expect(rule.has_prelude).toBe(true)
-			expect(rule.prelude).not.toBeNull()
+			expect(rule.prelude).not.toBeUndefined()
 			expect(rule.prelude?.type_name).toBe('SelectorList')
 		})
 
@@ -620,7 +620,7 @@ describe('CSSNode', () => {
 				const pseudo = selector?.first_child // Get pseudo-class
 				const nthOf = pseudo?.first_child // NODE_SELECTOR_NTH_OF
 
-				expect(nthOf?.nth).not.toBeNull()
+				expect(nthOf?.nth).not.toBeUndefined()
 				expect(nthOf?.nth?.type).toBe(NTH_SELECTOR)
 				expect(nthOf?.nth?.nth_a).toBe('2n')
 				expect(nthOf?.nth?.nth_b).toBe('+1')
@@ -632,7 +632,7 @@ describe('CSSNode', () => {
 				const pseudo = selector?.first_child
 				const nthOf = pseudo?.first_child
 
-				expect(nthOf?.selector).not.toBeNull()
+				expect(nthOf?.selector).not.toBeUndefined()
 				expect(nthOf?.selector?.type).toBe(SELECTOR_LIST)
 				expect(nthOf?.selector?.text).toBe('.foo, #bar')
 			})
@@ -642,8 +642,8 @@ describe('CSSNode', () => {
 				const selector = result.first_child
 				const classNode = selector?.first_child
 
-				expect(classNode?.nth).toBeNull()
-				expect(classNode?.selector).toBeNull()
+				expect(classNode?.nth).toBeUndefined()
+				expect(classNode?.selector).toBeUndefined()
 			})
 
 			test('works with :nth-last-child', () => {
@@ -652,9 +652,9 @@ describe('CSSNode', () => {
 				const pseudo = selector?.first_child
 				const nthOf = pseudo?.first_child
 
-				expect(nthOf?.nth).not.toBeNull()
+				expect(nthOf?.nth).not.toBeUndefined()
 				expect(nthOf?.nth?.nth_a).toBe('odd')
-				expect(nthOf?.selector).not.toBeNull()
+				expect(nthOf?.selector).not.toBeUndefined()
 				expect(nthOf?.selector?.text).toBe('.item')
 			})
 
@@ -664,7 +664,7 @@ describe('CSSNode', () => {
 				const pseudo = selector?.first_child
 				const nthOf = pseudo?.first_child
 
-				expect(nthOf?.nth).not.toBeNull()
+				expect(nthOf?.nth).not.toBeUndefined()
 				expect(nthOf?.nth?.nth_a).toBe('3n')
 				expect(nthOf?.selector?.text).toBe('.special')
 			})
@@ -687,7 +687,7 @@ describe('CSSNode', () => {
 				const pseudo = selector?.first_child
 
 				expect(pseudo?.type).toBe(PSEUDO_CLASS_SELECTOR)
-				expect(pseudo?.selector_list).not.toBeNull()
+				expect(pseudo?.selector_list).not.toBeUndefined()
 				expect(pseudo?.selector_list?.type).toBe(SELECTOR_LIST)
 				expect(pseudo?.selector_list?.text).toBe('.foo, #bar')
 			})
@@ -697,7 +697,7 @@ describe('CSSNode', () => {
 				const selector = result.first_child
 				const pseudo = selector?.first_child
 
-				expect(pseudo?.selector_list).not.toBeNull()
+				expect(pseudo?.selector_list).not.toBeUndefined()
 				expect(pseudo?.selector_list?.text).toBe('.foo')
 			})
 
@@ -706,7 +706,7 @@ describe('CSSNode', () => {
 				const selector = result.first_child
 				const pseudo = selector?.first_child
 
-				expect(pseudo?.selector_list).toBeNull()
+				expect(pseudo?.selector_list).toBeUndefined()
 			})
 
 			test('returns null for :nth-child without "of"', () => {
@@ -714,7 +714,7 @@ describe('CSSNode', () => {
 				const selector = result.first_child
 				const pseudo = selector?.first_child
 
-				expect(pseudo?.selector_list).toBeNull()
+				expect(pseudo?.selector_list).toBeUndefined()
 			})
 
 			test('works with :not()', () => {
@@ -722,7 +722,7 @@ describe('CSSNode', () => {
 				const selector = result.first_child
 				const pseudo = selector?.first_child
 
-				expect(pseudo?.selector_list).not.toBeNull()
+				expect(pseudo?.selector_list).not.toBeUndefined()
 				expect(pseudo?.selector_list?.text).toBe('.excluded')
 			})
 
@@ -731,7 +731,7 @@ describe('CSSNode', () => {
 				const selector = result.first_child
 				const pseudo = selector?.first_child
 
-				expect(pseudo?.selector_list).not.toBeNull()
+				expect(pseudo?.selector_list).not.toBeUndefined()
 				expect(pseudo?.selector_list?.text).toBe('> .child')
 			})
 
@@ -740,7 +740,7 @@ describe('CSSNode', () => {
 				const selector = result.first_child
 				const pseudo = selector?.first_child
 
-				expect(pseudo?.selector_list).not.toBeNull()
+				expect(pseudo?.selector_list).not.toBeUndefined()
 				expect(pseudo?.selector_list?.text).toBe('article, section')
 			})
 
@@ -749,7 +749,7 @@ describe('CSSNode', () => {
 				const selector = result.first_child
 				const pseudo = selector?.first_child
 
-				expect(pseudo?.selector_list).not.toBeNull()
+				expect(pseudo?.selector_list).not.toBeUndefined()
 				expect(pseudo?.selector_list?.text).toBe('.item, .element, #special')
 			})
 		})
@@ -820,7 +820,7 @@ describe('CSSNode', () => {
 				const result = parse_selector('div.foo#bar > p')
 				const selector = result.first_child!
 
-				const compound = selector.first_compound
+				const compound = selector.first_compound!
 				expect(compound.length).toBe(3)
 				expect(compound[0].text).toBe('div')
 				expect(compound[1].text).toBe('.foo')
@@ -831,20 +831,20 @@ describe('CSSNode', () => {
 				const result = parse_selector('div.foo#bar')
 				const selector = result.first_child!
 
-				const compound = selector.first_compound
+				const compound = selector.first_compound!
 				expect(compound.length).toBe(3)
 			})
 
-			test('returns empty array for wrong type', () => {
+			test('returns undefined for wrong type', () => {
 				const result = parse_selector('div')
-				expect(result.first_compound).toEqual([])
+				expect(result.first_compound).toBeUndefined()
 			})
 
 			test('handles attribute selectors', () => {
 				const result = parse_selector('input[type="text"]:focus + label')
 				const selector = result.first_child!
 
-				const compound = selector.first_compound
+				const compound = selector.first_compound!
 				expect(compound.length).toBe(3)
 				expect(compound[0].text).toBe('input')
 				expect(compound[1].text).toBe('[type="text"]')
@@ -855,7 +855,7 @@ describe('CSSNode', () => {
 				const result = parse_selector('> div')
 				const selector = result.first_child!
 
-				const compound = selector.first_compound
+				const compound = selector.first_compound!
 				expect(compound.length).toBe(0)
 			})
 		})
@@ -865,7 +865,7 @@ describe('CSSNode', () => {
 				const result = parse_selector('div.foo > p.bar + span')
 				const selector = result.first_child!
 
-				const compounds = selector.all_compounds
+				const compounds = selector.all_compounds!
 				expect(compounds.length).toBe(3)
 				expect(compounds[0].length).toBe(2) // div, .foo
 				expect(compounds[1].length).toBe(2) // p, .bar
@@ -876,7 +876,7 @@ describe('CSSNode', () => {
 				const result = parse_selector('div.foo#bar')
 				const selector = result.first_child!
 
-				const compounds = selector.all_compounds
+				const compounds = selector.all_compounds!
 				expect(compounds.length).toBe(1)
 				expect(compounds[0].length).toBe(3)
 			})
@@ -885,7 +885,7 @@ describe('CSSNode', () => {
 				const result = parse_selector('> p')
 				const selector = result.first_child!
 
-				const compounds = selector.all_compounds
+				const compounds = selector.all_compounds!
 				expect(compounds.length).toBe(1)
 				expect(compounds[0].length).toBe(1)
 				expect(compounds[0][0].text).toBe('p')
@@ -895,7 +895,7 @@ describe('CSSNode', () => {
 				const result = parse_selector('a > b + c ~ d')
 				const selector = result.first_child!
 
-				const compounds = selector.all_compounds
+				const compounds = selector.all_compounds!
 				expect(compounds.length).toBe(4)
 				expect(compounds[0][0].text).toBe('a')
 				expect(compounds[1][0].text).toBe('b')
@@ -907,13 +907,13 @@ describe('CSSNode', () => {
 				const result = parse_selector('div p span')
 				const selector = result.first_child!
 
-				const compounds = selector.all_compounds
+				const compounds = selector.all_compounds!
 				expect(compounds.length).toBe(3)
 			})
 
-			test('returns empty array for wrong type', () => {
+			test('returns undefined for wrong type', () => {
 				const result = parse_selector('div')
-				expect(result.all_compounds).toEqual([])
+				expect(result.all_compounds).toBeUndefined()
 			})
 		})
 
@@ -936,9 +936,9 @@ describe('CSSNode', () => {
 				expect(selector.is_compound).toBe(false)
 			})
 
-			test('false for wrong type', () => {
+			test('undefined for wrong type', () => {
 				const result = parse_selector('div')
-				expect(result.is_compound).toBe(false) // NODE_SELECTOR_LIST
+				expect(result.is_compound).toBeUndefined() // NODE_SELECTOR_LIST
 			})
 
 			test('true for single type selector', () => {
@@ -961,15 +961,15 @@ describe('CSSNode', () => {
 				expect(selector.first_compound_text).toBe('div.foo#bar')
 			})
 
-			test('returns empty string for wrong type', () => {
+			test('returns undefined for wrong type', () => {
 				const result = parse_selector('div')
-				expect(result.first_compound_text).toBe('')
+				expect(result.first_compound_text).toBeUndefined()
 			})
 
-			test('returns empty string for leading combinator', () => {
+			test('returns undefined for leading combinator', () => {
 				const result = parse_selector('> div')
 				const selector = result.first_child!
-				expect(selector.first_compound_text).toBe('')
+				expect(selector.first_compound_text).toBeUndefined()
 			})
 
 			test('handles complex selectors', () => {
@@ -983,7 +983,7 @@ describe('CSSNode', () => {
 			test('handles :host(#foo.bar baz) nested selector', () => {
 				const result = parse_selector(':host(#foo.bar baz)')
 				const selector = result.first_child
-				expect(selector).not.toBeNull()
+				expect(selector).not.toBeUndefined()
 				const pseudo = selector!.first_child
 				const innerList = pseudo?.selector_list
 				const innerSel = innerList?.first_child
@@ -998,17 +998,17 @@ describe('CSSNode', () => {
 				const result = parse_selector('')
 				const selector = result.first_child
 				if (selector) {
-					expect(selector.first_compound).toEqual([])
-					expect(selector.all_compounds).toEqual([])
+					expect(selector.first_compound).toBeUndefined()
+					expect(selector.all_compounds).toBeUndefined()
 				}
 			})
 
 			test('handles universal selector with combinator', () => {
 				const result = parse_selector('* > div')
 				const selector = result.first_child
-				expect(selector).not.toBeNull()
+				expect(selector).not.toBeUndefined()
 
-				const compounds = selector!.all_compounds
+				const compounds = selector!.all_compounds!
 				expect(compounds.length).toBe(2)
 				expect(compounds[0][0].text).toBe('*')
 				expect(compounds[1][0].text).toBe('div')
@@ -1018,7 +1018,7 @@ describe('CSSNode', () => {
 				const result = parse_selector('& > div')
 				const selector = result.first_child!
 
-				const compounds = selector.all_compounds
+				const compounds = selector.all_compounds!
 				expect(compounds.length).toBe(2)
 				expect(compounds[0][0].text).toBe('&')
 				expect(compounds[1][0].text).toBe('div')
