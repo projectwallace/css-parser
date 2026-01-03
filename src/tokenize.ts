@@ -158,7 +158,7 @@ export class Lexer {
 				this.advance(2) // Skip /*
 				while (this.pos < this.source.length - 1) {
 					let ch = this.source.charCodeAt(this.pos)
-					if (ch === CHAR_ASTERISK && this.source.charCodeAt(this.pos + 1) === CHAR_FORWARD_SLASH) {
+					if (ch === CHAR_ASTERISK && this.peek() === CHAR_FORWARD_SLASH) {
 						this.advance(2)
 						break
 					}
@@ -179,17 +179,14 @@ export class Lexer {
 		if (is_digit(ch)) {
 			return this.consume_number(start_line, start_column)
 		}
+
 		if (ch === CHAR_DOT && is_digit(this.peek())) {
 			return this.consume_number(start_line, start_column)
 		}
 
 		// CDO: <!--
 		if (ch === CHAR_LESS_THAN && this.pos + 3 < this.source.length) {
-			if (
-				this.source.charCodeAt(this.pos + 1) === CHAR_EXCLAMATION &&
-				this.source.charCodeAt(this.pos + 2) === CHAR_HYPHEN &&
-				this.source.charCodeAt(this.pos + 3) === CHAR_HYPHEN
-			) {
+			if (this.peek() === CHAR_EXCLAMATION && this.peek(2) === CHAR_HYPHEN && this.peek(3) === CHAR_HYPHEN) {
 				this.advance(4)
 				return this.make_token(TOKEN_CDO, start, this.pos, start_line, start_column)
 			}
@@ -197,7 +194,7 @@ export class Lexer {
 
 		// CDC: -->
 		if (ch === CHAR_HYPHEN && this.pos + 2 < this.source.length) {
-			if (this.source.charCodeAt(this.pos + 1) === CHAR_HYPHEN && this.source.charCodeAt(this.pos + 2) === CHAR_GREATER_THAN) {
+			if (this.peek() === CHAR_HYPHEN && this.peek(2) === CHAR_GREATER_THAN) {
 				this.advance(3)
 				return this.make_token(TOKEN_CDC, start, this.pos, start_line, start_column)
 			}
@@ -263,7 +260,7 @@ export class Lexer {
 
 		while (this.pos < this.source.length - 1) {
 			let ch = this.source.charCodeAt(this.pos)
-			if (ch === CHAR_ASTERISK && this.source.charCodeAt(this.pos + 1) === CHAR_FORWARD_SLASH) {
+			if (ch === CHAR_ASTERISK && this.peek() === CHAR_FORWARD_SLASH) {
 				this.advance(2)
 				break
 			}
@@ -353,7 +350,7 @@ export class Lexer {
 			this.pos < this.source.length &&
 			this.source.charCodeAt(this.pos) === CHAR_DOT &&
 			this.pos + 1 < this.source.length &&
-			is_digit(this.source.charCodeAt(this.pos + 1))
+			is_digit(this.peek())
 		) {
 			this.advance() // .
 			while (this.pos < this.source.length && is_digit(this.source.charCodeAt(this.pos))) {
@@ -412,7 +409,7 @@ export class Lexer {
 				// Check what follows the backslash before consuming it
 				if (this.pos + 1 >= this.source.length) break
 
-				let next = this.source.charCodeAt(this.pos + 1)
+				let next = this.peek()
 
 				// If followed by newline, it's invalid, stop without consuming backslash
 				if (is_newline(next)) break
