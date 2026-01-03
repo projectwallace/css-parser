@@ -88,6 +88,7 @@ export const SUPPORTS_QUERY = 36 // supports query: (display: flex)
 export const LAYER_NAME = 37 // layer name: base, components
 export const PRELUDE_OPERATOR = 38 // logical operator: and, or, not
 export const FEATURE_RANGE = 39 // Range syntax: (50px <= width <= 100px)
+export const AT_RULE_PRELUDE = 40 // Wrapper for at-rule prelude children
 
 // Flag constants (bit-packed in 1 byte)
 export const FLAG_IMPORTANT = 1 << 0 // Has !important

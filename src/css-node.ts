@@ -39,6 +39,7 @@ import {
 	LAYER_NAME,
 	PRELUDE_OPERATOR,
 	FEATURE_RANGE,
+	AT_RULE_PRELUDE,
 	FLAG_IMPORTANT,
 	FLAG_HAS_ERROR,
 	FLAG_HAS_BLOCK,
@@ -90,6 +91,7 @@ export const TYPE_NAMES = {
 	[LAYER_NAME]: 'Layer',
 	[PRELUDE_OPERATOR]: 'Operator',
 	[FEATURE_RANGE]: 'MediaFeatureRange',
+	[AT_RULE_PRELUDE]: 'AtrulePrelude',
 } as const
 
 export type TypeName = (typeof TYPE_NAMES)[keyof typeof TYPE_NAMES] | 'unknown'
@@ -134,6 +136,7 @@ export type CSSNodeType =
 	| typeof LAYER_NAME
 	| typeof PRELUDE_OPERATOR
 	| typeof FEATURE_RANGE
+	| typeof AT_RULE_PRELUDE
 
 // Options for cloning nodes
 export interface CloneOptions {
@@ -304,12 +307,16 @@ export class CSSNode {
 	}
 
 	/**
-	 * Get the prelude text (for at-rules: "(min-width: 768px)" in "@media (min-width: 768px)")
-	 * This is an alias for `value` to make at-rule usage more semantic
+	 * Get the prelude node (for at-rules: structured prelude with media queries, layer names, etc.)
+	 * Returns the AT_RULE_PRELUDE wrapper node containing prelude children, or null if no prelude
 	 */
-	get prelude(): string | null {
-		let val = this.value
-		return typeof val === 'string' ? val : null
+	get prelude(): CSSNode | null {
+		if (this.type !== AT_RULE) return null
+		let first = this.first_child
+		if (first && first.type === AT_RULE_PRELUDE) {
+			return first
+		}
+		return null
 	}
 
 	/**
@@ -734,10 +741,9 @@ export class CSSNode {
 			if (this.unit) plain.unit = this.unit
 		}
 
-		// 4. Extract prelude for at-rules
-		if (this.type === AT_RULE && this.prelude) {
-			plain.prelude = this.prelude
-		}
+		// 4. At-rule preludes are now child nodes (AT_RULE_PRELUDE wrapper)
+		// They will be cloned as part of children in deep clones
+		// No special extraction needed - breaking change from string to CSSNode
 
 		// 5. Extract flags
 		if (this.type === DECLARATION) {

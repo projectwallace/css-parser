@@ -76,7 +76,28 @@ describe('CSSNode', () => {
 
 			expect(media.type).toBe(AT_RULE)
 			expect(media.has_prelude).toBe(true)
-			expect(media.prelude).toBe('(min-width: 768px)')
+			expect(media.prelude).not.toBeNull()
+			expect(media.prelude?.text).toBe('(min-width: 768px)')
+		})
+
+		test('prelude node can be walked to access structured children', () => {
+			const source = '@media screen and (min-width: 768px) { }'
+			const root = parse(source)
+			const media = root.first_child!
+			const prelude = media.prelude!
+
+			// Prelude is a wrapper node containing the structured children
+			expect(prelude).not.toBeNull()
+			expect(prelude.has_children).toBe(true)
+
+			// Can iterate over prelude children (media queries)
+			const children = [...prelude]
+			expect(children.length).toBeGreaterThan(0)
+
+			// Can access structured nodes within prelude
+			const mediaQuery = prelude.first_child!
+			expect(mediaQuery.type_name).toBe('MediaQuery')
+			expect(mediaQuery.text).toBe('screen and (min-width: 768px)')
 		})
 
 		test('should return true for @supports with prelude', () => {
@@ -86,7 +107,8 @@ describe('CSSNode', () => {
 
 			expect(supports.type).toBe(AT_RULE)
 			expect(supports.has_prelude).toBe(true)
-			expect(supports.prelude).toBe('(display: grid)')
+			expect(supports.prelude).not.toBeNull()
+			expect(supports.prelude?.text).toBe('(display: grid)')
 		})
 
 		test('should return true for @layer with name', () => {
@@ -96,7 +118,8 @@ describe('CSSNode', () => {
 
 			expect(layer.type).toBe(AT_RULE)
 			expect(layer.has_prelude).toBe(true)
-			expect(layer.prelude).toBe('utilities')
+			expect(layer.prelude).not.toBeNull()
+			expect(layer.prelude?.text).toBe('utilities')
 		})
 
 		test('should return false for @layer without name', () => {
@@ -116,7 +139,8 @@ describe('CSSNode', () => {
 
 			expect(keyframes.type).toBe(AT_RULE)
 			expect(keyframes.has_prelude).toBe(true)
-			expect(keyframes.prelude).toBe('fadeIn')
+			expect(keyframes.prelude).not.toBeNull()
+			expect(keyframes.prelude?.text).toBe('fadeIn')
 		})
 
 		test('should return false for @font-face without prelude', () => {
@@ -573,9 +597,10 @@ describe('CSSNode', () => {
 			const source = '@media screen and (min-width: 768px) { body { color: red; } }'
 			const root = parse(source)
 			const media = root.first_child!
-			const prelude = media.first_child!
+			const preludeWrapper = media.prelude!
+			const mediaQuery = preludeWrapper.first_child!
 
-			expect(prelude.type_name).toBe('MediaQuery')
+			expect(mediaQuery.type_name).toBe('MediaQuery')
 		})
 	})
 
@@ -1082,7 +1107,7 @@ describe('CSSNode', () => {
 			})
 
 			test('extracts at-rule properties', () => {
-				const ast = parse('@media screen { }', { parse_atrule_preludes: false })
+				const ast = parse('@media screen { }')
 				const atrule = ast.first_child!
 
 				const clone = atrule.clone({ deep: false })
@@ -1090,7 +1115,8 @@ describe('CSSNode', () => {
 				expect(clone.type).toBe(AT_RULE)
 				expect(clone.type_name).toBe('Atrule')
 				expect(clone.name).toBe('media')
-				expect(clone.prelude).toBe('screen')
+				// Prelude is now a child node, not extracted as property
+				expect(clone.children).toEqual([])
 			})
 
 			test('extracts dimension value with unit', () => {

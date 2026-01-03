@@ -984,7 +984,7 @@ describe('Core Nodes', () => {
 					let atrule = root.first_child!
 					expect(atrule.type).toBe(AT_RULE)
 					expect(atrule.name).toBe('media')
-					expect(atrule.prelude).toBe('(min-width: 768px)')
+					expect(atrule.prelude?.text).toBe('(min-width: 768px)')
 				})
 
 				test('complex media query prelude', () => {
@@ -993,7 +993,7 @@ describe('Core Nodes', () => {
 
 					let atrule = root.first_child!
 					expect(atrule.name).toBe('media')
-					expect(atrule.prelude).toBe('screen and (min-width: 768px) and (max-width: 1024px)')
+					expect(atrule.prelude?.text).toBe('screen and (min-width: 768px) and (max-width: 1024px)')
 				})
 
 				test('container query prelude', () => {
@@ -1002,7 +1002,7 @@ describe('Core Nodes', () => {
 
 					let atrule = root.first_child!
 					expect(atrule.name).toBe('container')
-					expect(atrule.prelude).toBe('(width >= 200px)')
+					expect(atrule.prelude?.text).toBe('(width >= 200px)')
 				})
 
 				test('supports query prelude', () => {
@@ -1011,7 +1011,7 @@ describe('Core Nodes', () => {
 
 					let atrule = root.first_child!
 					expect(atrule.name).toBe('supports')
-					expect(atrule.prelude).toBe('(display: grid)')
+					expect(atrule.prelude?.text).toBe('(display: grid)')
 				})
 
 				test('import prelude', () => {
@@ -1020,7 +1020,7 @@ describe('Core Nodes', () => {
 
 					let atrule = root.first_child!
 					expect(atrule.name).toBe('import')
-					expect(atrule.prelude).toBe('url("styles.css")')
+					expect(atrule.prelude?.text).toBe('url("styles.css")')
 				})
 
 				test('at-rule without prelude', () => {
@@ -1038,7 +1038,7 @@ describe('Core Nodes', () => {
 
 					let atrule = root.first_child!
 					expect(atrule.name).toBe('layer')
-					expect(atrule.prelude).toBe('utilities')
+					expect(atrule.prelude?.text).toBe('utilities')
 				})
 
 				test('keyframes prelude', () => {
@@ -1047,7 +1047,7 @@ describe('Core Nodes', () => {
 
 					let atrule = root.first_child!
 					expect(atrule.name).toBe('keyframes')
-					expect(atrule.prelude).toBe('slide-in')
+					expect(atrule.prelude?.text).toBe('slide-in')
 				})
 
 				test('prelude with extra whitespace', () => {
@@ -1056,7 +1056,7 @@ describe('Core Nodes', () => {
 
 					let atrule = root.first_child!
 					expect(atrule.name).toBe('media')
-					expect(atrule.prelude).toBe('(min-width: 768px)')
+					expect(atrule.prelude?.text).toBe('(min-width: 768px)')
 				})
 
 				test('charset prelude', () => {
@@ -1065,7 +1065,9 @@ describe('Core Nodes', () => {
 
 					let atrule = root.first_child!
 					expect(atrule.name).toBe('charset')
-					expect(atrule.prelude).toBe('"UTF-8"')
+					// @charset doesn't have structured prelude parsing, use .value
+					expect(atrule.value).toBe('"UTF-8"')
+					expect(atrule.prelude).toBeNull()
 				})
 
 				test('namespace prelude', () => {
@@ -1074,16 +1076,20 @@ describe('Core Nodes', () => {
 
 					let atrule = root.first_child!
 					expect(atrule.name).toBe('namespace')
-					expect(atrule.prelude).toBe('svg url(http://www.w3.org/2000/svg)')
+					// @namespace doesn't have structured prelude parsing, use .value
+					expect(atrule.value).toBe('svg url(http://www.w3.org/2000/svg)')
+					expect(atrule.prelude).toBeNull()
 				})
 
-				test('value and prelude should be aliases for at-rules', () => {
+				test('value string matches prelude text for at-rules', () => {
 					let source = '@media (min-width: 768px) { }'
 					let root = parse(source)
 
 					let atrule = root.first_child!
-					expect(atrule.value).toBe(atrule.prelude)
+					// value returns the raw string from arena, prelude returns the wrapper node
+					expect(typeof atrule.value).toBe('string')
 					expect(atrule.value).toBe('(min-width: 768px)')
+					expect(atrule.prelude?.text).toBe('(min-width: 768px)')
 				})
 
 				test('at-rule prelude line tracking', () => {
@@ -1093,10 +1099,10 @@ describe('Core Nodes', () => {
 					let [_rule1, atRule] = root.children
 					expect(atRule.line).toBe(3)
 
-					// Check that prelude nodes inherit the correct line
-					let preludeNode = atRule.first_child
-					expect(preludeNode).toBeTruthy()
-					expect(preludeNode!.line).toBe(3) // Should be line 3, not line 1
+					// Check that prelude wrapper inherits the correct line
+					let preludeWrapper = atRule.prelude
+					expect(preludeWrapper).toBeTruthy()
+					expect(preludeWrapper!.line).toBe(3) // Should be line 3, not line 1
 				})
 			})
 
@@ -2461,13 +2467,13 @@ describe('Core Nodes', () => {
 				const layer = ast.first_child!
 				expect(layer.type).toBe(AT_RULE)
 				expect(layer.name).toBe('layer')
-				expect(layer.prelude).toBe('what')
+				expect(layer.prelude?.text).toBe('what')
 				expect(layer.has_block).toBe(true)
 
 				const container = layer.block!.first_child!
 				expect(container.type).toBe(AT_RULE)
 				expect(container.name).toBe('container')
-				expect(container.prelude).toBe('(width > 0)')
+				expect(container.prelude?.text).toBe('(width > 0)')
 				expect(container.has_block).toBe(true)
 
 				const ulRule = container.block!.first_child!
@@ -2486,7 +2492,7 @@ describe('Core Nodes', () => {
 				const media = ulRule.block!.first_child!
 				expect(media.type).toBe(AT_RULE)
 				expect(media.name).toBe('media')
-				expect(media.prelude).toBe('(height > 0)')
+				expect(media.prelude?.text).toBe('(height > 0)')
 				expect(media.has_block).toBe(true)
 
 				const nestingRule = media.block!.first_child!
