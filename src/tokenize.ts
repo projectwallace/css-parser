@@ -1,4 +1,14 @@
-import { is_digit, is_hex_digit, is_ident_start, is_ident_char, is_whitespace, is_newline } from './char-types'
+import {
+	is_hex_digit,
+	is_ident_start,
+	is_ident_char,
+	is_whitespace,
+	is_newline,
+	char_types,
+	CHAR_DIGIT,
+	CHAR_WHITESPACE,
+	CHAR_NEWLINE,
+} from './char-types'
 import {
 	TOKEN_IDENT,
 	TOKEN_FUNCTION,
@@ -101,7 +111,8 @@ export class Lexer {
 		if (skip_whitespace) {
 			while (this.pos < this.source.length) {
 				let ch = this.source.charCodeAt(this.pos)
-				if (!is_whitespace(ch) && !is_newline(ch)) break
+				// Hot path: inline whitespace/newline check in tight loop
+				if (ch >= 128 || (char_types[ch] & (CHAR_WHITESPACE | CHAR_NEWLINE)) === 0) break
 				this.advance()
 			}
 		}
@@ -147,7 +158,8 @@ export class Lexer {
 		}
 
 		// Whitespace
-		if (is_whitespace(ch) || is_newline(ch)) {
+		// Hot path: inline whitespace/newline check
+		if (ch < 128 && (char_types[ch] & (CHAR_WHITESPACE | CHAR_NEWLINE)) !== 0) {
 			return this.consume_whitespace(start_line, start_column)
 		}
 
@@ -176,12 +188,17 @@ export class Lexer {
 		}
 
 		// Numbers: digit or . followed by digit
-		if (is_digit(ch)) {
+		// Hot path: inline digit check to eliminate function call overhead
+		if (ch < 128 && (char_types[ch] & CHAR_DIGIT) !== 0) {
 			return this.consume_number(start_line, start_column)
 		}
 
-		if (ch === CHAR_DOT && is_digit(this.peek())) {
-			return this.consume_number(start_line, start_column)
+		// Hot path: inline digit check for decimal detection
+		if (ch === CHAR_DOT) {
+			let next = this.peek()
+			if (next < 128 && (char_types[next] & CHAR_DIGIT) !== 0) {
+				return this.consume_number(start_line, start_column)
+			}
 		}
 
 		// CDO: <!--
@@ -234,8 +251,16 @@ export class Lexer {
 		// Hyphen/Plus: could be signed number like -5 or +5
 		if (ch === CHAR_HYPHEN || ch === CHAR_PLUS) {
 			let next = this.peek()
-			if (is_digit(next) || (next === CHAR_DOT && is_digit(this.peek(2)))) {
+			// Hot path: inline digit checks for signed number detection
+			let is_next_digit = next < 128 && (char_types[next] & CHAR_DIGIT) !== 0
+			if (is_next_digit) {
 				return this.consume_number(start_line, start_column)
+			}
+			if (next === CHAR_DOT) {
+				let next2 = this.peek(2)
+				if (next2 < 128 && (char_types[next2] & CHAR_DIGIT) !== 0) {
+					return this.consume_number(start_line, start_column)
+				}
 			}
 		}
 
@@ -248,7 +273,8 @@ export class Lexer {
 		let start = this.pos
 		while (this.pos < this.source.length) {
 			let ch = this.source.charCodeAt(this.pos)
-			if (!is_whitespace(ch) && !is_newline(ch)) break
+			// Hot path: inline whitespace/newline check in tight loop
+			if (ch >= 128 || (char_types[ch] & (CHAR_WHITESPACE | CHAR_NEWLINE)) === 0) break
 			this.advance()
 		}
 		return this.make_token(TOKEN_WHITESPACE, start, this.pos, start_line, start_column)
@@ -341,20 +367,29 @@ export class Lexer {
 		}
 
 		// Integer part
-		while (this.pos < this.source.length && is_digit(this.source.charCodeAt(this.pos))) {
+		// Hot path: inline digit check in tight loop
+		while (this.pos < this.source.length) {
+			let ch = this.source.charCodeAt(this.pos)
+			if (ch >= 128 || (char_types[ch] & CHAR_DIGIT) === 0) break
 			this.advance()
 		}
 
 		// Decimal part
+		// Hot path: inline digit check for decimal detection
 		if (
 			this.pos < this.source.length &&
 			this.source.charCodeAt(this.pos) === CHAR_DOT &&
-			this.pos + 1 < this.source.length &&
-			is_digit(this.peek())
+			this.pos + 1 < this.source.length
 		) {
-			this.advance() // .
-			while (this.pos < this.source.length && is_digit(this.source.charCodeAt(this.pos))) {
-				this.advance()
+			let next = this.peek()
+			if (next < 128 && (char_types[next] & CHAR_DIGIT) !== 0) {
+				this.advance() // .
+				// Hot path: inline digit check in tight loop
+				while (this.pos < this.source.length) {
+					let ch = this.source.charCodeAt(this.pos)
+					if (ch >= 128 || (char_types[ch] & CHAR_DIGIT) === 0) break
+					this.advance()
+				}
 			}
 		}
 
@@ -363,7 +398,11 @@ export class Lexer {
 			let ch = this.source.charCodeAt(this.pos)
 			if (ch === CHAR_LOWERCASE_E || ch === CHAR_UPPERCASE_E) {
 				let next = this.peek()
-				if (is_digit(next) || ((next === CHAR_PLUS || next === CHAR_HYPHEN) && is_digit(this.peek(2)))) {
+				// Hot path: inline digit checks for exponent detection
+				let is_next_digit = next < 128 && (char_types[next] & CHAR_DIGIT) !== 0
+				let next2 = this.peek(2)
+				let is_next2_digit = next2 < 128 && (char_types[next2] & CHAR_DIGIT) !== 0
+				if (is_next_digit || ((next === CHAR_PLUS || next === CHAR_HYPHEN) && is_next2_digit)) {
 					this.advance() // e or E
 					if (this.pos < this.source.length) {
 						let sign = this.source.charCodeAt(this.pos)
@@ -371,7 +410,10 @@ export class Lexer {
 							this.advance() // + or -
 						}
 					}
-					while (this.pos < this.source.length && is_digit(this.source.charCodeAt(this.pos))) {
+					// Hot path: inline digit check in tight loop
+					while (this.pos < this.source.length) {
+						let ch = this.source.charCodeAt(this.pos)
+						if (ch >= 128 || (char_types[ch] & CHAR_DIGIT) === 0) break
 						this.advance()
 					}
 				}

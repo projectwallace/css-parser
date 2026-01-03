@@ -21,14 +21,14 @@
 // - Cache-friendly (128 bytes fits in L1 cache)
 // - Supports overlapping categories (e.g., '5' is both digit and hex)
 
-let CHAR_ALPHA = 1 << 0 // 1
-let CHAR_DIGIT = 1 << 1 // 2
-let CHAR_HEX = 1 << 2 // 4
-let CHAR_WHITESPACE = 1 << 3 // 8
-let CHAR_NEWLINE = 1 << 4 // 16
+export let CHAR_ALPHA = 1 << 0 // 1
+export let CHAR_DIGIT = 1 << 1 // 2
+export let CHAR_HEX = 1 << 2 // 4
+export let CHAR_WHITESPACE = 1 << 3 // 8
+export let CHAR_NEWLINE = 1 << 4 // 16
 
 // Lookup table for ASCII characters (0-127)
-let char_types = new Uint8Array(128)
+export let char_types = new Uint8Array(128)
 
 // Initialize digit characters (0-9)
 for (let i = 0x30; i <= 0x39; i++) {
