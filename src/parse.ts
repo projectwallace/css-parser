@@ -1,6 +1,6 @@
 // CSS Parser - Builds AST using the arena
 import { Lexer } from './tokenize'
-import { CSSDataArena, STYLESHEET, STYLE_RULE, SELECTOR_LIST, AT_RULE, BLOCK, FLAG_HAS_BLOCK, FLAG_HAS_DECLARATIONS } from './arena'
+import { CSSDataArena, STYLESHEET, STYLE_RULE, SELECTOR_LIST, AT_RULE, BLOCK, AT_RULE_PRELUDE, FLAG_HAS_BLOCK, FLAG_HAS_DECLARATIONS } from './arena'
 import { CSSNode } from './css-node'
 import { SelectorParser } from './parse-selector'
 import { AtRulePreludeParser } from './parse-atrule-prelude'
@@ -329,14 +329,20 @@ export class Parser {
 
 		// Store prelude position (trimmed)
 		let trimmed = trim_boundaries(this.source, prelude_start, prelude_end)
-		let prelude_nodes: number[] = []
+		let prelude_wrapper: number | null = null
 		if (trimmed) {
 			this.arena.set_value_start_delta(at_rule, trimmed[0] - at_rule_start)
 			this.arena.set_value_length(at_rule, trimmed[1] - trimmed[0])
 
 			// Parse prelude if enabled
 			if (this.prelude_parser) {
-				prelude_nodes = this.prelude_parser.parse_prelude(at_rule_name, trimmed[0], trimmed[1], at_rule_line, at_rule_column)
+				let prelude_nodes = this.prelude_parser.parse_prelude(at_rule_name, trimmed[0], trimmed[1], at_rule_line, at_rule_column)
+
+				// Wrap prelude nodes in an AT_RULE_PRELUDE wrapper
+				if (prelude_nodes.length > 0) {
+					prelude_wrapper = this.arena.create_node(AT_RULE_PRELUDE, trimmed[0], trimmed[1] - trimmed[0], at_rule_line, at_rule_column)
+					this.arena.append_children(prelude_wrapper, prelude_nodes)
+				}
 			}
 		}
 
@@ -442,17 +448,33 @@ export class Parser {
 			// Link block children
 			this.arena.append_children(block_node, block_children)
 
-			// Add block to at-rule children
-			prelude_nodes.push(block_node)
+			// Build at-rule children: [prelude_wrapper?, block]
+			let at_rule_children: number[] = []
+			if (prelude_wrapper !== null) {
+				at_rule_children.push(prelude_wrapper)
+			}
+			at_rule_children.push(block_node)
+
+			// Set at-rule length and link children
+			this.arena.set_length(at_rule, last_end - at_rule_start)
+			this.arena.append_children(at_rule, at_rule_children)
 		} else if (this.peek_type() === TOKEN_SEMICOLON) {
 			// Statement at-rule (like @import, @namespace)
 			last_end = this.lexer.token_end
 			this.next_token() // consume ';'
-		}
 
-		// Set at-rule length and link children (prelude nodes + optional block)
-		this.arena.set_length(at_rule, last_end - at_rule_start)
-		this.arena.append_children(at_rule, prelude_nodes)
+			// Set at-rule length and link children (prelude wrapper only, no block)
+			this.arena.set_length(at_rule, last_end - at_rule_start)
+			if (prelude_wrapper !== null) {
+				this.arena.append_children(at_rule, [prelude_wrapper])
+			}
+		} else {
+			// No block or semicolon (error recovery)
+			this.arena.set_length(at_rule, last_end - at_rule_start)
+			if (prelude_wrapper !== null) {
+				this.arena.append_children(at_rule, [prelude_wrapper])
+			}
+		}
 
 		return at_rule
 	}
