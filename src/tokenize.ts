@@ -116,41 +116,34 @@ export class Lexer {
 		let start_column = this.column
 
 		// Fast path for single-character tokens
-		if (ch === CHAR_LEFT_BRACE) {
-			this.advance()
-			return this.make_token(TOKEN_LEFT_BRACE, start, this.pos, start_line, start_column)
-		}
-		if (ch === CHAR_RIGHT_BRACE) {
-			this.advance()
-			return this.make_token(TOKEN_RIGHT_BRACE, start, this.pos, start_line, start_column)
-		}
-		if (ch === CHAR_COLON) {
-			this.advance()
-			return this.make_token(TOKEN_COLON, start, this.pos, start_line, start_column)
-		}
-		if (ch === CHAR_SEMICOLON) {
-			this.advance()
-			return this.make_token(TOKEN_SEMICOLON, start, this.pos, start_line, start_column)
-		}
-		if (ch === CHAR_COMMA) {
-			this.advance()
-			return this.make_token(TOKEN_COMMA, start, this.pos, start_line, start_column)
-		}
-		if (ch === CHAR_LEFT_BRACKET) {
-			this.advance()
-			return this.make_token(TOKEN_LEFT_BRACKET, start, this.pos, start_line, start_column)
-		}
-		if (ch === CHAR_RIGHT_BRACKET) {
-			this.advance()
-			return this.make_token(TOKEN_RIGHT_BRACKET, start, this.pos, start_line, start_column)
-		}
-		if (ch === CHAR_LEFT_PAREN) {
-			this.advance()
-			return this.make_token(TOKEN_LEFT_PAREN, start, this.pos, start_line, start_column)
-		}
-		if (ch === CHAR_RIGHT_PAREN) {
-			this.advance()
-			return this.make_token(TOKEN_RIGHT_PAREN, start, this.pos, start_line, start_column)
+		switch (ch) {
+			case CHAR_LEFT_BRACE:
+				this.advance()
+				return this.make_token(TOKEN_LEFT_BRACE, start, this.pos, start_line, start_column)
+			case CHAR_RIGHT_BRACE:
+				this.advance()
+				return this.make_token(TOKEN_RIGHT_BRACE, start, this.pos, start_line, start_column)
+			case CHAR_COLON:
+				this.advance()
+				return this.make_token(TOKEN_COLON, start, this.pos, start_line, start_column)
+			case CHAR_SEMICOLON:
+				this.advance()
+				return this.make_token(TOKEN_SEMICOLON, start, this.pos, start_line, start_column)
+			case CHAR_COMMA:
+				this.advance()
+				return this.make_token(TOKEN_COMMA, start, this.pos, start_line, start_column)
+			case CHAR_LEFT_BRACKET:
+				this.advance()
+				return this.make_token(TOKEN_LEFT_BRACKET, start, this.pos, start_line, start_column)
+			case CHAR_RIGHT_BRACKET:
+				this.advance()
+				return this.make_token(TOKEN_RIGHT_BRACKET, start, this.pos, start_line, start_column)
+			case CHAR_LEFT_PAREN:
+				this.advance()
+				return this.make_token(TOKEN_LEFT_PAREN, start, this.pos, start_line, start_column)
+			case CHAR_RIGHT_PAREN:
+				this.advance()
+				return this.make_token(TOKEN_RIGHT_PAREN, start, this.pos, start_line, start_column)
 		}
 
 		// Whitespace
