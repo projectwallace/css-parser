@@ -41,6 +41,8 @@ import {
 	TOKEN_EOF,
 	TOKEN_WHITESPACE,
 	TOKEN_STRING,
+	TOKEN_COMMENT,
+	type TokenType,
 } from './token-types'
 import { skip_whitespace_forward, skip_whitespace_and_comments_forward, skip_whitespace_and_comments_backward } from './parse-utils'
 import {
@@ -136,10 +138,32 @@ export class SelectorParser {
 			this.skip_whitespace()
 			if (this.lexer.pos >= this.selector_end) break
 
-			this.lexer.next_token_fast(false)
-			let token_type = this.lexer.token_type
+			// Skip any comments before the comma
+			let token_type: TokenType = TOKEN_EOF
+			while (this.lexer.pos < this.selector_end) {
+				this.lexer.next_token_fast(false)
+				token_type = this.lexer.token_type
+				if (token_type === TOKEN_COMMENT) {
+					this.skip_whitespace()
+				} else {
+					break
+				}
+			}
+
 			if (token_type === TOKEN_COMMA) {
+				// Skip whitespace and any comments after the comma
 				this.skip_whitespace()
+				while (this.lexer.pos < this.selector_end) {
+					const saved = this.lexer.save_position()
+					this.lexer.next_token_fast(false)
+					token_type = this.lexer.token_type
+					if (token_type === TOKEN_COMMENT) {
+						this.skip_whitespace()
+					} else {
+						this.lexer.restore_position(saved)
+						break
+					}
+				}
 				continue
 			} else {
 				// No more selectors
