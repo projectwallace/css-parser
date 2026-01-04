@@ -108,13 +108,15 @@ export class SelectorParser {
 
 		while (this.lexer.pos < this.selector_end) {
 			let selector_start = this.lexer.pos
-			// let selector_line = this.lexer.line
-			// let selector_column = this.lexer.column
+			let selector_line = this.lexer.line
+			let selector_column = this.lexer.column
 
 			let complex_selector = this.parse_complex_selector(allow_relative)
 			if (complex_selector !== null) {
 				// Wrap the complex selector (chain of components) in a NODE_SELECTOR
-				let selector_wrapper = this.create_node(SELECTOR, selector_start, this.lexer.pos)
+				let selector_wrapper = this.arena.create_node(SELECTOR, selector_start, this.lexer.pos - selector_start, selector_line, selector_column)
+			this.arena.set_content_start_delta(selector_wrapper, 0)
+			this.arena.set_content_length(selector_wrapper, this.lexer.pos - selector_start)
 
 				// Find the last component in the chain
 				let last_component = complex_selector
@@ -924,9 +926,28 @@ export class SelectorParser {
 		return node
 	}
 
-	// Helper to skip whitespace
+	// Helper to skip whitespace and update line/column
 	private skip_whitespace(): void {
+		const start_pos = this.lexer.pos
 		this.lexer.pos = skip_whitespace_forward(this.source, this.lexer.pos, this.selector_end)
+
+		// Update line and column for any newlines we skipped
+		for (let i = start_pos; i < this.lexer.pos; i++) {
+			const char = this.source.charCodeAt(i)
+			if (char === 10) { // '\n'
+				this.lexer.line++
+				this.lexer.column = 1
+			} else if (char === 13) { // '\r'
+				this.lexer.line++
+				this.lexer.column = 1
+				// Skip '\n' if it follows '\r'
+				if (i + 1 < this.lexer.pos && this.source.charCodeAt(i + 1) === 10) {
+					i++
+				}
+			} else {
+				this.lexer.column++
+			}
+		}
 	}
 }
 

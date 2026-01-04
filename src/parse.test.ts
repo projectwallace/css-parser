@@ -121,10 +121,10 @@ describe('Core Nodes', () => {
 				const [first, second] = selectorlist.children
 				expect(first.line).toBe(2)
 				expect(first.column).toBe(6)
-				expect(first.start).toBe(7)
+				expect(first.start).toBe(6)
 				expect(second.line).toBe(3)
 				expect(second.column).toBe(6)
-				expect(second.start).toBe(29)
+				expect(second.start).toBe(27)
 			})
 		})
 
