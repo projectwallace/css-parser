@@ -60,7 +60,8 @@
 		"benchmark:memory": "npm run build && node --expose-gc benchmark/memory.ts",
 		"lint": "oxlint --config .oxlintrc.json",
 		"lint-package": "publint",
-		"check": "tsc --noEmit"
+		"check": "tsc --noEmit",
+		"precommit": "npm run test -- --run; npm run lint; npm run check"
 	},
 	"keywords": [
 		"css",
