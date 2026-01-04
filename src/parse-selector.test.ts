@@ -1274,6 +1274,40 @@ describe('Selector Nodes', () => {
 				const children = getChildren(arena, source, rootNode)
 				expect(children).toHaveLength(3)
 			})
+
+			it('should parse selector list with comments between selectors', () => {
+				const { arena, rootNode, source } = parseSelectorInternal('a, b, /* comment */ c, d')
+
+				expect(rootNode).not.toBeNull()
+				if (!rootNode) return
+
+				// Root is NODE_SELECTOR_LIST
+				expect(arena.get_type(rootNode)).toBe(SELECTOR_LIST)
+
+				// List should contain all 4 selectors despite the comment
+				const children = getChildren(arena, source, rootNode)
+				expect(children).toHaveLength(4)
+
+				// Verify each selector
+				expect(arena.get_type(children[0])).toBe(SELECTOR)
+				expect(arena.get_type(children[1])).toBe(SELECTOR)
+				expect(arena.get_type(children[2])).toBe(SELECTOR)
+				expect(arena.get_type(children[3])).toBe(SELECTOR)
+			})
+
+			it('should parse selector list with comments after commas', () => {
+				const { arena, rootNode, source } = parseSelectorInternal('a,/* comment */b,/* another */c')
+
+				expect(rootNode).not.toBeNull()
+				if (!rootNode) return
+
+				// Root is NODE_SELECTOR_LIST
+				expect(arena.get_type(rootNode)).toBe(SELECTOR_LIST)
+
+				// List should contain all 3 selectors
+				const children = getChildren(arena, source, rootNode)
+				expect(children).toHaveLength(3)
+			})
 		})
 
 		describe('Complex selectors', () => {
