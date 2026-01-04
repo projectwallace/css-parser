@@ -928,25 +928,8 @@ export class SelectorParser {
 
 	// Helper to skip whitespace and update line/column
 	private skip_whitespace(): void {
-		const start_pos = this.lexer.pos
-		this.lexer.pos = skip_whitespace_forward(this.source, this.lexer.pos, this.selector_end)
-
-		// Update line and column for any newlines we skipped
-		for (let i = start_pos; i < this.lexer.pos; i++) {
-			const char = this.source.charCodeAt(i)
-			if (char === 10) { // '\n'
-				this.lexer.line++
-				this.lexer.column = 1
-			} else if (char === 13) { // '\r'
-				this.lexer.line++
-				this.lexer.column = 1
-				// Skip '\n' if it follows '\r'
-				if (i + 1 < this.lexer.pos && this.source.charCodeAt(i + 1) === 10) {
-					i++
-				}
-			} else {
-				this.lexer.column++
-			}
+		while (this.lexer.pos < this.selector_end && is_whitespace(this.source.charCodeAt(this.lexer.pos))) {
+			this.lexer.advance()
 		}
 	}
 }
