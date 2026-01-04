@@ -181,7 +181,7 @@ export class SelectorParser {
 				let ch = this.source.charCodeAt(this.lexer.token_start)
 				if (ch === CHAR_GREATER_THAN || ch === CHAR_PLUS || ch === CHAR_TILDE) {
 					// Found leading combinator (>, +, ~) - this is a relative selector
-					let combinator = this.create_node(COMBINATOR, this.lexer.token_start, this.lexer.token_end)
+					let combinator = this.create_node_at(COMBINATOR, this.lexer.token_start, this.lexer.token_end, this.lexer.token_line, this.lexer.token_column)
 					components.push(combinator)
 					this.skip_whitespace()
 					// Continue to parse the rest normally
@@ -411,6 +411,8 @@ export class SelectorParser {
 	// Parse combinator (>, +, ~, or descendant space)
 	private try_parse_combinator(): number | null {
 		let whitespace_start = this.lexer.pos
+		let whitespace_start_line = this.lexer.line
+		let whitespace_start_column = this.lexer.column
 		let has_whitespace = false
 
 		// Skip whitespace and check for combinator
@@ -419,7 +421,7 @@ export class SelectorParser {
 			// no calling is_whitespace() because of function call overhead
 			if (ch === CHAR_SPACE || ch === CHAR_TAB || ch === CHAR_NEWLINE || ch === CHAR_CARRIAGE_RETURN || ch === CHAR_FORM_FEED) {
 				has_whitespace = true
-				this.lexer.pos++
+				this.lexer.advance()
 			} else {
 				break
 			}
@@ -427,6 +429,8 @@ export class SelectorParser {
 
 		if (this.lexer.pos >= this.selector_end) {
 			this.lexer.pos = whitespace_start
+			this.lexer.line = whitespace_start_line
+			this.lexer.column = whitespace_start_column
 			return null
 		}
 
@@ -437,28 +441,34 @@ export class SelectorParser {
 			let ch = this.source.charCodeAt(this.lexer.token_start)
 			if (is_combinator(ch)) {
 				// > + ~ (combinator text excludes leading whitespace)
-				return this.create_node(COMBINATOR, this.lexer.token_start, this.lexer.token_end)
+				// Use token's line and column for the combinator position
+				return this.create_node_at(COMBINATOR, this.lexer.token_start, this.lexer.token_end, this.lexer.token_line, this.lexer.token_column)
 			}
 		}
 
 		// If we had whitespace but no explicit combinator, it's a descendant combinator
 		if (has_whitespace) {
-			// Reset lexer position
+			// Reset lexer position and re-consume whitespace to get correct end position
 			this.lexer.pos = whitespace_start
+			this.lexer.line = whitespace_start_line
+			this.lexer.column = whitespace_start_column
 			while (this.lexer.pos < this.selector_end) {
 				let ch = this.source.charCodeAt(this.lexer.pos)
 				// no calling is_whitespace() because of function call overhead
 				if (ch === CHAR_SPACE || ch === CHAR_TAB || ch === CHAR_NEWLINE || ch === CHAR_CARRIAGE_RETURN || ch === CHAR_FORM_FEED) {
-					this.lexer.pos++
+					this.lexer.advance()
 				} else {
 					break
 				}
 			}
-			return this.create_node(COMBINATOR, whitespace_start, this.lexer.pos)
+			// Use the position at the start of the whitespace
+			return this.create_node_at(COMBINATOR, whitespace_start, this.lexer.pos, whitespace_start_line, whitespace_start_column)
 		}
 
 		// No combinator found, reset position
 		this.lexer.pos = whitespace_start
+		this.lexer.line = whitespace_start_line
+		this.lexer.column = whitespace_start_column
 		return null
 	}
 
@@ -921,6 +931,13 @@ export class SelectorParser {
 
 	private create_node(type: number, start: number, end: number): number {
 		let node = this.arena.create_node(type, start, end - start, this.lexer.line, this.lexer.column)
+		this.arena.set_content_start_delta(node, 0)
+		this.arena.set_content_length(node, end - start)
+		return node
+	}
+
+	private create_node_at(type: number, start: number, end: number, line: number, column: number): number {
+		let node = this.arena.create_node(type, start, end - start, line, column)
 		this.arena.set_content_start_delta(node, 0)
 		this.arena.set_content_length(node, end - start)
 		return node
