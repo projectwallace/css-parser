@@ -219,3 +219,33 @@ export function is_custom(str: string): boolean {
 	if (str.length < 3) return false
 	return str.charCodeAt(0) === CHAR_MINUS_HYPHEN && str.charCodeAt(1) === CHAR_MINUS_HYPHEN
 }
+
+/**
+ * Strip vendor prefix from a string
+ *
+ * @param str - The string to strip vendor prefix from
+ * @returns The string without vendor prefix, or original string if no prefix found
+ *
+ * Examples:
+ * - `-webkit-keyframes` → `keyframes`
+ * - `-moz-appearance` → `appearance`
+ * - `-ms-filter` → `filter`
+ * - `-o-border-image` → `border-image`
+ * - `keyframes` → `keyframes` (no change)
+ * - `--custom-property` → `--custom-property` (custom property, not vendor prefix)
+ */
+export function strip_vendor_prefix(str: string): string {
+	if (!is_vendor_prefixed(str)) {
+		return str
+	}
+
+	// Find the second hyphen (after the vendor name)
+	for (let i = 2; i < str.length; i++) {
+		if (str.charCodeAt(i) === CHAR_MINUS_HYPHEN) {
+			return str.substring(i + 1)
+		}
+	}
+
+	// Should never reach here if is_vendor_prefixed returned true
+	return str
+}

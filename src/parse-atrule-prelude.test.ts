@@ -814,6 +814,82 @@ describe('At-Rule Prelude Nodes', () => {
 			})
 		})
 
+		describe('vendor-prefixed at-rules', () => {
+			it('should parse @-webkit-keyframes same as @keyframes', () => {
+				const css = '@-webkit-keyframes slidein { }'
+				const ast = parse(css)
+				const atRule = ast.first_child!
+
+				expect(atRule?.type).toBe(AT_RULE)
+				expect(atRule?.name).toBe('-webkit-keyframes')
+				expect(atRule?.is_vendor_prefixed).toBe(true)
+
+				// Should have identifier prelude like @keyframes
+				const children = atRule.prelude?.children.filter((c) => c.type !== BLOCK) || []
+				expect(children.length).toBe(1)
+				expect(children[0].type).toBe(IDENTIFIER)
+				expect(children[0].text).toBe('slidein')
+			})
+
+			it('should parse @-moz-keyframes same as @keyframes', () => {
+				const css = '@-moz-keyframes fadein { }'
+				const ast = parse(css)
+				const atRule = ast.first_child!
+
+				expect(atRule?.type).toBe(AT_RULE)
+				expect(atRule?.name).toBe('-moz-keyframes')
+				expect(atRule?.is_vendor_prefixed).toBe(true)
+
+				const children = atRule.prelude?.children.filter((c) => c.type !== BLOCK) || []
+				expect(children.length).toBe(1)
+				expect(children[0].type).toBe(IDENTIFIER)
+				expect(children[0].text).toBe('fadein')
+			})
+
+			it('should parse @-o-keyframes same as @keyframes', () => {
+				const css = '@-o-keyframes rotate { }'
+				const ast = parse(css)
+				const atRule = ast.first_child!
+
+				expect(atRule?.type).toBe(AT_RULE)
+				expect(atRule?.name).toBe('-o-keyframes')
+				expect(atRule?.is_vendor_prefixed).toBe(true)
+
+				const children = atRule.prelude?.children.filter((c) => c.type !== BLOCK) || []
+				expect(children.length).toBe(1)
+				expect(children[0].type).toBe(IDENTIFIER)
+				expect(children[0].text).toBe('rotate')
+			})
+
+			it('should parse @-webkit-supports same as @supports', () => {
+				const css = '@-webkit-supports (display: flex) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child!
+
+				expect(atRule?.type).toBe(AT_RULE)
+				expect(atRule?.name).toBe('-webkit-supports')
+				expect(atRule?.is_vendor_prefixed).toBe(true)
+
+				const children = atRule.prelude?.children || []
+				expect(children.length).toBeGreaterThan(0)
+				expect(children[0].type).toBe(SUPPORTS_QUERY)
+			})
+
+			it('should parse @-moz-supports same as @supports', () => {
+				const css = '@-moz-supports (display: grid) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child!
+
+				expect(atRule?.type).toBe(AT_RULE)
+				expect(atRule?.name).toBe('-moz-supports')
+				expect(atRule?.is_vendor_prefixed).toBe(true)
+
+				const children = atRule.prelude?.children || []
+				expect(children.length).toBeGreaterThan(0)
+				expect(children[0].type).toBe(SUPPORTS_QUERY)
+			})
+		})
+
 		describe('@font-face', () => {
 			it('should have no prelude children', () => {
 				const css = '@font-face { font-family: "MyFont"; }'

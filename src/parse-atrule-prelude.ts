@@ -32,7 +32,7 @@ import {
 	TOKEN_DIMENSION,
 	type TokenType,
 } from './token-types'
-import { str_equals, is_whitespace, CHAR_COLON, CHAR_LESS_THAN, CHAR_GREATER_THAN, CHAR_EQUALS } from './string-utils'
+import { str_equals, is_whitespace, strip_vendor_prefix, CHAR_COLON, CHAR_LESS_THAN, CHAR_GREATER_THAN, CHAR_EQUALS } from './string-utils'
 import { trim_boundaries, skip_whitespace_forward } from './parse-utils'
 import { CSSNode } from './css-node'
 
@@ -65,21 +65,24 @@ export class AtRulePreludeParser {
 
 	// Dispatch to appropriate parser based on at-rule type
 	private parse_prelude_dispatch(at_rule_name: string): number[] {
-		if (str_equals('media', at_rule_name)) {
+		// Strip vendor prefix to treat @-webkit-keyframes same as @keyframes
+		let normalized_name = strip_vendor_prefix(at_rule_name)
+
+		if (str_equals('media', normalized_name)) {
 			return this.parse_media_query_list()
-		} else if (str_equals('container', at_rule_name)) {
+		} else if (str_equals('container', normalized_name)) {
 			return this.parse_container_query()
-		} else if (str_equals('supports', at_rule_name)) {
+		} else if (str_equals('supports', normalized_name)) {
 			return this.parse_supports_query()
-		} else if (str_equals('layer', at_rule_name)) {
+		} else if (str_equals('layer', normalized_name)) {
 			return this.parse_layer_names()
-		} else if (str_equals('keyframes', at_rule_name)) {
+		} else if (str_equals('keyframes', normalized_name)) {
 			return this.parse_identifier()
-		} else if (str_equals('property', at_rule_name)) {
+		} else if (str_equals('property', normalized_name)) {
 			return this.parse_identifier()
-		} else if (str_equals('import', at_rule_name)) {
+		} else if (str_equals('import', normalized_name)) {
 			return this.parse_import_prelude()
-		} else if (str_equals('charset', at_rule_name)) {
+		} else if (str_equals('charset', normalized_name)) {
 			return this.parse_charset_prelude()
 		}
 		// For now, @namespace and other at-rules are not parsed
