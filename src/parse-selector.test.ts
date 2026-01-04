@@ -166,6 +166,72 @@ describe('Selector Nodes', () => {
 				expect(combinator.length).toBeGreaterThan(0)
 				expect(combinator.end).toBeGreaterThan(0)
 			})
+
+			test('line and column for child combinator', () => {
+				const node = parse_selector('div > p')
+				const selector = node.first_child!
+				const [_div, combinator, _p] = selector.children
+				expect(combinator.line).toBe(1)
+				expect(combinator.column).toBe(5) // '>' is at position 4 (0-indexed), column 5 (1-indexed)
+			})
+
+			test('line and column for descendant combinator', () => {
+				const node = parse_selector('div p')
+				const selector = node.first_child!
+				const [_div, combinator, _p] = selector.children
+				expect(combinator.line).toBe(1)
+				expect(combinator.column).toBe(4) // space starts at position 3 (0-indexed), column 4 (1-indexed)
+				expect(combinator.start).toBe(3)
+				expect(combinator.length).toBe(1)
+			})
+
+			test('line and column for multiline descendant combinator', () => {
+				const node = parse_selector('div\n  p')
+				const selector = node.first_child!
+				const [_div, combinator, _p] = selector.children
+				expect(combinator.line).toBe(1)
+				expect(combinator.column).toBe(4) // newline starts at position 3 (0-indexed), column 4 (1-indexed)
+				expect(combinator.start).toBe(3)
+				expect(combinator.length).toBe(3) // '\n  ' is 3 characters
+			})
+
+			test('line and column for adjacent sibling combinator', () => {
+				const node = parse_selector('h1 + p')
+				const selector = node.first_child!
+				const [_h1, combinator, _p] = selector.children
+				expect(combinator.line).toBe(1)
+				expect(combinator.column).toBe(4) // '+' is at position 3 (0-indexed), column 4 (1-indexed)
+				expect(combinator.start).toBe(3)
+			})
+
+			test('line and column for general sibling combinator', () => {
+				const node = parse_selector('h1 ~ p')
+				const selector = node.first_child!
+				const [_h1, combinator, _p] = selector.children
+				expect(combinator.line).toBe(1)
+				expect(combinator.column).toBe(4) // '~' is at position 3 (0-indexed), column 4 (1-indexed)
+				expect(combinator.start).toBe(3)
+			})
+
+			test('line and column for combinator with leading whitespace', () => {
+				const node = parse_selector('div  >  p')
+				const selector = node.first_child!
+				const [_div, combinator, _p] = selector.children
+				expect(combinator.line).toBe(1)
+				expect(combinator.column).toBe(6) // '>' is at position 5 (0-indexed), column 6 (1-indexed)
+				expect(combinator.start).toBe(5)
+				expect(combinator.text).toBe('>')
+			})
+
+			test('line and column for multiline combinator with newline before >', () => {
+				const node = parse_selector('div\n>\np')
+				const selector = node.first_child!
+				const [_div, combinator, _p] = selector.children
+				expect(combinator.line).toBe(2)
+				expect(combinator.column).toBe(1) // '>' is at start of line 2
+				expect(combinator.start).toBe(4)
+				expect(combinator.text).toBe('>')
+			})
 		})
 
 		describe('UNIVERSAL_SELECTOR', () => {
