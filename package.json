@@ -1,6 +1,6 @@
 {
 	"name": "@projectwallace/css-parser",
-	"version": "0.10.0",
+	"version": "0.11.0",
 	"description": "High-performance CSS lexer and parser, optimized for CSS inspection and analysis",
 	"author": "Bart Veneman <bart@projectwallace.com>",
 	"license": "MIT",
