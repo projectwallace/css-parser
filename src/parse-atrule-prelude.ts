@@ -79,6 +79,8 @@ export class AtRulePreludeParser {
 			return this.parse_identifier()
 		} else if (str_equals('import', at_rule_name)) {
 			return this.parse_import_prelude()
+		} else if (str_equals('charset', at_rule_name)) {
+			return this.parse_charset_prelude()
 		}
 		// For now, @namespace and other at-rules are not parsed
 
@@ -464,6 +466,21 @@ export class AtRulePreludeParser {
 		let ident = this.create_node(IDENTIFIER, this.lexer.token_start, this.lexer.token_end)
 
 		return [ident]
+	}
+
+	// Parse @charset prelude: "UTF-8"
+	private parse_charset_prelude(): number[] {
+		this.skip_whitespace()
+		if (this.lexer.pos >= this.prelude_end) return []
+
+		this.next_token()
+
+		if (this.lexer.token_type !== TOKEN_STRING) return []
+
+		// Create string node
+		let str = this.create_node(STRING, this.lexer.token_start, this.lexer.token_end)
+
+		return [str]
 	}
 
 	// Parse @import prelude: url() [layer] [supports()] [media-query-list]
