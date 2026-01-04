@@ -930,7 +930,8 @@ export class SelectorParser {
 	}
 
 	private create_node(type: number, start: number, end: number): number {
-		let node = this.arena.create_node(type, start, end - start, this.lexer.line, this.lexer.column)
+		// Use token's line/column since most nodes are created from token positions
+		let node = this.arena.create_node(type, start, end - start, this.lexer.token_line, this.lexer.token_column)
 		this.arena.set_content_start_delta(node, 0)
 		this.arena.set_content_length(node, end - start)
 		return node
