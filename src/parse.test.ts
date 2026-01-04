@@ -1082,9 +1082,9 @@ describe('Core Nodes', () => {
 
 					let atrule = root.first_child!
 					expect(atrule.name).toBe('charset')
-					// @charset doesn't have structured prelude parsing, use .value
 					expect(atrule.value).toBe('"UTF-8"')
-					expect(atrule.prelude).toBeNull()
+					expect(atrule.prelude).not.toBeNull()
+					expect(atrule.prelude?.text).toBe('"UTF-8"')
 				})
 
 				test('namespace prelude', () => {
@@ -1093,9 +1093,22 @@ describe('Core Nodes', () => {
 
 					let atrule = root.first_child!
 					expect(atrule.name).toBe('namespace')
-					// @namespace doesn't have structured prelude parsing, use .value
 					expect(atrule.value).toBe('svg url(http://www.w3.org/2000/svg)')
-					expect(atrule.prelude).toBeNull()
+					// @namespace doesn't have structured prelude parsing, but prelude wrapper exists
+					expect(atrule.prelude).not.toBeNull()
+					expect(atrule.prelude?.text).toBe('svg url(http://www.w3.org/2000/svg)')
+				})
+
+				test('unknown at-rule has prelude with accessible text', () => {
+					let source = '@imaginary-atrule prelude-stuff;'
+					let root = parse(source)
+
+					let atrule = root.first_child!
+					expect(atrule.name).toBe('imaginary-atrule')
+					expect(atrule.value).toBe('prelude-stuff')
+					// Unknown at-rules don't have structured prelude parsing, but prelude wrapper exists
+					expect(atrule.prelude).not.toBeNull()
+					expect(atrule.prelude?.text).toBe('prelude-stuff')
 				})
 
 				test('value string matches prelude text for at-rules', () => {

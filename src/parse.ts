@@ -364,13 +364,13 @@ export class Parser {
 			this.arena.set_value_start_delta(at_rule, trimmed[0] - at_rule_start)
 			this.arena.set_value_length(at_rule, trimmed[1] - trimmed[0])
 
-			// Parse prelude if enabled
+			// Create AT_RULE_PRELUDE wrapper if prelude parsing is enabled
 			if (this.prelude_parser) {
-				let prelude_nodes = this.prelude_parser.parse_prelude(at_rule_name, trimmed[0], trimmed[1], at_rule_line, at_rule_column)
+				prelude_wrapper = this.arena.create_node(AT_RULE_PRELUDE, trimmed[0], trimmed[1] - trimmed[0], at_rule_line, at_rule_column)
 
-				// Wrap prelude nodes in an AT_RULE_PRELUDE wrapper
+				// Parse prelude and add structured nodes as children
+				let prelude_nodes = this.prelude_parser.parse_prelude(at_rule_name, trimmed[0], trimmed[1], at_rule_line, at_rule_column)
 				if (prelude_nodes.length > 0) {
-					prelude_wrapper = this.arena.create_node(AT_RULE_PRELUDE, trimmed[0], trimmed[1] - trimmed[0], at_rule_line, at_rule_column)
 					this.arena.append_children(prelude_wrapper, prelude_nodes)
 				}
 			}
