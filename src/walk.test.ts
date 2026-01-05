@@ -1,6 +1,18 @@
 import { describe, it, expect } from 'vitest'
 import { parse } from './parse'
-import { STYLESHEET, STYLE_RULE, SELECTOR_LIST, DECLARATION, AT_RULE, BLOCK, IDENTIFIER, NUMBER, DIMENSION, VALUE, SELECTOR } from './constants'
+import {
+	STYLESHEET,
+	STYLE_RULE,
+	SELECTOR_LIST,
+	DECLARATION,
+	AT_RULE,
+	BLOCK,
+	IDENTIFIER,
+	NUMBER,
+	DIMENSION,
+	VALUE,
+	SELECTOR,
+} from './constants'
 import { walk, traverse, SKIP, BREAK } from './walk'
 
 describe('walk', () => {
@@ -819,8 +831,9 @@ describe('walk with context', () => {
 			{ include_context: true },
 		)
 
-		// TYPE_SELECTOR (21) should have SELECTOR (5) as its selector ancestor
-		expect(typeSelectorContext?.selector?.type).toBe(SELECTOR)
+		// TYPE_SELECTOR (21) should have SELECTOR_LIST (20) as its selector ancestor
+		// (context stops updating once inside first selector node)
+		expect(typeSelectorContext?.selector?.type).toBe(20) // SELECTOR_LIST
 	})
 
 	it('should provide immediate parent', () => {
@@ -1098,6 +1111,52 @@ describe('walk with context', () => {
 		)
 
 		expect(depths).toEqual([5, 6, 7, 7, 8])
+	})
+
+	it('should stop updating context inside value nodes', () => {
+		const root = parse('body { color: rgb(255, 0, 0); }', { parse_selectors: false, parse_values: true })
+		const numberContexts: any[] = []
+
+		walk(
+			root,
+			(node, _depth, context) => {
+				if (node.type === NUMBER) {
+					numberContexts.push({
+						hasDeclaration: context?.declaration !== null,
+						hasValue: context?.value !== null,
+					})
+				}
+			},
+			{ include_context: true },
+		)
+
+		// All NUMBER nodes inside the function should have the same context
+		expect(numberContexts).toEqual([
+			{ hasDeclaration: true, hasValue: true },
+			{ hasDeclaration: true, hasValue: true },
+			{ hasDeclaration: true, hasValue: true },
+		])
+	})
+
+	it('should stop updating context inside selector nodes', () => {
+		const root = parse('.foo { color: red; }', { parse_selectors: true, parse_values: false })
+		let classSelectorContext: any = undefined
+
+		walk(
+			root,
+			(node, _depth, context) => {
+				if (node.type === 22) {
+					// CLASS_SELECTOR = 22
+					classSelectorContext = context
+				}
+			},
+			{ include_context: true },
+		)
+
+		// CLASS_SELECTOR is child of STYLE_RULE, so it has rule context
+		expect(classSelectorContext?.rule?.type).toBe(STYLE_RULE)
+		// And it should have SELECTOR_LIST as selector ancestor (context stopped updating after SELECTOR_LIST)
+		expect(classSelectorContext?.selector?.type).toBe(20) // SELECTOR_LIST
 	})
 })
 

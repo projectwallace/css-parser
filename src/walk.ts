@@ -21,7 +21,7 @@ export interface WalkContext {
 	value: CSSNode | null
 	/** Closest selector node ancestor - SELECTOR (5) or types 20-31 (null if none exists) */
 	selector: CSSNode | null
-	/** Immediate parent node (null for root) */
+	/** Immediate parent node - this is always the closest ancestor (null for root) */
 	parent: CSSNode | null
 	/** Current depth in the tree (0 for root) */
 	depth: number
@@ -41,11 +41,7 @@ export interface WalkOptions {
 	include_context?: boolean
 }
 
-type WalkCallback = (
-	node: CSSNode,
-	depth: number,
-	context?: WalkContext,
-) => void | typeof SKIP | typeof BREAK
+type WalkCallback = (node: CSSNode, depth: number, context?: WalkContext) => void | typeof SKIP | typeof BREAK
 
 /**
  * Internal implementation of walk with context tracking.
@@ -90,12 +86,17 @@ function walk_impl(
 		return true
 	}
 
-	// Update current pointers based on node type
-	const next_rule = node.type === STYLE_RULE ? node : current_rule
-	const next_atrule = node.type === AT_RULE ? node : current_atrule
-	const next_declaration = node.type === DECLARATION ? node : current_declaration
-	const next_value = node.type >= 10 && node.type <= 19 ? node : current_value
-	const next_selector = node.type === SELECTOR || (node.type >= 20 && node.type <= 31) ? node : current_selector
+	// Stop updating context once inside value or selector nodes
+	// (children of value/selector nodes keep the same context)
+	const inside_value_or_selector = current_value !== null || current_selector !== null
+
+	// Update current pointers based on node type (only if not inside value/selector)
+	const next_rule = !inside_value_or_selector && node.type === STYLE_RULE ? node : current_rule
+	const next_atrule = !inside_value_or_selector && node.type === AT_RULE ? node : current_atrule
+	const next_declaration = !inside_value_or_selector && node.type === DECLARATION ? node : current_declaration
+	const next_value = !inside_value_or_selector && node.type >= 10 && node.type <= 19 ? node : current_value
+	const next_selector =
+		!inside_value_or_selector && (node.type === SELECTOR || (node.type >= 20 && node.type <= 31)) ? node : current_selector
 
 	// Recursively walk children
 	let child = node.first_child
@@ -130,11 +131,7 @@ function walk_impl(
  * @param callback - Function called for each node. Receives (node, depth, context?).
  * @param options - Walk options
  */
-export function walk(
-	node: CSSNode,
-	callback: WalkCallback,
-	options: WalkOptions = {},
-): boolean {
+export function walk(node: CSSNode, callback: WalkCallback, options: WalkOptions = {}): boolean {
 	return walk_impl(
 		node,
 		callback,
@@ -210,12 +207,16 @@ function traverse_impl(
 
 	// Only traverse children if SKIP was not returned
 	if (enter_result !== SKIP) {
-		// Update current pointers based on node type
-		const next_rule = node.type === STYLE_RULE ? node : current_rule
-		const next_atrule = node.type === AT_RULE ? node : current_atrule
-		const next_declaration = node.type === DECLARATION ? node : current_declaration
-		const next_value = node.type >= 10 && node.type <= 19 ? node : current_value
-		const next_selector = node.type === SELECTOR || (node.type >= 20 && node.type <= 31) ? node : current_selector
+		// Stop updating context once inside value or selector nodes
+		const inside_value_or_selector = current_value !== null || current_selector !== null
+
+		// Update current pointers based on node type (only if not inside value/selector)
+		const next_rule = !inside_value_or_selector && node.type === STYLE_RULE ? node : current_rule
+		const next_atrule = !inside_value_or_selector && node.type === AT_RULE ? node : current_atrule
+		const next_declaration = !inside_value_or_selector && node.type === DECLARATION ? node : current_declaration
+		const next_value = !inside_value_or_selector && node.type >= 10 && node.type <= 19 ? node : current_value
+		const next_selector =
+			!inside_value_or_selector && (node.type === SELECTOR || (node.type >= 20 && node.type <= 31)) ? node : current_selector
 
 		let child = node.first_child
 		while (child) {
