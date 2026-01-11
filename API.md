@@ -573,7 +573,7 @@ Walk the AST in depth-first order, calling the callback for each node.
 function walk(
 	node: CSSNode,
 	callback: (node: CSSNode, depth: number, context?: WalkContext) => void | typeof SKIP | typeof BREAK,
-	options?: WalkOptions | number
+	options?: WalkOptions | number,
 ): boolean
 ```
 
@@ -684,7 +684,7 @@ walk(
 			console.log('Keyframe selector:', node.text)
 		}
 	},
-	{ include_context: true } // Enable context tracking
+	{ include_context: true }, // Enable context tracking
 )
 // Output:
 // Keyframe selector: from
@@ -712,7 +712,7 @@ walk(
 			console.log('Progressive enhancement:', node.property, '=', node.value)
 		}
 	},
-	{ include_context: true }
+	{ include_context: true },
 )
 // Output: Progressive enhancement: display = grid
 ```
@@ -738,7 +738,7 @@ walk(
 			}
 		}
 	},
-	{ include_context: true }
+	{ include_context: true },
 )
 // Output:
 // color in style rule
@@ -752,10 +752,7 @@ walk(
 Walk the AST in depth-first order, calling enter before visiting children and leave after.
 
 ```typescript
-function traverse(
-	node: CSSNode,
-	options?: TraverseOptions
-): boolean
+function traverse(node: CSSNode, options?: TraverseOptions): boolean
 
 interface TraverseOptions {
 	enter?: (node: CSSNode, context?: WalkContext) => void | typeof SKIP | typeof BREAK
@@ -832,44 +829,9 @@ traverse(ast, {
 // Leaving media query at depth 2
 ```
 
-### Example 3: Context-Aware Processing
+### Example 4: Context-Aware Traverse
 
-```typescript
-import { parse, traverse, STYLE_RULE, AT_RULE } from '@projectwallace/css-parser'
-
-const ast = parse(`
-	.top { color: red; }
-	@media screen {
-		.nested { color: blue; }
-	}
-`)
-
-const context = []
-
-traverse(ast, {
-	enter(node) {
-		if (node.type === AT_RULE) {
-			context.push(`@${node.name}`)
-		} else if (node.type === STYLE_RULE) {
-			const selector = node.first_child.text
-			const ctx = context.length ? ` in ${context.join(' ')}` : ''
-			console.log(`Rule: ${selector}${ctx}`)
-		}
-	},
-	leave(node) {
-		if (node.type === AT_RULE) {
-			context.pop()
-		}
-	},
-})
-// Output:
-// Rule: .top
-// Rule: .nested in @media
-```
-
-### Example 4: Context-Aware Traverse - Simplified
-
-The previous example manually tracked context with a stack. With `include_context`, you get context automatically:
+With `include_context`, you get context automatically:
 
 ```typescript
 import { parse, traverse, STYLE_RULE } from '@projectwallace/css-parser'
@@ -889,7 +851,7 @@ traverse(ast, {
 			console.log(`Rule: ${selector}${ctx}`)
 		}
 	},
-	include_context: true
+	include_context: true,
 })
 // Output:
 // Rule: .top

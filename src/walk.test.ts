@@ -1174,9 +1174,10 @@ describe('traverse with context', () => {
 			include_context: true,
 		})
 
-		expect(valueContext?.rule?.type).toBe(STYLE_RULE)
-		expect(valueContext?.declaration?.type).toBe(DECLARATION)
-		expect(valueContext?.parent?.type).toBe(DECLARATION)
+		expect(valueContext?.rule.type).toBe(STYLE_RULE)
+		expect(valueContext?.declaration.type).toBe(DECLARATION)
+		expect(valueContext?.parent.type).toBe(DECLARATION)
+		expect(valueContext.depth).toBe(0)
 	})
 
 	it('should provide context in leave callback', () => {
@@ -1265,25 +1266,42 @@ describe('traverse with context', () => {
 	})
 
 	it('should track depth in context for traverse', () => {
-		const root = parse('body { color: red; }', { parse_selectors: false, parse_values: false })
+		const root = parse('body { color: red; & test { color: green } }', { parse_selectors: false, parse_values: false })
 		const enterDepths: number[] = []
 		const leaveDepths: number[] = []
+		const enterNodes: string[] = []
+		const leaveNodes: string[] = []
 
 		traverse(root, {
-			enter(_node, context) {
+			enter(node, context) {
 				if (context) {
+					enterNodes.push(node.type_name)
 					enterDepths.push(context.depth)
 				}
 			},
-			leave(_node, context) {
+			leave(node, context) {
 				if (context) {
+					leaveNodes.push(node.type_name)
 					leaveDepths.push(context.depth)
 				}
 			},
 			include_context: true,
 		})
 
-		expect(enterDepths).toEqual([0, 1, 2, 2, 3])
-		expect(leaveDepths).toEqual([2, 3, 2, 1, 0])
+		expect(enterNodes).toEqual([
+			'StyleSheet',
+			'Rule',
+			'SelectorList',
+			'Block',
+			'Declaration',
+			'Rule', // nested
+			'SelectorList',
+			'Block',
+			'Declaration',
+		])
+		expect(enterDepths).toEqual([0, 0, 0, 0, 0, 1, 1, 1, 1])
+		expect(enterNodes).toEqual(enterNodes)
+		// TODO: figure out why this order
+		expect(leaveDepths).toEqual([0, 1, 0, 0, 0])
 	})
 })

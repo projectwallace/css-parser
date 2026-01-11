@@ -1,6 +1,6 @@
 // AST walker - depth-first traversal
 import type { CSSNode } from './css-node'
-import { STYLE_RULE, AT_RULE, DECLARATION, SELECTOR } from './constants'
+import { STYLE_RULE, AT_RULE, DECLARATION, SELECTOR, BLOCK } from './constants'
 
 // Control flow symbols for walk callbacks
 export const SKIP = Symbol('SKIP')
@@ -199,6 +199,9 @@ function traverse_impl(
 
 	// Call enter callback before processing children
 	const enter_result = include_context ? enter(node, context) : enter(node, undefined)
+	if (node.type === STYLE_RULE || node.type === AT_RULE) {
+		depth++
+	}
 
 	// Check for BREAK in enter - stop immediately
 	if (enter_result === BREAK) {
@@ -224,7 +227,7 @@ function traverse_impl(
 				child,
 				enter,
 				leave,
-				depth + 1,
+				depth,
 				include_context,
 				node,
 				next_rule,
@@ -243,6 +246,9 @@ function traverse_impl(
 	// Call leave callback after processing children
 	// Note: leave() is called even if children were skipped via SKIP
 	const leave_result = include_context ? leave(node, context) : leave(node, undefined)
+	if (node.type === STYLE_RULE || node.type === AT_RULE) {
+		depth--
+	}
 
 	// Check for BREAK in leave
 	if (leave_result === BREAK) {
