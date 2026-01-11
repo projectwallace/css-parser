@@ -175,8 +175,9 @@ describe('walk', () => {
 			depths.push(depth)
 		})
 
-		// STYLESHEET (0), STYLE_RULE (1), SELECTOR_LIST (2), BLOCK (2), DECLARATION (3), VALUE (4), IDENTIFIER (5)
-		expect(depths).toEqual([0, 1, 2, 2, 3, 4, 5])
+		// STYLESHEET (0), STYLE_RULE (0 - top-level), children of STYLE_RULE (1): SELECTOR_LIST, BLOCK, DECLARATION, VALUE, IDENTIFIER
+		// Depth increments for children of STYLE_RULE and AT_RULE nodes
+		expect(depths).toEqual([0, 0, 1, 1, 1, 1, 1])
 	})
 
 	it('should track depth in nested structures', () => {
@@ -189,7 +190,7 @@ describe('walk', () => {
 			}
 		})
 
-		expect(ruleDepths).toEqual([1, 3, 5]) // .a at depth 1, .b at depth 3 (inside .a's block), .c at depth 5 (inside .b's block)
+		expect(ruleDepths).toEqual([0, 1, 2]) // .a at depth 0 (top-level), .b at depth 1 (nested in .a), .c at depth 2 (nested in .b)
 	})
 
 	it('should track depth with at-rules', () => {
@@ -206,21 +207,35 @@ describe('walk', () => {
 
 		expect(typeAndDepth).toEqual([
 			{ type: STYLESHEET, depth: 0 },
-			{ type: AT_RULE, depth: 1 }, // @media
-			{ type: BLOCK, depth: 2 }, // @media block
-			{ type: STYLE_RULE, depth: 3 }, // body
-			{ type: SELECTOR_LIST, depth: 4 }, // body selector
-			{ type: BLOCK, depth: 4 }, // body block
-			{ type: DECLARATION, depth: 5 }, // color: red
+			{ type: AT_RULE, depth: 0 }, // @media (top-level, nesting depth 0)
+			{ type: BLOCK, depth: 1 }, // @media block (child of at-rule, depth 1)
+			{ type: STYLE_RULE, depth: 1 }, // body (child of @media, nesting depth 1)
+			{ type: SELECTOR_LIST, depth: 2 }, // body selector (child of body rule, depth 2)
+			{ type: BLOCK, depth: 2 }, // body block (child of body rule, depth 2)
+			{ type: DECLARATION, depth: 2 }, // color: red (child of body rule, depth 2)
 		])
 	})
 
 	it('should track depth with consecutive at-rules', () => {
-		const root = parse('@media screen { body { color: red; } } @layer { a { color: red; } }', {
-			parse_selectors: false,
-			parse_values: false,
-			parse_atrule_preludes: false,
-		})
+		const root = parse(
+			`
+			@media screen {
+				body {
+					color: red;
+				}
+			}
+
+			@layer {
+				a {
+					color: red;
+				}
+			}`,
+			{
+				parse_selectors: false,
+				parse_values: false,
+				parse_atrule_preludes: false,
+			},
+		)
 		const typeAndDepth: Array<{ type: number; depth: number }> = []
 
 		walk(root, (node, depth) => {
@@ -229,18 +244,18 @@ describe('walk', () => {
 
 		expect(typeAndDepth).toEqual([
 			{ type: STYLESHEET, depth: 0 },
-			{ type: AT_RULE, depth: 1 }, // @media
-			{ type: BLOCK, depth: 2 }, // @media block
-			{ type: STYLE_RULE, depth: 3 }, // body
-			{ type: SELECTOR_LIST, depth: 4 }, // body selector
-			{ type: BLOCK, depth: 4 }, // body block
-			{ type: DECLARATION, depth: 5 }, // color: red
-			{ type: AT_RULE, depth: 1 }, // @layer
-			{ type: BLOCK, depth: 2 }, // @layer block
-			{ type: STYLE_RULE, depth: 3 },
-			{ type: SELECTOR_LIST, depth: 4 },
-			{ type: BLOCK, depth: 4 },
-			{ type: DECLARATION, depth: 5 },
+			{ type: AT_RULE, depth: 0 }, // @media (top-level)
+			{ type: BLOCK, depth: 1 }, // @media block
+			{ type: STYLE_RULE, depth: 1 }, // body (child of @media)
+			{ type: SELECTOR_LIST, depth: 2 }, // body selector
+			{ type: BLOCK, depth: 2 }, // body block
+			{ type: DECLARATION, depth: 2 }, // color: red
+			{ type: AT_RULE, depth: 0 }, // @layer (top-level)
+			{ type: BLOCK, depth: 1 }, // @layer block
+			{ type: STYLE_RULE, depth: 1 }, // a (child of @layer)
+			{ type: SELECTOR_LIST, depth: 2 }, // a selector
+			{ type: BLOCK, depth: 2 }, // a block
+			{ type: DECLARATION, depth: 2 }, // color: red
 		])
 	})
 
@@ -445,8 +460,8 @@ describe('walk with SKIP and BREAK', () => {
 			}
 		})
 
-		// STYLESHEET (0), STYLE_RULE (1), STYLE_RULE (1)
-		expect(depths).toEqual([0, 1, 1])
+		// STYLESHEET (0), STYLE_RULE (0 - top-level), STYLE_RULE (0 - top-level)
+		expect(depths).toEqual([0, 0, 0])
 	})
 })
 

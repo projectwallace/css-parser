@@ -1,5 +1,6 @@
 // AST walker - depth-first traversal
 import type { CSSNode } from './css-node'
+import { STYLE_RULE, AT_RULE } from './constants'
 
 // Control flow symbols for walk callbacks
 export const SKIP = Symbol('SKIP')
@@ -12,11 +13,12 @@ type WalkCallback = (node: CSSNode, depth: number) => void | typeof SKIP | typeo
  * Return SKIP to skip children, BREAK to stop traversal. See API.md for examples.
  *
  * @param node - The root node to start walking from
- * @param callback - Function called for each node. Receives the node and its depth (0 for root).
+ * @param callback - Function called for each node. Receives the node and its nesting depth.
+ *                   Depth increments only for STYLE_RULE and AT_RULE nodes (tracks rule nesting, not tree depth).
  * @param depth - Starting depth (default: 0)
  */
 export function walk(node: CSSNode, callback: WalkCallback, depth = 0): boolean {
-	// Call callback for current node
+	// Call callback for current node with current depth
 	const result = callback(node, depth)
 
 	// Check for BREAK - stop immediately
@@ -29,10 +31,16 @@ export function walk(node: CSSNode, callback: WalkCallback, depth = 0): boolean 
 		return true
 	}
 
-	// Recursively walk children
+	// Increment depth for children if this is a rule or at-rule (tracks nesting depth)
+	let child_depth = depth
+	if (node.type === STYLE_RULE || node.type === AT_RULE) {
+		child_depth = depth + 1
+	}
+
+	// Recursively walk children with potentially incremented depth
 	let child = node.first_child
 	while (child) {
-		const should_continue = walk(child, callback, depth + 1)
+		const should_continue = walk(child, callback, child_depth)
 		if (!should_continue) {
 			return false
 		}
