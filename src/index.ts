@@ -7,7 +7,7 @@ export { parse_atrule_prelude } from './parse-atrule-prelude'
 export { parse_declaration } from './parse-declaration'
 export { parse_value } from './parse-value'
 export { tokenize } from './tokenize'
-export { walk, traverse, SKIP, BREAK } from './walk'
+export { walk, traverse, SKIP, BREAK, type WalkContext, type WalkOptions, type TraverseOptions } from './walk'
 export { is_custom, is_vendor_prefixed, str_equals, str_starts_with, str_index_of } from './string-utils'
 
 // Advanced/class-based API

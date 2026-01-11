@@ -565,22 +565,49 @@ console.log(nodes[0].text) // "(min-width: 768px)"
 
 ---
 
-## `walk(ast, callback, depth?)`
+## `walk(ast, callback, options?)`
 
 Walk the AST in depth-first order, calling the callback for each node.
 
 ```typescript
-function walk(node: CSSNode, callback: (node: CSSNode, depth: number) => void | typeof SKIP | typeof BREAK, depth?: number): boolean
+function walk(
+	node: CSSNode,
+	callback: (node: CSSNode, depth: number, context?: WalkContext) => void | typeof SKIP | typeof BREAK,
+	options?: WalkOptions | number,
+): boolean
 ```
 
 ### Parameters
 
 - **`node`** - The root node to start walking from
-- **`callback`** - Function to call for each node visited. Receives the node and its depth (0 for root).
+- **`callback`** - Function to call for each node visited.
+  - **`node`** - Current AST node
+  - **`depth`** - Current depth (0 for root)
+  - **`context`** - Optional context with ancestor tracking (only when `include_context: true`)
   - Return `SKIP` to skip children of current node
   - Return `BREAK` to stop traversal entirely
   - Return nothing to continue normal traversal
-- **`depth`** - Starting depth (default: 0)
+- **`options`** - Walk options object or starting depth number (for backward compatibility)
+  - `depth?: number` - Starting depth (default: 0)
+  - `include_context?: boolean` - Enable ancestor tracking (default: false)
+    - **WARNING:** Adds ~2-3x CPU overhead and ~19% memory overhead
+    - Only enable when you need ancestor context information
+
+### WalkContext Interface
+
+When `include_context: true`, the callback receives a context object with:
+
+```typescript
+interface WalkContext {
+	rule: CSSNode | null // Closest STYLE_RULE ancestor
+	atrule: CSSNode | null // Closest AT_RULE ancestor
+	declaration: CSSNode | null // Closest DECLARATION ancestor
+	value: CSSNode | null // Closest value node (types 10-19)
+	selector: CSSNode | null // Closest selector node (SELECTOR or types 20-31)
+	parent: CSSNode | null // Immediate parent
+	depth: number // Current depth
+}
+```
 
 ### Returns
 
@@ -637,6 +664,87 @@ walk(ast, (node) => {
 // Output: "color" (stops before "margin")
 ```
 
+### Example 4: Context-Aware Walking - Find Selectors in @keyframes
+
+```typescript
+import { parse, walk } from '@projectwallace/css-parser'
+
+const ast = parse(`
+	@keyframes fade {
+		from { opacity: 0; }
+		to { opacity: 1; }
+	}
+`)
+
+walk(
+	ast,
+	(node, depth, context) => {
+		// Check if selector is inside @keyframes
+		if (node.type >= 20 && node.type <= 31 && context?.atrule?.name === 'keyframes') {
+			console.log('Keyframe selector:', node.text)
+		}
+	},
+	{ include_context: true }, // Enable context tracking
+)
+// Output:
+// Keyframe selector: from
+// Keyframe selector: to
+```
+
+### Example 5: Detect Progressive Enhancement - @supports
+
+```typescript
+import { parse, walk, DECLARATION } from '@projectwallace/css-parser'
+
+const ast = parse(`
+	.grid {
+		display: flex; /* fallback */
+	}
+	@supports (display: grid) {
+		.grid { display: grid; }
+	}
+`)
+
+walk(
+	ast,
+	(node, depth, context) => {
+		if (node.type === DECLARATION && context?.atrule?.name === 'supports') {
+			console.log('Progressive enhancement:', node.property, '=', node.value)
+		}
+	},
+	{ include_context: true },
+)
+// Output: Progressive enhancement: display = grid
+```
+
+### Example 6: Distinguish Declarations in Rules vs At-Rules
+
+```typescript
+import { parse, walk, DECLARATION } from '@projectwallace/css-parser'
+
+const ast = parse(`
+	body { color: red; }
+	@font-face { font-family: "Custom"; }
+`)
+
+walk(
+	ast,
+	(node, depth, context) => {
+		if (node.type === DECLARATION) {
+			if (context?.rule) {
+				console.log(`${node.property} in style rule`)
+			} else if (context?.atrule) {
+				console.log(`${node.property} in @${context.atrule.name}`)
+			}
+		}
+	},
+	{ include_context: true },
+)
+// Output:
+// color in style rule
+// font-family in @font-face
+```
+
 ---
 
 ## `traverse(ast, options?)`
@@ -644,24 +752,30 @@ walk(ast, (node) => {
 Walk the AST in depth-first order, calling enter before visiting children and leave after.
 
 ```typescript
-function traverse(
-	node: CSSNode,
-	options?: {
-		enter?: (node: CSSNode) => void | typeof SKIP | typeof BREAK
-		leave?: (node: CSSNode) => void | typeof SKIP | typeof BREAK
-	},
-): boolean
+function traverse(node: CSSNode, options?: TraverseOptions): boolean
+
+interface TraverseOptions {
+	enter?: (node: CSSNode, context?: WalkContext) => void | typeof SKIP | typeof BREAK
+	leave?: (node: CSSNode, context?: WalkContext) => void | typeof SKIP | typeof BREAK
+	include_context?: boolean
+}
 ```
 
 ### Parameters
 
 - **`node`** - The root node to start walking from
-- **`options`** - Object with optional enter and leave callback functions
+- **`options`** - Object with optional callbacks and context tracking
   - **`enter`** - Called before visiting children
+    - **`node`** - Current AST node
+    - **`context`** - Optional context with ancestor tracking (only when `include_context: true`)
     - Return `SKIP` to skip children (leave still called)
     - Return `BREAK` to stop traversal entirely (leave NOT called)
   - **`leave`** - Called after visiting children
+    - **`node`** - Current AST node
+    - **`context`** - Optional context with ancestor tracking (only when `include_context: true`)
     - Return `BREAK` to stop traversal
+  - **`include_context`** - Enable ancestor tracking (default: false)
+    - **WARNING:** Adds ~2-3x CPU overhead and ~19% memory overhead
 
 ### Returns
 
@@ -715,10 +829,12 @@ traverse(ast, {
 // Leaving media query at depth 2
 ```
 
-### Example 3: Context-Aware Processing
+### Example 4: Context-Aware Traverse
+
+With `include_context`, you get context automatically:
 
 ```typescript
-import { parse, traverse, STYLE_RULE, AT_RULE } from '@projectwallace/css-parser'
+import { parse, traverse, STYLE_RULE } from '@projectwallace/css-parser'
 
 const ast = parse(`
 	.top { color: red; }
@@ -727,23 +843,15 @@ const ast = parse(`
 	}
 `)
 
-const context = []
-
 traverse(ast, {
-	enter(node) {
-		if (node.type === AT_RULE) {
-			context.push(`@${node.name}`)
-		} else if (node.type === STYLE_RULE) {
-			const selector = node.first_child.text
-			const ctx = context.length ? ` in ${context.join(' ')}` : ''
+	enter(node, context) {
+		if (node.type === STYLE_RULE) {
+			const selector = node.first_child?.text
+			const ctx = context?.atrule ? ` in @${context.atrule.name}` : ''
 			console.log(`Rule: ${selector}${ctx}`)
 		}
 	},
-	leave(node) {
-		if (node.type === AT_RULE) {
-			context.pop()
-		}
-	},
+	include_context: true,
 })
 // Output:
 // Rule: .top

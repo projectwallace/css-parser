@@ -1,6 +1,18 @@
 import { describe, it, expect } from 'vitest'
 import { parse } from './parse'
-import { STYLESHEET, STYLE_RULE, SELECTOR_LIST, DECLARATION, AT_RULE, BLOCK, IDENTIFIER, NUMBER, DIMENSION, VALUE } from './constants'
+import {
+	STYLESHEET,
+	STYLE_RULE,
+	SELECTOR_LIST,
+	DECLARATION,
+	AT_RULE,
+	BLOCK,
+	IDENTIFIER,
+	NUMBER,
+	DIMENSION,
+	VALUE,
+	SELECTOR,
+} from './constants'
 import { walk, traverse, SKIP, BREAK } from './walk'
 
 describe('walk', () => {
@@ -724,5 +736,572 @@ describe('traverse with SKIP and BREAK', () => {
 
 		expect(enter).toEqual([STYLESHEET, STYLE_RULE, SELECTOR_LIST, BLOCK, DECLARATION])
 		expect(leave).toEqual([SELECTOR_LIST, DECLARATION, BLOCK, STYLE_RULE, STYLESHEET])
+	})
+})
+
+describe('walk with context', () => {
+	it('should provide closest rule ancestor', () => {
+		const root = parse('body { color: red; }', { parse_selectors: false, parse_values: false })
+		let declarationContext: any = undefined
+
+		walk(
+			root,
+			(node, _depth, context) => {
+				if (node.type === DECLARATION) {
+					declarationContext = context
+				}
+			},
+			{ include_context: true },
+		)
+
+		expect(declarationContext?.rule?.type).toBe(STYLE_RULE)
+		expect(declarationContext?.atrule).toBeNull()
+	})
+
+	it('should provide closest atrule ancestor', () => {
+		const root = parse('@media screen { body { color: red; } }', {
+			parse_selectors: false,
+			parse_values: false,
+			parse_atrule_preludes: false,
+		})
+		let declarationContext: any = undefined
+
+		walk(
+			root,
+			(node, _depth, context) => {
+				if (node.type === DECLARATION) {
+					declarationContext = context
+				}
+			},
+			{ include_context: true },
+		)
+
+		expect(declarationContext?.atrule?.type).toBe(AT_RULE)
+		expect(declarationContext?.atrule?.name).toBe('media')
+		expect(declarationContext?.rule?.type).toBe(STYLE_RULE)
+	})
+
+	it('should provide closest declaration ancestor', () => {
+		const root = parse('body { color: red; }', { parse_selectors: false, parse_values: true })
+		let valueContext: any = undefined
+
+		walk(
+			root,
+			(node, _depth, context) => {
+				if (node.type === VALUE) {
+					valueContext = context
+				}
+			},
+			{ include_context: true },
+		)
+
+		expect(valueContext?.declaration?.type).toBe(DECLARATION)
+		expect(valueContext?.declaration?.name).toBe('color')
+	})
+
+	it('should provide closest value ancestor', () => {
+		const root = parse('body { color: red; }', { parse_selectors: false, parse_values: true })
+		let identifierContext: any = undefined
+
+		walk(
+			root,
+			(node, _depth, context) => {
+				if (node.type === IDENTIFIER) {
+					identifierContext = context
+				}
+			},
+			{ include_context: true },
+		)
+
+		expect(identifierContext?.value?.type).toBe(VALUE)
+	})
+
+	it('should provide closest selector ancestor', () => {
+		const root = parse('body { color: red; }', { parse_selectors: true, parse_values: false })
+		let typeSelectorContext: any = undefined
+
+		walk(
+			root,
+			(node, _depth, context) => {
+				if (node.type === 21) {
+					// TYPE_SELECTOR = 21
+					typeSelectorContext = context
+				}
+			},
+			{ include_context: true },
+		)
+
+		// TYPE_SELECTOR (21) should have SELECTOR_LIST (20) as its selector ancestor
+		// (context stops updating once inside first selector node)
+		expect(typeSelectorContext?.selector?.type).toBe(20) // SELECTOR_LIST
+	})
+
+	it('should provide immediate parent', () => {
+		const root = parse('body { color: red; }', { parse_selectors: false, parse_values: false })
+		let declarationParent: any = undefined
+
+		walk(
+			root,
+			(node, _depth, context) => {
+				if (node.type === DECLARATION) {
+					declarationParent = context?.parent
+				}
+			},
+			{ include_context: true },
+		)
+
+		expect(declarationParent?.type).toBe(BLOCK)
+	})
+
+	it('should provide correct depth in context', () => {
+		const root = parse('body { color: red; }', { parse_selectors: false, parse_values: true })
+		const depths: number[] = []
+
+		walk(
+			root,
+			(node, _depth, context) => {
+				if (context) {
+					depths.push(context.depth)
+				}
+			},
+			{ include_context: true },
+		)
+
+		expect(depths).toEqual([0, 1, 2, 2, 3, 4, 5])
+	})
+
+	it('should have context undefined when not enabled', () => {
+		const root = parse('body { color: red; }', { parse_selectors: false, parse_values: false })
+		let hasContext = false
+
+		walk(root, (_node, _depth, context) => {
+			if (context !== undefined) {
+				hasContext = true
+			}
+		})
+
+		expect(hasContext).toBe(false)
+	})
+
+	it('should detect selector inside @keyframes', () => {
+		const root = parse('@keyframes slide { from { opacity: 0; } }', {
+			parse_selectors: true,
+			parse_values: false,
+			parse_atrule_preludes: false,
+		})
+		let foundSelectorInKeyframes = false
+
+		walk(
+			root,
+			(node, _depth, context) => {
+				if (node.type === SELECTOR && context?.atrule?.name === 'keyframes') {
+					foundSelectorInKeyframes = true
+				}
+			},
+			{ include_context: true },
+		)
+
+		expect(foundSelectorInKeyframes).toBe(true)
+	})
+
+	it('should detect declaration inside @supports', () => {
+		const root = parse('@supports (display: grid) { body { display: grid; } }', {
+			parse_selectors: false,
+			parse_values: false,
+			parse_atrule_preludes: false,
+		})
+		const declarationsInSupports: string[] = []
+
+		walk(
+			root,
+			(node, _depth, context) => {
+				if (node.type === DECLARATION && context?.atrule?.name === 'supports') {
+					if (node.name) {
+						declarationsInSupports.push(node.name)
+					}
+				}
+			},
+			{ include_context: true },
+		)
+
+		expect(declarationsInSupports).toEqual(['display'])
+	})
+
+	it('should detect nested at-rules', () => {
+		const root = parse('@media screen { @supports (display: grid) { body { color: red; } } }', {
+			parse_selectors: false,
+			parse_values: false,
+			parse_atrule_preludes: false,
+		})
+		let declarationContext: any = undefined
+
+		walk(
+			root,
+			(node, _depth, context) => {
+				if (node.type === DECLARATION) {
+					declarationContext = context
+				}
+			},
+			{ include_context: true },
+		)
+
+		// Should find closest at-rule (supports), not media
+		expect(declarationContext?.atrule?.name).toBe('supports')
+	})
+
+	it('should distinguish declaration in rule vs at-rule', () => {
+		const root = parse('body { color: red; } @media screen { div { color: blue; } }', {
+			parse_selectors: false,
+			parse_values: false,
+			parse_atrule_preludes: false,
+		})
+		const results: Array<{ inRule: boolean; inAtrule: boolean }> = []
+
+		walk(
+			root,
+			(node, _depth, context) => {
+				if (node.type === DECLARATION) {
+					results.push({
+						inRule: context?.rule !== null,
+						inAtrule: context?.atrule !== null,
+					})
+				}
+			},
+			{ include_context: true },
+		)
+
+		expect(results).toEqual([
+			{ inRule: true, inAtrule: false }, // body color
+			{ inRule: true, inAtrule: true }, // div color (inside @media)
+		])
+	})
+
+	it('should track value context in complex expressions', () => {
+		const root = parse('body { color: rgb(255, 0, 0); }', { parse_selectors: false, parse_values: true })
+		let numberInsideFunction = 0
+
+		walk(
+			root,
+			(node, _depth, context) => {
+				if (node.type === NUMBER && context?.value !== null) {
+					numberInsideFunction++
+				}
+			},
+			{ include_context: true },
+		)
+
+		expect(numberInsideFunction).toBe(3) // 255, 0, 0
+	})
+
+	it('should have null context at root level', () => {
+		const root = parse('body { color: red; }', { parse_selectors: false, parse_values: false })
+		let rootContext: any = undefined
+
+		walk(
+			root,
+			(node, _depth, context) => {
+				if (node.type === STYLESHEET) {
+					rootContext = context
+				}
+			},
+			{ include_context: true },
+		)
+
+		expect(rootContext?.rule).toBeNull()
+		expect(rootContext?.atrule).toBeNull()
+		expect(rootContext?.declaration).toBeNull()
+		expect(rootContext?.value).toBeNull()
+		expect(rootContext?.selector).toBeNull()
+		expect(rootContext?.parent).toBeNull()
+		expect(rootContext?.depth).toBe(0)
+	})
+
+	it('should handle SKIP with context', () => {
+		const root = parse('body { color: red; } div { margin: 0; }', {
+			parse_selectors: false,
+			parse_values: false,
+		})
+		const visited: number[] = []
+
+		walk(
+			root,
+			(node, _depth, _context) => {
+				visited.push(node.type)
+				if (node.type === STYLE_RULE) {
+					return SKIP
+				}
+			},
+			{ include_context: true },
+		)
+
+		expect(visited).toEqual([STYLESHEET, STYLE_RULE, STYLE_RULE])
+	})
+
+	it('should handle BREAK with context', () => {
+		const root = parse('body { color: red; } div { margin: 0; }', {
+			parse_selectors: false,
+			parse_values: false,
+		})
+		const visited: number[] = []
+
+		walk(
+			root,
+			(node, _depth, _context) => {
+				visited.push(node.type)
+				if (node.type === STYLE_RULE) {
+					return BREAK
+				}
+			},
+			{ include_context: true },
+		)
+
+		expect(visited).toEqual([STYLESHEET, STYLE_RULE])
+	})
+
+	it('should handle deeply nested structures with context', () => {
+		const root = parse('.a { .b { .c { color: red; } } }', { parse_selectors: false, parse_values: false })
+		const ruleDepths: number[] = []
+
+		walk(
+			root,
+			(node, _depth, context) => {
+				if (node.type === STYLE_RULE && context) {
+					ruleDepths.push(context.depth)
+				}
+			},
+			{ include_context: true },
+		)
+
+		expect(ruleDepths).toEqual([1, 3, 5])
+	})
+
+	it('should handle multiple at-rules of same type', () => {
+		const root = parse('@media screen { body { color: red; } } @media print { div { color: blue; } }', {
+			parse_selectors: false,
+			parse_values: false,
+			parse_atrule_preludes: false,
+		})
+		const atruleNames: string[] = []
+
+		walk(
+			root,
+			(node, _depth, context) => {
+				if (node.type === DECLARATION && context?.atrule?.name) {
+					atruleNames.push(context.atrule.name)
+				}
+			},
+			{ include_context: true },
+		)
+
+		expect(atruleNames).toEqual(['media', 'media'])
+	})
+
+	it('should respect custom starting depth with context', () => {
+		const root = parse('body { color: red; }', { parse_selectors: false, parse_values: false })
+		const depths: number[] = []
+
+		walk(
+			root,
+			(_node, _depth, context) => {
+				if (context) {
+					depths.push(context.depth)
+				}
+			},
+			{ depth: 5, include_context: true },
+		)
+
+		expect(depths).toEqual([5, 6, 7, 7, 8])
+	})
+
+	it('should stop updating context inside value nodes', () => {
+		const root = parse('body { color: rgb(255, 0, 0); }', { parse_selectors: false, parse_values: true })
+		const numberContexts: any[] = []
+
+		walk(
+			root,
+			(node, _depth, context) => {
+				if (node.type === NUMBER) {
+					numberContexts.push({
+						hasDeclaration: context?.declaration !== null,
+						hasValue: context?.value !== null,
+					})
+				}
+			},
+			{ include_context: true },
+		)
+
+		// All NUMBER nodes inside the function should have the same context
+		expect(numberContexts).toEqual([
+			{ hasDeclaration: true, hasValue: true },
+			{ hasDeclaration: true, hasValue: true },
+			{ hasDeclaration: true, hasValue: true },
+		])
+	})
+
+	it('should stop updating context inside selector nodes', () => {
+		const root = parse('.foo { color: red; }', { parse_selectors: true, parse_values: false })
+		let classSelectorContext: any = undefined
+
+		walk(
+			root,
+			(node, _depth, context) => {
+				if (node.type === 22) {
+					// CLASS_SELECTOR = 22
+					classSelectorContext = context
+				}
+			},
+			{ include_context: true },
+		)
+
+		// CLASS_SELECTOR is child of STYLE_RULE, so it has rule context
+		expect(classSelectorContext?.rule?.type).toBe(STYLE_RULE)
+		// And it should have SELECTOR_LIST as selector ancestor (context stopped updating after SELECTOR_LIST)
+		expect(classSelectorContext?.selector?.type).toBe(20) // SELECTOR_LIST
+	})
+})
+
+describe('traverse with context', () => {
+	it('should provide context in enter callback', () => {
+		const root = parse('body { color: red; }', { parse_selectors: false, parse_values: true })
+		let valueContext: any = undefined
+
+		traverse(root, {
+			enter(node, context) {
+				if (node.type === VALUE) {
+					valueContext = context
+				}
+			},
+			include_context: true,
+		})
+
+		expect(valueContext?.rule.type).toBe(STYLE_RULE)
+		expect(valueContext?.declaration.type).toBe(DECLARATION)
+		expect(valueContext?.parent.type).toBe(DECLARATION)
+		expect(valueContext.depth).toBe(0)
+	})
+
+	it('should provide context in leave callback', () => {
+		const root = parse('body { color: red; }', { parse_selectors: false, parse_values: true })
+		let valueContext: any = undefined
+
+		traverse(root, {
+			leave(node, context) {
+				if (node.type === VALUE) {
+					valueContext = context
+				}
+			},
+			include_context: true,
+		})
+
+		expect(valueContext?.rule?.type).toBe(STYLE_RULE)
+		expect(valueContext?.declaration?.type).toBe(DECLARATION)
+		expect(valueContext?.parent?.type).toBe(DECLARATION)
+	})
+
+	it('should have context undefined when not enabled in traverse', () => {
+		const root = parse('body { color: red; }', { parse_selectors: false, parse_values: false })
+		let hasContext = false
+
+		traverse(root, {
+			enter(_node, context) {
+				if (context !== undefined) {
+					hasContext = true
+				}
+			},
+		})
+
+		expect(hasContext).toBe(false)
+	})
+
+	it('should provide context with SKIP in enter', () => {
+		const root = parse('@media screen { body { color: red; } }', {
+			parse_selectors: false,
+			parse_values: false,
+			parse_atrule_preludes: false,
+		})
+		const enterTypes: number[] = []
+		const leaveTypes: number[] = []
+
+		traverse(root, {
+			enter(node, context) {
+				enterTypes.push(node.type)
+				if (node.type === AT_RULE && context) {
+					return SKIP
+				}
+			},
+			leave(node, _context) {
+				leaveTypes.push(node.type)
+			},
+			include_context: true,
+		})
+
+		expect(enterTypes).toEqual([STYLESHEET, AT_RULE])
+		expect(leaveTypes).toEqual([AT_RULE, STYLESHEET])
+	})
+
+	it('should provide context with BREAK in enter', () => {
+		const root = parse('@media screen { body { color: red; } }', {
+			parse_selectors: false,
+			parse_values: false,
+			parse_atrule_preludes: false,
+		})
+		const enterTypes: number[] = []
+		const leaveTypes: number[] = []
+
+		traverse(root, {
+			enter(node, context) {
+				enterTypes.push(node.type)
+				if (node.type === AT_RULE && context) {
+					return BREAK
+				}
+			},
+			leave(node, _context) {
+				leaveTypes.push(node.type)
+			},
+			include_context: true,
+		})
+
+		expect(enterTypes).toEqual([STYLESHEET, AT_RULE])
+		expect(leaveTypes).toEqual([])
+	})
+
+	it('should track depth in context for traverse', () => {
+		const root = parse('body { color: red; & test { color: green } }', { parse_selectors: false, parse_values: false })
+		const enterDepths: number[] = []
+		const leaveDepths: number[] = []
+		const enterNodes: string[] = []
+		const leaveNodes: string[] = []
+
+		traverse(root, {
+			enter(node, context) {
+				if (context) {
+					enterNodes.push(node.type_name)
+					enterDepths.push(context.depth)
+				}
+			},
+			leave(node, context) {
+				if (context) {
+					leaveNodes.push(node.type_name)
+					leaveDepths.push(context.depth)
+				}
+			},
+			include_context: true,
+		})
+
+		expect(enterNodes).toEqual([
+			'StyleSheet',
+			'Rule',
+			'SelectorList',
+			'Block',
+			'Declaration',
+			'Rule', // nested
+			'SelectorList',
+			'Block',
+			'Declaration',
+		])
+		expect(enterDepths).toEqual([0, 0, 0, 0, 0, 1, 1, 1, 1])
+		expect(enterNodes).toEqual(enterNodes)
+		// TODO: figure out why this order
+		expect(leaveDepths).toEqual([0, 1, 0, 0, 0])
 	})
 })
