@@ -49,7 +49,7 @@ import {
 } from './arena'
 
 import { CHAR_MINUS_HYPHEN, CHAR_PLUS, is_whitespace, is_vendor_prefixed, str_starts_with } from './string-utils'
-import { parse_dimension } from './parse-utils'
+import { parse_dimension } from './parse-dimension'
 
 // Type name lookup table - maps numeric type to CSSTree-compatible strings
 export const TYPE_NAMES = {

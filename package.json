@@ -46,6 +46,10 @@
 		"./parse-anplusb": {
 			"types": "./dist/parse-anplusb.d.ts",
 			"import": "./dist/parse-anplusb.js"
+		},
+		"./parse-dimension": {
+			"types": "./dist/parse-dimension.d.ts",
+			"import": "./dist/parse-dimension.js"
 		}
 	},
 	"files": [

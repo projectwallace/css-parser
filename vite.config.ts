@@ -20,6 +20,7 @@ export default defineConfig({
 				'parse-declaration': './src/parse-declaration.ts',
 				'parse-value': './src/parse-value.ts',
 				'parse-anplusb': './src/parse-anplusb.ts',
+				'parse-dimension': './src/parse-dimension.ts',
 			},
 			formats: ['es'],
 		},
