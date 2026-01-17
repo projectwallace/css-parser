@@ -22,10 +22,17 @@ function parse(source: string, options?: ParserOptions): CSSNode
 
 - **`source`** (`string`) - CSS source code to parse
 - **`options`** (`ParserOptions`, optional) - Parser configuration
-  - `skip_comments?: boolean` - Skip comment nodes (default: `true`)
+  - `on_comment?: (info: CommentInfo) => void` - Callback for each comment encountered
   - `parse_values?: boolean` - Parse declaration values into structured nodes (default: `true`)
   - `parse_selectors?: boolean` - Parse selectors into detailed AST (default: `true`)
   - `parse_atrule_preludes?: boolean` - Parse at-rule preludes (default: `true`)
+
+The `CommentInfo` object passed to `on_comment` contains:
+  - `start: number` - Starting offset in source (0-based)
+  - `end: number` - Ending offset in source (0-based)
+  - `length: number` - Length of the comment
+  - `line: number` - Starting line number (1-based)
+  - `column: number` - Starting column number (1-based)
 
 ### Returns
 
@@ -249,27 +256,33 @@ for (const node of ast) {
 }
 ```
 
-### Example 6: Comments
+### Example 6: Processing Comments
 
 ```typescript
-import { parse } from '@projectwallace/css-parser'
+import { parse, type CommentInfo } from '@projectwallace/css-parser'
 
-// Include comments
-const ast = parse('/* header */ body { color: red; }', {
-	skip_comments: false,
+const css = '/* header */ body { /* inline */ color: red; }'
+const comments: CommentInfo[] = []
+
+const ast = parse(css, {
+	on_comment: (info) => {
+		// Extract comment text using start and end
+		const text = css.substring(info.start, info.end)
+		console.log(`Comment at ${info.line}:${info.column}: ${text}`)
+		comments.push(info)
+	},
 })
 
-const comment = ast.first_child
-console.log(comment.type) // COMMENT
-console.log(comment.text) // "/* header */"
+console.log(`Found ${comments.length} comments`) // 2
 
-const rule = comment.next_sibling
-console.log(rule.type) // STYLE_RULE
+// Comments are always skipped from the AST
+const firstNode = ast.first_child
+console.log(firstNode.type) // STYLE_RULE (comments not in tree)
 
-// Skip comments (default)
-const ast2 = parse('/* header */ body { color: red; }')
-const firstNode = ast2.first_child
-console.log(firstNode.type) // STYLE_RULE (comment skipped)
+// Access collected comment info
+for (const comment of comments) {
+	console.log(`${comment.start}-${comment.end} (${comment.length} chars)`)
+}
 ```
 
 ### Example 7: Block Nodes and Empty Rules
@@ -284,9 +297,9 @@ console.log(rule1.has_block) // true
 console.log(rule1.block.is_empty) // true
 
 // Rule with only comments
-const ast2 = parse('.comments { /* todo */ }', { skip_comments: false })
+const ast2 = parse('.comments { /* todo */ }')
 const rule2 = ast2.first_child
-console.log(rule2.block.is_empty) // true (only comments)
+console.log(rule2.block.is_empty) // true (comments are always skipped)
 
 // Rule with declarations
 const ast3 = parse('.filled { color: red; }')
@@ -752,33 +765,37 @@ traverse(ast, {
 
 ---
 
-## `tokenize(source, skip_comments?)`
+## `tokenize(source, on_comment?)`
 
 Tokenize CSS source code into a stream of tokens.
 
 ```typescript
-function* tokenize(source: string, skip_comments?: boolean): Generator<Token>
+function* tokenize(source: string, on_comment?: (info: CommentInfo) => void): Generator<Token>
 ```
+
+**Parameters:**
+- **`source`** (`string`) - CSS source code to tokenize
+- **`on_comment`** (`(info: CommentInfo) => void`, optional) - Callback for each comment encountered
 
 **Example:**
 
 ```typescript
-import { tokenize } from '@projectwallace/css-parser'
+import { tokenize, type CommentInfo } from '@projectwallace/css-parser'
 
-for (const token of tokenize('body { color: red; }')) {
-	console.log(token.type, token.text)
+const css = '/* comment */ body { color: red; }'
+const comments: CommentInfo[] = []
+
+for (const token of tokenize(css, (info) => comments.push(info))) {
+	console.log(token.type, token.start, token.end)
 }
-// TOKEN_IDENT "body"
-// TOKEN_WHITESPACE " "
-// TOKEN_LEFT_BRACE "{"
-// TOKEN_WHITESPACE " "
-// TOKEN_IDENT "color"
-// TOKEN_COLON ":"
-// TOKEN_WHITESPACE " "
-// TOKEN_IDENT "red"
-// TOKEN_SEMICOLON ";"
-// TOKEN_WHITESPACE " "
-// TOKEN_RIGHT_BRACE "}"
+// Tokens for body { color: red; } (comments skipped)
+// TOKEN_IDENT 14 18 (body)
+// TOKEN_WHITESPACE 18 19
+// TOKEN_LEFT_BRACE 19 20
+// ...
+
+console.log(`Found ${comments.length} comment(s)`)
+// Found 1 comment(s)
 ```
 
 ---

@@ -28,8 +28,8 @@ export class ValueParser {
 	constructor(arena: CSSDataArena, source: string) {
 		this.arena = arena
 		this.source = source
-		// Create a lexer instance for value parsing (don't skip comments in values)
-		this.lexer = new Lexer(source, false)
+		// Create a lexer instance for value parsing
+		this.lexer = new Lexer(source)
 		this.value_end = 0
 	}
 
