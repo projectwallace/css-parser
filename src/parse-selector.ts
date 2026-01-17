@@ -62,11 +62,6 @@ import {
 	CHAR_SINGLE_QUOTE,
 	CHAR_DOUBLE_QUOTE,
 	CHAR_COLON,
-	CHAR_CARRIAGE_RETURN,
-	CHAR_FORM_FEED,
-	CHAR_NEWLINE,
-	CHAR_SPACE,
-	CHAR_TAB,
 } from './string-utils'
 import { ANplusBParser } from './parse-anplusb'
 import { CSSNode } from './css-node'
@@ -116,9 +111,15 @@ export class SelectorParser {
 			let complex_selector = this.parse_complex_selector(allow_relative)
 			if (complex_selector !== null) {
 				// Wrap the complex selector (chain of components) in a NODE_SELECTOR
-				let selector_wrapper = this.arena.create_node(SELECTOR, selector_start, this.lexer.pos - selector_start, selector_line, selector_column)
-			this.arena.set_content_start_delta(selector_wrapper, 0)
-			this.arena.set_content_length(selector_wrapper, this.lexer.pos - selector_start)
+				let selector_wrapper = this.arena.create_node(
+					SELECTOR,
+					selector_start,
+					this.lexer.pos - selector_start,
+					selector_line,
+					selector_column,
+				)
+				this.arena.set_content_start_delta(selector_wrapper, 0)
+				this.arena.set_content_length(selector_wrapper, this.lexer.pos - selector_start)
 
 				// Find the last component in the chain
 				let last_component = complex_selector
@@ -186,7 +187,13 @@ export class SelectorParser {
 				let ch = this.source.charCodeAt(this.lexer.token_start)
 				if (ch === CHAR_GREATER_THAN || ch === CHAR_PLUS || ch === CHAR_TILDE) {
 					// Found leading combinator (>, +, ~) - this is a relative selector
-					let combinator = this.create_node_at(COMBINATOR, this.lexer.token_start, this.lexer.token_end, this.lexer.token_line, this.lexer.token_column)
+					let combinator = this.create_node_at(
+						COMBINATOR,
+						this.lexer.token_start,
+						this.lexer.token_end,
+						this.lexer.token_line,
+						this.lexer.token_column,
+					)
 					components.push(combinator)
 					this.skip_whitespace()
 					// Continue to parse the rest normally
@@ -418,19 +425,11 @@ export class SelectorParser {
 		let whitespace_start = this.lexer.pos
 		let whitespace_start_line = this.lexer.line
 		let whitespace_start_column = this.lexer.column
-		let has_whitespace = false
+		let has_whitespace = this.lexer.pos < this.selector_end
 
-		// Skip whitespace and check for combinator
-		while (this.lexer.pos < this.selector_end) {
-			let ch = this.source.charCodeAt(this.lexer.pos)
-			// no calling is_whitespace() because of function call overhead
-			if (ch === CHAR_SPACE || ch === CHAR_TAB || ch === CHAR_NEWLINE || ch === CHAR_CARRIAGE_RETURN || ch === CHAR_FORM_FEED) {
-				has_whitespace = true
-				this.lexer.advance()
-			} else {
-				break
-			}
-		}
+		// Skip whitespace and comments
+		this.skip_whitespace()
+		has_whitespace = has_whitespace && (this.lexer.pos > whitespace_start)
 
 		if (this.lexer.pos >= this.selector_end) {
 			this.lexer.pos = whitespace_start
@@ -453,19 +452,11 @@ export class SelectorParser {
 
 		// If we had whitespace but no explicit combinator, it's a descendant combinator
 		if (has_whitespace) {
-			// Reset lexer position and re-consume whitespace to get correct end position
+			// Reset lexer position and re-consume whitespace and comments to get correct end position
 			this.lexer.pos = whitespace_start
 			this.lexer.line = whitespace_start_line
 			this.lexer.column = whitespace_start_column
-			while (this.lexer.pos < this.selector_end) {
-				let ch = this.source.charCodeAt(this.lexer.pos)
-				// no calling is_whitespace() because of function call overhead
-				if (ch === CHAR_SPACE || ch === CHAR_TAB || ch === CHAR_NEWLINE || ch === CHAR_CARRIAGE_RETURN || ch === CHAR_FORM_FEED) {
-					this.lexer.advance()
-				} else {
-					break
-				}
-			}
+			this.skip_whitespace()
 			// Use the position at the start of the whitespace
 			return this.create_node_at(COMBINATOR, whitespace_start, this.lexer.pos, whitespace_start_line, whitespace_start_column)
 		}
@@ -961,10 +952,18 @@ export class SelectorParser {
 			}
 
 			// Skip comments /*...*/
-			if (ch === CHAR_FORWARD_SLASH && this.lexer.pos + 1 < this.selector_end && this.source.charCodeAt(this.lexer.pos + 1) === CHAR_ASTERISK) {
+			if (
+				ch === CHAR_FORWARD_SLASH &&
+				this.lexer.pos + 1 < this.selector_end &&
+				this.source.charCodeAt(this.lexer.pos + 1) === CHAR_ASTERISK
+			) {
 				this.lexer.advance(2) // Skip /*
 				while (this.lexer.pos < this.selector_end) {
-					if (this.source.charCodeAt(this.lexer.pos) === CHAR_ASTERISK && this.lexer.pos + 1 < this.selector_end && this.source.charCodeAt(this.lexer.pos + 1) === CHAR_FORWARD_SLASH) {
+					if (
+						this.source.charCodeAt(this.lexer.pos) === CHAR_ASTERISK &&
+						this.lexer.pos + 1 < this.selector_end &&
+						this.source.charCodeAt(this.lexer.pos + 1) === CHAR_FORWARD_SLASH
+					) {
 						this.lexer.advance(2) // Skip */
 						break
 					}
