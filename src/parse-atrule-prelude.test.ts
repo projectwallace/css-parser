@@ -1845,4 +1845,20 @@ describe('Comment Handling in At-Rule Preludes', () => {
 			expect(identifier?.text).toBe('slidein')
 		})
 	})
+
+	describe('Multiline comments', () => {
+		it('should handle multiline comments in @media queries', () => {
+			const root = parse(`@media screen
+/* comment
+with
+newlines */
+and (min-width: 768px) { }`)
+			const atrule = root.first_child
+			expect(atrule?.name).toBe('media')
+			const mediaQuery = atrule?.prelude?.first_child
+			expect(mediaQuery?.type).toBe(MEDIA_QUERY)
+			// Should still parse the media feature after the multiline comment
+			expect(mediaQuery?.children.length).toBeGreaterThan(0)
+		})
+	})
 })

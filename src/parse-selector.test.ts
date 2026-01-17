@@ -1927,9 +1927,35 @@ describe('Selector Nodes', () => {
 
 				test(':nth-child(1 of li)', () => {
 					const root = parse_selector('ul:has(:nth-child(1 of li))')
-					const has = root.first_child!.children[1]
-					expect(has.type).toBe(PSEUDO_CLASS_SELECTOR)
-					expect(has.text).toBe(':has(:nth-child(1 of li))')
+					const nth = root.first_child!.children[1]
+					expect(nth.type).toBe(PSEUDO_CLASS_SELECTOR)
+					expect(nth.text).toBe(':has(:nth-child(1 of li))')
+				})
+
+				test(':nth-child(1 /* test */ of /* test */ li)', () => {
+					const input = ':nth-child(1 /* test */ of /* test */ li)'
+					const root = parse_selector(input)
+					const nth = root.first_child!.first_child
+					expect(nth?.type).toBe(PSEUDO_CLASS_SELECTOR)
+					expect(nth?.text).toBe(input)
+					expect(nth?.first_child?.type).toBe(NTH_OF_SELECTOR)
+					const nth_of = nth?.first_child
+					expect(nth_of?.text).toBe('1 /* test */ of /* test */ li')
+					expect(nth_of?.children).toHaveLength(2)
+					expect(nth_of?.children[0].type_name).toBe('Nth')
+					expect(nth_of?.children[1].type_name).toBe('SelectorList')
+				})
+
+				test(':nth-child(3n OF .test)', () => {
+					const input = ':nth-child(3n OF .test)'
+					const root = parse_selector(input)
+					const nth = root.first_child!.first_child
+					expect(nth?.type).toBe(PSEUDO_CLASS_SELECTOR)
+					expect(nth?.text).toBe(input)
+					expect(nth?.first_child?.type).toBe(NTH_OF_SELECTOR)
+					const nth_of = nth?.first_child
+					expect(nth_of?.text).toBe('3n OF .test')
+					expect(nth_of?.children).toHaveLength(2)
 				})
 			})
 		})
@@ -2710,6 +2736,30 @@ describe('Selector Nodes', () => {
 				expect(nth?.type).toBe(PSEUDO_CLASS_SELECTOR)
 				expect(nth?.name).toBe('nth-of-type')
 			})
+
+			it('should match "of" keyword case-insensitively - "Of"', () => {
+				const root = parse_selector(':nth-child(2n Of .class)')
+				const selector = root.first_child
+				const nthChild = selector?.first_child
+				const nthOfSelector = nthChild?.first_child
+				expect(nthOfSelector?.type).toBe(NTH_OF_SELECTOR)
+			})
+
+			it('should match "of" keyword case-insensitively - "OF"', () => {
+				const root = parse_selector(':nth-child(2n OF .class)')
+				const selector = root.first_child
+				const nthChild = selector?.first_child
+				const nthOfSelector = nthChild?.first_child
+				expect(nthOfSelector?.type).toBe(NTH_OF_SELECTOR)
+			})
+
+			it('should match "of" keyword case-insensitively - "oF"', () => {
+				const root = parse_selector(':nth-child(2n oF .class)')
+				const selector = root.first_child
+				const nthChild = selector?.first_child
+				const nthOfSelector = nthChild?.first_child
+				expect(nthOfSelector?.type).toBe(NTH_OF_SELECTOR)
+			})
 		})
 
 		describe('Comments in compound selectors', () => {
@@ -2735,6 +2785,34 @@ describe('Selector Nodes', () => {
 				// These are already tested in "should parse selector list with comments..."
 				const root = parse_selector('a, /* comment */ b, c')
 				expect(root.children.length).toBe(3)
+			})
+		})
+
+		describe('Multiline comments', () => {
+			it('should handle multiline comments in selectors', () => {
+				const root = parse_selector(`div
+/* comment
+with
+newlines */
+> p`)
+				const selector = root.first_child
+				expect(selector?.children.length).toBe(3)
+				const [div, combinator, p] = selector?.children || []
+				expect(div?.type).toBe(TYPE_SELECTOR)
+				expect(combinator?.type).toBe(COMBINATOR)
+				expect(p?.type).toBe(TYPE_SELECTOR)
+			})
+
+			it('should handle multiline comments in nth-child', () => {
+				const root = parse_selector(`:nth-child(2n
+/* comment
+with
+newlines */
++ 1)`)
+				const selector = root.first_child
+				const nthChild = selector?.first_child
+				expect(nthChild?.type).toBe(PSEUDO_CLASS_SELECTOR)
+				expect(nthChild?.name).toBe('nth-child')
 			})
 		})
 	})
