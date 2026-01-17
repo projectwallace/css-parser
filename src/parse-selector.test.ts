@@ -20,7 +20,6 @@ import {
 	ATTR_FLAG_CASE_INSENSITIVE,
 	ATTR_FLAG_CASE_SENSITIVE,
 } from './arena'
-import { NODE_TYPES } from './constants'
 
 // Helper for low-level testing
 function parseSelectorInternal(selector: string) {
