@@ -7,7 +7,7 @@
 
 Built for speed and efficiency, this parser handles large CSS files with minimal memory overhead and blazing-fast parse times. Designed with a data-oriented architecture using a single contiguous memory arena for zero allocations during parsing.
 
-This parser was heavily influenced by [CSSTree](https://github.com/csstree/csstree), one of the most robust CSS parsers available. Some of the parsing mechanics are taken from CSSTree, as well as some of the performance mechanics, but a lot of things are very different which is why this isn't a direct fork.
+This parser was heavily influenced by [CSSTree](https://github.com/csstree/csstree), one of the most robust CSS parsers available. Some of the parsing mechanics are taken from CSSTree, as well as some of the performance mechanics, but a lot of things are very different which is why this isn't a direct fork and there is very little overlap in API's.
 
 ## Features
 
@@ -15,6 +15,7 @@ This parser was heavily influenced by [CSSTree](https://github.com/csstree/csstr
 - **Error recovery** - Continues parsing on malformed CSS
 - **Location tracking** - Line, column, offset, and length for all nodes
 - **Performance** - Low memory usage and excellent parsing speed
+- **Small bundle size** - Fast download and installation in any environment
 
 ## Installation
 
