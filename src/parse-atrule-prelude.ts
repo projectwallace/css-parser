@@ -46,8 +46,8 @@ export class AtRulePreludeParser {
 	constructor(arena: CSSDataArena, source: string) {
 		this.arena = arena
 		this.source = source
-		// Create a lexer instance for prelude parsing (don't skip comments)
-		this.lexer = new Lexer(source, false)
+		// Create a lexer instance for prelude parsing
+		this.lexer = new Lexer(source)
 		this.prelude_end = 0
 	}
 

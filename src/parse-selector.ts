@@ -41,7 +41,6 @@ import {
 	TOKEN_EOF,
 	TOKEN_WHITESPACE,
 	TOKEN_STRING,
-	TOKEN_COMMENT,
 	type TokenType,
 } from './token-types'
 import { skip_whitespace_forward, skip_whitespace_and_comments_forward, skip_whitespace_and_comments_backward } from './parse-utils'
@@ -53,6 +52,7 @@ import {
 	CHAR_GREATER_THAN,
 	CHAR_PERIOD,
 	CHAR_ASTERISK,
+	CHAR_FORWARD_SLASH,
 	CHAR_AMPERSAND,
 	is_combinator,
 	CHAR_EQUALS,
@@ -82,7 +82,7 @@ export class SelectorParser {
 		this.arena = arena
 		this.source = source
 		// Create a lexer instance for selector parsing
-		this.lexer = new Lexer(source, false)
+		this.lexer = new Lexer(source)
 		this.selector_end = 0
 	}
 
@@ -138,32 +138,13 @@ export class SelectorParser {
 			this.skip_whitespace()
 			if (this.lexer.pos >= this.selector_end) break
 
-			// Skip any comments before the comma
-			let token_type: TokenType = TOKEN_EOF
-			while (this.lexer.pos < this.selector_end) {
-				this.lexer.next_token_fast(false)
-				token_type = this.lexer.token_type
-				if (token_type === TOKEN_COMMENT) {
-					this.skip_whitespace()
-				} else {
-					break
-				}
-			}
+			// Check for comma (comments are auto-skipped by lexer)
+			this.lexer.next_token_fast(false)
+			let token_type: TokenType = this.lexer.token_type
 
 			if (token_type === TOKEN_COMMA) {
-				// Skip whitespace and any comments after the comma
+				// Skip whitespace after the comma
 				this.skip_whitespace()
-				while (this.lexer.pos < this.selector_end) {
-					const saved = this.lexer.save_position()
-					this.lexer.next_token_fast(false)
-					token_type = this.lexer.token_type
-					if (token_type === TOKEN_COMMENT) {
-						this.skip_whitespace()
-					} else {
-						this.lexer.restore_position(saved)
-						break
-					}
-				}
 				continue
 			} else {
 				// No more selectors
@@ -968,10 +949,31 @@ export class SelectorParser {
 		return node
 	}
 
-	// Helper to skip whitespace and update line/column
+	// Helper to skip whitespace and comments, updating line/column
 	private skip_whitespace(): void {
-		while (this.lexer.pos < this.selector_end && is_whitespace(this.source.charCodeAt(this.lexer.pos))) {
-			this.lexer.advance()
+		while (this.lexer.pos < this.selector_end) {
+			let ch = this.source.charCodeAt(this.lexer.pos)
+
+			// Skip whitespace
+			if (is_whitespace(ch)) {
+				this.lexer.advance()
+				continue
+			}
+
+			// Skip comments /*...*/
+			if (ch === CHAR_FORWARD_SLASH && this.lexer.pos + 1 < this.selector_end && this.source.charCodeAt(this.lexer.pos + 1) === CHAR_ASTERISK) {
+				this.lexer.advance(2) // Skip /*
+				while (this.lexer.pos < this.selector_end) {
+					if (this.source.charCodeAt(this.lexer.pos) === CHAR_ASTERISK && this.lexer.pos + 1 < this.selector_end && this.source.charCodeAt(this.lexer.pos + 1) === CHAR_FORWARD_SLASH) {
+						this.lexer.advance(2) // Skip */
+						break
+					}
+					this.lexer.advance()
+				}
+				continue
+			}
+
+			break
 		}
 	}
 }

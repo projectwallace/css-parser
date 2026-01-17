@@ -32,7 +32,6 @@ import {
 	TOKEN_RIGHT_PAREN,
 	TOKEN_LEFT_BRACE,
 	TOKEN_RIGHT_BRACE,
-	TOKEN_COMMENT,
 	TOKEN_EOF,
 	type Token,
 	type TokenType,
@@ -78,13 +77,21 @@ export interface LexerPosition {
 	token_column: number
 }
 
+export interface CommentInfo {
+	start: number
+	end: number
+	length: number
+	line: number
+	column: number
+}
+
 /** @internal */
 export class Lexer {
 	source: string
 	pos: number
 	line: number
 	column: number
-	skip_comments: boolean
+	on_comment: ((info: CommentInfo) => void) | undefined
 	// Current token properties (avoiding object allocation)
 	token_type: TokenType
 	token_start: number
@@ -92,12 +99,12 @@ export class Lexer {
 	token_line: number
 	token_column: number
 
-	constructor(source: string, skip_comments: boolean = false) {
+	constructor(source: string, on_comment?: (info: CommentInfo) => void) {
 		this.source = source
 		this.pos = 0
 		this.line = 1
 		this.column = 1
-		this.skip_comments = skip_comments
+		this.on_comment = on_comment
 		this.token_type = TOKEN_EOF
 		this.token_start = 0
 		this.token_end = 0
@@ -165,21 +172,36 @@ export class Lexer {
 
 		// Comments: /* */
 		if (ch === CHAR_FORWARD_SLASH && this.peek() === CHAR_ASTERISK) {
-			if (this.skip_comments) {
-				// Skip comment without creating token
-				this.advance(2) // Skip /*
-				while (this.pos < this.source.length - 1) {
-					let ch = this.source.charCodeAt(this.pos)
-					if (ch === CHAR_ASTERISK && this.peek() === CHAR_FORWARD_SLASH) {
-						this.advance(2)
-						break
-					}
-					this.advance()
+			// Always skip comments, but call callback if provided
+			let comment_start = start
+			let comment_line = start_line
+			let comment_column = start_column
+
+			this.advance(2) // Skip /*
+			while (this.pos < this.source.length - 1) {
+				let ch = this.source.charCodeAt(this.pos)
+				if (ch === CHAR_ASTERISK && this.peek() === CHAR_FORWARD_SLASH) {
+					this.advance(2)
+					break
 				}
-				// Recursively get next token
-				return this.next_token_fast(skip_whitespace)
+				this.advance()
 			}
-			return this.consume_comment(start_line, start_column)
+
+			let comment_end = this.pos
+
+			// Call on_comment callback if provided
+			if (this.on_comment) {
+				this.on_comment({
+					start: comment_start,
+					end: comment_end,
+					length: comment_end - comment_start,
+					line: comment_line,
+					column: comment_column,
+				})
+			}
+
+			// Recursively get next token
+			return this.next_token_fast(skip_whitespace)
 		}
 
 		// Strings: " or '
@@ -280,22 +302,6 @@ export class Lexer {
 		return this.make_token(TOKEN_WHITESPACE, start, this.pos, start_line, start_column)
 	}
 
-	consume_comment(start_line: number, start_column: number): TokenType {
-		let start = this.pos
-		this.advance(2) // Skip /*
-
-		while (this.pos < this.source.length - 1) {
-			let ch = this.source.charCodeAt(this.pos)
-			if (ch === CHAR_ASTERISK && this.peek() === CHAR_FORWARD_SLASH) {
-				this.advance(2)
-				break
-			}
-			this.advance()
-		}
-
-		return this.make_token(TOKEN_COMMENT, start, this.pos, start_line, start_column)
-	}
-
 	consume_string(quote: number, start_line: number, start_column: number): TokenType {
 		let start = this.pos
 		this.advance() // Skip opening quote
@@ -376,11 +382,7 @@ export class Lexer {
 
 		// Decimal part
 		// Hot path: inline digit check for decimal detection
-		if (
-			this.pos < this.source.length &&
-			this.source.charCodeAt(this.pos) === CHAR_DOT &&
-			this.pos + 1 < this.source.length
-		) {
+		if (this.pos < this.source.length && this.source.charCodeAt(this.pos) === CHAR_DOT && this.pos + 1 < this.source.length) {
 			let next = this.peek()
 			if (next < 128 && (char_types[next] & CHAR_DIGIT) !== 0) {
 				this.advance() // .
@@ -624,11 +626,11 @@ export class Lexer {
 /**
  * Tokenize CSS source code
  * @param source - The CSS source code to tokenize
- * @param skip_comments - Whether to skip comment tokens (default: true)
+ * @param on_comment - Optional callback for comment tokens
  * @yields CSS tokens
  */
-export function* tokenize(source: string, skip_comments = true): Generator<Token, void, undefined> {
-	const lexer = new Lexer(source, skip_comments)
+export function* tokenize(source: string, on_comment?: (info: CommentInfo) => void): Generator<Token, void, undefined> {
+	const lexer = new Lexer(source, on_comment)
 
 	while (true) {
 		const token = lexer.next_token()

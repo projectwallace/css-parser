@@ -248,15 +248,107 @@ describe('Parser Options', () => {
 			expect(declaration?.has_children).toBe(false)
 		})
 
-		it('should accept skip_comments with parsing options', () => {
-			const root = parse('/* test */ body { color: red; }', {
-				skip_comments: true,
-				parse_values: false,
-			})
-			const rule = root.first_child
+	})
 
-			// Comment should be skipped
-			expect(rule?.first_child?.text).toBe('body')
+	describe('on_comment callback', () => {
+		it('should call on_comment for each comment in the CSS', () => {
+			const comments: Array<{ start: number; end: number; length: number; line: number; column: number }> = []
+			const css = '/* first */ body { /* second */ color: red; /* third */ }'
+
+			parse(css, {
+				on_comment: (info) => {
+					comments.push(info)
+				},
+			})
+
+			expect(comments).toHaveLength(3)
+			expect(comments[0].start).toBe(0)
+			expect(comments[0].length).toBe(11)
+			expect(comments[0].line).toBe(1)
+			expect(comments[0].column).toBe(1)
+		})
+
+		it('should provide correct start, end, and length for comments', () => {
+			const comments: Array<{ start: number; end: number; length: number }> = []
+			const css = '/* comment */ body { color: red; }'
+
+			parse(css, {
+				on_comment: (info) => {
+					comments.push(info)
+				},
+			})
+
+			expect(comments).toHaveLength(1)
+			expect(comments[0].start).toBe(0)
+			expect(comments[0].end).toBe(13)
+			expect(comments[0].length).toBe(13)
+		})
+
+		it('should provide correct line and column for multiline comments', () => {
+			const comments: Array<{ start: number; end: number; line: number; column: number }> = []
+			const css = `body {
+	/* comment on line 2 */
+	color: red;
+}`
+
+			parse(css, {
+				on_comment: (info) => {
+					comments.push(info)
+				},
+			})
+
+			expect(comments).toHaveLength(1)
+			expect(comments[0].line).toBe(2)
+			expect(comments[0].column).toBe(2)
+		})
+
+		it('should not call on_comment when no comments present', () => {
+			let called = false
+			const css = 'body { color: red; }'
+
+			parse(css, {
+				on_comment: () => {
+					called = true
+				},
+			})
+
+			expect(called).toBe(false)
+		})
+
+		it('should allow extracting comment text using start and end', () => {
+			const css = '/* first comment */ body { /* second comment */ color: red; }'
+			const commentTexts: string[] = []
+
+			parse(css, {
+				on_comment: (info) => {
+					commentTexts.push(css.substring(info.start, info.end))
+				},
+			})
+
+			expect(commentTexts).toEqual(['/* first comment */', '/* second comment */'])
+		})
+
+		it('should work with other parsing options', () => {
+			const comments: Array<{ start: number; length: number }> = []
+			const css = '/* test */ body { color: red; }'
+
+			const root = parse(css, {
+				parse_values: false,
+				on_comment: (info) => {
+					comments.push(info)
+				},
+			})
+
+			expect(comments).toHaveLength(1)
+			expect(comments[0].start).toBe(0)
+			expect(comments[0].length).toBe(10)
+
+			// Ensure other options still work
+			const rule = root.first_child
+			const selector = rule?.first_child
+			const block = selector?.next_sibling
+			const declaration = block?.first_child
+			expect(declaration?.has_children).toBe(false) // parse_values: false
 		})
 	})
 })

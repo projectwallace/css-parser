@@ -21,7 +21,7 @@ export class ANplusBParser {
 	constructor(arena: CSSDataArena, source: string) {
 		this.arena = arena
 		this.source = source
-		this.lexer = new Lexer(source, true) // skip comments
+		this.lexer = new Lexer(source)
 		this.expr_end = 0
 	}
 

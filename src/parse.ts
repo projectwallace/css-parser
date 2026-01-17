@@ -1,5 +1,5 @@
 // CSS Parser - Builds AST using the arena
-import { Lexer } from './tokenize'
+import { Lexer, type CommentInfo } from './tokenize'
 import {
 	CSSDataArena,
 	STYLESHEET,
@@ -35,10 +35,10 @@ import { trim_boundaries } from './parse-utils'
 import { CHAR_PERIOD, CHAR_GREATER_THAN, CHAR_PLUS, CHAR_TILDE, CHAR_AMPERSAND } from './string-utils'
 
 export interface ParserOptions {
-	skip_comments?: boolean
 	parse_values?: boolean
 	parse_selectors?: boolean
 	parse_atrule_preludes?: boolean
+	on_comment?: (info: CommentInfo) => void
 }
 
 // Static at-rule lookup sets for fast classification
@@ -60,15 +60,13 @@ export class Parser {
 	constructor(source: string, options?: ParserOptions) {
 		this.source = source
 
-		// Support legacy boolean parameter for backwards compatibility
 		let opts: ParserOptions = options || {}
 
-		let skip_comments = opts.skip_comments ?? true
 		this.parse_values_enabled = opts.parse_values ?? true
 		this.parse_selectors_enabled = opts.parse_selectors ?? true
 		this.parse_atrule_preludes_enabled = opts.parse_atrule_preludes ?? true
 
-		this.lexer = new Lexer(source, skip_comments)
+		this.lexer = new Lexer(source, opts.on_comment)
 		// Calculate optimal capacity based on source size
 		let capacity = CSSDataArena.capacity_for_source(source.length)
 		this.arena = new CSSDataArena(capacity)

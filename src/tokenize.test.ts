@@ -22,7 +22,6 @@ import {
 	TOKEN_RIGHT_PAREN,
 	TOKEN_LEFT_BRACE,
 	TOKEN_RIGHT_BRACE,
-	TOKEN_COMMENT,
 	TOKEN_DELIM,
 	TOKEN_EOF,
 } from './token-types'
@@ -111,23 +110,35 @@ describe('Lexer', () => {
 	})
 
 	describe('comments', () => {
-		test('should tokenize comments', () => {
-			let lexer = new Lexer('/* comment */')
-			let token = lexer.next_token()
-			expect(token?.type).toBe(TOKEN_COMMENT)
-			expect(lexer.source.slice(token!.start, token!.end)).toBe('/* comment */')
+		test('should skip comments via callback', () => {
+			const comments: any[] = []
+			const lexer = new Lexer('/* comment */', (info) => comments.push(info))
+			const token = lexer.next_token()
+
+			expect(comments).toHaveLength(1)
+			expect(comments[0].start).toBe(0)
+			expect(comments[0].end).toBe(13)
+			expect(comments[0].length).toBe(13)
+			expect(token?.type).toBe(TOKEN_EOF)
 		})
 
-		test('should tokenize unclosed comments', () => {
-			let lexer = new Lexer('/* unclosed')
-			let token = lexer.next_token()
-			expect(token?.type).toBe(TOKEN_COMMENT)
+		test('should handle unclosed comments', () => {
+			const comments: any[] = []
+			const lexer = new Lexer('/* unclosed', (info) => comments.push(info))
+			lexer.next_token()
+
+			expect(comments).toHaveLength(1)
+			expect(comments[0].start).toBe(0)
+			expect(comments[0].end).toBe(10)
 		})
 
 		test('should track lines in comments', () => {
-			let lexer = new Lexer('/* line1\nline2 */')
-			let token = lexer.next_token()
-			expect(token?.type).toBe(TOKEN_COMMENT)
+			const comments: any[] = []
+			const lexer = new Lexer('/* line1\nline2 */', (info) => comments.push(info))
+			lexer.next_token()
+
+			expect(comments).toHaveLength(1)
+			expect(comments[0].line).toBe(1)
 			expect(lexer.line).toBe(2)
 		})
 	})
@@ -658,31 +669,28 @@ describe('Lexer', () => {
 		})
 
 		test('should track column for comments', () => {
-			let lexer = new Lexer('/* comment */ body', false)
+			let lexer = new Lexer('/* comment */ body')
 			let token
-
-			token = lexer.next_token() // '/* comment */'
-			expect(token?.line).toBe(1)
-			expect(token?.column).toBe(1)
-			expect(token?.type).toBe(TOKEN_COMMENT)
 
 			token = lexer.next_token() // ' '
 			expect(token?.line).toBe(1)
 			expect(token?.column).toBe(14)
+			expect(token?.type).toBe(TOKEN_WHITESPACE)
+
+			token = lexer.next_token() // 'body'
+			expect(token?.line).toBe(1)
+			expect(token?.column).toBe(15)
+			expect(token?.type).toBe(TOKEN_IDENT)
 		})
 
 		test('should track column for multi-line comments', () => {
-			let lexer = new Lexer('/* line1\nline2 */ a', false)
+			let lexer = new Lexer('/* line1\nline2 */ a')
 			let token
-
-			token = lexer.next_token() // '/* line1\nline2 */'
-			expect(token?.line).toBe(1)
-			expect(token?.column).toBe(1)
-			expect(token?.type).toBe(TOKEN_COMMENT)
 
 			token = lexer.next_token() // ' '
 			expect(token?.line).toBe(2)
 			expect(token?.column).toBe(9)
+			expect(token?.type).toBe(TOKEN_WHITESPACE)
 
 			token = lexer.next_token() // 'a'
 			expect(token?.line).toBe(2)

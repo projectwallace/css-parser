@@ -38,7 +38,7 @@ export class DeclarationParser {
 	// Parse a declaration range into a declaration node (standalone use)
 	parse_declaration(start: number, end: number, line: number = 1, column: number = 1): number | null {
 		// Create a fresh lexer instance for standalone parsing
-		const lexer = new Lexer(this.source, false)
+		const lexer = new Lexer(this.source)
 		lexer.pos = start
 		lexer.line = line
 		lexer.column = column
