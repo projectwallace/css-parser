@@ -20,6 +20,7 @@ import {
 	ATTR_FLAG_CASE_INSENSITIVE,
 	ATTR_FLAG_CASE_SENSITIVE,
 } from './arena'
+import { NODE_TYPES } from './constants'
 
 // Helper for low-level testing
 function parseSelectorInternal(selector: string) {
@@ -1018,29 +1019,27 @@ describe('Selector Nodes', () => {
 			})
 
 			it('should trim comments from attribute selectors', () => {
-				const { arena, rootNode, source } = parseSelectorInternal('[/* comment */data-test="value"/* test */]')
-
-				expect(rootNode).not.toBeNull()
-				if (!rootNode) return
-
-				const selectorWrapper = arena.get_first_child(rootNode)
-				const child = arena.get_first_child(selectorWrapper)
-				expect(arena.get_type(child)).toBe(ATTRIBUTE_SELECTOR)
-				// Content now stores just the attribute name
-				expect(getNodeContent(arena, source, child)).toBe('data-test')
+				const root = parse_selector('[/* comment */data-test="value"/* test */]')
+				expect(root.first_child?.type_name).toBe('Selector')
+				const attr_selector = root.first_child?.first_child
+				expect(attr_selector?.type_name).toBe('AttributeSelector')
+				expect(attr_selector?.value).toBe('"value"')
+				expect(attr_selector?.property).toBe('data-test')
+				expect(attr_selector?.attr_operator).toBe(ATTR_OPERATOR_EQUAL)
+				expect(attr_selector?.attr_flags).toBe(ATTR_FLAG_NONE)
 			})
 
 			it('should trim whitespace and comments from attribute selectors', () => {
-				const { arena, rootNode, source } = parseSelectorInternal('[/* comment */   data-test="value"   /* test */]')
-
-				expect(rootNode).not.toBeNull()
-				if (!rootNode) return
-
-				const selectorWrapper = arena.get_first_child(rootNode)
-				const child = arena.get_first_child(selectorWrapper)
-				expect(arena.get_type(child)).toBe(ATTRIBUTE_SELECTOR)
-				// Content now stores just the attribute name
-				expect(getNodeContent(arena, source, child)).toBe('data-test')
+				const input = '[/* comment */   data-test="value"   /* test */]'
+				const root = parse_selector(input)
+				expect(root.first_child?.type_name).toBe('Selector')
+				const attr_selector = root.first_child?.first_child
+				expect(attr_selector?.type_name).toBe('AttributeSelector')
+				expect(attr_selector?.value).toBe('"value"')
+				expect(attr_selector?.property).toBe('data-test')
+				expect(attr_selector?.attr_operator).toBe(ATTR_OPERATOR_EQUAL)
+				expect(attr_selector?.attr_flags).toBe(ATTR_FLAG_NONE)
+				expect(attr_selector?.text).toBe(input)
 			})
 
 			it('should parse attribute with case-insensitive flag', () => {
@@ -1276,37 +1275,56 @@ describe('Selector Nodes', () => {
 			})
 
 			it('should parse selector list with comments between selectors', () => {
-				const { arena, rootNode, source } = parseSelectorInternal('a, b, /* comment */ c, d')
-
-				expect(rootNode).not.toBeNull()
-				if (!rootNode) return
-
-				// Root is NODE_SELECTOR_LIST
-				expect(arena.get_type(rootNode)).toBe(SELECTOR_LIST)
-
-				// List should contain all 4 selectors despite the comment
-				const children = getChildren(arena, source, rootNode)
-				expect(children).toHaveLength(4)
-
-				// Verify each selector
-				expect(arena.get_type(children[0])).toBe(SELECTOR)
-				expect(arena.get_type(children[1])).toBe(SELECTOR)
-				expect(arena.get_type(children[2])).toBe(SELECTOR)
-				expect(arena.get_type(children[3])).toBe(SELECTOR)
+				const selector_list = parse_selector('a, b, /* comment */ c, d')
+				expect(selector_list.children).toHaveLength(4)
+				expect(selector_list.children[0].type).toBe(SELECTOR)
+				expect(selector_list.children[1].type).toBe(SELECTOR)
+				expect(selector_list.children[2].type).toBe(SELECTOR)
+				expect(selector_list.children[3].type).toBe(SELECTOR)
 			})
 
 			it('should parse selector list with comments after commas', () => {
-				const { arena, rootNode, source } = parseSelectorInternal('a,/* comment */b,/* another */c')
+				const selector_list = parse_selector('a,/* comment */b,/* another */c')
+				expect(selector_list.children).toHaveLength(3)
+				expect(selector_list.children[0].type).toBe(SELECTOR)
+				expect(selector_list.children[1].type).toBe(SELECTOR)
+				expect(selector_list.children[2].type).toBe(SELECTOR)
+			})
 
-				expect(rootNode).not.toBeNull()
-				if (!rootNode) return
+			it('should parse selector with comments around descending combinator', () => {
+				const selector_list = parse_selector('a /* comment */ /*comment */ b')
+				expect(selector_list.children).toHaveLength(1)
+				const selector = selector_list.children[0]
+				expect(selector.type).toBe(SELECTOR)
+				expect(selector.text).toBe('a /* comment */ /*comment */ b')
+				expect(selector.children.map((child) => child.type)).toEqual([TYPE_SELECTOR, COMBINATOR, TYPE_SELECTOR])
+			})
 
-				// Root is NODE_SELECTOR_LIST
-				expect(arena.get_type(rootNode)).toBe(SELECTOR_LIST)
+			it('should parse selector with comments around child combinator', () => {
+				const selector_list = parse_selector('a /* comment */ > /*comment */ b')
+				expect(selector_list.children).toHaveLength(1)
+				const selector = selector_list.children[0]
+				expect(selector.type).toBe(SELECTOR)
+				expect(selector.text).toBe('a /* comment */ > /*comment */ b')
+				expect(selector.children.map((child) => child.type)).toEqual([TYPE_SELECTOR, COMBINATOR, TYPE_SELECTOR])
+			})
 
-				// List should contain all 3 selectors
-				const children = getChildren(arena, source, rootNode)
-				expect(children).toHaveLength(3)
+			it('should parse selector with comments around sibling combinator', () => {
+				const selector_list = parse_selector('a /* comment */ + /*comment */ b')
+				expect(selector_list.children).toHaveLength(1)
+				const selector = selector_list.children[0]
+				expect(selector.type).toBe(SELECTOR)
+				expect(selector.text).toBe('a /* comment */ + /*comment */ b')
+				expect(selector.children.map((child) => child.type)).toEqual([TYPE_SELECTOR, COMBINATOR, TYPE_SELECTOR])
+			})
+
+			it('should parse selector with comments around adjecent sibling combinator', () => {
+				const selector_list = parse_selector('a /* comment */ ~ /*comment */ b')
+				expect(selector_list.children).toHaveLength(1)
+				const selector = selector_list.children[0]
+				expect(selector.type).toBe(SELECTOR)
+				expect(selector.text).toBe('a /* comment */ ~ /*comment */ b')
+				expect(selector.children.map((child) => child.type)).toEqual([TYPE_SELECTOR, COMBINATOR, TYPE_SELECTOR])
 			})
 		})
 
