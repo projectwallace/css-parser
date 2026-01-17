@@ -1718,3 +1718,131 @@ describe('Case-insensitive at-rule keywords', () => {
 		expect(atrule?.children.length).toBeGreaterThan(0)
 	})
 })
+
+describe('Comment Handling in At-Rule Preludes', () => {
+	describe('@media queries with comments', () => {
+		it('should parse media query with comment before screen', () => {
+			const root = parse('@media /* comment */ screen { }')
+			const atrule = root.first_child
+			expect(atrule?.name).toBe('media')
+			const mediaQuery = atrule?.prelude?.first_child
+			expect(mediaQuery?.type).toBe(MEDIA_QUERY)
+			// Should find the media type
+			const mediaType = mediaQuery?.first_child
+			expect(mediaType?.type).toBe(MEDIA_TYPE)
+			expect(mediaType?.text).toBe('screen')
+		})
+
+		it('should parse media query with comment in media feature', () => {
+			const root = parse('@media (/* comment */ min-width: 768px) { }')
+			const atrule = root.first_child
+			expect(atrule?.name).toBe('media')
+			const mediaQuery = atrule?.prelude?.first_child
+			expect(mediaQuery?.type).toBe(MEDIA_QUERY)
+			const mediaFeature = mediaQuery?.first_child
+			expect(mediaFeature?.type).toBe(MEDIA_FEATURE)
+			expect(mediaFeature?.property).toBe('min-width')
+		})
+
+		it('should parse media feature with comment around colon', () => {
+			const root = parse('@media (min-width /* comment */ : /* comment */ 768px) { }')
+			const atrule = root.first_child
+			const mediaFeature = atrule?.prelude?.first_child?.first_child
+			expect(mediaFeature?.type).toBe(MEDIA_FEATURE)
+			expect(mediaFeature?.property).toBe('min-width')
+		})
+
+		it('should parse media query list with comments between queries', () => {
+			const root = parse('@media screen /* comment */ , /* comment */ print { }')
+			const atrule = root.first_child
+			expect(atrule?.name).toBe('media')
+			const prelude = atrule?.prelude
+			expect(prelude?.children.length).toBe(2)
+		})
+
+		it('should parse media feature range with comments around operators', () => {
+			const root = parse('@media (/* comment */ 400px /* comment */ <= /* comment */ width) { }')
+			const atrule = root.first_child
+			const mediaQuery = atrule?.prelude?.first_child
+			const featureRange = mediaQuery?.first_child
+			expect(featureRange?.type).toBe(FEATURE_RANGE)
+		})
+
+		it('should not match operators inside comments in media features', () => {
+			const root = parse('@media (/* < */ width: 400px) { }')
+			const atrule = root.first_child
+			const mediaFeature = atrule?.prelude?.first_child?.first_child
+			expect(mediaFeature?.type).toBe(MEDIA_FEATURE) // Should be MEDIA_FEATURE, not FEATURE_RANGE
+			expect(mediaFeature?.property).toBe('width')
+		})
+	})
+
+	describe('@container queries with comments', () => {
+		it('should parse container query with comment before feature', () => {
+			const root = parse('@container /* comment */ (min-width: 400px) { }')
+			const atrule = root.first_child
+			expect(atrule?.name).toBe('container')
+			const containerQuery = atrule?.prelude?.first_child
+			expect(containerQuery?.type).toBe(CONTAINER_QUERY)
+		})
+	})
+
+	describe('@supports queries with comments', () => {
+		it('should parse supports query with comment in feature', () => {
+			const root = parse('@supports (/* comment */ display: grid) { }')
+			const atrule = root.first_child
+			expect(atrule?.name).toBe('supports')
+			const supportsQuery = atrule?.prelude?.first_child
+			expect(supportsQuery?.type).toBe(SUPPORTS_QUERY)
+		})
+
+		it('should parse supports with comments between queries', () => {
+			const root = parse('@supports (display: grid) /* comment */ or /* comment */ (display: flex) { }')
+			const atrule = root.first_child
+			expect(atrule?.name).toBe('supports')
+			expect(atrule?.prelude?.children.length).toBeGreaterThan(0)
+		})
+	})
+
+	describe('@layer with comments', () => {
+		it('should parse layer names with comments between them', () => {
+			const root = parse('@layer foo /* comment */ , /* comment */ bar { }')
+			const atrule = root.first_child
+			expect(atrule?.name).toBe('layer')
+			const prelude = atrule?.prelude
+			expect(prelude?.children.length).toBe(2)
+			const [layer1, layer2] = prelude?.children || []
+			expect(layer1?.type).toBe(LAYER_NAME)
+			expect(layer1?.value).toBe('foo')
+			expect(layer2?.type).toBe(LAYER_NAME)
+			expect(layer2?.value).toBe('bar')
+		})
+	})
+
+	describe('@import with comments', () => {
+		it('should parse import with comment before URL', () => {
+			const root = parse('@import /* comment */ "styles.css";')
+			const atrule = root.first_child
+			expect(atrule?.name).toBe('import')
+			expect(atrule?.prelude?.children.length).toBeGreaterThan(0)
+		})
+
+		it('should parse import with comment before layer', () => {
+			const root = parse('@import "styles.css" /* comment */ layer(base);')
+			const atrule = root.first_child
+			expect(atrule?.name).toBe('import')
+			expect(atrule?.prelude?.children.length).toBeGreaterThan(0)
+		})
+	})
+
+	describe('@keyframes with comments', () => {
+		it('should parse keyframes name with comment before it', () => {
+			const root = parse('@keyframes /* comment */ slidein { }')
+			const atrule = root.first_child
+			expect(atrule?.name).toBe('keyframes')
+			const identifier = atrule?.prelude?.first_child
+			expect(identifier?.type).toBe(IDENTIFIER)
+			expect(identifier?.text).toBe('slidein')
+		})
+	})
+})
