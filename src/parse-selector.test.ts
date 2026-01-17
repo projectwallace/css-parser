@@ -20,7 +20,6 @@ import {
 	ATTR_FLAG_CASE_INSENSITIVE,
 	ATTR_FLAG_CASE_SENSITIVE,
 } from './arena'
-import { NODE_TYPES } from './constants'
 
 // Helper for low-level testing
 function parseSelectorInternal(selector: string) {
@@ -1928,9 +1927,35 @@ describe('Selector Nodes', () => {
 
 				test(':nth-child(1 of li)', () => {
 					const root = parse_selector('ul:has(:nth-child(1 of li))')
-					const has = root.first_child!.children[1]
-					expect(has.type).toBe(PSEUDO_CLASS_SELECTOR)
-					expect(has.text).toBe(':has(:nth-child(1 of li))')
+					const nth = root.first_child!.children[1]
+					expect(nth.type).toBe(PSEUDO_CLASS_SELECTOR)
+					expect(nth.text).toBe(':has(:nth-child(1 of li))')
+				})
+
+				test(':nth-child(1 /* test */ of /* test */ li)', () => {
+					const input = ':nth-child(1 /* test */ of /* test */ li)'
+					const root = parse_selector(input)
+					const nth = root.first_child!.first_child
+					expect(nth?.type).toBe(PSEUDO_CLASS_SELECTOR)
+					expect(nth?.text).toBe(input)
+					expect(nth?.first_child?.type).toBe(NTH_OF_SELECTOR)
+					const nth_of = nth?.first_child
+					expect(nth_of?.text).toBe('1 /* test */ of /* test */ li')
+					expect(nth_of?.children).toHaveLength(2)
+					expect(nth_of?.children[0].type_name).toBe('Nth')
+					expect(nth_of?.children[1].type_name).toBe('SelectorList')
+				})
+
+				test(':nth-child(3n OF .test)', () => {
+					const input = ':nth-child(3n OF .test)'
+					const root = parse_selector(input)
+					const nth = root.first_child!.first_child
+					expect(nth?.type).toBe(PSEUDO_CLASS_SELECTOR)
+					expect(nth?.text).toBe(input)
+					expect(nth?.first_child?.type).toBe(NTH_OF_SELECTOR)
+					const nth_of = nth?.first_child
+					expect(nth_of?.text).toBe('3n OF .test')
+					expect(nth_of?.children).toHaveLength(2)
 				})
 			})
 		})
@@ -2605,6 +2630,189 @@ describe('Selector Nodes', () => {
 
 				expect(result.has_children).toBe(true)
 				expect(result.children.length).toBeGreaterThan(0)
+			})
+		})
+	})
+
+	describe('Comment Handling in Selectors', () => {
+		describe('Namespace selectors with comments', () => {
+			it('should parse namespace selector with comment before pipe', () => {
+				const root = parse_selector('ns /* comment */ |E')
+				const selector = root.first_child
+				const typeSelector = selector?.first_child
+				expect(typeSelector?.type).toBe(TYPE_SELECTOR)
+				expect(typeSelector?.text).toBe('ns /* comment */ |E')
+			})
+
+			it('should parse universal namespace selector with comment before pipe', () => {
+				const root = parse_selector('* /* comment */ |E')
+				const selector = root.first_child
+				const typeSelector = selector?.first_child
+				expect(typeSelector?.type).toBe(TYPE_SELECTOR)
+				expect(typeSelector?.text).toBe('* /* comment */ |E')
+			})
+
+			it('should handle comment after namespace prefix where no pipe exists', () => {
+				const root = parse_selector('div /* comment */ .class')
+				const selector = root.first_child
+				// Comment acts as whitespace, creating a descendant combinator
+				expect(selector?.children.length).toBe(3)
+				const [type, combinator, classSelector] = selector?.children || []
+				expect(type?.type).toBe(TYPE_SELECTOR)
+				expect(combinator?.type).toBe(COMBINATOR)
+				expect(classSelector?.type).toBe(CLASS_SELECTOR)
+			})
+		})
+
+		describe('Pseudo-element with comments', () => {
+			it('should parse pseudo-element with comment before second colon', () => {
+				const root = parse_selector('div: /* comment */ :before')
+				const selector = root.first_child
+				const pseudoElement = selector?.children[1]
+				expect(pseudoElement?.type).toBe(PSEUDO_ELEMENT_SELECTOR)
+				expect(pseudoElement?.name).toBe('before')
+			})
+
+			it('should parse pseudo-class when comment after first colon', () => {
+				const root = parse_selector('div:/* comment */hover')
+				const selector = root.first_child
+				expect(selector?.children.length).toBe(2)
+				const [type, pseudoClass] = selector?.children || []
+				expect(type?.type).toBe(TYPE_SELECTOR)
+				expect(pseudoClass?.type).toBe(PSEUDO_CLASS_SELECTOR)
+				expect(pseudoClass?.name).toBe('hover')
+			})
+		})
+
+		describe('nth-child with comments', () => {
+			it('should parse nth-child with comments in An+B expression', () => {
+				const root = parse_selector(':nth-child(2n /* comment */ + /* comment */ 1)')
+				const selector = root.first_child
+				const nthChild = selector?.first_child
+				expect(nthChild?.type).toBe(PSEUDO_CLASS_SELECTOR)
+				expect(nthChild?.name).toBe('nth-child')
+			})
+
+			it('should parse nth-child with comment before "of" keyword', () => {
+				const root = parse_selector(':nth-child(2n+1 /* comment */ of .class)')
+				const selector = root.first_child
+				const nthChild = selector?.first_child
+				expect(nthChild?.type).toBe(PSEUDO_CLASS_SELECTOR)
+				const nthOfSelector = nthChild?.first_child
+				expect(nthOfSelector?.type).toBe(NTH_OF_SELECTOR)
+			})
+
+			it('should parse nth-child with comment after "of" keyword', () => {
+				const root = parse_selector(':nth-child(2n+1 of /* comment */ .class)')
+				const selector = root.first_child
+				const nthChild = selector?.first_child
+				expect(nthChild?.type).toBe(PSEUDO_CLASS_SELECTOR)
+				const nthOfSelector = nthChild?.first_child
+				expect(nthOfSelector?.type).toBe(NTH_OF_SELECTOR)
+			})
+
+			it('should not match "of" inside comments', () => {
+				const root = parse_selector(':nth-child(2n /* of */ + 1)')
+				const selector = root.first_child
+				const nthChild = selector?.first_child
+				expect(nthChild?.type).toBe(PSEUDO_CLASS_SELECTOR)
+				const nthSelector = nthChild?.first_child
+				// Should be NTH_SELECTOR, not NTH_OF_SELECTOR
+				expect(nthSelector?.type).toBe(NTH_SELECTOR)
+			})
+
+			it('should parse nth-last-child with comments', () => {
+				const root = parse_selector(':nth-last-child( /* comment */ 2n /* comment */ )')
+				const selector = root.first_child
+				const nthChild = selector?.first_child
+				expect(nthChild?.type).toBe(PSEUDO_CLASS_SELECTOR)
+				expect(nthChild?.name).toBe('nth-last-child')
+			})
+
+			it('should parse nth-of-type with comments', () => {
+				const root = parse_selector(':nth-of-type(/* comment */odd/* comment */)')
+				const selector = root.first_child
+				const nth = selector?.first_child
+				expect(nth?.type).toBe(PSEUDO_CLASS_SELECTOR)
+				expect(nth?.name).toBe('nth-of-type')
+			})
+
+			it('should match "of" keyword case-insensitively - "Of"', () => {
+				const root = parse_selector(':nth-child(2n Of .class)')
+				const selector = root.first_child
+				const nthChild = selector?.first_child
+				const nthOfSelector = nthChild?.first_child
+				expect(nthOfSelector?.type).toBe(NTH_OF_SELECTOR)
+			})
+
+			it('should match "of" keyword case-insensitively - "OF"', () => {
+				const root = parse_selector(':nth-child(2n OF .class)')
+				const selector = root.first_child
+				const nthChild = selector?.first_child
+				const nthOfSelector = nthChild?.first_child
+				expect(nthOfSelector?.type).toBe(NTH_OF_SELECTOR)
+			})
+
+			it('should match "of" keyword case-insensitively - "oF"', () => {
+				const root = parse_selector(':nth-child(2n oF .class)')
+				const selector = root.first_child
+				const nthChild = selector?.first_child
+				const nthOfSelector = nthChild?.first_child
+				expect(nthOfSelector?.type).toBe(NTH_OF_SELECTOR)
+			})
+		})
+
+		describe('Comments in compound selectors', () => {
+			it('should parse comments already tested in combinator tests', () => {
+				// These are already tested in the "should parse selector with comments around..." tests
+				const root = parse_selector('a /* comment */ > /* comment */ b')
+				expect(root.children.length).toBe(1)
+			})
+		})
+
+		describe('Comments in attribute selectors', () => {
+			it('should parse comments already tested in attribute tests', () => {
+				// These are already tested in "should trim comments from attribute selectors"
+				const root = parse_selector('[/* comment */data-test="value"/* test */]')
+				const selector = root.first_child
+				const attr = selector?.first_child
+				expect(attr?.type).toBe(ATTRIBUTE_SELECTOR)
+			})
+		})
+
+		describe('Comments in selector lists', () => {
+			it('should parse comments already tested in selector list tests', () => {
+				// These are already tested in "should parse selector list with comments..."
+				const root = parse_selector('a, /* comment */ b, c')
+				expect(root.children.length).toBe(3)
+			})
+		})
+
+		describe('Multiline comments', () => {
+			it('should handle multiline comments in selectors', () => {
+				const root = parse_selector(`div
+/* comment
+with
+newlines */
+> p`)
+				const selector = root.first_child
+				expect(selector?.children.length).toBe(3)
+				const [div, combinator, p] = selector?.children || []
+				expect(div?.type).toBe(TYPE_SELECTOR)
+				expect(combinator?.type).toBe(COMBINATOR)
+				expect(p?.type).toBe(TYPE_SELECTOR)
+			})
+
+			it('should handle multiline comments in nth-child', () => {
+				const root = parse_selector(`:nth-child(2n
+/* comment
+with
+newlines */
++ 1)`)
+				const selector = root.first_child
+				const nthChild = selector?.first_child
+				expect(nthChild?.type).toBe(PSEUDO_CLASS_SELECTOR)
+				expect(nthChild?.name).toBe('nth-child')
 			})
 		})
 	})

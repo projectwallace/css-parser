@@ -384,6 +384,12 @@ export class SelectorParser {
 	// Parse type selector or namespace selector (ns|E or ns|*)
 	// Called when we've seen an IDENT token
 	private parse_type_or_namespace_selector(start: number, end: number): number | null {
+		// Save position before skipping whitespace/comments
+		const saved = this.lexer.save_position()
+
+		// Skip whitespace and comments before checking for |
+		this.skip_whitespace()
+
 		// Check if followed by | (namespace separator)
 		if (this.lexer.pos < this.selector_end && this.source.charCodeAt(this.lexer.pos) === CHAR_PIPE) {
 			this.lexer.pos++ // skip |
@@ -391,6 +397,9 @@ export class SelectorParser {
 			if (node !== null) return node
 			// Invalid - restore and treat as regular type selector
 			this.lexer.pos = end
+		} else {
+			// No pipe found, restore position
+			this.lexer.restore_position(saved)
 		}
 
 		// Regular type selector (no namespace)
@@ -400,6 +409,12 @@ export class SelectorParser {
 	// Parse universal selector or namespace selector (*|E or *|*)
 	// Called when we've seen a * DELIM token
 	private parse_universal_or_namespace_selector(start: number, end: number): number | null {
+		// Save position before skipping whitespace/comments
+		const saved = this.lexer.save_position()
+
+		// Skip whitespace and comments before checking for |
+		this.skip_whitespace()
+
 		// Check if followed by | (any-namespace prefix)
 		if (this.lexer.pos < this.selector_end && this.source.charCodeAt(this.lexer.pos) === CHAR_PIPE) {
 			this.lexer.pos++ // skip |
@@ -407,6 +422,9 @@ export class SelectorParser {
 			if (node !== null) return node
 			// Invalid - restore and treat as regular universal selector
 			this.lexer.pos = end
+		} else {
+			// No pipe found, restore position
+			this.lexer.restore_position(saved)
 		}
 
 		// Regular universal selector (no namespace)
@@ -429,7 +447,7 @@ export class SelectorParser {
 
 		// Skip whitespace and comments
 		this.skip_whitespace()
-		has_whitespace = has_whitespace && (this.lexer.pos > whitespace_start)
+		has_whitespace = has_whitespace && this.lexer.pos > whitespace_start
 
 		if (this.lexer.pos >= this.selector_end) {
 			this.lexer.pos = whitespace_start
@@ -675,11 +693,20 @@ export class SelectorParser {
 		// Save lexer state for potential restoration
 		const saved = this.lexer.save_position()
 
+		// Save position before skipping whitespace/comments
+		const saved_ws = this.lexer.save_position()
+
+		// Skip whitespace and comments before checking for second colon
+		this.skip_whitespace()
+
 		// Check for double colon (::)
 		let is_pseudo_element = false
 		if (this.lexer.pos < this.selector_end && this.source.charCodeAt(this.lexer.pos) === CHAR_COLON) {
 			is_pseudo_element = true
 			this.lexer.pos++ // skip second colon
+		} else {
+			// No second colon, restore position
+			this.lexer.restore_position(saved_ws)
 		}
 
 		// Next token should be identifier or function
@@ -909,10 +936,17 @@ export class SelectorParser {
 		}
 	}
 
-	// Find the position of standalone "of" keyword
+	// Find the position of standalone "of" keyword (case-insensitive)
 	private find_of_keyword(start: number, end: number): number {
-		for (let i = start; i < end - 1; i++) {
-			if (this.source.charCodeAt(i) === 0x6f /* o */ && this.source.charCodeAt(i + 1) === 0x66 /* f */) {
+		let i = start
+		while (i < end - 1) {
+			i = skip_whitespace_and_comments_forward(this.source, i, end)
+			if (i >= end - 1) break
+
+			let ch1 = this.source.charCodeAt(i)
+			let ch2 = this.source.charCodeAt(i + 1)
+			// Check for 'o' or 'O' (0x6f or 0x4f) followed by 'f' or 'F' (0x66 or 0x46)
+			if ((ch1 === 0x6f || ch1 === 0x4f) && (ch2 === 0x66 || ch2 === 0x46)) {
 				// Check it's a word boundary
 				let before_ok = i === start || is_whitespace(this.source.charCodeAt(i - 1))
 				let after_ok = i + 2 >= end || is_whitespace(this.source.charCodeAt(i + 2))
@@ -921,6 +955,7 @@ export class SelectorParser {
 					return i
 				}
 			}
+			i++
 		}
 		return -1
 	}
