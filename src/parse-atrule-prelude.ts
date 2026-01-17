@@ -33,7 +33,7 @@ import {
 	type TokenType,
 } from './token-types'
 import { str_equals, is_whitespace, strip_vendor_prefix, CHAR_COLON, CHAR_LESS_THAN, CHAR_GREATER_THAN, CHAR_EQUALS } from './string-utils'
-import { trim_boundaries, skip_whitespace_forward } from './parse-utils'
+import { trim_boundaries, skip_whitespace_and_comments_forward } from './parse-utils'
 import { CSSNode } from './css-node'
 
 /** @internal */
@@ -224,12 +224,18 @@ export class AtRulePreludeParser {
 
 		// Check for range syntax (has comparison operators)
 		let has_comparison = false
-		for (let i = content_start; i < content_end; i++) {
+		let i = content_start
+		while (i < content_end) {
+			// Skip whitespace and comments
+			i = skip_whitespace_and_comments_forward(this.source, i, content_end)
+			if (i >= content_end) break
+
 			let ch = this.source.charCodeAt(i)
 			if (ch === CHAR_LESS_THAN || ch === CHAR_GREATER_THAN || ch === CHAR_EQUALS) {
 				has_comparison = true
 				break
 			}
+			i++
 		}
 
 		if (has_comparison) {
@@ -241,11 +247,17 @@ export class AtRulePreludeParser {
 
 		// Find colon to separate name from value
 		let colon_pos = -1
-		for (let i = content_start; i < content_end; i++) {
-			if (this.source.charCodeAt(i) === CHAR_COLON) {
-				colon_pos = i
+		let j = content_start
+		while (j < content_end) {
+			// Skip whitespace and comments
+			j = skip_whitespace_and_comments_forward(this.source, j, content_end)
+			if (j >= content_end) break
+
+			if (this.source.charCodeAt(j) === CHAR_COLON) {
+				colon_pos = j
 				break
 			}
+			j++
 		}
 
 		if (colon_pos !== -1) {
@@ -686,9 +698,9 @@ export class AtRulePreludeParser {
 		return null
 	}
 
-	// Helper: Skip whitespace
+	// Helper: Skip whitespace and comments
 	private skip_whitespace(): void {
-		this.lexer.pos = skip_whitespace_forward(this.source, this.lexer.pos, this.prelude_end)
+		this.lexer.pos = skip_whitespace_and_comments_forward(this.source, this.lexer.pos, this.prelude_end)
 	}
 
 	// Helper: Peek at next token type without consuming
@@ -774,7 +786,7 @@ export class AtRulePreludeParser {
 		let pos = content_start
 
 		while (pos < content_end) {
-			pos = skip_whitespace_forward(this.source, pos, content_end)
+			pos = skip_whitespace_and_comments_forward(this.source, pos, content_end)
 			if (pos >= content_end) break
 
 			let ch = this.source.charCodeAt(pos)
