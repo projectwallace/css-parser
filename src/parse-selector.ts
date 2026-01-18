@@ -15,6 +15,7 @@ import {
 	NESTING_SELECTOR,
 	NTH_OF_SELECTOR,
 	LANG_SELECTOR,
+	DIMENSION,
 	FLAG_HAS_PARENS,
 	ATTR_OPERATOR_NONE,
 	ATTR_OPERATOR_EQUAL,
@@ -41,6 +42,7 @@ import {
 	TOKEN_EOF,
 	TOKEN_WHITESPACE,
 	TOKEN_STRING,
+	TOKEN_PERCENTAGE,
 	type TokenType,
 } from './token-types'
 import { skip_whitespace_forward, skip_whitespace_and_comments_forward, skip_whitespace_and_comments_backward } from './parse-utils'
@@ -345,13 +347,17 @@ export class SelectorParser {
 				// Pseudo-class function: :nth-child(), :is()
 				return this.parse_pseudo_function(start, end)
 
-			case TOKEN_WHITESPACE:
-			case TOKEN_COMMA:
-				// These signal end of compound selector
-				return null
+		case TOKEN_PERCENTAGE:
+			// Percentage selector (for @keyframes): 0%, 50%, 100%
+			return this.create_node(DIMENSION, start, end)
 
-			default:
-				return null
+		case TOKEN_WHITESPACE:
+		case TOKEN_COMMA:
+			// These signal end of compound selector
+			return null
+
+		default:
+			return null
 		}
 	}
 
