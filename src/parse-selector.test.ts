@@ -2089,6 +2089,37 @@ describe('Selector Nodes', () => {
 			})
 		})
 
+		describe('keyframes selectors', () => {
+			test('simple percentage', () => {
+				let root = parse_selector('50%')
+				expect(root.type_name).toBe('SelectorList')
+				expect(root.first_child?.type_name).toBe('Selector')
+				expect(root.first_child?.text).toBe('50%')
+				expect(root.first_child?.first_child?.type_name).toBe('Dimension')
+			})
+			test('fraction percentage', () => {
+				let root = parse_selector('50.1%')
+				expect(root.type_name).toBe('SelectorList')
+				expect(root.first_child?.type_name).toBe('Selector')
+				expect(root.first_child?.text).toBe('50.1%')
+				expect(root.first_child?.first_child?.type_name).toBe('Dimension')
+			})
+			test('scientific percentage', () => {
+				let root = parse_selector('50e1%')
+				expect(root.type_name).toBe('SelectorList')
+				expect(root.first_child?.type_name).toBe('Selector')
+				expect(root.first_child?.text).toBe('50e1%')
+				expect(root.first_child?.first_child?.type_name).toBe('Dimension')
+			})
+			test('from keyword', () => {
+				let root = parse_selector('from')
+				expect(root.type_name).toBe('SelectorList')
+				expect(root.first_child?.type_name).toBe('Selector')
+				expect(root.first_child?.text).toBe('from')
+				expect(root.first_child?.first_child?.type_name).toBe('TypeSelector')
+			})
+		})
+
 		describe('Edge cases', () => {
 			it('should parse selector with multiple spaces', () => {
 				const { arena, rootNode, source } = parseSelectorInternal('div    p')
