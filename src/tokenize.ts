@@ -33,6 +33,7 @@ import {
 	TOKEN_LEFT_BRACE,
 	TOKEN_RIGHT_BRACE,
 	TOKEN_EOF,
+	TOKEN_UNICODE_RANGE,
 	type Token,
 	type TokenType,
 } from './token-types'
@@ -63,6 +64,9 @@ const CHAR_PLUS = 0x2b // +
 const CHAR_PERCENT = 0x25 // %
 const CHAR_LOWERCASE_E = 0x65 // e
 const CHAR_UPPERCASE_E = 0x45 // E
+const CHAR_LOWERCASE_U = 0x75 // u
+const CHAR_UPPERCASE_U = 0x55 // U
+const CHAR_QUESTION_MARK = 0x3f // ?
 const CHAR_CARRIAGE_RETURN = 0x0d // \r
 const CHAR_LINE_FEED = 0x0a // \n
 
@@ -488,6 +492,16 @@ export class Lexer {
 			}
 		}
 
+		// Check for unicode-range: u+ or U+
+		// Must be exactly 'u' or 'U' followed by '+'
+		if (this.pos - start === 1) {
+			let first_ch = this.source.charCodeAt(start)
+			if ((first_ch === CHAR_LOWERCASE_U || first_ch === CHAR_UPPERCASE_U) &&
+				this.pos < this.source.length && this.source.charCodeAt(this.pos) === CHAR_PLUS) {
+				return this.consume_unicode_range(start, start_line, start_column)
+			}
+		}
+
 		// Check for function: ident(
 		if (this.pos < this.source.length && this.source.charCodeAt(this.pos) === CHAR_LEFT_PAREN) {
 			this.advance()
@@ -495,6 +509,60 @@ export class Lexer {
 		}
 
 		return this.make_token(TOKEN_IDENT, start, this.pos, start_line, start_column)
+	}
+
+	consume_unicode_range(start: number, start_line: number, start_column: number): TokenType {
+		// We're positioned after 'u' or 'U', at the '+'
+		this.advance() // consume '+'
+
+		let hex_digits = 0
+		let has_question = false
+
+		// Consume hex digits and/or question marks (up to 6 total)
+		while (this.pos < this.source.length && hex_digits < 6) {
+			let ch = this.source.charCodeAt(this.pos)
+			if (is_hex_digit(ch)) {
+				if (has_question) {
+					// Can't have hex digits after question marks
+					break
+				}
+				this.advance()
+				hex_digits++
+			} else if (ch === CHAR_QUESTION_MARK) {
+				this.advance()
+				hex_digits++
+				has_question = true
+			} else {
+				break
+			}
+		}
+
+		// If we have question marks, we're done (no range allowed)
+		if (has_question) {
+			return this.make_token(TOKEN_UNICODE_RANGE, start, this.pos, start_line, start_column)
+		}
+
+		// Check for range syntax: -HHHHHH
+		if (this.pos < this.source.length && this.source.charCodeAt(this.pos) === CHAR_HYPHEN) {
+			// Peek ahead to see if there's a hex digit
+			if (this.pos + 1 < this.source.length && is_hex_digit(this.source.charCodeAt(this.pos + 1))) {
+				this.advance() // consume '-'
+
+				// Consume up to 6 hex digits for the end of the range
+				let end_hex_digits = 0
+				while (this.pos < this.source.length && end_hex_digits < 6) {
+					let ch = this.source.charCodeAt(this.pos)
+					if (is_hex_digit(ch)) {
+						this.advance()
+						end_hex_digits++
+					} else {
+						break
+					}
+				}
+			}
+		}
+
+		return this.make_token(TOKEN_UNICODE_RANGE, start, this.pos, start_line, start_column)
 	}
 
 	consume_at_keyword(start_line: number, start_column: number): TokenType {

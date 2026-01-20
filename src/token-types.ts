@@ -27,6 +27,7 @@ export const TOKEN_LEFT_BRACE = 23 // {
 export const TOKEN_RIGHT_BRACE = 24 // }
 export const TOKEN_COMMENT = 25
 export const TOKEN_EOF = 26
+export const TOKEN_UNICODE_RANGE = 27 // u+0025-00ff, u+4??
 
 export type TokenType =
 	| typeof TOKEN_IDENT
@@ -55,6 +56,7 @@ export type TokenType =
 	| typeof TOKEN_RIGHT_BRACE
 	| typeof TOKEN_COMMENT
 	| typeof TOKEN_EOF
+	| typeof TOKEN_UNICODE_RANGE
 
 export type Token = {
 	type: TokenType
