@@ -607,36 +607,48 @@ describe('Value Node Types', () => {
 		})
 
 		describe('OPERATOR', () => {
-			it('should parse comma operator', () => {
-				const root = parse('body { font-family: Arial, sans-serif; }')
-				const decl = root.first_child?.first_child?.next_sibling?.first_child
+		it('should parse comma operator', () => {
+			const root = parse('body { font-family: Arial, sans-serif; }')
+			const decl = root.first_child?.first_child?.next_sibling?.first_child
 
-				expect(decl?.first_child!.children[1].type).toBe(OPERATOR)
-				expect(decl?.first_child!.children[1].text).toBe(',')
-			})
-
-			it('should parse calc operators', () => {
-				const root = parse('body { width: calc(100% - 20px); }')
-				const decl = root.first_child?.first_child?.next_sibling?.first_child
-				const func = decl?.first_child!.children[0]
-
-				expect(func?.children[1].type).toBe(OPERATOR)
-				expect(func?.children[1].text).toBe('-')
-			})
-
-			it('should parse all calc operators', () => {
-				const root = parse('body { width: calc(1px + 2px * 3px / 4px - 5px); }')
-				const decl = root.first_child?.first_child?.next_sibling?.first_child
-				const func = decl?.first_child!.children[0]
-
-				const operators = func?.children.filter((n) => n.type === OPERATOR)
-				expect(operators).toHaveLength(4)
-				expect(operators?.[0].text).toBe('+')
-				expect(operators?.[1].text).toBe('*')
-				expect(operators?.[2].text).toBe('/')
-				expect(operators?.[3].text).toBe('-')
-			})
+			expect(decl?.first_child!.children[1].type).toBe(OPERATOR)
+			expect(decl?.first_child!.children[1].text).toBe(',')
+			expect(decl?.first_child!.children[1].name).toBe(undefined)
+			expect(decl?.first_child!.children[1].value).toBe(',')
 		})
+
+		it('should parse calc operators', () => {
+			const root = parse('body { width: calc(100% - 20px); }')
+			const decl = root.first_child?.first_child?.next_sibling?.first_child
+			const func = decl?.first_child!.children[0]
+
+			expect(func?.children[1].type).toBe(OPERATOR)
+			expect(func?.children[1].text).toBe('-')
+			expect(func?.children[1].name).toBe(undefined)
+			expect(func?.children[1].value).toBe('-')
+		})
+
+		it('should parse all calc operators', () => {
+			const root = parse('body { width: calc(1px + 2px * 3px / 4px - 5px); }')
+			const decl = root.first_child?.first_child?.next_sibling?.first_child
+			const func = decl?.first_child!.children[0]
+
+			const operators = func?.children.filter((n) => n.type === OPERATOR)
+			expect(operators).toHaveLength(4)
+			expect(operators?.[0].text).toBe('+')
+			expect(operators?.[0].name).toBe(undefined)
+			expect(operators?.[0].value).toBe('+')
+			expect(operators?.[1].text).toBe('*')
+			expect(operators?.[1].name).toBe(undefined)
+			expect(operators?.[1].value).toBe('*')
+			expect(operators?.[2].text).toBe('/')
+			expect(operators?.[2].name).toBe(undefined)
+			expect(operators?.[2].value).toBe('/')
+			expect(operators?.[3].text).toBe('-')
+			expect(operators?.[3].name).toBe(undefined)
+			expect(operators?.[3].value).toBe('-')
+		})
+	})
 
 		describe('PARENTHESIS', () => {
 			it('should parse parenthesized expressions in calc()', () => {

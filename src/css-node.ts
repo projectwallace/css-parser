@@ -234,7 +234,8 @@ export class CSSNode {
 
 	/** Get the "content" text (at-rule name for at-rules, layer name for import layers) */
 	get name(): string | undefined {
-		if (this.type === DECLARATION) return
+		let { type } = this
+		if (type === DECLARATION || type === OPERATOR) return
 		return this.get_content()
 	}
 
@@ -294,6 +295,10 @@ export class CSSNode {
 				return text
 			}
 			// For unquoted URLs, fall through to value delta logic below
+		}
+
+		if (type === OPERATOR) {
+			return this.get_content()
 		}
 
 		// For other nodes, return as string
