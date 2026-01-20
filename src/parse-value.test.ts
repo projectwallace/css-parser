@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { parse } from './parse'
-import { IDENTIFIER, NUMBER, DIMENSION, STRING, HASH, FUNCTION, OPERATOR, PARENTHESIS, URL, VALUE } from './arena'
+import { IDENTIFIER, NUMBER, DIMENSION, STRING, HASH, FUNCTION, OPERATOR, PARENTHESIS, URL, UNICODE_RANGE, VALUE } from './arena'
 
 describe('Value Node Types', () => {
 	// Helper to get first value node from a declaration
@@ -217,6 +217,30 @@ describe('Value Node Types', () => {
 				expect(value?.column).toBe(15)
 			})
 		})
+
+		describe('UNICODE_RANGE', () => {
+			it('should have correct offset and length', () => {
+				const root = parse('@font-face { unicode-range: u+0025-00ff; }')
+				const declaration = root.first_child?.block?.first_child
+				const value = declaration?.first_child?.children[0]
+				expect(value?.start).toBe(28)
+				expect(value?.length).toBe(11)
+				expect(value?.end).toBe(39)
+				expect(value?.line).toBe(1)
+				expect(value?.column).toBe(29)
+			})
+
+			it('should have correct line and column on line 2', () => {
+				const root = parse('@font-face {\n  unicode-range: u+4??;\n}')
+				const declaration = root.first_child?.block?.first_child
+				const value = declaration?.first_child?.children[0]
+				expect(value?.start).toBe(30)
+				expect(value?.length).toBe(5)
+				expect(value?.end).toBe(35)
+				expect(value?.line).toBe(2)
+				expect(value?.column).toBe(18)
+			})
+		})
 	})
 
 	describe('Types', () => {
@@ -267,6 +291,14 @@ describe('Value Node Types', () => {
 			const value = getValue('div { background: url("image.png"); }')
 			expect(value?.type).toBe(URL)
 		})
+
+		it('UNICODE_RANGE type constant', () => {
+			const root = parse('@font-face { unicode-range: u+0460-052f, u+1c80-1c8a, u+20b4, u+2de0-2dff, u+a640-a69f, u+fe2e-fe2f; }')
+			const atrule = root.first_child
+			const declaration = atrule?.block?.first_child
+			const unicode_range = declaration?.first_child?.children[0]
+			expect(unicode_range?.type).toBe(UNICODE_RANGE)
+		})
 	})
 
 	describe('Type Names', () => {
@@ -316,6 +348,12 @@ describe('Value Node Types', () => {
 		it('URL type_name', () => {
 			const value = getValue('div { background: url("image.png"); }')
 			expect(value?.type_name).toBe('Url')
+		})
+
+		it('UNICODE_RANGE type_name', () => {
+			const root = parse('@font-face { unicode-range: u+0025-00ff; }')
+			const unicode_range = root.first_child?.block?.first_child?.first_child?.children[0]
+			expect(unicode_range?.type_name).toBe('UnicodeRange')
 		})
 	})
 
@@ -756,6 +794,90 @@ describe('Value Node Types', () => {
 				expect(decl?.first_child!.children[0].name).toBe('url')
 				expect(decl?.first_child!.children[1].type).toBe(IDENTIFIER)
 				expect(decl?.first_child!.children[1].text).toBe('no-repeat')
+			})
+		})
+
+		describe('UNICODE_RANGE', () => {
+			it('should parse simple unicode range', () => {
+				const root = parse('@font-face { unicode-range: u+0025-00ff; }')
+				const decl = root.first_child?.block?.first_child
+
+				expect(decl?.first_child!.children).toHaveLength(1)
+				expect(decl?.first_child!.children[0].type).toBe(UNICODE_RANGE)
+				expect(decl?.first_child!.children[0].text).toBe('u+0025-00ff')
+			})
+
+			it('should parse single codepoint', () => {
+				const root = parse('@font-face { unicode-range: u+26; }')
+				const decl = root.first_child?.block?.first_child
+
+				expect(decl?.first_child!.children).toHaveLength(1)
+				expect(decl?.first_child!.children[0].type).toBe(UNICODE_RANGE)
+				expect(decl?.first_child!.children[0].text).toBe('u+26')
+			})
+
+			it('should parse wildcard pattern with question marks', () => {
+				const root = parse('@font-face { unicode-range: u+4??; }')
+				const decl = root.first_child?.block?.first_child
+
+				expect(decl?.first_child!.children).toHaveLength(1)
+				expect(decl?.first_child!.children[0].type).toBe(UNICODE_RANGE)
+				expect(decl?.first_child!.children[0].text).toBe('u+4??')
+			})
+
+			it('should parse uppercase U+', () => {
+				const root = parse('@font-face { unicode-range: U+0025-00FF; }')
+				const decl = root.first_child?.block?.first_child
+
+				expect(decl?.first_child!.children).toHaveLength(1)
+				expect(decl?.first_child!.children[0].type).toBe(UNICODE_RANGE)
+				expect(decl?.first_child!.children[0].text).toBe('U+0025-00FF')
+			})
+
+			it('should parse multiple unicode ranges', () => {
+				const root = parse('@font-face { unicode-range: u+0460-052f, u+1c80-1c8a, u+20b4; }')
+				const decl = root.first_child?.block?.first_child
+
+				expect(decl?.first_child!.children).toHaveLength(5) // 3 ranges + 2 commas
+				expect(decl?.first_child!.children[0].type).toBe(UNICODE_RANGE)
+				expect(decl?.first_child!.children[0].text).toBe('u+0460-052f')
+				expect(decl?.first_child!.children[1].type).toBe(OPERATOR)
+				expect(decl?.first_child!.children[1].text).toBe(',')
+				expect(decl?.first_child!.children[2].type).toBe(UNICODE_RANGE)
+				expect(decl?.first_child!.children[2].text).toBe('u+1c80-1c8a')
+				expect(decl?.first_child!.children[3].type).toBe(OPERATOR)
+				expect(decl?.first_child!.children[4].type).toBe(UNICODE_RANGE)
+				expect(decl?.first_child!.children[4].text).toBe('u+20b4')
+			})
+
+			it('should parse short hex values', () => {
+				const root = parse('@font-face { unicode-range: u+0; }')
+				const decl = root.first_child?.block?.first_child
+
+				expect(decl?.first_child!.children[0].type).toBe(UNICODE_RANGE)
+				expect(decl?.first_child!.children[0].text).toBe('u+0')
+			})
+
+			it('should parse maximum valid unicode', () => {
+				const root = parse('@font-face { unicode-range: u+10ffff; }')
+				const decl = root.first_child?.block?.first_child
+
+				expect(decl?.first_child!.children[0].type).toBe(UNICODE_RANGE)
+				expect(decl?.first_child!.children[0].text).toBe('u+10ffff')
+			})
+
+			it('should parse wildcard variations', () => {
+				const root = parse('@font-face { unicode-range: u+?, u+??, u+???, u+????, u+?????, u+??????; }')
+				const decl = root.first_child?.block?.first_child
+
+				expect(decl?.first_child!.children[0].type).toBe(UNICODE_RANGE)
+				expect(decl?.first_child!.children[0].text).toBe('u+?')
+				expect(decl?.first_child!.children[2].type).toBe(UNICODE_RANGE)
+				expect(decl?.first_child!.children[2].text).toBe('u+??')
+				expect(decl?.first_child!.children[4].type).toBe(UNICODE_RANGE)
+				expect(decl?.first_child!.children[4].text).toBe('u+???')
+				expect(decl?.first_child!.children[10].type).toBe(UNICODE_RANGE)
+				expect(decl?.first_child!.children[10].text).toBe('u+??????')
 			})
 		})
 

@@ -62,7 +62,7 @@ export const FUNCTION = 15 // function: calc(), var()
 export const OPERATOR = 16 // operator: +, -, *, /, comma
 export const PARENTHESIS = 17 // parenthesized expression: (100% - 50px)
 export const URL = 18 // URL: url("file.css"), url(image.png), used in values and @import
-export const VALUE = 19 // Wrapper for declaration values
+export const UNICODE_RANGE = 19 // unicode range: u+0025-00ff, u+4??
 
 // Selector node type constants (for detailed selector parsing)
 export const SELECTOR_LIST = 20 // comma-separated selectors
@@ -89,6 +89,9 @@ export const LAYER_NAME = 37 // layer name: base, components
 export const PRELUDE_OPERATOR = 38 // logical operator: and, or, not
 export const FEATURE_RANGE = 39 // Range syntax: (50px <= width <= 100px)
 export const AT_RULE_PRELUDE = 40 // Wrapper for at-rule prelude children
+
+// Wrapper node types
+export const VALUE = 50 // Wrapper for declaration values
 
 // Flag constants (bit-packed in 1 byte)
 export const FLAG_IMPORTANT = 1 << 0 // Has !important
