@@ -62,7 +62,7 @@ describe('parse_declaration', () => {
 		test('simple declaration', () => {
 			const node = parse_declaration('color: red')
 			expect(node.type).toBe(DECLARATION)
-			expect(node.name).toBe('color')
+			expect(node.property).toBe('color')
 			expect(node.first_child!.text).toBe('red')
 			expect(node.is_important).toBe(false)
 		})
@@ -70,32 +70,32 @@ describe('parse_declaration', () => {
 		test('declaration with semicolon', () => {
 			const node = parse_declaration('color: red;')
 			expect(node.type).toBe(DECLARATION)
-			expect(node.name).toBe('color')
+			expect(node.property).toBe('color')
 			expect(node.first_child!.text).toBe('red')
 		})
 
 		test('declaration without semicolon', () => {
 			const node = parse_declaration('color: red')
 			expect(node.type).toBe(DECLARATION)
-			expect(node.name).toBe('color')
+			expect(node.property).toBe('color')
 			expect(node.first_child!.text).toBe('red')
 		})
 
 		test('declaration with whitespace variations', () => {
 			const node = parse_declaration('color : red')
-			expect(node.name).toBe('color')
+			expect(node.property).toBe('color')
 			expect(node.first_child!.text).toBe('red')
 		})
 
 		test('declaration with leading and trailing whitespace', () => {
 			const node = parse_declaration('  color: red  ')
-			expect(node.name).toBe('color')
+			expect(node.property).toBe('color')
 			expect(node.first_child!.text).toBe('red')
 		})
 
 		test('empty value', () => {
 			const node = parse_declaration('color:')
-			expect(node.name).toBe('color')
+			expect(node.property).toBe('color')
 			// Empty values return null (consistent with main parser)
 			expect(node.first_child!.text).toBe('')
 			expect(node.first_child!.children).toHaveLength(0)
@@ -103,7 +103,7 @@ describe('parse_declaration', () => {
 
 		test('empty value with semicolon', () => {
 			const node = parse_declaration('color:;')
-			expect(node.name).toBe('color')
+			expect(node.property).toBe('color')
 			// Empty values return null (consistent with main parser)
 			expect(node.first_child!.text).toBe('')
 		})
@@ -112,28 +112,28 @@ describe('parse_declaration', () => {
 	describe('!important Flag', () => {
 		test('declaration with !important', () => {
 			const node = parse_declaration('color: red !important')
-			expect(node.name).toBe('color')
+			expect(node.property).toBe('color')
 			expect(node.first_child!.text).toBe('red')
 			expect(node.is_important).toBe(true)
 		})
 
 		test('declaration with !important and semicolon', () => {
 			const node = parse_declaration('color: red !important;')
-			expect(node.name).toBe('color')
+			expect(node.property).toBe('color')
 			expect(node.first_child!.text).toBe('red')
 			expect(node.is_important).toBe(true)
 		})
 
 		test('historic !ie variant', () => {
 			const node = parse_declaration('color: red !ie')
-			expect(node.name).toBe('color')
+			expect(node.property).toBe('color')
 			expect(node.first_child!.text).toBe('red')
 			expect(node.is_important).toBe(true)
 		})
 
 		test('any identifier after ! is treated as important', () => {
 			const node = parse_declaration('color: red !foo')
-			expect(node.name).toBe('color')
+			expect(node.property).toBe('color')
 			expect(node.first_child!.text).toBe('red')
 			expect(node.is_important).toBe(true)
 		})
@@ -147,37 +147,37 @@ describe('parse_declaration', () => {
 	describe('Vendor Prefixes', () => {
 		test('-webkit- vendor prefix', () => {
 			const node = parse_declaration('-webkit-transform: rotate(45deg)')
-			expect(node.name).toBe('-webkit-transform')
+			expect(node.property).toBe('-webkit-transform')
 			expect(node.is_vendor_prefixed).toBe(true)
 		})
 
 		test('-moz- vendor prefix', () => {
 			const node = parse_declaration('-moz-appearance: none')
-			expect(node.name).toBe('-moz-appearance')
+			expect(node.property).toBe('-moz-appearance')
 			expect(node.is_vendor_prefixed).toBe(true)
 		})
 
 		test('-ms- vendor prefix', () => {
 			const node = parse_declaration('-ms-filter: blur(5px)')
-			expect(node.name).toBe('-ms-filter')
+			expect(node.property).toBe('-ms-filter')
 			expect(node.is_vendor_prefixed).toBe(true)
 		})
 
 		test('-o- vendor prefix', () => {
 			const node = parse_declaration('-o-transition: all 0.3s')
-			expect(node.name).toBe('-o-transition')
+			expect(node.property).toBe('-o-transition')
 			expect(node.is_vendor_prefixed).toBe(true)
 		})
 
 		test('non-prefixed property', () => {
 			const node = parse_declaration('transform: rotate(45deg)')
-			expect(node.name).toBe('transform')
+			expect(node.property).toBe('transform')
 			expect(node.is_vendor_prefixed).toBe(false)
 		})
 
 		test('custom property is not vendor prefixed', () => {
 			const node = parse_declaration('--custom-color: blue')
-			expect(node.name).toBe('--custom-color')
+			expect(node.property).toBe('--custom-color')
 			expect(node.is_vendor_prefixed).toBe(false)
 		})
 	})
@@ -301,7 +301,7 @@ describe('parse_declaration', () => {
 
 		test('property with colon but value with invalid token', () => {
 			const node = parse_declaration('color: red')
-			expect(node.name).toBe('color')
+			expect(node.property).toBe('color')
 			expect(node.first_child!.text).toBe('red')
 		})
 	})
@@ -312,9 +312,9 @@ describe('parse_declaration', () => {
 			expect(node.type).toBe(DECLARATION)
 		})
 
-		test('node.name returns property name', () => {
+		test('node.property returns property name', () => {
 			const node = parse_declaration('background-color: blue')
-			expect(node.name).toBe('background-color')
+			expect(node.property).toBe('background-color')
 		})
 
 		test('node.value returns raw value string', () => {
