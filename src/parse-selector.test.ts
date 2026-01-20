@@ -2118,6 +2118,20 @@ describe('Selector Nodes', () => {
 				expect(root.first_child?.text).toBe('from')
 				expect(root.first_child?.first_child?.type_name).toBe('TypeSelector')
 			})
+			test('90%, to', () => {
+				let root = parse_selector('90%, to')
+				expect(root.type_name).toBe('SelectorList')
+				expect(root.text).toBe('90%, to')
+
+				let [percentage, to] = root.children
+				expect(percentage.type_name).toBe('Selector')
+				expect(percentage.text).toBe('90%')
+				expect(percentage.first_child?.type_name).toBe('Dimension')
+
+				expect(to.type_name).toBe('Selector')
+				expect(to.text).toBe('to')
+				expect(to.first_child?.type_name).toBe('TypeSelector')
+			})
 		})
 
 		describe('Edge cases', () => {
