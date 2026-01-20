@@ -1181,7 +1181,7 @@ describe('Core Nodes', () => {
 					const [_selector, block] = rule.children
 					const declaration = block.first_child!
 
-					expect(declaration.name).toBe('color')
+					expect(declaration.property).toBe('color')
 				})
 
 				test('simple declaration without !important', () => {
@@ -1252,7 +1252,7 @@ describe('Core Nodes', () => {
 					const declaration = block.first_child!
 
 					expect(declaration.type).toBe(DECLARATION)
-					expect(declaration.name).toBe('background')
+					expect(declaration.property).toBe('background')
 				})
 			})
 
@@ -1280,7 +1280,7 @@ describe('Core Nodes', () => {
 					let [_selector, block] = rule.children
 					let decl = block.first_child!
 
-					expect(decl.name).toBe('color')
+					expect(decl.property).toBe('color')
 					expect(decl.first_child!.text).toBe('blue')
 				})
 
@@ -1292,7 +1292,7 @@ describe('Core Nodes', () => {
 					let [_selector, block] = rule.children
 					let decl = block.first_child!
 
-					expect(decl.name).toBe('padding')
+					expect(decl.property).toBe('padding')
 					expect(decl.first_child!.text).toBe('1rem 2rem 3rem 4rem')
 				})
 
@@ -1304,7 +1304,7 @@ describe('Core Nodes', () => {
 					let [_selector, block] = rule.children
 					let decl = block.first_child!
 
-					expect(decl.name).toBe('background')
+					expect(decl.property).toBe('background')
 					expect(decl.first_child!.text).toBe('linear-gradient(to bottom, red, blue)')
 				})
 
@@ -1316,7 +1316,7 @@ describe('Core Nodes', () => {
 					let [_selector, block] = rule.children
 					let decl = block.first_child!
 
-					expect(decl.name).toBe('width')
+					expect(decl.property).toBe('width')
 					expect(decl.first_child!.text).toBe('calc(100% - 2rem)')
 				})
 
@@ -1328,7 +1328,7 @@ describe('Core Nodes', () => {
 					let [_selector, block] = rule.children
 					let decl = block.first_child!
 
-					expect(decl.name).toBe('color')
+					expect(decl.property).toBe('color')
 					expect(decl.first_child!.text).toBe('blue')
 					expect(decl.is_important).toBe(true)
 				})
@@ -1341,7 +1341,7 @@ describe('Core Nodes', () => {
 					let [_selector, block] = rule.children
 					let decl = block.first_child!
 
-					expect(decl.name).toBe('color')
+					expect(decl.property).toBe('color')
 					expect(decl.first_child!.text).toBe('blue')
 				})
 
@@ -1353,7 +1353,7 @@ describe('Core Nodes', () => {
 					let [_selector, block] = rule.children
 					let decl = block.first_child!
 
-					expect(decl.name).toBe('--brand-color')
+					expect(decl.property).toBe('--brand-color')
 					expect(decl.first_child!.text).toBe('rgb(0% 10% 50% / 0.5)')
 				})
 
@@ -1365,7 +1365,7 @@ describe('Core Nodes', () => {
 					let [_selector, block] = rule.children
 					let decl = block.first_child!
 
-					expect(decl.name).toBe('color')
+					expect(decl.property).toBe('color')
 					expect(decl.first_child!.text).toBe('var(--primary-color)')
 				})
 
@@ -1377,7 +1377,7 @@ describe('Core Nodes', () => {
 					let [_selector, block] = rule.children
 					let decl = block.first_child!
 
-					expect(decl.name).toBe('transform')
+					expect(decl.property).toBe('transform')
 					expect(decl.first_child!.text).toBe('translate(calc(50% - 1rem), 0)')
 				})
 
@@ -1389,7 +1389,7 @@ describe('Core Nodes', () => {
 					let [_selector, block] = rule.children
 					let decl = block.first_child!
 
-					expect(decl.name).toBe('color')
+					expect(decl.property).toBe('color')
 					expect(decl.first_child!.text).toBe('blue')
 				})
 
@@ -1401,7 +1401,7 @@ describe('Core Nodes', () => {
 					let [_selector, block] = rule.children
 					let decl = block.first_child!
 
-					expect(decl.name).toBe('color')
+					expect(decl.property).toBe('color')
 					expect(decl.first_child!.text).toBe('')
 				})
 
@@ -1413,7 +1413,7 @@ describe('Core Nodes', () => {
 					let [_selector, block] = rule.children
 					let decl = block.first_child!
 
-					expect(decl.name).toBe('background')
+					expect(decl.property).toBe('background')
 					expect(decl.first_child!.text).toBe('url("image.png")')
 				})
 			})
@@ -1426,7 +1426,7 @@ describe('Core Nodes', () => {
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
 					let decl = block.first_child!
-					expect(decl.name).toBe('-webkit-transform')
+					expect(decl.property).toBe('-webkit-transform')
 					expect(decl.is_vendor_prefixed).toBe(true)
 				})
 
@@ -1437,7 +1437,7 @@ describe('Core Nodes', () => {
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
 					let decl = block.first_child!
-					expect(decl.name).toBe('-moz-transform')
+					expect(decl.property).toBe('-moz-transform')
 					expect(decl.is_vendor_prefixed).toBe(true)
 				})
 
@@ -1448,7 +1448,7 @@ describe('Core Nodes', () => {
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
 					let decl = block.first_child!
-					expect(decl.name).toBe('-ms-transform')
+					expect(decl.property).toBe('-ms-transform')
 					expect(decl.is_vendor_prefixed).toBe(true)
 				})
 
@@ -1459,7 +1459,7 @@ describe('Core Nodes', () => {
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
 					let decl = block.first_child!
-					expect(decl.name).toBe('-o-transform')
+					expect(decl.property).toBe('-o-transform')
 					expect(decl.is_vendor_prefixed).toBe(true)
 				})
 
@@ -1470,7 +1470,7 @@ describe('Core Nodes', () => {
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
 					let decl = block.first_child!
-					expect(decl.name).toBe('transform')
+					expect(decl.property).toBe('transform')
 					expect(decl.is_vendor_prefixed).toBe(false)
 				})
 
@@ -1481,7 +1481,7 @@ describe('Core Nodes', () => {
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
 					let decl = block.first_child!
-					expect(decl.name).toBe('background-color')
+					expect(decl.property).toBe('background-color')
 					expect(decl.is_vendor_prefixed).toBe(false)
 				})
 
@@ -1492,7 +1492,7 @@ describe('Core Nodes', () => {
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
 					let decl = block.first_child!
-					expect(decl.name).toBe('--primary-color')
+					expect(decl.property).toBe('--primary-color')
 					expect(decl.is_vendor_prefixed).toBe(false)
 				})
 
@@ -1504,13 +1504,13 @@ describe('Core Nodes', () => {
 					let [_selector, block] = rule.children
 					let [webkit, moz, standard] = block.children
 
-					expect(webkit.name).toBe('-webkit-transform')
+					expect(webkit.property).toBe('-webkit-transform')
 					expect(webkit.is_vendor_prefixed).toBe(true)
 
-					expect(moz.name).toBe('-moz-transform')
+					expect(moz.property).toBe('-moz-transform')
 					expect(moz.is_vendor_prefixed).toBe(true)
 
-					expect(standard.name).toBe('transform')
+					expect(standard.property).toBe('transform')
 					expect(standard.is_vendor_prefixed).toBe(false)
 				})
 
@@ -1521,7 +1521,7 @@ describe('Core Nodes', () => {
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
 					let decl = block.first_child!
-					expect(decl.name).toBe('-webkit-border-top-left-radius')
+					expect(decl.property).toBe('-webkit-border-top-left-radius')
 					expect(decl.is_vendor_prefixed).toBe(true)
 				})
 
@@ -1532,7 +1532,7 @@ describe('Core Nodes', () => {
 					let rule = root.first_child!
 					let [_selector, block] = rule.children
 					let decl = block.first_child!
-					expect(decl.name).toBe('border-radius')
+					expect(decl.property).toBe('border-radius')
 					expect(decl.is_vendor_prefixed).toBe(false)
 				})
 
@@ -1808,7 +1808,7 @@ describe('Core Nodes', () => {
 				let [_selector, block] = parent.children
 				let [decl, nested_rule] = block.children
 				expect(decl.type).toBe(DECLARATION)
-				expect(decl.name).toBe('color')
+				expect(decl.property).toBe('color')
 
 				expect(nested_rule.type).toBe(STYLE_RULE)
 				let nested_selector = nested_rule.first_child!
@@ -1859,7 +1859,7 @@ describe('Core Nodes', () => {
 				let [_selector_c, block_c] = c.children
 				let decl = block_c.first_child!
 				expect(decl.type).toBe(DECLARATION)
-				expect(decl.name).toBe('color')
+				expect(decl.property).toBe('color')
 			})
 
 			test('nested @media inside rule', () => {
@@ -1877,7 +1877,7 @@ describe('Core Nodes', () => {
 				let media_block = media.block!
 				let nested_decl = media_block.first_child!
 				expect(nested_decl.type).toBe(DECLARATION)
-				expect(nested_decl.name).toBe('padding')
+				expect(nested_decl.property).toBe('padding')
 			})
 
 			test(':is() pseudo-class', () => {
@@ -1921,12 +1921,12 @@ describe('Core Nodes', () => {
 				let [decl1, title, decl2, body] = block.children
 
 				expect(decl1.type).toBe(DECLARATION)
-				expect(decl1.name).toBe('color')
+				expect(decl1.property).toBe('color')
 
 				expect(title.type).toBe(STYLE_RULE)
 
 				expect(decl2.type).toBe(DECLARATION)
-				expect(decl2.name).toBe('padding')
+				expect(decl2.property).toBe('padding')
 
 				expect(body.type).toBe(STYLE_RULE)
 			})
@@ -2121,7 +2121,7 @@ describe('Core Nodes', () => {
 				let nest_block = nest.block!
 				let decl = nest_block.first_child!
 				expect(decl.type).toBe(DECLARATION)
-				expect(decl.name).toBe('color')
+				expect(decl.property).toBe('color')
 			})
 
 			test('@nest with complex selector', () => {
@@ -2291,8 +2291,8 @@ describe('Core Nodes', () => {
 				let rule = root.first_child!
 				let [_selector, block] = rule.children
 				let [decl1, decl2] = block.children
-				expect(decl1.name).toBe('color')
-				expect(decl2.name).toBe('margin')
+				expect(decl1.property).toBe('color')
+				expect(decl2.property).toBe('margin')
 			})
 		})
 
@@ -2362,9 +2362,9 @@ describe('Core Nodes', () => {
 				let rule = root.first_child!
 				let [_selector, block] = rule.children
 				let [decl1, decl2, decl3] = block.children
-				expect(decl1.name).toBe('-webkit-transform')
-				expect(decl2.name).toBe('-moz-transform')
-				expect(decl3.name).toBe('transform')
+				expect(decl1.property).toBe('-webkit-transform')
+				expect(decl2.property).toBe('-moz-transform')
+				expect(decl3.property).toBe('transform')
 			})
 
 			test('complex selector list', () => {
@@ -2406,8 +2406,8 @@ describe('Core Nodes', () => {
 				let rule = root.first_child!
 				let [_selector, block] = rule.children
 				let [width_decl, bg_decl] = block.children
-				expect(width_decl.name).toBe('width')
-				expect(bg_decl.name).toBe('background')
+				expect(width_decl.property).toBe('width')
+				expect(bg_decl.property).toBe('background')
 			})
 
 			test('custom properties', () => {

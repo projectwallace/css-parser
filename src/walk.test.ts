@@ -125,7 +125,7 @@ describe('walk', () => {
 
 		walk(root, (node) => {
 			if (node.type === DECLARATION) {
-				const name = node.name
+				const name = node.property
 				if (name) properties.push(name)
 			}
 		})
@@ -414,8 +414,8 @@ describe('walk with SKIP and BREAK', () => {
 		let found: string | null = null
 
 		walk(root, (node) => {
-			if (node.type === DECLARATION && node.name === 'margin') {
-				found = node.name
+			if (node.type === DECLARATION && node.property === 'margin') {
+				found = node.property
 				return BREAK
 			}
 		})

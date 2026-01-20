@@ -208,6 +208,13 @@ export class CSSNode {
 		return this.arena
 	}
 
+	private get_content(): string {
+		let start = this.arena.get_content_start(this.index)
+		let length = this.arena.get_content_length(this.index)
+		if (length === 0) return ''
+		return this.source.substring(start, start + length)
+	}
+
 	/** Get node type as number (for performance) */
 	get type(): CSSNodeType {
 		return this.arena.get_type(this.index) as CSSNodeType
@@ -225,20 +232,20 @@ export class CSSNode {
 		return this.source.substring(start, start + length)
 	}
 
-	/** Get the "content" text (property name for declarations, at-rule name for at-rules, layer name for import layers) */
-	get name(): string {
-		let start = this.arena.get_content_start(this.index)
-		let length = this.arena.get_content_length(this.index)
-		if (length === 0) return ''
-		return this.source.substring(start, start + length)
+	/** Get the "content" text (at-rule name for at-rules, layer name for import layers) */
+	get name(): string | undefined {
+		if (this.type === DECLARATION) return
+		return this.get_content()
 	}
 
 	/**
 	 * Alias for name (for declarations: "color" in "color: blue")
 	 * More semantic than `name` for declaration nodes
 	 */
-	get property(): string {
-		return this.name
+	get property(): string | undefined {
+		let { type } = this
+		if (type !== DECLARATION && type !== MEDIA_FEATURE) return
+		return this.get_content()
 	}
 
 	/**
@@ -370,17 +377,17 @@ export class CSSNode {
 		switch (this.type) {
 			case DECLARATION:
 				// Check property name (e.g., -webkit-transform)
-				return is_vendor_prefixed(this.name)
+				return is_vendor_prefixed(this.get_content())
 			case PSEUDO_CLASS_SELECTOR:
 			case PSEUDO_ELEMENT_SELECTOR:
 				// Check pseudo-class/element name without colons (e.g., -webkit-autofill, -webkit-scrollbar)
-				return is_vendor_prefixed(this.name)
+				return is_vendor_prefixed(this.get_content())
 			case AT_RULE:
 				// Check at-rule name (e.g., -webkit-keyframes from @-webkit-keyframes)
-				return is_vendor_prefixed(this.name)
+				return is_vendor_prefixed(this.get_content())
 			case FUNCTION:
 				// Check function name (e.g., -webkit-gradient from -webkit-gradient())
-				return is_vendor_prefixed(this.name)
+				return is_vendor_prefixed(this.get_content())
 			case IDENTIFIER:
 				// Check identifier value (e.g., -webkit-sticky)
 				return is_vendor_prefixed(this.text)
@@ -654,7 +661,7 @@ export class CSSNode {
 
 		// 2. Extract type-specific properties (only if meaningful)
 		if (this.name) plain.name = this.name
-		if (this.type === DECLARATION) plain.property = this.name
+		if (this.property) plain.property = this.property
 
 		// 3. Handle value types
 		if (this.value !== undefined && this.value !== null) {

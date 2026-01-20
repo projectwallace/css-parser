@@ -1023,7 +1023,7 @@ describe('Selector Nodes', () => {
 				const attr_selector = root.first_child?.first_child
 				expect(attr_selector?.type_name).toBe('AttributeSelector')
 				expect(attr_selector?.value).toBe('"value"')
-				expect(attr_selector?.property).toBe('data-test')
+				expect(attr_selector?.name).toBe('data-test')
 				expect(attr_selector?.attr_operator).toBe(ATTR_OPERATOR_EQUAL)
 				expect(attr_selector?.attr_flags).toBe(ATTR_FLAG_NONE)
 			})
@@ -1035,7 +1035,7 @@ describe('Selector Nodes', () => {
 				const attr_selector = root.first_child?.first_child
 				expect(attr_selector?.type_name).toBe('AttributeSelector')
 				expect(attr_selector?.value).toBe('"value"')
-				expect(attr_selector?.property).toBe('data-test')
+				expect(attr_selector?.name).toBe('data-test')
 				expect(attr_selector?.attr_operator).toBe(ATTR_OPERATOR_EQUAL)
 				expect(attr_selector?.attr_flags).toBe(ATTR_FLAG_NONE)
 				expect(attr_selector?.text).toBe(input)
