@@ -47,6 +47,16 @@ import {
 	FLAG_HAS_DECLARATIONS,
 	FLAG_HAS_PARENS,
 	FLAG_BROWSERHACK,
+	ATTR_OPERATOR_NONE,
+	ATTR_OPERATOR_EQUAL,
+	ATTR_OPERATOR_TILDE_EQUAL,
+	ATTR_OPERATOR_PIPE_EQUAL,
+	ATTR_OPERATOR_CARET_EQUAL,
+	ATTR_OPERATOR_DOLLAR_EQUAL,
+	ATTR_OPERATOR_STAR_EQUAL,
+	ATTR_FLAG_NONE,
+	ATTR_FLAG_CASE_INSENSITIVE,
+	ATTR_FLAG_CASE_SENSITIVE,
 } from './arena'
 
 import { CHAR_MINUS_HYPHEN, CHAR_PLUS, is_whitespace, is_vendor_prefixed, str_starts_with } from './string-utils'
@@ -97,6 +107,24 @@ export const TYPE_NAMES = {
 } as const
 
 export type TypeName = (typeof TYPE_NAMES)[keyof typeof TYPE_NAMES] | 'unknown'
+
+// Attribute operator name lookup table - maps numeric operator to CSS syntax
+export const ATTR_OPERATOR_NAMES: Record<number, string | null> = {
+	[ATTR_OPERATOR_NONE]: null,
+	[ATTR_OPERATOR_EQUAL]: '=',
+	[ATTR_OPERATOR_TILDE_EQUAL]: '~=',
+	[ATTR_OPERATOR_PIPE_EQUAL]: '|=',
+	[ATTR_OPERATOR_CARET_EQUAL]: '^=',
+	[ATTR_OPERATOR_DOLLAR_EQUAL]: '$=',
+	[ATTR_OPERATOR_STAR_EQUAL]: '*=',
+}
+
+// Attribute flag name lookup table - maps numeric flag to CSS syntax
+export const ATTR_FLAG_NAMES: Record<number, string | null> = {
+	[ATTR_FLAG_NONE]: null,
+	[ATTR_FLAG_CASE_INSENSITIVE]: 'i',
+	[ATTR_FLAG_CASE_SENSITIVE]: 's',
+}
 
 // Node type constants (numeric for performance)
 export type CSSNodeType =
@@ -176,8 +204,8 @@ export type PlainCSSNode = {
 	has_error?: boolean
 
 	// Selector-specific
-	attr_operator?: number
-	attr_flags?: number
+	attr_operator?: string | null
+	attr_flags?: string | null
 	nth_a?: string | null
 	nth_b?: string | null
 
@@ -235,7 +263,7 @@ export class CSSNode {
 	/** Get the "content" text (at-rule name for at-rules, layer name for import layers) */
 	get name(): string | undefined {
 		let { type } = this
-		if (type === DECLARATION || type === OPERATOR) return
+		if (type === DECLARATION || type === OPERATOR || type === SELECTOR) return
 		return this.get_content()
 	}
 
@@ -712,8 +740,8 @@ export class CSSNode {
 
 		// 6. Extract selector-specific properties
 		if (type === ATTRIBUTE_SELECTOR) {
-			plain.attr_operator = this.attr_operator
-			plain.attr_flags = this.attr_flags
+			plain.attr_operator = ATTR_OPERATOR_NAMES[this.attr_operator!]
+			plain.attr_flags = ATTR_FLAG_NAMES[this.attr_flags!]
 		}
 		if (type === NTH_SELECTOR || type === NTH_OF_SELECTOR) {
 			plain.nth_a = this.nth_a

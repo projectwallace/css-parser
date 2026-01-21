@@ -896,17 +896,53 @@ describe('CSSNode', () => {
 				expect(clone.attr_flags).toBeDefined()
 			})
 
-			test('extracts nth selector properties', () => {
-				const ast = parse_selector(':nth-child(2n+1)')
-				const selector = ast.first_child!
-				const pseudo = selector.first_child!
-				const nth = pseudo.first_child!
+		test('returns human-readable attribute operator strings', () => {
+			const operators = [
+				{ selector: '[attr]', expected: null },
+				{ selector: '[attr="val"]', expected: '=' },
+				{ selector: '[attr~="val"]', expected: '~=' },
+				{ selector: '[attr|="val"]', expected: '|=' },
+				{ selector: '[attr^="val"]', expected: '^=' },
+				{ selector: '[attr$="val"]', expected: '$=' },
+				{ selector: '[attr*="val"]', expected: '*=' },
+			]
 
-				const clone = nth.clone({ deep: false })
+			for (const { selector, expected } of operators) {
+				const ast = parse_selector(selector)
+				const attribute = ast.first_child!.first_child!
+				const clone = attribute.clone({ deep: false })
 
-				expect(clone.type).toBe(NTH_SELECTOR)
-				expect(clone.nth_a).toBe('2n')
-				expect(clone.nth_b).toBe('+1')
+				expect(clone.attr_operator).toBe(expected)
+			}
+		})
+
+		test('returns human-readable attribute flag strings', () => {
+			const flags = [
+				{ selector: '[attr="val"]', expected: null },
+				{ selector: '[attr="val" i]', expected: 'i' },
+				{ selector: '[attr="val" s]', expected: 's' },
+			]
+
+			for (const { selector, expected } of flags) {
+				const ast = parse_selector(selector)
+				const attribute = ast.first_child!.first_child!
+				const clone = attribute.clone({ deep: false })
+
+				expect(clone.attr_flags).toBe(expected)
+			}
+		})
+
+		test('extracts nth selector properties', () => {
+			const ast = parse_selector(':nth-child(2n+1)')
+			const selector = ast.first_child!
+			const pseudo = selector.first_child!
+			const nth = pseudo.first_child!
+
+			const clone = nth.clone({ deep: false })
+
+			expect(clone.type).toBe(NTH_SELECTOR)
+			expect(clone.nth_a).toBe('2n')
+			expect(clone.nth_b).toBe('+1')
 			})
 		})
 
