@@ -13,6 +13,7 @@ import {
 	FUNCTION,
 	ATTRIBUTE_SELECTOR,
 } from './arena'
+import { PlainCSSNode } from './css-node'
 
 describe('CSSNode', () => {
 	describe('iteration', () => {
@@ -771,16 +772,16 @@ describe('CSSNode', () => {
 				expect(clone.name).toBe(undefined)
 				expect(clone.property).toBe('color')
 				expect(clone.value).toBe('red')
-				expect(clone.children).toEqual([])
+				expect(clone.children).toBeUndefined()
 			})
 
-			test('shallow clone has empty children array', () => {
+			test('shallow clone has no children array', () => {
 				const ast = parse('div { margin: 10px 20px; }')
 				const decl = ast.first_child!.block!.first_child!
 
 				const shallow = decl.clone({ deep: false })
 
-				expect(shallow.children).toEqual([])
+				expect(shallow.children).toBeUndefined()
 				expect(shallow.type).toBe(DECLARATION)
 			})
 
@@ -789,14 +790,15 @@ describe('CSSNode', () => {
 				const decl = ast.first_child!.block!.first_child!
 
 				const deep = decl.clone()
+				const value = deep.value as PlainCSSNode
 
-				expect(deep.children.length).toBe(1) // VALUE node
-				expect(deep.children[0].children.length).toBe(2)
-				expect(deep.children[0].children[0].type).toBe(DIMENSION)
-				expect(deep.children[0].children[0].value).toBe(10)
-				expect(deep.children[0].children[0].unit).toBe('px')
-				expect(deep.children[0].children[1].value).toBe(20)
-				expect(deep.children[0].children[1].unit).toBe('px')
+				expect(value.children?.length).toBe(2)
+				expect(value.children?.[0].type).toBe(DIMENSION)
+				expect(value.children?.[0].value).toBe(10)
+				expect(value.children?.[0].unit).toBe('px')
+				expect(value.children?.[1].type).toBe(DIMENSION)
+				expect(value.children?.[1].value).toBe(20)
+				expect(value.children?.[1].unit).toBe('px')
 			})
 
 			test('collects multiple children correctly', () => {
@@ -804,27 +806,27 @@ describe('CSSNode', () => {
 				const decl = ast.first_child!.block!.first_child!
 
 				const clone = decl.clone()
+				const value = clone.value as PlainCSSNode
 
-				expect(clone.children.length).toBe(1) // VALUE node
-				expect(clone.children[0].children.length).toBe(4)
-				expect(clone.children[0].children[0].value).toBe(10)
-				expect(clone.children[0].children[1].value).toBe(20)
-				expect(clone.children[0].children[2].value).toBe(30)
-				expect(clone.children[0].children[3].value).toBe(40)
+				expect(value.children?.length).toBe(4)
+				expect(value.children?.[0].value).toBe(10)
+				expect(value.children?.[1].value).toBe(20)
+				expect(value.children?.[2].value).toBe(30)
+				expect(value.children?.[3].value).toBe(40)
 			})
 
 			test('handles nested children', () => {
 				const ast = parse('div { margin: calc(10px + 20px); }')
 				const decl = ast.first_child!.block!.first_child!
 
-				const clone = decl.clone()
+				const clone = decl.clone({ deep: true })
+				const value = clone.value as PlainCSSNode
 
-				expect(clone.children.length).toBe(1) // VALUE node
-				expect(clone.children[0].children.length).toBe(1)
-				expect(clone.children[0].children[0].type).toBe(FUNCTION)
-				expect(clone.children[0].children[0].name).toBe('calc')
+				expect(value.children?.length).toBe(1)
+				expect(value.children?.[0].type).toBe(FUNCTION)
+				expect(value.children?.[0].name).toBe('calc')
 				// Function should have nested children
-				expect(clone.children[0].children[0].children.length).toBeGreaterThan(0)
+				expect(value.children?.[0].children?.length).toBeGreaterThan(0)
 			})
 		})
 
@@ -853,7 +855,7 @@ describe('CSSNode', () => {
 				expect(clone.type_name).toBe('Atrule')
 				expect(clone.name).toBe('media')
 				// Prelude is now a child node, not extracted as property
-				expect(clone.children).toEqual([])
+				expect(clone.children).toBeUndefined()
 			})
 
 			test('extracts dimension value with unit', () => {
@@ -924,7 +926,7 @@ describe('CSSNode', () => {
 
 				const clone = decl.clone()
 
-				expect(clone.is_important).toBe(false)
+				expect(clone.is_important).toBeUndefined()
 			})
 
 			test('omits is_important when not a declaration', () => {
@@ -978,13 +980,14 @@ describe('CSSNode', () => {
 				const decl = ast.first_child!.block!.first_child!
 
 				const clone = decl.clone({ locations: true })
+				const value = clone.value as PlainCSSNode
 
-				expect(clone.children[0].line).toBeDefined() // VALUE node
-				expect(clone.children[0].column).toBeDefined()
-				expect(clone.children[0].children[0].line).toBeDefined() // First dimension
-				expect(clone.children[0].children[0].column).toBeDefined()
-				expect(clone.children[0].children[1].line).toBeDefined() // Second dimension
-				expect(clone.children[0].children[1].column).toBeDefined()
+				expect(value.line).toBeDefined() // VALUE node
+				expect(value.column).toBeDefined()
+				expect(value.children?.[0].line).toBeDefined() // First dimension
+				expect(value.children?.[0].column).toBeDefined()
+				expect(value.children?.[1].line).toBeDefined() // Second dimension
+				expect(value.children?.[1].column).toBeDefined()
 			})
 		})
 	})

@@ -247,7 +247,6 @@ describe('Parser Options', () => {
 			// Values should not be parsed (explicitly false)
 			expect(declaration?.has_children).toBe(false)
 		})
-
 	})
 
 	describe('on_comment callback', () => {
