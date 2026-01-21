@@ -160,12 +160,12 @@ export type PlainCSSNode = {
 	type: number
 	type_name: TypeName
 	text: string
-	children: PlainCSSNode[]
 
 	// Optional properties (only when meaningful)
+	children?: PlainCSSNode[]
 	name?: string
 	property?: string
-	value?: string | number | null
+	value?: PlainCSSNode | string | number | null
 	unit?: string
 	prelude?: PlainCSSNode | null
 
@@ -256,13 +256,13 @@ export class CSSNode {
 	 * For URL nodes with quoted string: returns the string with quotes (consistent with STRING node)
 	 * For URL nodes with unquoted URL: returns the URL content without quotes
 	 */
-	get value(): CSSNode | string | number | null {
-		let { type, text } = this
+	get value(): CSSNode | string | number | null | undefined {
+		let { type, text, first_child } = this
 
 		// For DECLARATION nodes with parsed values, return the VALUE node
 		// For DECLARATION nodes without parsed values, fall through to get raw text
-		if (type === DECLARATION && this.first_child) {
-			return this.first_child // VALUE node (when parse_values=true)
+		if (type === DECLARATION && first_child) {
+			return first_child // VALUE node (when parse_values=true)
 		}
 
 		if (type === DIMENSION) {
@@ -270,24 +270,23 @@ export class CSSNode {
 		}
 
 		if (type === NUMBER) {
-			return Number.parseFloat(this.text)
+			return Number.parseFloat(text)
 		}
 
 		// Special handling for URL nodes
 		if (type === URL) {
-			let firstChild = this.first_child
-			if (firstChild && firstChild.type === STRING) {
+			if (first_child?.type === STRING) {
 				// Return the string as-is (with quotes) - consistent with STRING node
-				return firstChild.text
+				return first_child.text
 			}
 			// For URL nodes without children (e.g., @import url(...)), extract from text
 			// Handle both url("...") and url('...') and just "..." or '...'
 			if (str_starts_with(text, 'url(')) {
 				// url("...") or url('...') or url(...) - extract content between parens
-				let openParen = text.indexOf('(')
-				let closeParen = text.lastIndexOf(')')
-				if (openParen !== -1 && closeParen !== -1 && closeParen > openParen) {
-					let content = text.substring(openParen + 1, closeParen).trim()
+				let open_paren = text.indexOf('(')
+				let close_paren = text.lastIndexOf(')')
+				if (open_paren !== -1 && close_paren !== -1 && close_paren > open_paren) {
+					let content = text.substring(open_paren + 1, close_paren).trim()
 					return content
 				}
 			} else if (text.startsWith('"') || text.startsWith("'")) {
@@ -310,11 +309,11 @@ export class CSSNode {
 
 	/** Get the numeric value for NUMBER and DIMENSION nodes, or null for other node types */
 	get value_as_number(): number | null {
-		let text = this.text
-		if (this.type === NUMBER) {
+		let { text, type } = this
+		if (type === NUMBER) {
 			return Number.parseFloat(text)
 		}
-		if (this.type === DIMENSION) {
+		if (type === DIMENSION) {
 			return parse_dimension(text).value
 		}
 		return null
@@ -408,10 +407,11 @@ export class CSSNode {
 
 	/** Check if this node has a prelude (at-rules and style rules) */
 	get has_prelude(): boolean {
-		if (this.type === AT_RULE) {
+		let { type } = this
+		if (type === AT_RULE) {
 			return this.arena.get_value_length(this.index) > 0
 		}
-		if (this.type === STYLE_RULE) {
+		if (type === STYLE_RULE) {
 			return this.first_child !== null
 		}
 		return false
@@ -429,20 +429,21 @@ export class CSSNode {
 
 	/** Get the block node (for style rules and at-rules with blocks) */
 	get block(): CSSNode | null {
+		let { type } = this
 		// For StyleRule: block is sibling after selector list
-		if (this.type === STYLE_RULE) {
+		if (type === STYLE_RULE) {
 			let first = this.first_child
 			if (!first) return null
 			// Block is the sibling after selector list
-			let blockNode = first.next_sibling
-			if (blockNode && blockNode.type === BLOCK) {
-				return blockNode
+			let block_node = first.next_sibling
+			if (block_node?.type === BLOCK) {
+				return block_node
 			}
 			return null
 		}
 
 		// For AtRule: block is last child (after prelude nodes)
-		if (this.type === AT_RULE) {
+		if (type === AT_RULE) {
 			// Find last child that is a block
 			let child = this.first_child
 			while (child) {
@@ -529,8 +530,9 @@ export class CSSNode {
 	 * This allows formatters to distinguish :lang() from :hover
 	 */
 	get has_children(): boolean {
+		let { type } = this
 		// For pseudo-class/pseudo-element nodes, check if they have function syntax
-		if (this.type === PSEUDO_CLASS_SELECTOR || this.type === PSEUDO_ELEMENT_SELECTOR) {
+		if (type === PSEUDO_CLASS_SELECTOR || type === PSEUDO_ELEMENT_SELECTOR) {
 			// If FLAG_HAS_PARENS is set, return true even if no actual children
 			// This indicates that `()` is there but contains no children which can be caught by checking `.children.length`
 			if (this.arena.has_flag(this.index, FLAG_HAS_PARENS)) {
@@ -564,28 +566,30 @@ export class CSSNode {
 
 	/** Get the 'a' coefficient from An+B expression (e.g., "2n" from "2n+1", "odd" from "odd") */
 	get nth_a(): string | undefined {
-		if (this.type !== NTH_SELECTOR && this.type !== NTH_OF_SELECTOR) return undefined
+		let { type, arena, index } = this
+		if (type !== NTH_SELECTOR && type !== NTH_OF_SELECTOR) return undefined
 
-		let len = this.arena.get_content_length(this.index)
+		let len = arena.get_content_length(index)
 		if (len === 0) return undefined
-		let start = this.arena.get_content_start(this.index)
+		let start = arena.get_content_start(index)
 		return this.source.substring(start, start + len)
 	}
 
 	/** Get the 'b' coefficient from An+B expression (e.g., "+1" from "2n+1") */
 	get nth_b(): string | undefined {
-		if (this.type !== NTH_SELECTOR && this.type !== NTH_OF_SELECTOR) return undefined
+		let { type, arena, index, source } = this
+		if (type !== NTH_SELECTOR && type !== NTH_OF_SELECTOR) return undefined
 
-		let len = this.arena.get_value_length(this.index)
+		let len = arena.get_value_length(index)
 		if (len === 0) return undefined
-		let start = this.arena.get_value_start(this.index)
-		let value = this.source.substring(start, start + len)
+		let start = arena.get_value_start(index)
+		let value = source.substring(start, start + len)
 
 		// Check if there's a - or + sign before this position (handling "2n - 1" or "2n + 1" with spaces)
 		// Look backwards for a - or + sign, skipping whitespace
 		let check_pos = start - 1
 		while (check_pos >= 0) {
-			let ch = this.source.charCodeAt(check_pos)
+			let ch = source.charCodeAt(check_pos)
 			if (is_whitespace(ch)) {
 				check_pos--
 				continue
@@ -655,23 +659,30 @@ export class CSSNode {
 	 */
 	clone(options: CloneOptions = {}): PlainCSSNode {
 		const { deep = true, locations = false } = options
+		let { type, name, property, value, unit } = this
 
 		// 1. Create plain object with base properties
 		let plain: any = {
-			type: this.type,
+			type: type,
 			type_name: this.type_name,
 			text: this.text,
-			children: [],
 		}
 
 		// 2. Extract type-specific properties (only if meaningful)
-		if (this.name) plain.name = this.name
-		if (this.property) plain.property = this.property
+		if (name) {
+			plain.name = name
+		}
+		if (property) {
+			plain.property = property
+		}
 
 		// 3. Handle value types
-		if (this.value !== undefined && this.value !== null) {
-			plain.value = this.value
-			if (this.unit) plain.unit = this.unit
+		if (value) {
+			plain.value = value
+
+			if (unit) {
+				plain.unit = unit
+			}
 		}
 
 		// 4. At-rule preludes are now child nodes (AT_RULE_PRELUDE wrapper)
@@ -679,19 +690,32 @@ export class CSSNode {
 		// No special extraction needed - breaking change from string to CSSNode
 
 		// 5. Extract flags
-		if (this.type === DECLARATION) {
-			plain.is_important = this.is_important
-			plain.is_browserhack = this.is_browserhack
+		if (type === DECLARATION) {
+			let { is_important, is_browserhack } = this
+			if (is_important) {
+				plain.is_important = true
+			}
+			if (is_browserhack) {
+				plain.is_browserhack = true
+			}
 		}
-		plain.is_vendor_prefixed = this.is_vendor_prefixed
-		plain.has_error = this.has_error
+
+		let { is_vendor_prefixed, has_error } = this
+
+		if (is_vendor_prefixed) {
+			plain.is_vendor_prefixed = true
+		}
+
+		if (has_error) {
+			plain.has_error = true
+		}
 
 		// 6. Extract selector-specific properties
-		if (this.type === ATTRIBUTE_SELECTOR) {
+		if (type === ATTRIBUTE_SELECTOR) {
 			plain.attr_operator = this.attr_operator
 			plain.attr_flags = this.attr_flags
 		}
-		if (this.type === NTH_SELECTOR || this.type === NTH_OF_SELECTOR) {
+		if (type === NTH_SELECTOR || type === NTH_OF_SELECTOR) {
 			plain.nth_a = this.nth_a
 			plain.nth_b = this.nth_b
 		}
@@ -706,7 +730,8 @@ export class CSSNode {
 		}
 
 		// 8. Deep clone children - just push to array!
-		if (deep) {
+		if (deep && type !== DECLARATION) {
+			plain.children = []
 			for (let child of this.children) {
 				plain.children.push(child.clone({ deep: true, locations }))
 			}
