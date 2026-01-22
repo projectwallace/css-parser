@@ -655,6 +655,7 @@ export class Lexer {
 	}
 
 	// Public API: returns Token object for backwards compatibility
+	// Returns a fresh copy to allow storing tokens in arrays
 	next_token(skip_whitespace: boolean = false): Token | null {
 		this.next_token_fast(skip_whitespace)
 		return {

@@ -249,17 +249,21 @@ export class SelectorParser {
 
 		if (components.length === 0) return null
 
-		// Chain components as siblings (need to find last node in each compound selector chain)
-		for (let i = 0; i < components.length - 1; i++) {
-			// Find the last node in the current component's chain
-			let last_node = components[i]
+		// Chain components as siblings
+		// Track the last node in each component chain to avoid O(n²) sibling lookups
+		let last_node = 0
+		for (let i = 0; i < components.length; i++) {
+			if (i > 0) {
+				// Link previous component's last node to current component
+				this.arena.set_next_sibling(last_node, components[i])
+			}
+			// Find the last node in the current component's chain for next iteration
+			last_node = components[i]
 			let next_sibling = this.arena.get_next_sibling(last_node)
 			while (next_sibling !== 0) {
 				last_node = next_sibling
 				next_sibling = this.arena.get_next_sibling(last_node)
 			}
-			// Link the last node to the next component
-			this.arena.set_next_sibling(last_node, components[i + 1])
 		}
 
 		// Return first component (others are chained as siblings)
