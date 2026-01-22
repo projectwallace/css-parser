@@ -229,7 +229,10 @@ export class Lexer {
 
 		// CDO: <!--
 		if (ch === CHAR_LESS_THAN && this.pos + 3 < this.source.length) {
-			if (this.peek() === CHAR_EXCLAMATION && this.peek(2) === CHAR_HYPHEN && this.peek(3) === CHAR_HYPHEN) {
+			const p1 = this.peek(),
+				p2 = this.peek(2),
+				p3 = this.peek(3)
+			if (p1 === CHAR_EXCLAMATION && p2 === CHAR_HYPHEN && p3 === CHAR_HYPHEN) {
 				this.advance(4)
 				return this.make_token(TOKEN_CDO, start, this.pos, start_line, start_column)
 			}
@@ -237,7 +240,9 @@ export class Lexer {
 
 		// CDC: -->
 		if (ch === CHAR_HYPHEN && this.pos + 2 < this.source.length) {
-			if (this.peek() === CHAR_HYPHEN && this.peek(2) === CHAR_GREATER_THAN) {
+			const p1 = this.peek(),
+				p2 = this.peek(2)
+			if (p1 === CHAR_HYPHEN && p2 === CHAR_GREATER_THAN) {
 				this.advance(3)
 				return this.make_token(TOKEN_CDC, start, this.pos, start_line, start_column)
 			}
@@ -496,8 +501,11 @@ export class Lexer {
 		// Must be exactly 'u' or 'U' followed by '+'
 		if (this.pos - start === 1) {
 			let first_ch = this.source.charCodeAt(start)
-			if ((first_ch === CHAR_LOWERCASE_U || first_ch === CHAR_UPPERCASE_U) &&
-				this.pos < this.source.length && this.source.charCodeAt(this.pos) === CHAR_PLUS) {
+			if (
+				(first_ch === CHAR_LOWERCASE_U || first_ch === CHAR_UPPERCASE_U) &&
+				this.pos < this.source.length &&
+				this.source.charCodeAt(this.pos) === CHAR_PLUS
+			) {
 				return this.consume_unicode_range(start, start_line, start_column)
 			}
 		}

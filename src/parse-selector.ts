@@ -347,17 +347,17 @@ export class SelectorParser {
 				// Pseudo-class function: :nth-child(), :is()
 				return this.parse_pseudo_function(start, end)
 
-		case TOKEN_PERCENTAGE:
-			// Percentage selector (for @keyframes): 0%, 50%, 100%
-			return this.create_node(DIMENSION, start, end)
+			case TOKEN_PERCENTAGE:
+				// Percentage selector (for @keyframes): 0%, 50%, 100%
+				return this.create_node(DIMENSION, start, end)
 
-		case TOKEN_WHITESPACE:
-		case TOKEN_COMMA:
-			// These signal end of compound selector
-			return null
+			case TOKEN_WHITESPACE:
+			case TOKEN_COMMA:
+				// These signal end of compound selector
+				return null
 
-		default:
-			return null
+			default:
+				return null
 		}
 	}
 
@@ -1000,11 +1000,9 @@ export class SelectorParser {
 			) {
 				this.lexer.advance(2) // Skip /*
 				while (this.lexer.pos < this.selector_end) {
-					if (
-						this.source.charCodeAt(this.lexer.pos) === CHAR_ASTERISK &&
-						this.lexer.pos + 1 < this.selector_end &&
-						this.source.charCodeAt(this.lexer.pos + 1) === CHAR_FORWARD_SLASH
-					) {
+					const ch = this.source.charCodeAt(this.lexer.pos)
+					const next_ch = this.lexer.pos + 1 < this.selector_end ? this.source.charCodeAt(this.lexer.pos + 1) : 0
+					if (ch === CHAR_ASTERISK && this.lexer.pos + 1 < this.selector_end && next_ch === CHAR_FORWARD_SLASH) {
 						this.lexer.advance(2) // Skip */
 						break
 					}
