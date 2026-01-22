@@ -1065,11 +1065,9 @@ export class SelectorParser {
 			) {
 				this.lexer.advance(2) // Skip /*
 				while (this.lexer.pos < this.selector_end) {
-					if (
-						this.source.charCodeAt(this.lexer.pos) === CHAR_ASTERISK &&
-						this.lexer.pos + 1 < this.selector_end &&
-						this.source.charCodeAt(this.lexer.pos + 1) === CHAR_FORWARD_SLASH
-					) {
+					const ch = this.source.charCodeAt(this.lexer.pos)
+					const next_ch = this.lexer.pos + 1 < this.selector_end ? this.source.charCodeAt(this.lexer.pos + 1) : 0
+					if (ch === CHAR_ASTERISK && this.lexer.pos + 1 < this.selector_end && next_ch === CHAR_FORWARD_SLASH) {
 						this.lexer.advance(2) // Skip */
 						break
 					}

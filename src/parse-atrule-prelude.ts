@@ -35,6 +35,7 @@ import {
 } from './token-types'
 import {
 	str_equals,
+	str_equals_at,
 	is_whitespace,
 	strip_vendor_prefix,
 	CHAR_COLON,
@@ -152,10 +153,14 @@ export class AtRulePreludeParser {
 		)
 	}
 
-	private is_and_or_not(str: string): boolean {
+	// Offset-based comparison to avoid substring allocations
+	private is_and_or_not_at(start: number, end: number): boolean {
 		// All logical operators are 2-3 chars: "and" (3), "or" (2), "not" (3)
-		// The str_equals calls will quickly reject strings of other lengths
-		return str_equals('and', str) || str_equals('or', str) || str_equals('not', str)
+		return (
+			str_equals_at(this.source, start, end, 'and') ||
+			str_equals_at(this.source, start, end, 'or') ||
+			str_equals_at(this.source, start, end, 'not')
+		)
 	}
 
 	// Parse a single media query: screen and (min-width: 768px)
@@ -172,8 +177,10 @@ export class AtRulePreludeParser {
 		this.next_token()
 
 		if (this.lexer.token_type === TOKEN_IDENT) {
-			let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
-			if (!str_equals('only', text) && !str_equals('not', text)) {
+			if (
+				!str_equals_at(this.source, this.lexer.token_start, this.lexer.token_end, 'only') &&
+				!str_equals_at(this.source, this.lexer.token_start, this.lexer.token_end, 'not')
+			) {
 				// Reset - this is a media type
 				this.lexer.restore_position(saved_token_start)
 			}
@@ -203,9 +210,7 @@ export class AtRulePreludeParser {
 			}
 			// Identifier: media type or operator (and, or, not)
 			else if (token_type === TOKEN_IDENT) {
-				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
-
-				if (this.is_and_or_not(text)) {
+				if (this.is_and_or_not_at(this.lexer.token_start, this.lexer.token_end)) {
 					// Logical operator
 					let op = this.create_node(PRELUDE_OPERATOR, this.lexer.token_start, this.lexer.token_end)
 					components.push(op)
@@ -388,9 +393,7 @@ export class AtRulePreludeParser {
 			}
 			// Identifier: operator (and, or, not) or container name
 			else if (token_type === TOKEN_IDENT) {
-				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
-
-				if (this.is_and_or_not(text)) {
+				if (this.is_and_or_not_at(this.lexer.token_start, this.lexer.token_end)) {
 					// Logical operator
 					let op = this.create_node(PRELUDE_OPERATOR, this.lexer.token_start, this.lexer.token_end)
 					components.push(op)
@@ -462,9 +465,7 @@ export class AtRulePreludeParser {
 			}
 			// Identifier: operator (and, or, not)
 			else if (token_type === TOKEN_IDENT) {
-				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
-
-				if (this.is_and_or_not(text)) {
+				if (this.is_and_or_not_at(this.lexer.token_start, this.lexer.token_end)) {
 					let op = this.create_node(PRELUDE_OPERATOR, this.lexer.token_start, this.lexer.token_end)
 					nodes.push(op)
 				}
@@ -714,8 +715,8 @@ export class AtRulePreludeParser {
 
 		// Check for 'supports(' function
 		if (this.lexer.token_type === TOKEN_FUNCTION) {
-			let text = this.source.substring(this.lexer.token_start, this.lexer.token_end - 1) // -1 to exclude '('
-			if (str_equals('supports', text)) {
+			// -1 to exclude '('
+			if (str_equals_at(this.source, this.lexer.token_start, this.lexer.token_end - 1, 'supports')) {
 				let supports_start = this.lexer.token_start
 				let content_start = this.lexer.token_end // After the opening '('
 
