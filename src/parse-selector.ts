@@ -253,8 +253,10 @@ export class SelectorParser {
 		for (let i = 0; i < components.length - 1; i++) {
 			// Find the last node in the current component's chain
 			let last_node = components[i]
-			while (this.arena.get_next_sibling(last_node) !== 0) {
-				last_node = this.arena.get_next_sibling(last_node)
+			let next_sibling = this.arena.get_next_sibling(last_node)
+			while (next_sibling !== 0) {
+				last_node = next_sibling
+				next_sibling = this.arena.get_next_sibling(last_node)
 			}
 			// Link the last node to the next component
 			this.arena.set_next_sibling(last_node, components[i + 1])
@@ -993,22 +995,21 @@ export class SelectorParser {
 			}
 
 			// Skip comments /*...*/
-			if (
-				ch === CHAR_FORWARD_SLASH &&
-				this.lexer.pos + 1 < this.selector_end &&
-				this.source.charCodeAt(this.lexer.pos + 1) === CHAR_ASTERISK
-			) {
-				this.lexer.advance(2) // Skip /*
-				while (this.lexer.pos < this.selector_end) {
-					const ch = this.source.charCodeAt(this.lexer.pos)
-					const next_ch = this.lexer.pos + 1 < this.selector_end ? this.source.charCodeAt(this.lexer.pos + 1) : 0
-					if (ch === CHAR_ASTERISK && this.lexer.pos + 1 < this.selector_end && next_ch === CHAR_FORWARD_SLASH) {
-						this.lexer.advance(2) // Skip */
-						break
+			if (ch === CHAR_FORWARD_SLASH && this.lexer.pos + 1 < this.selector_end) {
+				const next = this.source.charCodeAt(this.lexer.pos + 1)
+				if (next === CHAR_ASTERISK) {
+					this.lexer.advance(2) // Skip /*
+					while (this.lexer.pos < this.selector_end) {
+						const ch = this.source.charCodeAt(this.lexer.pos)
+						const next_ch = this.lexer.pos + 1 < this.selector_end ? this.source.charCodeAt(this.lexer.pos + 1) : 0
+						if (ch === CHAR_ASTERISK && this.lexer.pos + 1 < this.selector_end && next_ch === CHAR_FORWARD_SLASH) {
+							this.lexer.advance(2) // Skip */
+							break
+						}
+						this.lexer.advance()
 					}
-					this.lexer.advance()
+					continue
 				}
-				continue
 			}
 
 			break

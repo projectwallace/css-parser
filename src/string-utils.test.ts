@@ -2,8 +2,10 @@ import { describe, it, expect } from 'vitest'
 import {
 	is_whitespace,
 	str_equals,
+	str_equals_at,
 	str_starts_with,
 	str_index_of,
+	str_index_of_at,
 	is_vendor_prefixed,
 	is_custom,
 	CHAR_SPACE,
@@ -455,5 +457,177 @@ describe('string-utils', () => {
 		it('should find exact match', () => {
 			expect(str_index_of('n', 'n')).toBe(0)
 			expect(str_index_of('N', 'n')).toBe(0)
+		})
+	})
+
+	describe('str_equals_at', () => {
+		it('should match identical strings using offsets', () => {
+			const source = 'media-query'
+			expect(str_equals_at(source, 0, 5, 'media')).toBe(true)
+		})
+
+		it('should match with case-insensitive comparison', () => {
+			const source = 'MEDIA-query'
+			expect(str_equals_at(source, 0, 5, 'media')).toBe(true)
+		})
+
+		it('should match substring in middle of source', () => {
+			const source = 'prefix-only-suffix'
+			expect(str_equals_at(source, 7, 11, 'only')).toBe(true)
+		})
+
+		it('should match uppercase in middle', () => {
+			const source = 'prefix-ONLY-suffix'
+			expect(str_equals_at(source, 7, 11, 'only')).toBe(true)
+		})
+
+		it('should not match when content differs', () => {
+			const source = 'media-query'
+			expect(str_equals_at(source, 0, 5, 'layer')).toBe(false)
+		})
+
+		it('should not match when length differs', () => {
+			const source = 'media-query'
+			expect(str_equals_at(source, 0, 5, 'med')).toBe(false)
+			expect(str_equals_at(source, 0, 5, 'medias')).toBe(false)
+		})
+
+		it('should work with An+B patterns', () => {
+			const source = 'odd-even-2n'
+			expect(str_equals_at(source, 0, 3, 'odd')).toBe(true)
+			expect(str_equals_at(source, 4, 8, 'even')).toBe(true)
+			// Note: second parameter must be lowercase for case-insensitive comparison
+			expect(str_equals_at(source, 0, 3, 'odd')).toBe(true)
+		})
+
+		it('should work with logical operators', () => {
+			const source = 'and or not'
+			expect(str_equals_at(source, 0, 3, 'and')).toBe(true)
+			expect(str_equals_at(source, 4, 6, 'or')).toBe(true)
+			expect(str_equals_at(source, 7, 10, 'not')).toBe(true)
+		})
+
+		it('should work with uppercase operators', () => {
+			const source = 'AND OR NOT'
+			expect(str_equals_at(source, 0, 3, 'and')).toBe(true)
+			expect(str_equals_at(source, 4, 6, 'or')).toBe(true)
+			expect(str_equals_at(source, 7, 10, 'not')).toBe(true)
+		})
+
+		it('should handle single character comparison', () => {
+			const source = 'hello'
+			expect(str_equals_at(source, 0, 1, 'h')).toBe(true)
+			expect(str_equals_at(source, 0, 1, 'h')).toBe(true) // Compare lowercase with lowercase
+			expect(str_equals_at(source, 4, 5, 'o')).toBe(true)
+		})
+
+		it('should handle empty range', () => {
+			const source = 'hello'
+			expect(str_equals_at(source, 2, 2, '')).toBe(true)
+		})
+
+		it('should not match when offset is out of bounds', () => {
+			const source = 'short'
+			expect(str_equals_at(source, 0, 10, 'hello')).toBe(false)
+		})
+	})
+
+	describe('str_index_of_at', () => {
+		it('should find single character in range', () => {
+			const source = 'hello-world'
+			expect(str_index_of_at(source, 0, 5, 'e')).toBe(1)
+		})
+
+		it('should find character case-insensitively in range', () => {
+			const source = 'HELLO-world'
+			expect(str_index_of_at(source, 0, 5, 'e')).toBe(1)
+		})
+
+		it('should return -1 for character not in range', () => {
+			const source = 'hello-world'
+			expect(str_index_of_at(source, 0, 5, 'w')).toBe(-1)
+		})
+
+		it('should return offset relative to start of range', () => {
+			const source = 'hello-world'
+			// Looking for 'w' starting at position 6 (after hyphen)
+			// 'w' is at position 6 in source, which is 0 relative to start=6
+			expect(str_index_of_at(source, 6, 11, 'w')).toBe(0)
+		})
+
+		it('should find multi-character substring in range', () => {
+			const source = '2n+5-format'
+			expect(str_index_of_at(source, 0, 4, 'n')).toBe(1)
+		})
+
+		it('should find multi-character substring case-insensitively', () => {
+			const source = '2N+5-format'
+			expect(str_index_of_at(source, 0, 4, 'n')).toBe(1)
+		})
+
+		it('should return -1 for substring not in range', () => {
+			const source = 'hello-world'
+			expect(str_index_of_at(source, 0, 5, 'xyz')).toBe(-1)
+		})
+
+		it('should work with An+B dimension tokens', () => {
+			const source = '2n+1'
+			expect(str_index_of_at(source, 0, 4, 'n')).toBe(1)
+		})
+
+		it('should work with negative An+B patterns', () => {
+			const source = '-5n-2'
+			expect(str_index_of_at(source, 0, 5, 'n')).toBe(2)
+		})
+
+		it('should find first occurrence when multiple exist', () => {
+			const source = 'n-5n-2'
+			expect(str_index_of_at(source, 0, 6, 'n')).toBe(0)
+		})
+
+		it('should find second occurrence when first is outside range', () => {
+			const source = 'n-5n-2'
+			// Start at position 2, range is '5n-2', 'n' is at offset 1
+			expect(str_index_of_at(source, 2, 6, 'n')).toBe(1)
+		})
+
+		it('should handle empty search string', () => {
+			const source = 'hello'
+			expect(str_index_of_at(source, 0, 5, '')).toBe(-1)
+		})
+
+		it('should find at start of range', () => {
+			const source = 'hello-world'
+			expect(str_index_of_at(source, 0, 5, 'h')).toBe(0)
+		})
+
+		it('should find at end of range', () => {
+			const source = 'hello-world'
+			expect(str_index_of_at(source, 0, 5, 'o')).toBe(4)
+		})
+
+		it('should handle partial range searching', () => {
+			const source = 'media (min-width: 768px)'
+			// Search for 'n' from position 8-12 which is 'min-', 'n' is at offset 1
+			expect(str_index_of_at(source, 8, 12, 'n')).toBe(1)
+		})
+
+		it('should return offset relative to range start not source', () => {
+			const source = 'prefix-content-suffix'
+			// Search for 'e' starting at position 7 to 14 which is "content-"
+			// 'e' is at index 4 of "content" (c-o-n-t-e)
+			expect(str_index_of_at(source, 7, 14, 'e')).toBe(4)
+		})
+
+		it('should work with supports function patterns', () => {
+			const source = 'supports(display: flex)'
+			expect(str_index_of_at(source, 0, 8, 'supports')).toBe(0)
+		})
+
+		it('should find substring in media query context', () => {
+			const source = '(min-width: 768px)'
+			// Range 0-10 is '(min-width'
+			// '-' is at position 4 in the source, which is offset 4 relative to start 0
+			expect(str_index_of_at(source, 0, 10, '-')).toBe(4)
 		})
 	})
