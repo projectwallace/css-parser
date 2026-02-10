@@ -18,6 +18,7 @@ import {
 	TOKEN_COMMA,
 	TOKEN_HASH,
 	TOKEN_AT_KEYWORD,
+	TOKEN_FUNCTION,
 	type TokenType,
 } from './token-types'
 import { trim_boundaries } from './parse-utils'
@@ -171,12 +172,23 @@ export class DeclarationParser {
 		// Parse value (everything until ';' or EOF)
 		let has_important = false
 		let last_end = lexer.token_end
+		// Track parenthesis depth to handle semicolons inside functions (e.g., url(data:image/png;base64,...))
+		let paren_depth = 0
 
 		// Process tokens until we hit semicolon, EOF, or end of input
 		while ((lexer.token_type as TokenType) !== TOKEN_EOF && lexer.token_start < end) {
 			let token_type = lexer.token_type as TokenType
-			if (token_type === TOKEN_SEMICOLON) break
-			if (token_type === TOKEN_RIGHT_BRACE) break
+
+			// Track parenthesis depth
+			if (token_type === TOKEN_LEFT_PAREN || token_type === TOKEN_FUNCTION) {
+				paren_depth++
+			} else if (token_type === TOKEN_RIGHT_PAREN) {
+				paren_depth--
+			}
+
+			// Only break on semicolon/brace when outside all parentheses
+			if (token_type === TOKEN_SEMICOLON && paren_depth === 0) break
+			if (token_type === TOKEN_RIGHT_BRACE && paren_depth === 0) break
 
 			// If we encounter '{', this is actually a style rule, not a declaration
 			if (token_type === TOKEN_LEFT_BRACE) {
