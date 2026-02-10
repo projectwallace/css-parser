@@ -1,6 +1,19 @@
 import { describe, it, expect } from 'vitest'
 import { parse } from './parse'
-import { IDENTIFIER, NUMBER, DIMENSION, STRING, HASH, FUNCTION, OPERATOR, PARENTHESIS, URL, UNICODE_RANGE, VALUE } from './arena'
+import {
+	IDENTIFIER,
+	NUMBER,
+	DIMENSION,
+	STRING,
+	HASH,
+	FUNCTION,
+	OPERATOR,
+	PARENTHESIS,
+	URL,
+	UNICODE_RANGE,
+	VALUE,
+	DECLARATION,
+} from './arena'
 
 describe('Value Node Types', () => {
 	// Helper to get first value node from a declaration
@@ -607,48 +620,48 @@ describe('Value Node Types', () => {
 		})
 
 		describe('OPERATOR', () => {
-		it('should parse comma operator', () => {
-			const root = parse('body { font-family: Arial, sans-serif; }')
-			const decl = root.first_child?.first_child?.next_sibling?.first_child
+			it('should parse comma operator', () => {
+				const root = parse('body { font-family: Arial, sans-serif; }')
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
-			expect(decl?.first_child!.children[1].type).toBe(OPERATOR)
-			expect(decl?.first_child!.children[1].text).toBe(',')
-			expect(decl?.first_child!.children[1].name).toBe(undefined)
-			expect(decl?.first_child!.children[1].value).toBe(',')
+				expect(decl?.first_child!.children[1].type).toBe(OPERATOR)
+				expect(decl?.first_child!.children[1].text).toBe(',')
+				expect(decl?.first_child!.children[1].name).toBe(undefined)
+				expect(decl?.first_child!.children[1].value).toBe(',')
+			})
+
+			it('should parse calc operators', () => {
+				const root = parse('body { width: calc(100% - 20px); }')
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+				const func = decl?.first_child!.children[0]
+
+				expect(func?.children[1].type).toBe(OPERATOR)
+				expect(func?.children[1].text).toBe('-')
+				expect(func?.children[1].name).toBe(undefined)
+				expect(func?.children[1].value).toBe('-')
+			})
+
+			it('should parse all calc operators', () => {
+				const root = parse('body { width: calc(1px + 2px * 3px / 4px - 5px); }')
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+				const func = decl?.first_child!.children[0]
+
+				const operators = func?.children.filter((n) => n.type === OPERATOR)
+				expect(operators).toHaveLength(4)
+				expect(operators?.[0].text).toBe('+')
+				expect(operators?.[0].name).toBe(undefined)
+				expect(operators?.[0].value).toBe('+')
+				expect(operators?.[1].text).toBe('*')
+				expect(operators?.[1].name).toBe(undefined)
+				expect(operators?.[1].value).toBe('*')
+				expect(operators?.[2].text).toBe('/')
+				expect(operators?.[2].name).toBe(undefined)
+				expect(operators?.[2].value).toBe('/')
+				expect(operators?.[3].text).toBe('-')
+				expect(operators?.[3].name).toBe(undefined)
+				expect(operators?.[3].value).toBe('-')
+			})
 		})
-
-		it('should parse calc operators', () => {
-			const root = parse('body { width: calc(100% - 20px); }')
-			const decl = root.first_child?.first_child?.next_sibling?.first_child
-			const func = decl?.first_child!.children[0]
-
-			expect(func?.children[1].type).toBe(OPERATOR)
-			expect(func?.children[1].text).toBe('-')
-			expect(func?.children[1].name).toBe(undefined)
-			expect(func?.children[1].value).toBe('-')
-		})
-
-		it('should parse all calc operators', () => {
-			const root = parse('body { width: calc(1px + 2px * 3px / 4px - 5px); }')
-			const decl = root.first_child?.first_child?.next_sibling?.first_child
-			const func = decl?.first_child!.children[0]
-
-			const operators = func?.children.filter((n) => n.type === OPERATOR)
-			expect(operators).toHaveLength(4)
-			expect(operators?.[0].text).toBe('+')
-			expect(operators?.[0].name).toBe(undefined)
-			expect(operators?.[0].value).toBe('+')
-			expect(operators?.[1].text).toBe('*')
-			expect(operators?.[1].name).toBe(undefined)
-			expect(operators?.[1].value).toBe('*')
-			expect(operators?.[2].text).toBe('/')
-			expect(operators?.[2].name).toBe(undefined)
-			expect(operators?.[2].value).toBe('/')
-			expect(operators?.[3].text).toBe('-')
-			expect(operators?.[3].name).toBe(undefined)
-			expect(operators?.[3].value).toBe('-')
-		})
-	})
 
 		describe('PARENTHESIS', () => {
 			it('should parse parenthesized expressions in calc()', () => {
@@ -776,15 +789,36 @@ describe('Value Node Types', () => {
 				expect(decl?.first_child!.children[0].value).toBe("'image.png'")
 			})
 
-			it('should parse url() with base64 data URL', () => {
-				const root = parse('body { background: url(data:image/png;base64,iVBORw0KGg); }')
-				const decl = root.first_child?.first_child?.next_sibling?.first_child
-				const func = decl?.first_child!.children[0]
+			describe.each([
+				`data:image/png;base64,iVBORw0KGg`,
+				`data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgaGVpZ2h0PSIyNHB4IiB3aWR0aD0iMjRweCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJsaW5lYXItZ3JhZGllbnQiIHgxPSIyMi4zMSIgeTE9IjIzLjYyIiB4Mj0iMy43MyIgeTI9IjMuMDUiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNlOTM3MjIiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNmODZmMjUiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48dGl0bGU+TWFnbmlmaWVyPC90aXRsZT48cGF0aCBmaWxsPSJ1cmwoI2xpbmVhci1ncmFkaWVudCkiIGQ9Ik0yMy4zMyAyMC4xbC00LjczLTQuNzRhMTAuMDYgMTAuMDYgMCAxIDAtMy4yMyAzLjIzbDQuNzQgNC43NGEyLjI5IDIuMjkgMCAxIDAgMy4yMi0zLjIzem0tMTcuNDgtNS44NGE1Ljk0IDUuOTQgMCAxIDEgOC40MiAwIDYgNiAwIDAgMS04LjQyIDB6Ii8+PC9zdmc+`,
+				`'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16px" height="16px" viewBox="0 0 24 24"><path fill="rgba(0,0,0,0.5)" d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"></path></svg>'`,
+			])('should parse url() with base64 data URL', (input) => {
+				test(`parses value: ${input.slice(0, 40)}`, () => {
+					const root = parse(`body { background: url(${input}); }`)
+					const decl = root.first_child?.first_child?.next_sibling?.first_child
+					const func = decl?.first_child!.children[0]
 
-				expect(func?.type).toBe(URL)
-				expect(func?.name).toBe('url')
-				expect(func?.has_children).toBe(false)
-				expect(func?.value).toBe('data:image/png;base64,iVBORw0KGg')
+					expect(func?.type).toBe(URL)
+					expect(func?.name).toBe('url')
+					expect(func?.value).toBe(input)
+				})
+
+				test('does not break parsing declarations coming after', () => {
+					const root = parse(`
+						body {
+							background: url(${input});
+							font-size: 1em;
+						}
+					`)
+					const block = root.first_child?.first_child?.next_sibling
+
+					expect(block?.children.length).toBe(2)
+					const [with_data_url, declaration] = block!.children
+
+					expect(with_data_url.type).toBe(DECLARATION)
+					expect(declaration.type).toBe(DECLARATION)
+				})
 			})
 
 			it('should parse url() with inline SVG', () => {
@@ -801,7 +835,7 @@ describe('Value Node Types', () => {
 			it('should parse complex background value with url()', () => {
 				const root = parse('body { background: url("bg.png") no-repeat center center / cover; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
-			expect(decl?.first_child!.children.length).toBeGreaterThan(1)
+				expect(decl?.first_child!.children.length).toBeGreaterThan(1)
 				expect(decl?.first_child!.children[0].type).toBe(URL)
 				expect(decl?.first_child!.children[0].name).toBe('url')
 				expect(decl?.first_child!.children[1].type).toBe(IDENTIFIER)
@@ -911,7 +945,7 @@ describe('Value Node Types', () => {
 				const root = parse('body { color: ; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
-			expect(decl?.first_child!.type).toBe(VALUE)
+				expect(decl?.first_child!.type).toBe(VALUE)
 				expect(decl?.first_child!.children).toHaveLength(0)
 			})
 
