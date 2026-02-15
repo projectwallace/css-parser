@@ -1,5 +1,7 @@
 // String utility functions for CSS parsing
 
+import { char_types, CHAR_WHITESPACE, CHAR_NEWLINE as CHAR_TYPE_NEWLINE } from './char-types'
+
 // Character constants (exported for use in parsers)
 export const CHAR_SPACE = 0x20 // ' '
 export const CHAR_TAB = 0x09 // \t
@@ -25,10 +27,15 @@ export const CHAR_LESS_THAN = 0x3c // <
 
 /**
  * Check if a character code is whitespace (space, tab, newline, CR, or FF)
+ * Optimized using lookup table for better performance
  * @internal
  */
 export function is_whitespace(ch: number): boolean {
-	return ch === CHAR_SPACE || ch === CHAR_TAB || ch === CHAR_NEWLINE || ch === CHAR_CARRIAGE_RETURN || ch === CHAR_FORM_FEED
+	// Include both WHITESPACE and NEWLINE flags since CSS treats them all as whitespace
+	if (ch < 128) {
+		return (char_types[ch] & (CHAR_WHITESPACE | CHAR_TYPE_NEWLINE)) !== 0
+	}
+	return false
 }
 
 /** @internal */
@@ -56,6 +63,39 @@ export function str_equals(a: string, b: string): boolean {
 
 		// normalize ASCII uppercase A-Z → a-z
 		cb |= 32
+
+		if (ca !== cb) {
+			return false
+		}
+	}
+
+	return true
+}
+
+/**
+ * Case-insensitive ASCII comparison of source range with string (no allocations)
+ * Returns true if source[start:end] equals str (case-insensitive)
+ *
+ * IMPORTANT: str MUST be lowercase for correct comparison
+ *
+ * @param source - The source string
+ * @param start - Start offset in source
+ * @param end - End offset in source
+ * @param str - The lowercase string to compare against
+ * @returns true if the range equals str (case-insensitive)
+ */
+export function str_equals_at(source: string, start: number, end: number, str: string): boolean {
+	const length = end - start
+	if (length !== str.length) {
+		return false
+	}
+
+	for (let i = 0; i < length; i++) {
+		let ca = source.charCodeAt(start + i)
+		let cb = str.charCodeAt(i)
+
+		// normalize only the source char (str is already lowercase)
+		if (ca >= 65 && ca <= 90) ca |= 32 // A-Z → a-z
 
 		if (ca !== cb) {
 			return false
@@ -128,6 +168,58 @@ export function str_index_of(str: string, searchChar: string): number {
 		let match = true
 		for (let j = 0; j < searchChar.length; j++) {
 			let ca = str.charCodeAt(i + j)
+			let cb = searchChar.charCodeAt(j)
+			if (ca >= 65 && ca <= 90) ca |= 32 // A-Z → a-z
+			if (ca !== cb) {
+				match = false
+				break
+			}
+		}
+		if (match) {
+			return i
+		}
+	}
+	return -1
+}
+
+/**
+ * Case-insensitive character/substring search in source range (no allocations)
+ * Returns the offset from start of the first occurrence of searchChar (case-insensitive)
+ *
+ * IMPORTANT: searchChar MUST be lowercase for correct comparison
+ *
+ * @param source - The source string
+ * @param start - Start offset in source
+ * @param end - End offset in source
+ * @param searchChar - The lowercase character/substring to find
+ * @returns The offset from start of the first match, or -1 if not found
+ */
+export function str_index_of_at(source: string, start: number, end: number, searchChar: string): number {
+	if (searchChar.length === 0) {
+		return -1
+	}
+
+	const length = end - start
+
+	// Optimize for single character search
+	if (searchChar.length === 1) {
+		const searchCode = searchChar.charCodeAt(0)
+		for (let i = 0; i < length; i++) {
+			let ca = source.charCodeAt(start + i)
+			// normalize only the source char (searchChar is already lowercase)
+			if (ca >= 65 && ca <= 90) ca |= 32 // A-Z → a-z
+			if (ca === searchCode) {
+				return i
+			}
+		}
+		return -1
+	}
+
+	// Multi-character search
+	for (let i = 0; i <= length - searchChar.length; i++) {
+		let match = true
+		for (let j = 0; j < searchChar.length; j++) {
+			let ca = source.charCodeAt(start + i + j)
 			let cb = searchChar.charCodeAt(j)
 			if (ca >= 65 && ca <= 90) ca |= 32 // A-Z → a-z
 			if (ca !== cb) {
