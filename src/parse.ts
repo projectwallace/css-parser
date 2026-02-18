@@ -348,6 +348,7 @@ export class Parser {
 		let prelude_start = this.lexer.token_start
 		let prelude_end = prelude_start
 		// Track parenthesis depth to handle semicolons inside functions (e.g., url(data:image/png;base64,...))
+		// NOTE: Same pattern exists in parse-declaration.ts for value parsing - keep in sync
 		let paren_depth = 0
 
 		// Parse prelude (everything before '{' or ';')

@@ -173,6 +173,7 @@ export class DeclarationParser {
 		let has_important = false
 		let last_end = lexer.token_end
 		// Track parenthesis depth to handle semicolons inside functions (e.g., url(data:image/png;base64,...))
+		// NOTE: Same pattern exists in parse.ts for at-rule prelude parsing - keep in sync
 		let paren_depth = 0
 
 		// Process tokens until we hit semicolon, EOF, or end of input
