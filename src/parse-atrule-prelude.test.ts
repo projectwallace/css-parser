@@ -985,6 +985,7 @@ describe('At-Rule Prelude Nodes', () => {
 				// URL node in @import returns the string with quotes
 				expect(url?.value).toBe('"example.com"')
 			})
+
 			it('should parse with anonymous layer', () => {
 				const css = '@import url("styles.css") layer;'
 				const ast = parse(css, { parse_atrule_preludes: true })
@@ -1176,6 +1177,20 @@ describe('At-Rule Prelude Nodes', () => {
 				const atRule = ast.first_child!
 
 				expect(atRule?.prelude?.text).toBe('url("styles.css") layer(base) screen')
+			})
+
+			it('should parse unquoted URL that contains ;', () => {
+				const url = `https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,800;0,900;1,800&family=Roboto+Condensed:ital,wght@0,400;0,500;0,700;1,700&family=Roboto:ital,wght@0,300;0,400;0,500;0,700;0,900;1,300;1,400;1,500;1,700;1,900&display=swap`
+				const css = `@import url(${url});`
+				const ast = parse(css)
+				const atRule = ast.first_child!
+
+				// Prelude text should not include trailing semicolon
+				expect.soft(atRule.prelude?.text).toBe(`url(${url})`)
+				const url_node = atRule.prelude?.first_child
+				expect(url_node).not.toBeNull()
+				expect.soft(url_node?.type_name).toBe('Url')
+				expect.soft(url_node?.value).toBe(url)
 			})
 		})
 

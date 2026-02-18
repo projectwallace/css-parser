@@ -30,6 +30,7 @@ import {
 	TOKEN_RIGHT_BRACKET,
 	TOKEN_COMMA,
 	TOKEN_COLON,
+	TOKEN_FUNCTION,
 } from './token-types'
 import { trim_boundaries } from './parse-utils'
 import { CHAR_PERIOD, CHAR_GREATER_THAN, CHAR_PLUS, CHAR_TILDE, CHAR_AMPERSAND } from './string-utils'
@@ -346,11 +347,24 @@ export class Parser {
 		// Track prelude start and end
 		let prelude_start = this.lexer.token_start
 		let prelude_end = prelude_start
+		// Track parenthesis depth to handle semicolons inside functions (e.g., url(data:image/png;base64,...))
+		// NOTE: Same pattern exists in parse-declaration.ts for value parsing - keep in sync
+		let paren_depth = 0
 
 		// Parse prelude (everything before '{' or ';')
 		while (!this.is_eof()) {
 			let token_type = this.peek_type()
-			if (token_type === TOKEN_LEFT_BRACE || token_type === TOKEN_SEMICOLON) break
+
+			// Track parenthesis depth
+			if (token_type === TOKEN_LEFT_PAREN || token_type === TOKEN_FUNCTION) {
+				paren_depth++
+			} else if (token_type === TOKEN_RIGHT_PAREN) {
+				paren_depth--
+			}
+
+			// Only break on '{' or ';' when outside all parentheses
+			if (token_type === TOKEN_LEFT_BRACE && paren_depth === 0) break
+			if (token_type === TOKEN_SEMICOLON && paren_depth === 0) break
 			prelude_end = this.lexer.token_end
 			this.next_token()
 		}
