@@ -30,8 +30,7 @@ export class ANplusBParser {
 	 */
 	parse_anplusb(start: number, end: number, line: number = 1): number | null {
 		this.expr_end = end
-		this.lexer.pos = start
-		this.lexer.line = line
+		this.lexer.seek(start, line)
 
 		let b: string | null = null
 		let a_start = start

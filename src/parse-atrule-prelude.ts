@@ -56,9 +56,7 @@ export class AtRulePreludeParser {
 		this.prelude_end = end
 
 		// Position lexer at prelude start
-		this.lexer.pos = start
-		this.lexer.line = line
-		this.lexer.column = column
+		this.lexer.seek(start, line, column)
 
 		return this.parse_prelude_dispatch(at_rule_name)
 	}
@@ -745,9 +743,7 @@ export class AtRulePreludeParser {
 	private parse_feature_value(start: number, end: number): number[] {
 		// Use a temporary lexer for this range to avoid corrupting main lexer position state
 		let temp_lexer = new Lexer(this.source)
-		temp_lexer.pos = start
-		temp_lexer.line = this.lexer.line
-		temp_lexer.column = this.lexer.column
+		temp_lexer.seek(start, this.lexer.line, this.lexer.column)
 
 		let nodes: number[] = []
 		let saved_lexer = this.lexer

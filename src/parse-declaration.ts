@@ -40,9 +40,7 @@ export class DeclarationParser {
 	parse_declaration(start: number, end: number, line: number = 1, column: number = 1): number | null {
 		// Create a fresh lexer instance for standalone parsing
 		const lexer = new Lexer(this.source)
-		lexer.pos = start
-		lexer.line = line
-		lexer.column = column
+		lexer.seek(start, line, column)
 		lexer.next_token_fast(true) // skip whitespace like Parser does
 
 		return this.parse_declaration_with_lexer(lexer, end)

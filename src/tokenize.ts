@@ -3,12 +3,16 @@ import {
 	is_ident_start,
 	is_ident_char,
 	is_whitespace,
-	is_newline,
 	char_types,
 	CHAR_DIGIT,
 	CHAR_WHITESPACE,
 	CHAR_NEWLINE,
 } from './char-types'
+
+// Local inline version for hot paths that still need it
+function is_newline(ch: number): boolean {
+	return ch < 128 && (char_types[ch] & CHAR_NEWLINE) !== 0
+}
 import {
 	TOKEN_IDENT,
 	TOKEN_FUNCTION,
@@ -74,6 +78,7 @@ export interface LexerPosition {
 	pos: number
 	line: number
 	column: number
+	_line_offset: number
 	token_type: TokenType
 	token_start: number
 	token_end: number
@@ -93,8 +98,8 @@ export interface CommentInfo {
 export class Lexer {
 	source: string
 	pos: number
-	line: number
-	column: number
+	private _line: number
+	private _line_offset: number
 	on_comment: ((info: CommentInfo) => void) | undefined
 	// Current token properties (avoiding object allocation)
 	token_type: TokenType
@@ -106,14 +111,28 @@ export class Lexer {
 	constructor(source: string, on_comment?: (info: CommentInfo) => void) {
 		this.source = source
 		this.pos = 0
-		this.line = 1
-		this.column = 1
+		this._line = 1
+		this._line_offset = 0
 		this.on_comment = on_comment
 		this.token_type = TOKEN_EOF
 		this.token_start = 0
 		this.token_end = 0
 		this.token_line = 1
 		this.token_column = 1
+	}
+
+	get line(): number {
+		return this._line
+	}
+
+	get column(): number {
+		return this.pos - this._line_offset + 1
+	}
+
+	seek(pos: number, line: number, column: number = 1): void {
+		this.pos = pos
+		this._line = line
+		this._line_offset = pos - column + 1
 	}
 
 	// Fast token advancing without object allocation (for internal parser use)
@@ -597,15 +616,14 @@ export class Lexer {
 			let ch = this.source.charCodeAt(this.pos)
 			this.pos++
 
-			if (is_newline(ch)) {
+			// Inline newline check - only update on newline
+			if (ch < 128 && (char_types[ch] & CHAR_NEWLINE) !== 0) {
 				// Handle \r\n as single newline
 				if (ch === CHAR_CARRIAGE_RETURN && this.pos < this.source.length && this.source.charCodeAt(this.pos) === CHAR_LINE_FEED) {
 					this.pos++
 				}
-				this.line++
-				this.column = 1
-			} else {
-				this.column++
+				this._line++
+				this._line_offset = this.pos
 			}
 			return
 		}
@@ -617,16 +635,15 @@ export class Lexer {
 			let ch = this.source.charCodeAt(this.pos)
 			this.pos++
 
-			if (is_newline(ch)) {
+			// Inline newline check - only update on newline
+			if (ch < 128 && (char_types[ch] & CHAR_NEWLINE) !== 0) {
 				// Handle \r\n as single newline
 				if (ch === CHAR_CARRIAGE_RETURN && this.pos < this.source.length && this.source.charCodeAt(this.pos) === CHAR_LINE_FEED) {
 					this.pos++
 					i++ // Count \r\n as 2 characters for advance(count)
 				}
-				this.line++
-				this.column = 1
-			} else {
-				this.column++
+				this._line++
+				this._line_offset = this.pos
 			}
 		}
 	}
@@ -665,8 +682,9 @@ export class Lexer {
 	save_position(): LexerPosition {
 		return {
 			pos: this.pos,
-			line: this.line,
+			line: this._line,
 			column: this.column,
+			_line_offset: this._line_offset,
 			token_type: this.token_type,
 			token_start: this.token_start,
 			token_end: this.token_end,
@@ -681,8 +699,8 @@ export class Lexer {
 	 */
 	restore_position(saved: LexerPosition): void {
 		this.pos = saved.pos
-		this.line = saved.line
-		this.column = saved.column
+		this._line = saved.line
+		this._line_offset = saved._line_offset
 		this.token_type = saved.token_type
 		this.token_start = saved.token_start
 		this.token_end = saved.token_end

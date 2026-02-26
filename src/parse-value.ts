@@ -40,9 +40,7 @@ export class ValueParser {
 		this.value_end = end
 
 		// Position lexer at value start with provided line/column
-		this.lexer.pos = start
-		this.lexer.line = start_line
-		this.lexer.column = start_column
+		this.lexer.seek(start, start_line, start_column)
 
 		// Parse individual value tokens
 		let value_nodes = this.parse_value_tokens()
