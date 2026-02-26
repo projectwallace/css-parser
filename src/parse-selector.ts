@@ -402,7 +402,7 @@ export class SelectorParser {
 			let node = this.parse_namespace_local_part(start, start, end - start)
 			if (node !== null) return node
 			// Invalid - restore and treat as regular type selector
-			this.lexer.pos = end
+			this.lexer.restore_position(saved)
 		} else {
 			// No pipe found, restore position
 			this.lexer.restore_position(saved)
@@ -427,7 +427,7 @@ export class SelectorParser {
 			let node = this.parse_namespace_local_part(start, start, end - start)
 			if (node !== null) return node
 			// Invalid - restore and treat as regular universal selector
-			this.lexer.pos = end
+			this.lexer.restore_position(saved)
 		} else {
 			// No pipe found, restore position
 			this.lexer.restore_position(saved)
@@ -446,19 +446,15 @@ export class SelectorParser {
 
 	// Parse combinator (>, +, ~, or descendant space)
 	private try_parse_combinator(): number | null {
-		let whitespace_start = this.lexer.pos
-		let whitespace_start_line = this.lexer.line
-		let whitespace_start_column = this.lexer.column
+		const saved_whitespace_start = this.lexer.save_position()
 		let has_whitespace = this.lexer.pos < this.selector_end
 
 		// Skip whitespace and comments
 		this.skip_whitespace()
-		has_whitespace = has_whitespace && this.lexer.pos > whitespace_start
+		has_whitespace = has_whitespace && this.lexer.pos > saved_whitespace_start.pos
 
 		if (this.lexer.pos >= this.selector_end) {
-			this.lexer.pos = whitespace_start
-			this.lexer.line = whitespace_start_line
-			this.lexer.column = whitespace_start_column
+			this.lexer.restore_position(saved_whitespace_start)
 			return null
 		}
 
@@ -477,18 +473,14 @@ export class SelectorParser {
 		// If we had whitespace but no explicit combinator, it's a descendant combinator
 		if (has_whitespace) {
 			// Reset lexer position and re-consume whitespace and comments to get correct end position
-			this.lexer.pos = whitespace_start
-			this.lexer.line = whitespace_start_line
-			this.lexer.column = whitespace_start_column
+			this.lexer.restore_position(saved_whitespace_start)
 			this.skip_whitespace()
 			// Use the position at the start of the whitespace
-			return this.create_node_at(COMBINATOR, whitespace_start, this.lexer.pos, whitespace_start_line, whitespace_start_column)
+			return this.create_node_at(COMBINATOR, saved_whitespace_start.pos, this.lexer.pos, saved_whitespace_start.line, saved_whitespace_start.column)
 		}
 
 		// No combinator found, reset position
-		this.lexer.pos = whitespace_start
-		this.lexer.line = whitespace_start_line
-		this.lexer.column = whitespace_start_column
+		this.lexer.restore_position(saved_whitespace_start)
 		return null
 	}
 
@@ -833,12 +825,16 @@ export class SelectorParser {
 	// Parse :lang() content - comma-separated language identifiers
 	// Accepts both quoted strings: :lang("en", "fr") and unquoted: :lang(en, fr)
 	private parse_lang_identifiers(start: number, end: number, parent_node: number): void {
-		// Save current lexer state
-		let saved_selector_end = this.selector_end
-		const saved = this.lexer.save_position()
+		// Use a temporary lexer for this range to avoid corrupting main lexer position state
+		let temp_lexer = new Lexer(this.source)
+		temp_lexer.pos = start
+		temp_lexer.line = this.lexer.line
+		temp_lexer.column = this.lexer.column
 
-		// Set lexer to parse this range
-		this.lexer.pos = start
+		// Save current parser state
+		let saved_selector_end = this.selector_end
+		let saved_lexer = this.lexer
+		this.lexer = temp_lexer
 		this.selector_end = end
 
 		let first_child: number | null = null
@@ -888,9 +884,9 @@ export class SelectorParser {
 		if (last_child !== null) {
 		}
 
-		// Restore lexer state
+		// Restore parser state
 		this.selector_end = saved_selector_end
-		this.lexer.restore_position(saved)
+		this.lexer = saved_lexer
 	}
 
 	// Parse An+B expression for nth-* pseudo-classes
