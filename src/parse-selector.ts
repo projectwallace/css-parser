@@ -89,9 +89,7 @@ export class SelectorParser {
 		this.selector_end = end
 
 		// Position lexer at selector start
-		this.lexer.pos = start
-		this.lexer.line = line
-		this.lexer.column = column
+		this.lexer.seek(start, line, column)
 
 		// Parse selector list (comma-separated selectors)
 		// Returns NODE_SELECTOR_LIST directly (no wrapper)
@@ -827,9 +825,7 @@ export class SelectorParser {
 	private parse_lang_identifiers(start: number, end: number, parent_node: number): void {
 		// Use a temporary lexer for this range to avoid corrupting main lexer position state
 		let temp_lexer = new Lexer(this.source)
-		temp_lexer.pos = start
-		temp_lexer.line = this.lexer.line
-		temp_lexer.column = this.lexer.column
+		temp_lexer.seek(start, this.lexer.line, this.lexer.column)
 
 		// Save current parser state
 		let saved_selector_end = this.selector_end
