@@ -689,6 +689,39 @@ export class Lexer {
 		this.token_line = saved.token_line
 		this.token_column = saved.token_column
 	}
+
+	/**
+	 * Skip whitespace and comments within a range, maintaining line/column tracking
+	 * @param end The end boundary (exclusive)
+	 */
+	skip_whitespace_in_range(end: number): void {
+		while (this.pos < end) {
+			let ch = this.source.charCodeAt(this.pos)
+
+			// Skip whitespace
+			if (is_whitespace(ch)) {
+				this.advance()
+				continue
+			}
+
+			// Skip comments /*...*/
+			if (ch === CHAR_FORWARD_SLASH && this.pos + 1 < end && this.source.charCodeAt(this.pos + 1) === CHAR_ASTERISK) {
+				this.advance() // skip /
+				this.advance() // skip *
+				while (this.pos < end) {
+					if (this.source.charCodeAt(this.pos) === CHAR_ASTERISK && this.pos + 1 < end && this.source.charCodeAt(this.pos + 1) === CHAR_FORWARD_SLASH) {
+						this.advance() // skip *
+						this.advance() // skip /
+						break
+					}
+					this.advance()
+				}
+				continue
+			}
+
+			break // Found non-whitespace, non-comment
+		}
+	}
 }
 
 /**

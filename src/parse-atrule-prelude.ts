@@ -136,17 +136,17 @@ export class AtRulePreludeParser {
 
 		// Check for modifier (only, not)
 		// let has_modifier = false
-		let token_start = this.lexer.pos
+		const saved_token_start = this.lexer.save_position()
 		this.next_token()
 
 		if (this.lexer.token_type === TOKEN_IDENT) {
 			let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
 			if (!str_equals('only', text) && !str_equals('not', text)) {
 				// Reset - this is a media type
-				this.lexer.pos = token_start
+				this.lexer.restore_position(saved_token_start)
 			}
 		} else {
-			this.lexer.pos = token_start
+			this.lexer.restore_position(saved_token_start)
 		}
 
 		// Parse components (media type, features, operators)
@@ -700,7 +700,7 @@ export class AtRulePreludeParser {
 
 	// Helper: Skip whitespace and comments
 	private skip_whitespace(): void {
-		this.lexer.pos = skip_whitespace_and_comments_forward(this.source, this.lexer.pos, this.prelude_end)
+		this.lexer.skip_whitespace_in_range(this.prelude_end)
 	}
 
 	// Helper: Peek at next token type without consuming
@@ -743,10 +743,15 @@ export class AtRulePreludeParser {
 
 	// Helper: Parse feature value portion into typed nodes
 	private parse_feature_value(start: number, end: number): number[] {
-		let saved_pos = this.lexer.save_position()
-		this.lexer.pos = start
+		// Use a temporary lexer for this range to avoid corrupting main lexer position state
+		let temp_lexer = new Lexer(this.source)
+		temp_lexer.pos = start
+		temp_lexer.line = this.lexer.line
+		temp_lexer.column = this.lexer.column
 
 		let nodes: number[] = []
+		let saved_lexer = this.lexer
+		this.lexer = temp_lexer
 
 		while (this.lexer.pos < end) {
 			this.lexer.next_token_fast(false)
@@ -767,7 +772,7 @@ export class AtRulePreludeParser {
 			if (node !== null) nodes.push(node)
 		}
 
-		this.lexer.restore_position(saved_pos)
+		this.lexer = saved_lexer
 		return nodes
 	}
 
