@@ -1,12 +1,12 @@
 import {
 	is_hex_digit,
 	is_ident_start,
-	is_ident_char,
 	is_whitespace,
 	char_types,
 	CHAR_DIGIT,
 	CHAR_WHITESPACE,
 	CHAR_NEWLINE,
+	CHAR_IDENT,
 } from './char-types'
 
 // Local inline version for hot paths that still need it
@@ -454,7 +454,10 @@ export class Lexer {
 			}
 			if (is_ident_start(ch) || (ch === CHAR_HYPHEN && is_ident_start(this.peek()))) {
 				// Unit: px, em, rem, etc
-				while (this.pos < this.source.length && is_ident_char(this.source.charCodeAt(this.pos))) {
+				// Hot path: inline ident char check in tight loop
+				while (this.pos < this.source.length) {
+					let ch = this.source.charCodeAt(this.pos)
+					if (ch < 0x80 && (char_types[ch] & CHAR_IDENT) === 0) break
 					this.advance()
 				}
 				return this.make_token(TOKEN_DIMENSION, start, this.pos, start_line, start_column)
@@ -502,8 +505,8 @@ export class Lexer {
 					// Escape any other character (except newline, already checked)
 					this.advance()
 				}
-			} else if (is_ident_char(ch)) {
-				// Normal identifier character
+			} else if (ch >= 0x80 || (char_types[ch] & CHAR_IDENT) !== 0) {
+				// Normal identifier character — Hot path: inline ident char check
 				this.advance()
 			} else {
 				// Not part of identifier
@@ -589,7 +592,10 @@ export class Lexer {
 		this.advance() // Skip @
 
 		// Consume identifier
-		while (this.pos < this.source.length && is_ident_char(this.source.charCodeAt(this.pos))) {
+		// Hot path: inline ident char check in tight loop
+		while (this.pos < this.source.length) {
+			let ch = this.source.charCodeAt(this.pos)
+			if (ch < 0x80 && (char_types[ch] & CHAR_IDENT) === 0) break
 			this.advance()
 		}
 
@@ -601,7 +607,10 @@ export class Lexer {
 		this.advance() // Skip #
 
 		// Consume identifier or hex digits
-		while (this.pos < this.source.length && is_ident_char(this.source.charCodeAt(this.pos))) {
+		// Hot path: inline ident char check in tight loop
+		while (this.pos < this.source.length) {
+			let ch = this.source.charCodeAt(this.pos)
+			if (ch < 0x80 && (char_types[ch] & CHAR_IDENT) === 0) break
 			this.advance()
 		}
 
