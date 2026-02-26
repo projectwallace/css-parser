@@ -26,6 +26,7 @@ export let CHAR_DIGIT = 1 << 1 // 2
 export let CHAR_HEX = 1 << 2 // 4
 export let CHAR_WHITESPACE = 1 << 3 // 8
 export let CHAR_NEWLINE = 1 << 4 // 16
+export let CHAR_IDENT = 1 << 5 // 32
 
 // Lookup table for ASCII characters (0-127)
 export let char_types = new Uint8Array(128)
@@ -62,6 +63,16 @@ char_types[0x09] = CHAR_WHITESPACE // tab
 char_types[0x0a] = CHAR_NEWLINE // \n
 char_types[0x0d] = CHAR_NEWLINE // \r
 char_types[0x0c] = CHAR_NEWLINE // \f
+
+// Initialize ident characters: letters, digits, hyphen (-), underscore (_)
+// Derived from already-populated table so it stays consistent with CHAR_ALPHA/CHAR_DIGIT
+for (let i = 0; i < 128; i++) {
+	if (char_types[i] & (CHAR_ALPHA | CHAR_DIGIT)) {
+		char_types[i] |= CHAR_IDENT
+	}
+}
+char_types[0x2d] |= CHAR_IDENT // hyphen -
+char_types[0x5f] |= CHAR_IDENT // underscore _
 
 export function is_digit(ch: number): boolean {
 	return ch < 128 && (char_types[ch] & CHAR_DIGIT) !== 0
