@@ -8,31 +8,25 @@ import * as csstree from 'css-tree'
 import * as postcss from 'postcss'
 
 // Sample CSS for benchmarking - realistic production-like CSS
-const smallCSS = fs.readFileSync(path.resolve('benchmark/small.css'), 'utf-8')
 const largeCSS = fs.readFileSync(path.resolve('benchmark/medium.css'), 'utf-8')
 const bootstrapCSS = fs.readFileSync(path.resolve('node_modules/bootstrap/dist/css/bootstrap.css'), 'utf-8')
 const tailwindCSS = fs.readFileSync(path.resolve('node_modules/tailwindcss/dist/tailwind.css'), 'utf-8')
 
 const bench = new Bench({ time: 1000 })
 
-// Lexer benchmarks
+// Tokenizer benchmarks
 bench
-	.add('Lexer - small CSS', () => {
-		for (const _token of tokenize(smallCSS)) {
-			// Just iterate
-		}
-	})
-	.add('Lexer - Large CSS', () => {
+	.add('Tokenizer - Large CSS', () => {
 		for (const _token of tokenize(largeCSS)) {
 			// Just iterate
 		}
 	})
-	.add('Lexer - Bootstrap CSS', () => {
+	.add('Tokenizer - Bootstrap CSS', () => {
 		for (const _token of tokenize(bootstrapCSS)) {
 			// Just iterate
 		}
 	})
-	.add('Lexer - Tailwind CSS', () => {
+	.add('Tokenizer - Tailwind CSS', () => {
 		for (const _token of tokenize(tailwindCSS)) {
 			// Just iterate
 		}
@@ -40,9 +34,6 @@ bench
 
 // Parser benchmarks
 bench
-	.add('Parser - Small CSS', () => {
-		parse(smallCSS)
-	})
 	.add('Parser - Large CSS', () => {
 		parse(largeCSS)
 	})
@@ -51,44 +42,6 @@ bench
 	})
 	.add('Parser - Tailwind CSS', () => {
 		parse(tailwindCSS)
-	})
-
-// Walker benchmarks
-const smallAST = parse(smallCSS)
-const largeAST = parse(largeCSS)
-const bootstrapAST = parse(bootstrapCSS)
-const tailwindAST = parse(tailwindCSS)
-
-const counter = { value: 0 }
-
-bench
-	.add('Walker - Small CSS', () => {
-		let count = 0
-		walk(smallAST, (_node, _depth) => {
-			count++
-		})
-		counter.value = count
-	})
-	.add('Walker - Large CSS', () => {
-		let count = 0
-		walk(largeAST, (_node, _depth) => {
-			count++
-		})
-		counter.value = count
-	})
-	.add('Walker - Bootstrap CSS', () => {
-		let count = 0
-		walk(bootstrapAST, (_node, _depth) => {
-			count++
-		})
-		counter.value = count
-	})
-	.add('Walker - Tailwind CSS', () => {
-		let count = 0
-		walk(tailwindAST, (_node, _depth) => {
-			count++
-		})
-		counter.value = count
 	})
 
 bench
@@ -100,7 +53,6 @@ bench
 			let line = node.line
 			count++
 		})
-		counter.value = count
 	})
 	.add('Parse/walk - CSSTree - Bootstrap CSS', () => {
 		let ast = csstree.parse(bootstrapCSS, { positions: true })
@@ -111,7 +63,6 @@ bench
 			let line = node.loc?.start.line
 			count++
 		})
-		counter.value = count
 	})
 	.add('Parse/walk - PostCSS - Bootstrap CSS', () => {
 		let root = postcss.parse(bootstrapCSS)
@@ -121,7 +72,6 @@ bench
 			let line = node.source?.start?.line
 			count++
 		})
-		counter.value = count
 	})
 
 bench
@@ -133,7 +83,6 @@ bench
 			let line = node.line
 			count++
 		})
-		counter.value = count
 	})
 	.add('Parse/walk - CSSTree - Tailwind CSS', () => {
 		let ast = csstree.parse(tailwindCSS, { positions: true })
@@ -144,7 +93,6 @@ bench
 			let line = node.loc?.start.line
 			count++
 		})
-		counter.value = count
 	})
 	.add('Parse/walk - PostCSS - Tailwind CSS', () => {
 		let root = postcss.parse(tailwindCSS)
@@ -154,7 +102,6 @@ bench
 			let line = node.source?.start?.line
 			count++
 		})
-		counter.value = count
 	})
 
 // Run benchmarks
@@ -163,7 +110,6 @@ await bench.run()
 
 // File sizes
 const fileSizes = {
-	small: smallCSS.length,
 	large: largeCSS.length,
 	bootstrap: bootstrapCSS.length,
 	tailwind: tailwindCSS.length,
@@ -175,8 +121,6 @@ function getFileSize(taskName: string): string {
 		return `${(fileSizes.bootstrap / 1024).toFixed(2)} KB`
 	} else if (name.includes('large')) {
 		return `${(fileSizes.large / 1024).toFixed(2)} KB`
-	} else if (name.includes('small')) {
-		return `${(fileSizes.small / 1024).toFixed(2)} KB`
 	} else if (name.includes('tailwind')) {
 		return `${(fileSizes.tailwind / 1024).toFixed(2)} KB`
 	}
