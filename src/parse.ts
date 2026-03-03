@@ -43,8 +43,8 @@ export interface ParserOptions {
 }
 
 // Static at-rule lookup sets for fast classification
-let DECLARATION_AT_RULES = new Set(['font-face', 'font-feature-values', 'page', 'property', 'counter-style'])
-let CONDITIONAL_AT_RULES = new Set(['media', 'supports', 'container', 'layer', 'nest'])
+let DECLARATION_AT_RULES = new Set(['font-face', 'font-feature-values', 'page', 'property', 'counter-style', 'color-profile', 'font-palette-values', 'position-try', 'view-transition'])
+let CONDITIONAL_AT_RULES = new Set(['media', 'supports', 'container', 'layer', 'nest', 'scope', 'starting-style'])
 
 /** @internal */
 export class Parser {
