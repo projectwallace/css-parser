@@ -12,6 +12,7 @@ import {
 	LAYER_NAME,
 	IDENTIFIER,
 	PRELUDE_OPERATOR,
+	PRELUDE_SELECTORLIST,
 	URL,
 	DIMENSION,
 	FEATURE_RANGE,
@@ -1066,7 +1067,7 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(atRule.name).toBe('scope')
 				const children = atRule.prelude?.children ?? []
 				expect(children.length).toBe(1)
-				expect(children[0].type).toBe(SUPPORTS_QUERY)
+				expect(children[0].type).toBe(PRELUDE_SELECTORLIST)
 				expect(children[0].value).toBe('.parent')
 			})
 
@@ -1075,11 +1076,11 @@ describe('At-Rule Prelude Nodes', () => {
 				const atRule = root.first_child!
 				const children = atRule.prelude?.children ?? []
 				expect(children.length).toBe(3)
-				expect(children[0].type).toBe(SUPPORTS_QUERY)
+				expect(children[0].type).toBe(PRELUDE_SELECTORLIST)
 				expect(children[0].value).toBe('.light')
 				expect(children[1].type).toBe(PRELUDE_OPERATOR)
 				expect(children[1].text).toBe('to')
-				expect(children[2].type).toBe(SUPPORTS_QUERY)
+				expect(children[2].type).toBe(PRELUDE_SELECTORLIST)
 				expect(children[2].value).toBe('.dark')
 			})
 

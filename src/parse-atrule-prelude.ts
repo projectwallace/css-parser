@@ -10,6 +10,7 @@ import {
 	LAYER_NAME,
 	IDENTIFIER,
 	PRELUDE_OPERATOR,
+	PRELUDE_SELECTORLIST,
 	URL,
 	FUNCTION,
 	NUMBER,
@@ -834,7 +835,7 @@ export class AtRulePreludeParser {
 				let content_end = this.lexer.token_start
 				let paren_end = this.lexer.token_end
 
-				let scope_node = this.create_node(SUPPORTS_QUERY, paren_start, paren_end)
+				let scope_node = this.create_node(PRELUDE_SELECTORLIST, paren_start, paren_end)
 				let trimmed = trim_boundaries(this.source, content_start, content_end)
 				if (trimmed) {
 					this.arena.set_value_start_delta(scope_node, trimmed[0] - paren_start)
