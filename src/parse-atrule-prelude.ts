@@ -64,26 +64,37 @@ export class AtRulePreludeParser {
 	// Dispatch to appropriate parser based on at-rule type
 	private parse_prelude_dispatch(at_rule_name: string): number[] {
 		// Strip vendor prefix to treat @-webkit-keyframes same as @keyframes
-		let normalized_name = strip_vendor_prefix(at_rule_name)
+		let normalized_name = strip_vendor_prefix(at_rule_name).toLowerCase()
 
-		if (str_equals('media', normalized_name)) {
-			return this.parse_media_query_list()
-		} else if (str_equals('container', normalized_name)) {
-			return this.parse_container_query()
-		} else if (str_equals('supports', normalized_name)) {
-			return this.parse_supports_query()
-		} else if (str_equals('layer', normalized_name)) {
-			return this.parse_layer_names()
-		} else if (str_equals('keyframes', normalized_name)) {
-			return this.parse_identifier()
-		} else if (str_equals('property', normalized_name)) {
-			return this.parse_identifier()
-		} else if (str_equals('import', normalized_name)) {
-			return this.parse_import_prelude()
-		} else if (str_equals('charset', normalized_name)) {
-			return this.parse_charset_prelude()
+		switch (normalized_name) {
+			case 'media':
+				return this.parse_media_query_list()
+			case 'container':
+				return this.parse_container_query()
+			case 'supports':
+				return this.parse_supports_query()
+			case 'layer':
+				return this.parse_layer_names()
+			case 'keyframes':
+			case 'property':
+			case 'counter-style':
+			case 'color-profile':
+			case 'font-palette-values':
+			case 'position-try':
+			case 'font-feature-values':
+			case 'page':
+				return this.parse_identifier()
+			case 'import':
+				return this.parse_import_prelude()
+			case 'charset':
+				return this.parse_charset_prelude()
+			case 'namespace':
+				return this.parse_namespace_prelude()
+			case 'scope':
+				return this.parse_scope_prelude()
+			case 'custom-media':
+				return this.parse_custom_media_prelude()
 		}
-		// For now, @namespace and other at-rules are not parsed
 
 		return []
 	}
@@ -772,13 +783,96 @@ export class AtRulePreludeParser {
 		return nodes
 	}
 
+	// Parse @namespace prelude: [prefix] url("...") | "..."
+	// e.g. @namespace url("http://www.w3.org/1999/xhtml");
+	// e.g. @namespace svg url("http://www.w3.org/2000/svg");
+	private parse_namespace_prelude(): number[] {
+		let nodes: number[] = []
+		this.skip_whitespace()
+		if (this.lexer.pos >= this.prelude_end) return []
+
+		// Peek: if it's an IDENT it's an optional prefix, otherwise let parse_import_url() take it
+		const saved = this.lexer.save_position()
+		this.next_token()
+
+		if (this.lexer.token_type === TOKEN_IDENT) {
+			nodes.push(this.create_node(IDENTIFIER, this.lexer.token_start, this.lexer.token_end))
+			this.skip_whitespace()
+		} else {
+			this.lexer.restore_position(saved)
+		}
+
+		const url_node = this.parse_import_url()
+		if (url_node !== null) nodes.push(url_node)
+
+		return nodes
+	}
+
+	// Parse @scope prelude: [(<scope-start>)] [to (<scope-end>)]
+	// e.g. @scope (.parent) to (.child) { }
+	private parse_scope_prelude(): number[] {
+		let nodes: number[] = []
+
+		while (this.lexer.pos < this.prelude_end) {
+			this.skip_whitespace()
+			if (this.lexer.pos >= this.prelude_end) break
+
+			const token_type = this.peek_token_type()
+
+			if (token_type === TOKEN_LEFT_PAREN) {
+				this.next_token() // consume '('
+				let paren_start = this.lexer.token_start
+				let content_start = this.lexer.pos
+				let depth = 1
+
+				while (this.lexer.pos < this.prelude_end && depth > 0) {
+					this.next_token()
+					if (this.lexer.token_type === TOKEN_LEFT_PAREN) depth++
+					else if (this.lexer.token_type === TOKEN_RIGHT_PAREN) depth--
+				}
+
+				let content_end = this.lexer.token_start
+				let paren_end = this.lexer.token_end
+
+				let scope_node = this.create_node(SUPPORTS_QUERY, paren_start, paren_end)
+				let trimmed = trim_boundaries(this.source, content_start, content_end)
+				if (trimmed) {
+					this.arena.set_value_start_delta(scope_node, trimmed[0] - paren_start)
+					this.arena.set_value_length(scope_node, trimmed[1] - trimmed[0])
+				}
+				nodes.push(scope_node)
+			} else if (token_type === TOKEN_IDENT) {
+				this.next_token()
+				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
+				if (str_equals('to', text)) {
+					nodes.push(this.create_node(PRELUDE_OPERATOR, this.lexer.token_start, this.lexer.token_end))
+				}
+			} else {
+				this.next_token()
+			}
+		}
+
+		return nodes
+	}
+
+	// Parse @custom-media prelude: --name <media-condition>
+	// e.g. @custom-media --small (max-width: 30em);
+	private parse_custom_media_prelude(): number[] {
+		let nodes: number[] = []
+		this.skip_whitespace()
+		if (this.lexer.pos >= this.prelude_end) return []
+
+		this.next_token()
+		if (this.lexer.token_type !== TOKEN_IDENT) return []
+
+		nodes.push(this.create_node(IDENTIFIER, this.lexer.token_start, this.lexer.token_end))
+		nodes.push(...this.parse_media_query_list())
+
+		return nodes
+	}
+
 	// Parse media feature range syntax: (50px <= width <= 100px)
-	private parse_feature_range(
-		feature_start: number,
-		feature_end: number,
-		content_start: number,
-		content_end: number
-	): number {
+	private parse_feature_range(feature_start: number, feature_end: number, content_start: number, content_end: number): number {
 		let range_node = this.create_node(FEATURE_RANGE, feature_start, feature_end)
 		let children: number[] = []
 		let feature_name_start = -1

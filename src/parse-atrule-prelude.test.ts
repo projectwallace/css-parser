@@ -908,6 +908,217 @@ describe('At-Rule Prelude Nodes', () => {
 			})
 		})
 
+		describe('@counter-style', () => {
+			it('should parse identifier name', () => {
+				const root = parse('@counter-style thumbs { system: cyclic; }')
+				const atRule = root.first_child!
+				expect(atRule.name).toBe('counter-style')
+				const ident = atRule.prelude?.first_child
+				expect(ident?.type).toBe(IDENTIFIER)
+				expect(ident?.text).toBe('thumbs')
+			})
+		})
+
+		describe('@color-profile', () => {
+			it('should parse dashed-ident name', () => {
+				const root = parse('@color-profile --swop5c { rendering-intent: relative-colorimetric; }')
+				const atRule = root.first_child!
+				expect(atRule.name).toBe('color-profile')
+				const ident = atRule.prelude?.first_child
+				expect(ident?.type).toBe(IDENTIFIER)
+				expect(ident?.text).toBe('--swop5c')
+			})
+		})
+
+		describe('@font-palette-values', () => {
+			it('should parse dashed-ident name', () => {
+				const root = parse('@font-palette-values --cool-palette { font-family: Bixa; }')
+				const atRule = root.first_child!
+				expect(atRule.name).toBe('font-palette-values')
+				const ident = atRule.prelude?.first_child
+				expect(ident?.type).toBe(IDENTIFIER)
+				expect(ident?.text).toBe('--cool-palette')
+			})
+		})
+
+		describe('@position-try', () => {
+			it('should parse dashed-ident name', () => {
+				const root = parse('@position-try --custom-bottom { top: anchor(bottom); }')
+				const atRule = root.first_child!
+				expect(atRule.name).toBe('position-try')
+				const ident = atRule.prelude?.first_child
+				expect(ident?.type).toBe(IDENTIFIER)
+				expect(ident?.text).toBe('--custom-bottom')
+			})
+		})
+
+		describe('@view-transition', () => {
+			it('should parse with no prelude children', () => {
+				const root = parse('@view-transition { navigation: auto; }')
+				const atRule = root.first_child!
+				expect(atRule.name).toBe('view-transition')
+				const children = atRule.prelude?.children ?? []
+				expect(children.length).toBe(0)
+			})
+
+			it('should parse declarations in block', () => {
+				const root = parse('@view-transition { navigation: auto; }')
+				const atRule = root.first_child!
+				const block = atRule.first_child
+				expect(block?.type).toBe(BLOCK)
+				expect(block?.children.length).toBeGreaterThan(0)
+			})
+		})
+
+		describe('@starting-style', () => {
+			it('should parse with no prelude children', () => {
+				const root = parse('@starting-style { .foo { color: red; } }')
+				const atRule = root.first_child!
+				expect(atRule.name).toBe('starting-style')
+				const children = atRule.prelude?.children ?? []
+				expect(children.length).toBe(0)
+			})
+
+			it('should parse nested rules in block', () => {
+				const root = parse('@starting-style { .foo { color: red; } }')
+				const atRule = root.first_child!
+				const block = atRule.first_child
+				expect(block?.type).toBe(BLOCK)
+				expect(block?.children.length).toBeGreaterThan(0)
+			})
+		})
+
+		describe('@page', () => {
+			it('should parse named page identifier', () => {
+				const root = parse('@page wide { size: A4 landscape; }')
+				const atRule = root.first_child!
+				expect(atRule.name).toBe('page')
+				const ident = atRule.prelude?.first_child
+				expect(ident?.type).toBe(IDENTIFIER)
+				expect(ident?.text).toBe('wide')
+			})
+
+			it('should have no prelude children for bare @page', () => {
+				const root = parse('@page { margin: 1cm; }')
+				const atRule = root.first_child!
+				expect(atRule.name).toBe('page')
+				const children = atRule.prelude?.children ?? []
+				expect(children.length).toBe(0)
+			})
+		})
+
+		describe('@font-feature-values', () => {
+			it('should parse font family identifier', () => {
+				const root = parse('@font-feature-values Gentium { @styleset { nice-style: 12; } }')
+				const atRule = root.first_child!
+				expect(atRule.name).toBe('font-feature-values')
+				const ident = atRule.prelude?.first_child
+				expect(ident?.type).toBe(IDENTIFIER)
+				expect(ident?.text).toBe('Gentium')
+			})
+		})
+
+		describe('@namespace', () => {
+			it('should parse bare URL string', () => {
+				const root = parse('@namespace "http://www.w3.org/1999/xhtml";')
+				const atRule = root.first_child!
+				expect(atRule.name).toBe('namespace')
+				const children = atRule.prelude?.children ?? []
+				expect(children.length).toBe(1)
+				expect(children[0].type).toBe(URL)
+				expect(children[0].text).toBe('"http://www.w3.org/1999/xhtml"')
+			})
+
+			it('should parse url() form', () => {
+				const root = parse('@namespace url("http://www.w3.org/1999/xhtml");')
+				const atRule = root.first_child!
+				expect(atRule.name).toBe('namespace')
+				const children = atRule.prelude?.children ?? []
+				expect(children.length).toBe(1)
+				expect(children[0].type).toBe(URL)
+			})
+
+			it('should parse prefix + URL', () => {
+				const root = parse('@namespace svg url("http://www.w3.org/2000/svg");')
+				const atRule = root.first_child!
+				expect(atRule.name).toBe('namespace')
+				const children = atRule.prelude?.children ?? []
+				expect(children.length).toBe(2)
+				expect(children[0].type).toBe(IDENTIFIER)
+				expect(children[0].text).toBe('svg')
+				expect(children[1].type).toBe(URL)
+			})
+
+			it('should parse prefix + string', () => {
+				const root = parse('@namespace svg "http://www.w3.org/2000/svg";')
+				const atRule = root.first_child!
+				const children = atRule.prelude?.children ?? []
+				expect(children.length).toBe(2)
+				expect(children[0].type).toBe(IDENTIFIER)
+				expect(children[1].type).toBe(URL)
+			})
+		})
+
+		describe('@scope', () => {
+			it('should parse scope with start selector', () => {
+				const root = parse('@scope (.parent) { p { color: black; } }')
+				const atRule = root.first_child!
+				expect(atRule.name).toBe('scope')
+				const children = atRule.prelude?.children ?? []
+				expect(children.length).toBe(1)
+				expect(children[0].type).toBe(SUPPORTS_QUERY)
+				expect(children[0].value).toBe('.parent')
+			})
+
+			it('should parse scope with start and end selectors', () => {
+				const root = parse('@scope (.light) to (.dark) { p { color: black; } }')
+				const atRule = root.first_child!
+				const children = atRule.prelude?.children ?? []
+				expect(children.length).toBe(3)
+				expect(children[0].type).toBe(SUPPORTS_QUERY)
+				expect(children[0].value).toBe('.light')
+				expect(children[1].type).toBe(PRELUDE_OPERATOR)
+				expect(children[1].text).toBe('to')
+				expect(children[2].type).toBe(SUPPORTS_QUERY)
+				expect(children[2].value).toBe('.dark')
+			})
+
+			it('should have no prelude children for bare @scope', () => {
+				const root = parse('@scope { p { color: black; } }')
+				const atRule = root.first_child!
+				const children = atRule.prelude?.children ?? []
+				expect(children.length).toBe(0)
+			})
+
+			it('should parse nested rules in block', () => {
+				const root = parse('@scope (.parent) { p { color: black; } }')
+				const atRule = root.first_child!
+				const block = atRule.children.find((c) => c.type === BLOCK)
+				expect(block?.type).toBe(BLOCK)
+				expect(block?.children.length).toBeGreaterThan(0)
+			})
+		})
+
+		describe('@custom-media', () => {
+			it('should parse custom media name and condition', () => {
+				const root = parse('@custom-media --small (max-width: 30em);')
+				const atRule = root.first_child!
+				expect(atRule.name).toBe('custom-media')
+				const children = atRule.prelude?.children ?? []
+				expect(children.length).toBeGreaterThan(1)
+				expect(children[0].type).toBe(IDENTIFIER)
+				expect(children[0].text).toBe('--small')
+				expect(children[1].type).toBe(MEDIA_QUERY)
+			})
+
+			it('should parse custom media with boolean condition', () => {
+				const nodes = parse_atrule_prelude('custom-media', '--supports-grid (display: grid)')
+				expect(nodes.length).toBeGreaterThan(0)
+				expect(nodes[0].type).toBe(IDENTIFIER)
+				expect(nodes[0].text).toBe('--supports-grid')
+			})
+		})
+
 		describe('parse_atrule_preludes option', () => {
 			it('should parse preludes when enabled (default)', () => {
 				const css = '@media screen { }'
