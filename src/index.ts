@@ -15,7 +15,15 @@ export { is_custom, is_vendor_prefixed, str_equals, str_starts_with, str_index_o
 export { type ParserOptions } from './parse'
 
 // Types
-export { CSSNode, type CSSNodeType, TYPE_NAMES, type CloneOptions, type PlainCSSNode } from './css-node'
+export {
+	CSSNode,
+	type CSSNodeType,
+	TYPE_NAMES,
+	type CloneOptions,
+	type PlainCSSNode,
+	ATTR_FLAG_NAMES,
+	ATTR_OPERATOR_NAMES,
+} from './css-node'
 export type { LexerPosition, CommentInfo } from './tokenize'
 
 export {

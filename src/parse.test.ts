@@ -744,7 +744,7 @@ describe('Core Nodes', () => {
 					const atRule = root.first_child!
 					expect(atRule.type).toBe(AT_RULE)
 					expect(atRule.name).toBe('import')
-					expect(atRule.has_children).toBe(false)
+					expect(atRule.has_children).toBe(true)
 				})
 
 				test('@namespace', () => {

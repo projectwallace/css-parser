@@ -51,6 +51,7 @@ export const DECLARATION = 4
 export const SELECTOR = 5
 export const COMMENT = 6
 export const BLOCK = 7 // Block container for declarations and nested rules
+export const RAW = 8 // Unparsed nodes
 
 // Value node type constants (for declaration values)
 export const IDENTIFIER = 10 // identifier: red, auto, inherit

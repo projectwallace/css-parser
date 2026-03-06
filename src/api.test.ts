@@ -13,7 +13,7 @@ import {
 	FUNCTION,
 	ATTRIBUTE_SELECTOR,
 } from './arena'
-import { PlainCSSNode } from './css-node'
+import { CSSNode, PlainCSSNode } from './css-node'
 
 describe('CSSNode', () => {
 	describe('iteration', () => {
@@ -65,7 +65,8 @@ describe('CSSNode', () => {
 			const importRule = root.first_child!
 			const children = [...importRule]
 
-			expect(children).toHaveLength(0)
+			// RAW prelude node is created when parse_atrule_preludes is false
+			expect(children).toHaveLength(1)
 		})
 	})
 
@@ -208,7 +209,7 @@ describe('CSSNode', () => {
 			expect(rule.has_prelude).toBe(true) // has selector
 
 			expect(declaration.has_prelude).toBe(false)
-			expect(declaration.value).toBe('red')
+			expect((declaration.value as PlainCSSNode).text).toBe('red')
 		})
 	})
 
@@ -771,7 +772,7 @@ describe('CSSNode', () => {
 				expect(clone.text).toBe('color: red;')
 				expect(clone.name).toBe(undefined)
 				expect(clone.property).toBe('color')
-				expect(clone.value).toBe('red')
+				expect((clone.value as PlainCSSNode).text).toBe('red')
 				expect(clone.children).toBeUndefined()
 			})
 
@@ -841,7 +842,7 @@ describe('CSSNode', () => {
 				expect(clone.type_name).toBe('Declaration')
 				expect(clone.property).toBe('color')
 				expect(clone.name).toBe(undefined)
-				expect(clone.value).toBe('red')
+				expect((clone.value as CSSNode)?.text).toBe('red')
 				expect(clone.is_important).toBe(true)
 			})
 
@@ -896,53 +897,53 @@ describe('CSSNode', () => {
 				expect(clone.attr_flags).toBeDefined()
 			})
 
-		test('returns human-readable attribute operator strings', () => {
-			const operators = [
-				{ selector: '[attr]', expected: null },
-				{ selector: '[attr="val"]', expected: '=' },
-				{ selector: '[attr~="val"]', expected: '~=' },
-				{ selector: '[attr|="val"]', expected: '|=' },
-				{ selector: '[attr^="val"]', expected: '^=' },
-				{ selector: '[attr$="val"]', expected: '$=' },
-				{ selector: '[attr*="val"]', expected: '*=' },
-			]
+			test('returns human-readable attribute operator strings', () => {
+				const operators = [
+					{ selector: '[attr]', expected: null },
+					{ selector: '[attr="val"]', expected: '=' },
+					{ selector: '[attr~="val"]', expected: '~=' },
+					{ selector: '[attr|="val"]', expected: '|=' },
+					{ selector: '[attr^="val"]', expected: '^=' },
+					{ selector: '[attr$="val"]', expected: '$=' },
+					{ selector: '[attr*="val"]', expected: '*=' },
+				]
 
-			for (const { selector, expected } of operators) {
-				const ast = parse_selector(selector)
-				const attribute = ast.first_child!.first_child!
-				const clone = attribute.clone({ deep: false })
+				for (const { selector, expected } of operators) {
+					const ast = parse_selector(selector)
+					const attribute = ast.first_child!.first_child!
+					const clone = attribute.clone({ deep: false })
 
-				expect(clone.attr_operator).toBe(expected)
-			}
-		})
+					expect(clone.attr_operator).toBe(expected)
+				}
+			})
 
-		test('returns human-readable attribute flag strings', () => {
-			const flags = [
-				{ selector: '[attr="val"]', expected: null },
-				{ selector: '[attr="val" i]', expected: 'i' },
-				{ selector: '[attr="val" s]', expected: 's' },
-			]
+			test('returns human-readable attribute flag strings', () => {
+				const flags = [
+					{ selector: '[attr="val"]', expected: null },
+					{ selector: '[attr="val" i]', expected: 'i' },
+					{ selector: '[attr="val" s]', expected: 's' },
+				]
 
-			for (const { selector, expected } of flags) {
-				const ast = parse_selector(selector)
-				const attribute = ast.first_child!.first_child!
-				const clone = attribute.clone({ deep: false })
+				for (const { selector, expected } of flags) {
+					const ast = parse_selector(selector)
+					const attribute = ast.first_child!.first_child!
+					const clone = attribute.clone({ deep: false })
 
-				expect(clone.attr_flags).toBe(expected)
-			}
-		})
+					expect(clone.attr_flags).toBe(expected)
+				}
+			})
 
-		test('extracts nth selector properties', () => {
-			const ast = parse_selector(':nth-child(2n+1)')
-			const selector = ast.first_child!
-			const pseudo = selector.first_child!
-			const nth = pseudo.first_child!
+			test('extracts nth selector properties', () => {
+				const ast = parse_selector(':nth-child(2n+1)')
+				const selector = ast.first_child!
+				const pseudo = selector.first_child!
+				const nth = pseudo.first_child!
 
-			const clone = nth.clone({ deep: false })
+				const clone = nth.clone({ deep: false })
 
-			expect(clone.type).toBe(NTH_SELECTOR)
-			expect(clone.nth_a).toBe('2n')
-			expect(clone.nth_b).toBe('+1')
+				expect(clone.type).toBe(NTH_SELECTOR)
+				expect(clone.nth_a).toBe('2n')
+				expect(clone.nth_b).toBe('+1')
 			})
 		})
 

@@ -1,6 +1,19 @@
 import { describe, it, expect } from 'vitest'
 import { parse } from './parse'
-import { STYLESHEET, STYLE_RULE, SELECTOR_LIST, DECLARATION, AT_RULE, BLOCK, IDENTIFIER, NUMBER, DIMENSION, VALUE } from './constants'
+import {
+	STYLESHEET,
+	STYLE_RULE,
+	SELECTOR_LIST,
+	DECLARATION,
+	AT_RULE,
+	BLOCK,
+	IDENTIFIER,
+	NUMBER,
+	DIMENSION,
+	VALUE,
+	RAW,
+	SELECTOR,
+} from './constants'
 import { walk, traverse, SKIP, BREAK } from './walk'
 
 describe('walk', () => {
@@ -26,7 +39,7 @@ describe('walk', () => {
 		expect(visited).toEqual([
 			STYLESHEET,
 			STYLE_RULE,
-			SELECTOR_LIST,
+			RAW,
 			BLOCK,
 			DECLARATION,
 			VALUE,
@@ -45,7 +58,7 @@ describe('walk', () => {
 		expect(visited).toEqual([
 			STYLESHEET,
 			STYLE_RULE, // body rule
-			SELECTOR_LIST, // body selector
+			RAW, // body selector
 			BLOCK, // body block
 			DECLARATION, // color: red
 			VALUE,
@@ -54,7 +67,7 @@ describe('walk', () => {
 			VALUE,
 			NUMBER, // 0
 			STYLE_RULE, // div rule
-			SELECTOR_LIST, // div selector
+			RAW, // div selector
 			BLOCK, // div block
 			DECLARATION, // padding: 1rem
 			VALUE,
@@ -73,13 +86,15 @@ describe('walk', () => {
 		expect(visited).toEqual([
 			STYLESHEET,
 			STYLE_RULE, // .parent
-			SELECTOR_LIST, // .parent selector
+			RAW, // .parent selector
 			BLOCK, // .parent block
 			DECLARATION, // color: red
+			RAW, // color: red value
 			STYLE_RULE, // .child (nested inside parent's block)
-			SELECTOR_LIST, // .child selector
+			RAW, // .child selector
 			BLOCK, // .child block
 			DECLARATION, // color: blue
+			RAW, // color: blue value
 		])
 	})
 
@@ -98,20 +113,22 @@ describe('walk', () => {
 		expect(visited).toEqual([
 			STYLESHEET,
 			AT_RULE, // @media
+			RAW, // @media prelude "(min-width: 768px)"
 			BLOCK, // @media block
 			STYLE_RULE, // body
-			SELECTOR_LIST, // body selector
+			RAW, // body selector
 			BLOCK, // body block
 			DECLARATION, // color: red
+			RAW, // color: red value
 		])
 	})
 
 	it('should allow collecting node data', () => {
-		const root = parse('body { color: red; } .btn { margin: 0; }', { parse_selectors: false, parse_values: false })
+		const root = parse('body { color: red; } .btn { margin: 0; }', { parse_values: false })
 		const selectors: string[] = []
 
 		walk(root, (node) => {
-			if (node.type === SELECTOR_LIST) {
+			if (node.type === SELECTOR) {
 				selectors.push(node.text)
 			}
 		})
@@ -208,11 +225,13 @@ describe('walk', () => {
 		expect(typeAndDepth).toEqual([
 			{ type: STYLESHEET, depth: 0 },
 			{ type: AT_RULE, depth: 0 }, // @media (top-level, nesting depth 0)
+			{ type: RAW, depth: 1 }, // @media prelude "screen" (child of at-rule, depth 1)
 			{ type: BLOCK, depth: 1 }, // @media block (child of at-rule, depth 1)
 			{ type: STYLE_RULE, depth: 1 }, // body (child of @media, nesting depth 1)
-			{ type: SELECTOR_LIST, depth: 2 }, // body selector (child of body rule, depth 2)
+			{ type: RAW, depth: 2 }, // body selector (child of body rule, depth 2)
 			{ type: BLOCK, depth: 2 }, // body block (child of body rule, depth 2)
 			{ type: DECLARATION, depth: 2 }, // color: red (child of body rule, depth 2)
+			{ type: RAW, depth: 2 }, // color: red value
 		])
 	})
 
@@ -245,17 +264,20 @@ describe('walk', () => {
 		expect(typeAndDepth).toEqual([
 			{ type: STYLESHEET, depth: 0 },
 			{ type: AT_RULE, depth: 0 }, // @media (top-level)
+			{ type: RAW, depth: 1 }, // @media prelude "screen"
 			{ type: BLOCK, depth: 1 }, // @media block
 			{ type: STYLE_RULE, depth: 1 }, // body (child of @media)
-			{ type: SELECTOR_LIST, depth: 2 }, // body selector
+			{ type: RAW, depth: 2 }, // body selector
 			{ type: BLOCK, depth: 2 }, // body block
 			{ type: DECLARATION, depth: 2 }, // color: red
-			{ type: AT_RULE, depth: 0 }, // @layer (top-level)
+			{ type: RAW, depth: 2 }, // color: red value
+			{ type: AT_RULE, depth: 0 }, // @layer (top-level, anonymous - no prelude)
 			{ type: BLOCK, depth: 1 }, // @layer block
 			{ type: STYLE_RULE, depth: 1 }, // a (child of @layer)
-			{ type: SELECTOR_LIST, depth: 2 }, // a selector
+			{ type: RAW, depth: 2 }, // a selector
 			{ type: BLOCK, depth: 2 }, // a block
 			{ type: DECLARATION, depth: 2 }, // color: red
+			{ type: RAW, depth: 2 }, // color: red value
 		])
 	})
 
@@ -322,7 +344,7 @@ describe('walk with SKIP and BREAK', () => {
 		})
 
 		// All nodes should be visited (SKIP on leaf has no effect)
-		expect(visited).toEqual([STYLESHEET, STYLE_RULE, SELECTOR_LIST, BLOCK, DECLARATION, VALUE, IDENTIFIER])
+		expect(visited).toEqual([STYLESHEET, STYLE_RULE, RAW, BLOCK, DECLARATION, VALUE, IDENTIFIER])
 	})
 
 	it('should stop traversal when BREAK is returned', () => {
@@ -360,7 +382,7 @@ describe('walk with SKIP and BREAK', () => {
 		})
 
 		// Should visit down to first DECLARATION then stop
-		expect(visited).toEqual([STYLESHEET, STYLE_RULE, SELECTOR_LIST, BLOCK, DECLARATION])
+		expect(visited).toEqual([STYLESHEET, STYLE_RULE, RAW, BLOCK, DECLARATION])
 	})
 
 	it('should propagate BREAK from deep in tree', () => {
@@ -382,13 +404,13 @@ describe('walk with SKIP and BREAK', () => {
 		expect(visited).toEqual([
 			STYLESHEET,
 			STYLE_RULE, // .a
-			SELECTOR_LIST,
+			RAW,
 			BLOCK,
 			STYLE_RULE, // .b
-			SELECTOR_LIST,
+			RAW,
 			BLOCK,
 			STYLE_RULE, // .c
-			SELECTOR_LIST,
+			RAW,
 			BLOCK,
 			DECLARATION, // color: red - BREAK here
 		])
@@ -403,7 +425,7 @@ describe('walk with SKIP and BREAK', () => {
 			// No return value - should continue normally
 		})
 
-		expect(visited).toEqual([STYLESHEET, STYLE_RULE, SELECTOR_LIST, BLOCK, DECLARATION, VALUE, IDENTIFIER])
+		expect(visited).toEqual([STYLESHEET, STYLE_RULE, RAW, BLOCK, DECLARATION, VALUE, IDENTIFIER])
 	})
 
 	it('should find first declaration with specific property using BREAK', () => {
@@ -485,8 +507,8 @@ describe('walk enter/leave', () => {
 			},
 		})
 
-		expect(enter).toEqual([STYLESHEET, AT_RULE, BLOCK, STYLE_RULE, SELECTOR_LIST, BLOCK, DECLARATION])
-		expect(leave).toEqual([SELECTOR_LIST, DECLARATION, BLOCK, STYLE_RULE, BLOCK, AT_RULE, STYLESHEET])
+		expect(enter).toEqual([STYLESHEET, AT_RULE, RAW, BLOCK, STYLE_RULE, RAW, BLOCK, DECLARATION, RAW])
+		expect(leave).toEqual([RAW, RAW, RAW, DECLARATION, BLOCK, STYLE_RULE, BLOCK, AT_RULE, STYLESHEET])
 	})
 
 	test('only enter', () => {
@@ -498,7 +520,7 @@ describe('walk enter/leave', () => {
 			},
 		})
 
-		expect(enter).toEqual([STYLESHEET, AT_RULE, BLOCK, STYLE_RULE, SELECTOR_LIST, BLOCK, DECLARATION])
+		expect(enter).toEqual([STYLESHEET, AT_RULE, RAW, BLOCK, STYLE_RULE, RAW, BLOCK, DECLARATION, RAW])
 	})
 
 	test('only leave', () => {
@@ -510,7 +532,7 @@ describe('walk enter/leave', () => {
 			},
 		})
 
-		expect(leave).toEqual([SELECTOR_LIST, DECLARATION, BLOCK, STYLE_RULE, BLOCK, AT_RULE, STYLESHEET])
+		expect(leave).toEqual([RAW, RAW, RAW, DECLARATION, BLOCK, STYLE_RULE, BLOCK, AT_RULE, STYLESHEET])
 	})
 
 	test('neither', () => {
@@ -567,8 +589,8 @@ describe('traverse with SKIP and BREAK', () => {
 		})
 
 		// All nodes should be visited normally
-		expect(enter).toEqual([STYLESHEET, STYLE_RULE, SELECTOR_LIST, BLOCK, DECLARATION])
-		expect(leave).toEqual([SELECTOR_LIST, DECLARATION, BLOCK, STYLE_RULE, STYLESHEET])
+		expect(enter).toEqual([STYLESHEET, STYLE_RULE, RAW, BLOCK, DECLARATION, RAW])
+		expect(leave).toEqual([RAW, RAW, DECLARATION, BLOCK, STYLE_RULE, STYLESHEET])
 	})
 
 	it('should stop traversal and not call leave when BREAK is returned from enter', () => {
@@ -618,10 +640,10 @@ describe('traverse with SKIP and BREAK', () => {
 			},
 		})
 
-		// Enter all nodes of first rule down to DECLARATION
-		expect(enter).toEqual([STYLESHEET, STYLE_RULE, SELECTOR_LIST, BLOCK, DECLARATION])
-		// Leave SELECTOR_LIST (sibling, already left) and DECLARATION (then break)
-		expect(leave).toEqual([SELECTOR_LIST, DECLARATION])
+		// Enter all nodes of first rule down to DECLARATION and its RAW value child
+		expect(enter).toEqual([STYLESHEET, STYLE_RULE, RAW, BLOCK, DECLARATION, RAW])
+		// Leave selector RAW, value RAW (then BREAK at DECLARATION leave)
+		expect(leave).toEqual([RAW, RAW, DECLARATION])
 	})
 
 	it('should handle SKIP in enter with normal leave', () => {
@@ -644,10 +666,10 @@ describe('traverse with SKIP and BREAK', () => {
 			},
 		})
 
-		// Enter: STYLESHEET, .a (STYLE_RULE), SELECTOR_LIST, BLOCK, .b (STYLE_RULE then SKIP)
-		expect(enter).toEqual([STYLESHEET, STYLE_RULE, SELECTOR_LIST, BLOCK, STYLE_RULE])
-		// Leave: SELECTOR_LIST (sibling of BLOCK), .b (STYLE_RULE), BLOCK, .a (STYLE_RULE), STYLESHEET
-		expect(leave).toEqual([SELECTOR_LIST, STYLE_RULE, BLOCK, STYLE_RULE, STYLESHEET])
+		// Enter: STYLESHEET, .a (STYLE_RULE), RAW (selector), BLOCK, .b (STYLE_RULE then SKIP)
+		expect(enter).toEqual([STYLESHEET, STYLE_RULE, RAW, BLOCK, STYLE_RULE])
+		// Leave: RAW (selector), .b (STYLE_RULE), BLOCK, .a (STYLE_RULE), STYLESHEET
+		expect(leave).toEqual([RAW, STYLE_RULE, BLOCK, STYLE_RULE, STYLESHEET])
 	})
 
 	it('should verify enter/leave call counts match when using SKIP', () => {
@@ -704,18 +726,18 @@ describe('traverse with SKIP and BREAK', () => {
 		expect(enter).toEqual([
 			STYLESHEET,
 			STYLE_RULE, // .a
-			SELECTOR_LIST,
+			RAW,
 			BLOCK,
 			STYLE_RULE, // .b
-			SELECTOR_LIST,
+			RAW,
 			BLOCK,
 			STYLE_RULE, // .c
-			SELECTOR_LIST,
+			RAW,
 			BLOCK,
 			DECLARATION,
 		])
-		// SELECTOR_LIST nodes have no children, so they're left before siblings are processed
-		expect(leave).toEqual([SELECTOR_LIST, SELECTOR_LIST, SELECTOR_LIST])
+		// RAW selector nodes have no children, so they're left before siblings are processed
+		expect(leave).toEqual([RAW, RAW, RAW])
 	})
 
 	it('should maintain backward compatibility with traverse', () => {
@@ -737,7 +759,7 @@ describe('traverse with SKIP and BREAK', () => {
 			},
 		})
 
-		expect(enter).toEqual([STYLESHEET, STYLE_RULE, SELECTOR_LIST, BLOCK, DECLARATION])
-		expect(leave).toEqual([SELECTOR_LIST, DECLARATION, BLOCK, STYLE_RULE, STYLESHEET])
+		expect(enter).toEqual([STYLESHEET, STYLE_RULE, RAW, BLOCK, DECLARATION, RAW])
+		expect(leave).toEqual([RAW, RAW, DECLARATION, BLOCK, STYLE_RULE, STYLESHEET])
 	})
 })

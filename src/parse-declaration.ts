@@ -1,6 +1,6 @@
 // Declaration Parser - Parses CSS declarations into structured AST nodes
 import { Lexer } from './tokenize'
-import { CSSDataArena, DECLARATION, FLAG_IMPORTANT, FLAG_BROWSERHACK } from './arena'
+import { CSSDataArena, DECLARATION, RAW, FLAG_IMPORTANT, FLAG_BROWSERHACK } from './arena'
 import { ValueParser } from './parse-value'
 import { is_vendor_prefixed } from './string-utils'
 import {
@@ -119,11 +119,7 @@ export class DeclarationParser {
 		}
 
 		// Expect identifier, at-keyword, or hash token (property name) - whitespace already skipped by caller
-		if (
-			lexer.token_type !== TOKEN_IDENT &&
-			lexer.token_type !== TOKEN_AT_KEYWORD &&
-			lexer.token_type !== TOKEN_HASH
-		) {
+		if (lexer.token_type !== TOKEN_IDENT && lexer.token_type !== TOKEN_AT_KEYWORD && lexer.token_type !== TOKEN_HASH) {
 			return null
 		}
 
@@ -228,6 +224,10 @@ export class DeclarationParser {
 
 				// Link VALUE node as single child of the declaration
 				this.arena.append_children(declaration, [valueNode])
+			} else {
+				// Create RAW node for unparsed value text
+				let rawNode = this.arena.create_node(RAW, trimmed[0], trimmed[1] - trimmed[0], value_start_line, value_start_column)
+				this.arena.append_children(declaration, [rawNode])
 			}
 		} else {
 			// Empty value - set zero-length value field so node.value returns "" instead of null
