@@ -1,6 +1,7 @@
 // CSSNode - Ergonomic wrapper over arena node indices
 import type { CSSDataArena } from './arena'
 import {
+	RAW,
 	STYLESHEET,
 	STYLE_RULE,
 	AT_RULE,
@@ -71,6 +72,7 @@ export const TYPE_NAMES = {
 	[SELECTOR]: 'Selector',
 	[COMMENT]: 'Comment',
 	[BLOCK]: 'Block',
+	[RAW]: 'Raw',
 	[IDENTIFIER]: 'Identifier',
 	[NUMBER]: 'Number',
 	[DIMENSION]: 'Dimension',
@@ -135,6 +137,7 @@ export type CSSNodeType =
 	| typeof SELECTOR
 	| typeof COMMENT
 	| typeof BLOCK
+	| typeof RAW
 	| typeof IDENTIFIER
 	| typeof NUMBER
 	| typeof DIMENSION
@@ -356,7 +359,7 @@ export class CSSNode {
 	get prelude(): CSSNode | null | undefined {
 		if (this.type === AT_RULE) {
 			let first = this.first_child
-			if (first && first.type === AT_RULE_PRELUDE) {
+			if (first?.type === AT_RULE_PRELUDE || first?.type === RAW) {
 				return first
 			}
 			return null

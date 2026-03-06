@@ -9,6 +9,7 @@ import {
 	SELECTOR,
 	COMMENT,
 	BLOCK,
+	RAW,
 	IDENTIFIER,
 	NUMBER,
 	DIMENSION,
@@ -62,6 +63,7 @@ export {
 	SELECTOR,
 	COMMENT,
 	BLOCK,
+	RAW,
 	IDENTIFIER,
 	NUMBER,
 	DIMENSION,
@@ -117,6 +119,7 @@ export const NODE_TYPES = {
 	SELECTOR,
 	COMMENT,
 	BLOCK,
+	RAW,
 	// Value nodes
 	IDENTIFIER,
 	NUMBER,

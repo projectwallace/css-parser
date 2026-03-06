@@ -8,6 +8,7 @@ import {
 	AT_RULE,
 	BLOCK,
 	AT_RULE_PRELUDE,
+	RAW,
 	FLAG_HAS_BLOCK,
 	FLAG_HAS_DECLARATIONS,
 } from './arena'
@@ -269,9 +270,10 @@ export class Parser {
 			}
 		}
 
-		// Otherwise create a simple selector list node with just text offsets
-		let selector_list = this.arena.create_node(SELECTOR_LIST, selector_start, last_end - selector_start, selector_line, selector_column)
-		return selector_list
+		// Create node: RAW when parsing disabled, SELECTOR_LIST as error fallback
+		let node_type = this.parse_selectors_enabled ? SELECTOR_LIST : RAW
+		let selector_node = this.arena.create_node(node_type, selector_start, last_end - selector_start, selector_line, selector_column)
+		return selector_node
 	}
 
 	// Parse a declaration: property: value;
@@ -385,6 +387,8 @@ export class Parser {
 				if (prelude_nodes.length > 0) {
 					this.arena.append_children(prelude_wrapper, prelude_nodes)
 				}
+			} else {
+				prelude_wrapper = this.arena.create_node(RAW, trimmed[0], trimmed[1] - trimmed[0], at_rule_line, at_rule_column)
 			}
 		}
 
