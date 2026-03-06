@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { parse } from './parse'
-import { SELECTOR_LIST, DECLARATION, VALUE, AT_RULE, RAW } from './arena'
+import { SELECTOR_LIST, STYLE_RULE, DECLARATION, VALUE, AT_RULE, RAW } from './arena'
 import { PlainCSSNode } from './css-node'
 
 describe('Parser Options', () => {
@@ -97,7 +97,7 @@ describe('Parser Options', () => {
 			const root = parse(css, { parse_selectors: false })
 			const rule = root.first_child
 
-			// Selector should exist but be simple (just NODE_SELECTOR_LIST, no detailed structure)
+			// Selector should exist but be simple (just RAW, no detailed structure)
 			const selector = rule?.first_child
 			expect(selector).not.toBeNull()
 			expect(selector?.type).toBe(RAW)
@@ -109,6 +109,24 @@ describe('Parser Options', () => {
 			const declaration = block?.first_child
 			expect(declaration?.has_children).toBe(true)
 			expect(declaration?.first_child?.type).toBe(VALUE)
+		})
+
+		it('RAW node is attached as first child of STYLE_RULE', () => {
+			const root = parse(css, { parse_selectors: false })
+			const rule = root.first_child
+			expect(rule?.type).toBe(STYLE_RULE)
+			const raw = rule?.first_child
+			expect(raw?.type).toBe(RAW)
+			expect(raw?.text).toBe('body')
+		})
+
+		it('rule.prelude returns the RAW node', () => {
+			const root = parse(css, { parse_selectors: false })
+			const rule = root.first_child
+			const prelude = rule?.prelude
+			expect(prelude).not.toBeNull()
+			expect(prelude?.type).toBe(RAW)
+			expect(prelude?.text).toBe('body')
 		})
 
 		it('should handle complex selectors without parsing', () => {
