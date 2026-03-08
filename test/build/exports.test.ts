@@ -1,9 +1,9 @@
 import { describe, test, expect } from 'vitest'
-import { NODE_AT_RULE, NODE_STYLE_RULE, NODE_STYLESHEET } from '../../dist/index.js'
+import { NODE_AT_RULE, NODE_STYLE_RULE, NODE_STYLESHEET } from '../../dist/index.mjs'
 
 describe('Package exports', () => {
 	test('should export main exports from main entry', async () => {
-		let { CSSNode, walk, traverse, parse, parse_atrule_prelude, parse_selector } = await import('../../dist/index.js')
+		let { CSSNode, walk, traverse, parse, parse_atrule_prelude, parse_selector } = await import('../../dist/index.mjs')
 
 		expect(typeof CSSNode).toBe('function')
 		expect(typeof walk).toBe('function')
@@ -20,7 +20,7 @@ describe('Package exports', () => {
 	})
 
 	test('should export Lexer from lexer entry', async () => {
-		let { tokenize } = await import('../../dist/tokenize.js')
+		let { tokenize } = await import('../../dist/tokenize.mjs')
 
 		expect(typeof tokenize).toBe('function')
 
@@ -32,7 +32,7 @@ describe('Package exports', () => {
 	})
 
 	test('should export parse from parse entry', async () => {
-		let { parse } = await import('../../dist/parse.js')
+		let { parse } = await import('../../dist/parse.mjs')
 
 		expect(typeof parse).toBe('function')
 
@@ -43,7 +43,7 @@ describe('Package exports', () => {
 	})
 
 	test('should have working CSSNode API', async () => {
-		let { parse } = await import('../../dist/index.js')
+		let { parse } = await import('../../dist/index.mjs')
 
 		let ast = parse('body { color: red; margin: 0; }')
 
@@ -60,7 +60,7 @@ describe('Package exports', () => {
 	})
 
 	test('should parse modern CSS with nesting', async () => {
-		let { parse } = await import('../../dist/parse.js')
+		let { parse } = await import('../../dist/parse.mjs')
 
 		let ast = parse('.parent { color: red; .child { color: blue; } }')
 
@@ -70,7 +70,7 @@ describe('Package exports', () => {
 	})
 
 	test('should parse at-rules', async () => {
-		let { parse } = await import('../../dist/parse.js')
+		let { parse } = await import('../../dist/parse.mjs')
 
 		let ast = parse('@media (min-width: 768px) { body { margin: 0; } }')
 
@@ -81,7 +81,7 @@ describe('Package exports', () => {
 
 	describe('Standalone function exports', () => {
 		test('should export parse() from main entry', async () => {
-			let { parse } = await import('../../dist/index.js')
+			let { parse } = await import('../../dist/index.mjs')
 
 			expect(typeof parse).toBe('function')
 
@@ -92,7 +92,7 @@ describe('Package exports', () => {
 		})
 
 		test('should export parse() from parse entry', async () => {
-			let { parse } = await import('../../dist/parse.js')
+			let { parse } = await import('../../dist/parse.mjs')
 
 			expect(typeof parse).toBe('function')
 
@@ -103,7 +103,7 @@ describe('Package exports', () => {
 		})
 
 		test('should export parse_selector() from main entry', async () => {
-			let { parse_selector } = await import('../../dist/index.js')
+			let { parse_selector } = await import('../../dist/index.mjs')
 
 			expect(typeof parse_selector).toBe('function')
 
@@ -115,7 +115,7 @@ describe('Package exports', () => {
 		})
 
 		test('should export parse_selector() from parse-selector entry', async () => {
-			let { parse_selector } = await import('../../dist/parse-selector.js')
+			let { parse_selector } = await import('../../dist/parse-selector.mjs')
 
 			expect(typeof parse_selector).toBe('function')
 
@@ -127,7 +127,7 @@ describe('Package exports', () => {
 		})
 
 		test('should export parse_atrule_prelude() from main entry', async () => {
-			let { parse_atrule_prelude } = await import('../../dist/index.js')
+			let { parse_atrule_prelude } = await import('../../dist/index.mjs')
 
 			expect(typeof parse_atrule_prelude).toBe('function')
 
@@ -139,7 +139,7 @@ describe('Package exports', () => {
 		})
 
 		test('should export parse_atrule_prelude() from parse-atrule-prelude entry', async () => {
-			let { parse_atrule_prelude } = await import('../../dist/parse-atrule-prelude.js')
+			let { parse_atrule_prelude } = await import('../../dist/parse-atrule-prelude.mjs')
 
 			expect(typeof parse_atrule_prelude).toBe('function')
 
@@ -151,7 +151,7 @@ describe('Package exports', () => {
 		})
 
 		test('parse() should accept options', async () => {
-			let { parse } = await import('../../dist/parse.js')
+			let { parse } = await import('../../dist/parse.mjs')
 
 			// Test with parse_values option
 			let ast = parse('body { color: red; }', { parse_values: true })
@@ -162,7 +162,7 @@ describe('Package exports', () => {
 		})
 
 		test('parse_selector() should handle empty selector', async () => {
-			let { parse_selector } = await import('../../dist/parse-selector.js')
+			let { parse_selector } = await import('../../dist/parse-selector.mjs')
 
 			let selector = parse_selector('')
 			expect(selector.type).toBe(5) // NODE_SELECTOR
@@ -170,7 +170,7 @@ describe('Package exports', () => {
 		})
 
 		test('parse_atrule_prelude() should handle unsupported at-rules', async () => {
-			let { parse_atrule_prelude } = await import('../../dist/parse-atrule-prelude.js')
+			let { parse_atrule_prelude } = await import('../../dist/parse-atrule-prelude.mjs')
 
 			// @import is now supported, expect 1 node (the URL node)
 			let nodes = parse_atrule_prelude('import', 'url("styles.css")')
@@ -184,7 +184,7 @@ describe('Package exports', () => {
 		})
 
 		test('standalone functions should be iterable', async () => {
-			let { parse, parse_selector, parse_atrule_prelude } = await import('../../dist/index.js')
+			let { parse, parse_selector, parse_atrule_prelude } = await import('../../dist/index.mjs')
 
 			// Test parse() iterability
 			let ast = parse('body { } div { }')

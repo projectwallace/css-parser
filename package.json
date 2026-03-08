@@ -11,46 +11,45 @@
 	"issues": "https://github.com/projectwallace/css-parser/issues",
 	"homepage": "https://github.com/projectwallace/css-parser",
 	"type": "module",
-	"main": "./dist/index.js",
-	"module": "./dist/index.js",
-	"types": "./dist/index.d.ts",
+	"main": "./dist/index.mjs",
+	"types": "./dist/index.d.mts",
 	"exports": {
 		".": {
-			"types": "./dist/index.d.ts",
-			"import": "./dist/index.js"
+			"types": "./dist/index.d.mts",
+			"import": "./dist/index.mjs"
 		},
 		"./package.json": "./package.json",
 		"./tokenizer": {
-			"types": "./dist/tokenize.d.ts",
-			"import": "./dist/tokenize.js"
+			"types": "./dist/tokenize.d.mts",
+			"import": "./dist/tokenize.mjs"
 		},
 		"./parse": {
-			"types": "./dist/parse.d.ts",
-			"import": "./dist/parse.js"
+			"types": "./dist/parse.d.mts",
+			"import": "./dist/parse.mjs"
 		},
 		"./parse-selector": {
-			"types": "./dist/parse-selector.d.ts",
-			"import": "./dist/parse-selector.js"
+			"types": "./dist/parse-selector.d.mts",
+			"import": "./dist/parse-selector.mjs"
 		},
 		"./parse-atrule-prelude": {
-			"types": "./dist/parse-atrule-prelude.d.ts",
-			"import": "./dist/parse-atrule-prelude.js"
+			"types": "./dist/parse-atrule-prelude.d.mts",
+			"import": "./dist/parse-atrule-prelude.mjs"
 		},
 		"./parse-declaration": {
-			"types": "./dist/parse-declaration.d.ts",
-			"import": "./dist/parse-declaration.js"
+			"types": "./dist/parse-declaration.d.mts",
+			"import": "./dist/parse-declaration.mjs"
 		},
 		"./parse-value": {
-			"types": "./dist/parse-value.d.ts",
-			"import": "./dist/parse-value.js"
+			"types": "./dist/parse-value.d.mts",
+			"import": "./dist/parse-value.mjs"
 		},
 		"./parse-anplusb": {
-			"types": "./dist/parse-anplusb.d.ts",
-			"import": "./dist/parse-anplusb.js"
+			"types": "./dist/parse-anplusb.d.mts",
+			"import": "./dist/parse-anplusb.mjs"
 		},
 		"./parse-dimension": {
-			"types": "./dist/parse-dimension.d.ts",
-			"import": "./dist/parse-dimension.js"
+			"types": "./dist/parse-dimension.d.mts",
+			"import": "./dist/parse-dimension.mjs"
 		}
 	},
 	"files": [
@@ -60,11 +59,10 @@
 		"test": "vitest",
 		"test-coverage": "vitest --coverage",
 		"test-build": "npm run build && vitest run --config vitest.config.build.ts",
-		"build": "vite build && tsc --project tsconfig.build.json",
+		"build": "tsdown",
 		"benchmark": "npm run build && node benchmark/index.ts",
 		"benchmark:memory": "npm run build && node --expose-gc benchmark/memory.ts",
 		"lint": "oxlint --config .oxlintrc.json",
-		"lint-package": "publint",
 		"check": "tsc --noEmit",
 		"precommit": "npm run test -- --run; npm run lint; npm run check"
 	},
@@ -76,7 +74,7 @@
 		"ast"
 	],
 	"devDependencies": {
-		"@codecov/vite-plugin": "^1.9.1",
+		"@codecov/rollup-plugin": "^1.9.1",
 		"@projectwallace/preset-oxlint": "^0.0.7",
 		"@types/node": "^24.10.1",
 		"@vitest/coverage-v8": "^4.0.8",
@@ -85,16 +83,10 @@
 		"oxlint": "^1.28.0",
 		"postcss": "^8.5.6",
 		"prettier": "^3.6.2",
-		"publint": "^0.3.15",
 		"tailwindcss": "^2.2.8",
 		"tinybench": "^2.9.0",
 		"typescript": "^5.9.3",
-		"vite": "^7.2.2",
+		"tsdown": "^0.21.0",
 		"vitest": "^4.0.8"
-	},
-	"overrides": {
-		"@codecov/vite-plugin": {
-			"vite": "$vite"
-		}
 	}
 }
