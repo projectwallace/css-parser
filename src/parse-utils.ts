@@ -25,7 +25,11 @@ export function skip_whitespace_forward(source: string, pos: number, end: number
  * @returns New position after skipping whitespace/comments
  * @internal
  */
-export function skip_whitespace_and_comments_forward(source: string, pos: number, end: number): number {
+export function skip_whitespace_and_comments_forward(
+	source: string,
+	pos: number,
+	end: number,
+): number {
 	while (pos < end) {
 		let ch = source.charCodeAt(pos)
 
@@ -36,10 +40,18 @@ export function skip_whitespace_and_comments_forward(source: string, pos: number
 		}
 
 		// Skip comments /*...*/
-		if (ch === CHAR_FORWARD_SLASH && pos + 1 < end && source.charCodeAt(pos + 1) === CHAR_ASTERISK) {
+		if (
+			ch === CHAR_FORWARD_SLASH &&
+			pos + 1 < end &&
+			source.charCodeAt(pos + 1) === CHAR_ASTERISK
+		) {
 			pos += 2 // Skip /*
 			while (pos < end) {
-				if (source.charCodeAt(pos) === CHAR_ASTERISK && pos + 1 < end && source.charCodeAt(pos + 1) === CHAR_FORWARD_SLASH) {
+				if (
+					source.charCodeAt(pos) === CHAR_ASTERISK &&
+					pos + 1 < end &&
+					source.charCodeAt(pos + 1) === CHAR_FORWARD_SLASH
+				) {
 					pos += 2 // Skip */
 					break
 				}
@@ -62,7 +74,11 @@ export function skip_whitespace_and_comments_forward(source: string, pos: number
  * @returns New position after skipping whitespace/comments backward
  * @internal
  */
-export function skip_whitespace_and_comments_backward(source: string, pos: number, start: number): number {
+export function skip_whitespace_and_comments_backward(
+	source: string,
+	pos: number,
+	start: number,
+): number {
 	while (pos > start) {
 		let ch = source.charCodeAt(pos - 1)
 
@@ -76,7 +92,11 @@ export function skip_whitespace_and_comments_backward(source: string, pos: numbe
 		if (pos >= 2 && ch === CHAR_FORWARD_SLASH && source.charCodeAt(pos - 2) === CHAR_ASTERISK) {
 			pos -= 2 // Skip */
 			while (pos > start) {
-				if (pos >= 2 && source.charCodeAt(pos - 2) === CHAR_FORWARD_SLASH && source.charCodeAt(pos - 1) === CHAR_ASTERISK) {
+				if (
+					pos >= 2 &&
+					source.charCodeAt(pos - 2) === CHAR_FORWARD_SLASH &&
+					source.charCodeAt(pos - 1) === CHAR_ASTERISK
+				) {
 					pos -= 2 // Skip /*
 					break
 				}
@@ -103,7 +123,11 @@ export function skip_whitespace_and_comments_backward(source: string, pos: numbe
  * of the specified range. Returns the trimmed boundaries or null if the range
  * contains only whitespace and comments.
  */
-export function trim_boundaries(source: string, start: number, end: number): [number, number] | null {
+export function trim_boundaries(
+	source: string,
+	start: number,
+	end: number,
+): [number, number] | null {
 	start = skip_whitespace_and_comments_forward(source, start, end)
 	end = skip_whitespace_and_comments_backward(source, end, start)
 

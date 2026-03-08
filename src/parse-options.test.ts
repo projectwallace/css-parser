@@ -306,7 +306,13 @@ describe('Parser Options', () => {
 
 	describe('on_comment callback', () => {
 		it('should call on_comment for each comment in the CSS', () => {
-			const comments: Array<{ start: number; end: number; length: number; line: number; column: number }> = []
+			const comments: Array<{
+				start: number
+				end: number
+				length: number
+				line: number
+				column: number
+			}> = []
 			const css = '/* first */ body { /* second */ color: red; /* third */ }'
 
 			parse(css, {

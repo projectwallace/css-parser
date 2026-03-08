@@ -28,11 +28,12 @@ function parse(source: string, options?: ParserOptions): CSSNode
   - `parse_atrule_preludes?: boolean` - Parse at-rule preludes (default: `true`)
 
 The `CommentInfo` object passed to `on_comment` contains:
-  - `start: number` - Starting offset in source (0-based)
-  - `end: number` - Ending offset in source (0-based)
-  - `length: number` - Length of the comment
-  - `line: number` - Starting line number (1-based)
-  - `column: number` - Starting column number (1-based)
+
+- `start: number` - Starting offset in source (0-based)
+- `end: number` - Ending offset in source (0-based)
+- `length: number` - Length of the comment
+- `line: number` - Starting line number (1-based)
+- `column: number` - Starting column number (1-based)
 
 ### Returns
 
@@ -583,7 +584,11 @@ console.log(nodes[0].text) // "(min-width: 768px)"
 Walk the AST in depth-first order, calling the callback for each node.
 
 ```typescript
-function walk(node: CSSNode, callback: (node: CSSNode, depth: number) => void | typeof SKIP | typeof BREAK, depth?: number): boolean
+function walk(
+	node: CSSNode,
+	callback: (node: CSSNode, depth: number) => void | typeof SKIP | typeof BREAK,
+	depth?: number,
+): boolean
 ```
 
 ### Parameters
@@ -774,6 +779,7 @@ function* tokenize(source: string, on_comment?: (info: CommentInfo) => void): Ge
 ```
 
 **Parameters:**
+
 - **`source`** (`string`) - CSS source code to tokenize
 - **`on_comment`** (`(info: CommentInfo) => void`, optional) - Callback for each comment encountered
 
@@ -921,7 +927,12 @@ Use these constants with the `node.attr_flags` property to identify case sensiti
 #### Example
 
 ```javascript
-import { parse_selector, ATTRIBUTE_SELECTOR, ATTR_OPERATOR_EQUAL, ATTR_FLAG_CASE_INSENSITIVE } from '@projectwallace/css-parser'
+import {
+	parse_selector,
+	ATTRIBUTE_SELECTOR,
+	ATTR_OPERATOR_EQUAL,
+	ATTR_FLAG_CASE_INSENSITIVE,
+} from '@projectwallace/css-parser'
 
 const ast = parse_selector('[type="text" i]')
 

@@ -9,8 +9,14 @@ import * as postcss from 'postcss'
 
 // Sample CSS for benchmarking - realistic production-like CSS
 const largeCSS = fs.readFileSync(path.resolve('benchmark/medium.css'), 'utf-8')
-const bootstrapCSS = fs.readFileSync(path.resolve('node_modules/bootstrap/dist/css/bootstrap.css'), 'utf-8')
-const tailwindCSS = fs.readFileSync(path.resolve('node_modules/tailwindcss/dist/tailwind.css'), 'utf-8')
+const bootstrapCSS = fs.readFileSync(
+	path.resolve('node_modules/bootstrap/dist/css/bootstrap.css'),
+	'utf-8',
+)
+const tailwindCSS = fs.readFileSync(
+	path.resolve('node_modules/tailwindcss/dist/tailwind.css'),
+	'utf-8',
+)
 
 const bench = new Bench({ time: 1000 })
 

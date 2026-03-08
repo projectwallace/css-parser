@@ -9,7 +9,13 @@ export { parse_value } from './parse-value'
 export { parse_dimension } from './parse-dimension'
 export { tokenize } from './tokenize'
 export { walk, traverse, SKIP, BREAK } from './walk'
-export { is_custom, is_vendor_prefixed, str_equals, str_starts_with, str_index_of } from './string-utils'
+export {
+	is_custom,
+	is_vendor_prefixed,
+	str_equals,
+	str_starts_with,
+	str_index_of,
+} from './string-utils'
 
 // Advanced/class-based API
 export { type ParserOptions } from './parse'

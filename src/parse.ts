@@ -34,7 +34,13 @@ import {
 	TOKEN_FUNCTION,
 } from './token-types'
 import { trim_boundaries } from './parse-utils'
-import { CHAR_PERIOD, CHAR_GREATER_THAN, CHAR_PLUS, CHAR_TILDE, CHAR_AMPERSAND } from './string-utils'
+import {
+	CHAR_PERIOD,
+	CHAR_GREATER_THAN,
+	CHAR_PLUS,
+	CHAR_TILDE,
+	CHAR_AMPERSAND,
+} from './string-utils'
 
 export interface ParserOptions {
 	parse_values?: boolean
@@ -44,8 +50,26 @@ export interface ParserOptions {
 }
 
 // Static at-rule lookup sets for fast classification
-let DECLARATION_AT_RULES = new Set(['font-face', 'font-feature-values', 'page', 'property', 'counter-style', 'color-profile', 'font-palette-values', 'position-try', 'view-transition'])
-let CONDITIONAL_AT_RULES = new Set(['media', 'supports', 'container', 'layer', 'nest', 'scope', 'starting-style'])
+let DECLARATION_AT_RULES = new Set([
+	'font-face',
+	'font-feature-values',
+	'page',
+	'property',
+	'counter-style',
+	'color-profile',
+	'font-palette-values',
+	'position-try',
+	'view-transition',
+])
+let CONDITIONAL_AT_RULES = new Set([
+	'media',
+	'supports',
+	'container',
+	'layer',
+	'nest',
+	'scope',
+	'starting-style',
+])
 
 /** @internal */
 export class Parser {
@@ -74,8 +98,12 @@ export class Parser {
 		this.arena = new CSSDataArena(capacity)
 
 		// Only create parsers if needed
-		this.selector_parser = this.parse_selectors_enabled ? new SelectorParser(this.arena, source) : null
-		this.prelude_parser = this.parse_atrule_preludes_enabled ? new AtRulePreludeParser(this.arena, source) : null
+		this.selector_parser = this.parse_selectors_enabled
+			? new SelectorParser(this.arena, source)
+			: null
+		this.prelude_parser = this.parse_atrule_preludes_enabled
+			? new AtRulePreludeParser(this.arena, source)
+			: null
 		this.declaration_parser = new DeclarationParser(this.arena, source, this.parse_values_enabled)
 	}
 
@@ -264,7 +292,12 @@ export class Parser {
 
 		// If detailed selector parsing is enabled, use SelectorParser
 		if (this.parse_selectors_enabled && this.selector_parser) {
-			let selector = this.selector_parser.parse_selector(selector_start, last_end, selector_line, selector_column)
+			let selector = this.selector_parser.parse_selector(
+				selector_start,
+				last_end,
+				selector_line,
+				selector_column,
+			)
 			if (selector !== null) {
 				return selector
 			}
@@ -272,7 +305,13 @@ export class Parser {
 
 		// Create node: RAW when parsing disabled, SELECTOR_LIST as error fallback
 		let node_type = this.parse_selectors_enabled ? SELECTOR_LIST : RAW
-		let selector_node = this.arena.create_node(node_type, selector_start, last_end - selector_start, selector_line, selector_column)
+		let selector_node = this.arena.create_node(
+			node_type,
+			selector_start,
+			last_end - selector_start,
+			selector_line,
+			selector_column,
+		)
 		return selector_node
 	}
 
@@ -282,7 +321,11 @@ export class Parser {
 		const token_type = this.peek_type()
 
 		// Accept identifiers, at-keywords, and hash tokens
-		if (token_type === TOKEN_IDENT || token_type === TOKEN_AT_KEYWORD || token_type === TOKEN_HASH) {
+		if (
+			token_type === TOKEN_IDENT ||
+			token_type === TOKEN_AT_KEYWORD ||
+			token_type === TOKEN_HASH
+		) {
 			return this.declaration_parser.parse_declaration_with_lexer(this.lexer, this.source.length)
 		}
 
@@ -380,15 +423,33 @@ export class Parser {
 
 			// Create AT_RULE_PRELUDE wrapper if prelude parsing is enabled
 			if (this.prelude_parser) {
-				prelude_wrapper = this.arena.create_node(AT_RULE_PRELUDE, trimmed[0], trimmed[1] - trimmed[0], at_rule_line, at_rule_column)
+				prelude_wrapper = this.arena.create_node(
+					AT_RULE_PRELUDE,
+					trimmed[0],
+					trimmed[1] - trimmed[0],
+					at_rule_line,
+					at_rule_column,
+				)
 
 				// Parse prelude and add structured nodes as children
-				let prelude_nodes = this.prelude_parser.parse_prelude(at_rule_name, trimmed[0], trimmed[1], at_rule_line, at_rule_column)
+				let prelude_nodes = this.prelude_parser.parse_prelude(
+					at_rule_name,
+					trimmed[0],
+					trimmed[1],
+					at_rule_line,
+					at_rule_column,
+				)
 				if (prelude_nodes.length > 0) {
 					this.arena.append_children(prelude_wrapper, prelude_nodes)
 				}
 			} else {
-				prelude_wrapper = this.arena.create_node(RAW, trimmed[0], trimmed[1] - trimmed[0], at_rule_line, at_rule_column)
+				prelude_wrapper = this.arena.create_node(
+					RAW,
+					trimmed[0],
+					trimmed[1] - trimmed[0],
+					at_rule_line,
+					at_rule_column,
+				)
 			}
 		}
 

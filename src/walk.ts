@@ -66,7 +66,10 @@ interface WalkEnterLeaveOptions {
  * @param node - The root node to start walking from
  * @param options - Object with optional enter and leave callback functions
  */
-export function traverse(node: CSSNode, { enter = NOOP, leave = NOOP }: WalkEnterLeaveOptions = {}): boolean {
+export function traverse(
+	node: CSSNode,
+	{ enter = NOOP, leave = NOOP }: WalkEnterLeaveOptions = {},
+): boolean {
 	// Call enter callback before processing children
 	const enter_result = enter(node)
 

@@ -900,7 +900,8 @@ describe('Core Nodes', () => {
 
 			describe('Nested at-rules', () => {
 				test('@media inside @supports', () => {
-					const source = '@supports (display: grid) { @media (min-width: 768px) { body { color: red; } } }'
+					const source =
+						'@supports (display: grid) { @media (min-width: 768px) { body { color: red; } } }'
 					const root = parse(source, { parse_atrule_preludes: false })
 
 					const supports = root.first_child!
@@ -923,7 +924,8 @@ describe('Core Nodes', () => {
 
 			describe('Multiple at-rules', () => {
 				test('multiple at-rules at top level', () => {
-					const source = '@import url("a.css"); @layer base { body { margin: 0; } } @media print { body { color: black; } }'
+					const source =
+						'@import url("a.css"); @layer base { body { margin: 0; } } @media print { body { color: black; } }'
 					const root = parse(source)
 
 					const [import1, layer, media] = root.children
@@ -985,7 +987,8 @@ describe('Core Nodes', () => {
 				})
 
 				test('@property', () => {
-					let source = '@property --my-color { syntax: "<color>"; inherits: false; initial-value: #c0ffee; }'
+					let source =
+						'@property --my-color { syntax: "<color>"; inherits: false; initial-value: #c0ffee; }'
 					let root = parse(source)
 
 					let property = root.first_child!
@@ -1497,7 +1500,8 @@ describe('Core Nodes', () => {
 				})
 
 				test('multiple vendor-prefixed properties', () => {
-					let source = '.box { -webkit-transform: scale(1); -moz-transform: scale(1); transform: scale(1); }'
+					let source =
+						'.box { -webkit-transform: scale(1); -moz-transform: scale(1); transform: scale(1); }'
 					let root = parse(source)
 
 					let rule = root.first_child!
@@ -1977,7 +1981,8 @@ describe('Core Nodes', () => {
 				})
 
 				test('multiple nested rules with different leading combinators', () => {
-					let source = '.parent { > a { color: red; } ~ span { color: blue; } + div { color: green; } }'
+					let source =
+						'.parent { > a { color: red; } ~ span { color: blue; } + div { color: green; } }'
 					let root = parse(source)
 
 					let parent = root.first_child!
@@ -2096,7 +2101,8 @@ describe('Core Nodes', () => {
 			})
 
 			test('@keyframes with mixed percentages and keywords', () => {
-				let source = '@keyframes slide { from { left: 0; } 25%, 75% { left: 50%; } to { left: 100%; } }'
+				let source =
+					'@keyframes slide { from { left: 0; } 25%, 75% { left: 50%; } to { left: 100%; } }'
 				let root = parse(source, { parse_atrule_preludes: false })
 
 				let keyframes = root.first_child!
@@ -2356,7 +2362,8 @@ describe('Core Nodes', () => {
 			})
 
 			test('vendor prefixed properties', () => {
-				let source = '.box { -webkit-transform: scale(1); -moz-transform: scale(1); transform: scale(1); }'
+				let source =
+					'.box { -webkit-transform: scale(1); -moz-transform: scale(1); transform: scale(1); }'
 				let root = parse(source)
 
 				let rule = root.first_child!
@@ -2368,7 +2375,8 @@ describe('Core Nodes', () => {
 			})
 
 			test('complex selector list', () => {
-				let source = 'h1, h2, h3, h4, h5, h6, .heading, [role="heading"] { font-family: sans-serif; }'
+				let source =
+					'h1, h2, h3, h4, h5, h6, .heading, [role="heading"] { font-family: sans-serif; }'
 				let root = parse(source)
 
 				let rule = root.first_child!
@@ -2400,7 +2408,8 @@ describe('Core Nodes', () => {
 			})
 
 			test('CSS with calc() and other functions', () => {
-				let source = '.box { width: calc(100% - 2rem); background: linear-gradient(to right, red, blue); }'
+				let source =
+					'.box { width: calc(100% - 2rem); background: linear-gradient(to right, red, blue); }'
 				let root = parse(source)
 
 				let rule = root.first_child!
@@ -2411,7 +2420,8 @@ describe('Core Nodes', () => {
 			})
 
 			test('custom properties', () => {
-				let source = ':root { --primary-color: #007bff; --spacing: 1rem; } body { color: var(--primary-color); }'
+				let source =
+					':root { --primary-color: #007bff; --spacing: 1rem; } body { color: var(--primary-color); }'
 				let root = parse(source)
 
 				expect(root.children.length).toBeGreaterThan(0)
@@ -2549,7 +2559,8 @@ describe('Core Nodes', () => {
 	describe('Large inline SVG', () => {
 		test('should correctly parse declaration with huge inline SVG background-image', () => {
 			// Generate a very long SVG string (> 65535 chars)
-			const svgPart = '<svg xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="red"/></svg>'
+			const svgPart =
+				'<svg xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="red"/></svg>'
 			const longSvg = svgPart.repeat(1000) // 89,000 chars
 			// Add a second declaration after the huge SVG to test startColumn overflow
 			const css = `.test { background-image: url("data:image/svg+xml,${longSvg}"); color: red; }`

@@ -28,7 +28,13 @@ export const CHAR_LESS_THAN = 0x3c // <
  * @internal
  */
 export function is_whitespace(ch: number): boolean {
-	return ch === CHAR_SPACE || ch === CHAR_TAB || ch === CHAR_NEWLINE || ch === CHAR_CARRIAGE_RETURN || ch === CHAR_FORM_FEED
+	return (
+		ch === CHAR_SPACE ||
+		ch === CHAR_TAB ||
+		ch === CHAR_NEWLINE ||
+		ch === CHAR_CARRIAGE_RETURN ||
+		ch === CHAR_FORM_FEED
+	)
 }
 
 /** @internal */

@@ -248,7 +248,11 @@ export class Lexer {
 
 		// CDO: <!--
 		if (ch === CHAR_LESS_THAN && this.pos + 3 < this.source.length) {
-			if (this.peek() === CHAR_EXCLAMATION && this.peek(2) === CHAR_HYPHEN && this.peek(3) === CHAR_HYPHEN) {
+			if (
+				this.peek() === CHAR_EXCLAMATION &&
+				this.peek(2) === CHAR_HYPHEN &&
+				this.peek(3) === CHAR_HYPHEN
+			) {
 				this.advance(4)
 				return this.make_token(TOKEN_CDO, start, this.pos, start_line, start_column)
 			}
@@ -405,7 +409,11 @@ export class Lexer {
 
 		// Decimal part
 		// Hot path: inline digit check for decimal detection
-		if (this.pos < this.source.length && this.source.charCodeAt(this.pos) === CHAR_DOT && this.pos + 1 < this.source.length) {
+		if (
+			this.pos < this.source.length &&
+			this.source.charCodeAt(this.pos) === CHAR_DOT &&
+			this.pos + 1 < this.source.length
+		) {
 			let next = this.peek()
 			if (next < 128 && (char_types[next] & CHAR_DIGIT) !== 0) {
 				this.advance() // .
@@ -518,8 +526,11 @@ export class Lexer {
 		// Must be exactly 'u' or 'U' followed by '+'
 		if (this.pos - start === 1) {
 			let first_ch = this.source.charCodeAt(start)
-			if ((first_ch === CHAR_LOWERCASE_U || first_ch === CHAR_UPPERCASE_U) &&
-				this.pos < this.source.length && this.source.charCodeAt(this.pos) === CHAR_PLUS) {
+			if (
+				(first_ch === CHAR_LOWERCASE_U || first_ch === CHAR_UPPERCASE_U) &&
+				this.pos < this.source.length &&
+				this.source.charCodeAt(this.pos) === CHAR_PLUS
+			) {
 				return this.consume_unicode_range(start, start_line, start_column)
 			}
 		}
@@ -628,7 +639,11 @@ export class Lexer {
 			// Inline newline check - only update on newline
 			if (ch < 128 && (char_types[ch] & CHAR_NEWLINE) !== 0) {
 				// Handle \r\n as single newline
-				if (ch === CHAR_CARRIAGE_RETURN && this.pos < this.source.length && this.source.charCodeAt(this.pos) === CHAR_LINE_FEED) {
+				if (
+					ch === CHAR_CARRIAGE_RETURN &&
+					this.pos < this.source.length &&
+					this.source.charCodeAt(this.pos) === CHAR_LINE_FEED
+				) {
 					this.pos++
 				}
 				this._line++
@@ -647,7 +662,11 @@ export class Lexer {
 			// Inline newline check - only update on newline
 			if (ch < 128 && (char_types[ch] & CHAR_NEWLINE) !== 0) {
 				// Handle \r\n as single newline
-				if (ch === CHAR_CARRIAGE_RETURN && this.pos < this.source.length && this.source.charCodeAt(this.pos) === CHAR_LINE_FEED) {
+				if (
+					ch === CHAR_CARRIAGE_RETURN &&
+					this.pos < this.source.length &&
+					this.source.charCodeAt(this.pos) === CHAR_LINE_FEED
+				) {
 					this.pos++
 					i++ // Count \r\n as 2 characters for advance(count)
 				}
@@ -663,7 +682,13 @@ export class Lexer {
 		return this.source.charCodeAt(index)
 	}
 
-	make_token(type: TokenType, start: number, end: number, line: number = this.line, column: number = this.column): TokenType {
+	make_token(
+		type: TokenType,
+		start: number,
+		end: number,
+		line: number = this.line,
+		column: number = this.column,
+	): TokenType {
 		this.token_type = type
 		this.token_start = start
 		this.token_end = end
@@ -732,11 +757,19 @@ export class Lexer {
 			}
 
 			// Skip comments /*...*/
-			if (ch === CHAR_FORWARD_SLASH && this.pos + 1 < end && this.source.charCodeAt(this.pos + 1) === CHAR_ASTERISK) {
+			if (
+				ch === CHAR_FORWARD_SLASH &&
+				this.pos + 1 < end &&
+				this.source.charCodeAt(this.pos + 1) === CHAR_ASTERISK
+			) {
 				this.advance() // skip /
 				this.advance() // skip *
 				while (this.pos < end) {
-					if (this.source.charCodeAt(this.pos) === CHAR_ASTERISK && this.pos + 1 < end && this.source.charCodeAt(this.pos + 1) === CHAR_FORWARD_SLASH) {
+					if (
+						this.source.charCodeAt(this.pos) === CHAR_ASTERISK &&
+						this.pos + 1 < end &&
+						this.source.charCodeAt(this.pos + 1) === CHAR_FORWARD_SLASH
+					) {
 						this.advance() // skip *
 						this.advance() // skip /
 						break
@@ -757,7 +790,10 @@ export class Lexer {
  * @param on_comment - Optional callback for comment tokens
  * @yields CSS tokens
  */
-export function* tokenize(source: string, on_comment?: (info: CommentInfo) => void): Generator<Token, void, undefined> {
+export function* tokenize(
+	source: string,
+	on_comment?: (info: CommentInfo) => void,
+): Generator<Token, void, undefined> {
 	const lexer = new Lexer(source, on_comment)
 
 	while (true) {

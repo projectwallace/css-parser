@@ -1,6 +1,14 @@
 import { describe, test, expect } from 'vitest'
 import { readFileSync } from 'fs'
-import { CSSDataArena, STYLESHEET, STYLE_RULE, DECLARATION, FLAG_IMPORTANT, FLAG_HAS_ERROR, FLAG_LENGTH_OVERFLOW } from './arena'
+import {
+	CSSDataArena,
+	STYLESHEET,
+	STYLE_RULE,
+	DECLARATION,
+	FLAG_IMPORTANT,
+	FLAG_HAS_ERROR,
+	FLAG_LENGTH_OVERFLOW,
+} from './arena'
 import { parse } from './parse'
 
 describe('CSSDataArena', () => {
@@ -318,7 +326,8 @@ describe('CSSDataArena', () => {
 			const result = parse(css)
 
 			expect(result.__get_arena().get_growth_count()).toBe(0)
-			const utilization = (result.__get_arena().get_count() / result.__get_arena().get_capacity()) * 100
+			const utilization =
+				(result.__get_arena().get_count() / result.__get_arena().get_capacity()) * 100
 			expect(utilization).toBeLessThan(85)
 			expect(utilization).toBeGreaterThan(30)
 		})
@@ -350,7 +359,8 @@ describe('CSSDataArena', () => {
 			const result = parse(css)
 
 			expect(result.__get_arena().get_growth_count()).toBe(0)
-			const utilization = (result.__get_arena().get_count() / result.__get_arena().get_capacity()) * 100
+			const utilization =
+				(result.__get_arena().get_count() / result.__get_arena().get_capacity()) * 100
 			expect(utilization).toBeLessThan(85)
 			expect(utilization).toBeGreaterThan(30)
 		})
