@@ -2,14 +2,23 @@
 	"name": "@projectwallace/css-parser",
 	"version": "0.13.5",
 	"description": "High-performance CSS lexer and parser, optimized for CSS inspection and analysis",
-	"author": "Bart Veneman <bart@projectwallace.com>",
+	"keywords": [
+		"ast",
+		"css",
+		"lexer",
+		"parser",
+		"tokenizer"
+	],
+	"homepage": "https://github.com/projectwallace/css-parser",
 	"license": "MIT",
+	"author": "Bart Veneman <bart@projectwallace.com>",
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/projectwallace/css-parser.git"
 	},
-	"issues": "https://github.com/projectwallace/css-parser/issues",
-	"homepage": "https://github.com/projectwallace/css-parser",
+	"files": [
+		"dist"
+	],
 	"type": "module",
 	"main": "./dist/index.js",
 	"module": "./dist/index.js",
@@ -53,9 +62,6 @@
 			"import": "./dist/parse-dimension.js"
 		}
 	},
-	"files": [
-		"dist"
-	],
 	"scripts": {
 		"test": "vitest",
 		"test-coverage": "vitest --coverage",
@@ -63,17 +69,10 @@
 		"build": "tsdown",
 		"benchmark": "npm run build && node benchmark/index.ts",
 		"benchmark:memory": "npm run build && node --expose-gc benchmark/memory.ts",
-		"lint": "oxlint --config .oxlintrc.json",
+		"lint": "oxlint --config .oxlintrc.json && oxfmt --check",
 		"check": "tsc --noEmit",
 		"precommit": "npm run test -- --run; npm run lint; npm run check"
 	},
-	"keywords": [
-		"css",
-		"parser",
-		"lexer",
-		"tokenizer",
-		"ast"
-	],
 	"devDependencies": {
 		"@codecov/rollup-plugin": "^1.9.1",
 		"@projectwallace/preset-oxlint": "^0.0.7",
@@ -81,14 +80,15 @@
 		"@vitest/coverage-v8": "^4.0.8",
 		"bootstrap": "^5.3.8",
 		"css-tree": "^3.1.0",
+		"oxfmt": "^0.36.0",
 		"oxlint": "^1.28.0",
 		"postcss": "^8.5.6",
-		"prettier": "^3.6.2",
 		"publint": "^0.3.18",
 		"tailwindcss": "^2.2.8",
 		"tinybench": "^2.9.0",
 		"tsdown": "^0.21.0",
 		"typescript": "^5.9.3",
 		"vitest": "^4.0.8"
-	}
+	},
+	"issues": "https://github.com/projectwallace/css-parser/issues"
 }

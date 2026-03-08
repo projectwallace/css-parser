@@ -344,7 +344,13 @@ export class CSSDataArena {
 
 	// Allocate and initialize a new node with core properties
 	// Automatically grows the arena if capacity is exceeded
-	create_node(type: number, start_offset: number, length: number, start_line: number, start_column: number): number {
+	create_node(
+		type: number,
+		start_offset: number,
+		length: number,
+		start_line: number,
+		start_column: number,
+	): number {
 		if (this.count >= this.capacity) {
 			this.grow()
 		}

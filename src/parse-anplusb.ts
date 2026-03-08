@@ -6,7 +6,13 @@
 
 import { Lexer } from './tokenize'
 import { NTH_SELECTOR, CSSDataArena } from './arena'
-import { TOKEN_IDENT, TOKEN_NUMBER, TOKEN_DIMENSION, TOKEN_DELIM, type TokenType } from './token-types'
+import {
+	TOKEN_IDENT,
+	TOKEN_NUMBER,
+	TOKEN_DIMENSION,
+	TOKEN_DELIM,
+	type TokenType,
+} from './token-types'
 import { CHAR_MINUS_HYPHEN, CHAR_PLUS, str_equals, str_index_of } from './string-utils'
 import { CSSNode } from './css-node'
 
@@ -61,7 +67,10 @@ export class ANplusBParser {
 
 			// Check if it's 'n', '-n', or starts with 'n'
 			const first_char = this.source.charCodeAt(this.lexer.token_start)
-			const second_char = this.lexer.token_end > this.lexer.token_start + 1 ? this.source.charCodeAt(this.lexer.token_start + 1) : 0
+			const second_char =
+				this.lexer.token_end > this.lexer.token_start + 1
+					? this.source.charCodeAt(this.lexer.token_start + 1)
+					: 0
 
 			// -n, -n+3, -n-5
 			if (first_char === CHAR_MINUS_HYPHEN /* - */ && second_char === 0x6e /* n */) {
@@ -88,7 +97,13 @@ export class ANplusBParser {
 					b_start = this.lexer.token_start
 					b_end = this.lexer.token_end
 				}
-				return this.create_anplusb_node(node_start, a_start, a_end, b !== null ? b_start : 0, b !== null ? b_end : 0)
+				return this.create_anplusb_node(
+					node_start,
+					a_start,
+					a_end,
+					b !== null ? b_start : 0,
+					b !== null ? b_end : 0,
+				)
 			}
 
 			// n, n+3, n-5
@@ -117,7 +132,13 @@ export class ANplusBParser {
 					b_start = this.lexer.token_start
 					b_end = this.lexer.token_end
 				}
-				return this.create_anplusb_node(node_start, a_start, a_end, b !== null ? b_start : 0, b !== null ? b_end : 0)
+				return this.create_anplusb_node(
+					node_start,
+					a_start,
+					a_end,
+					b !== null ? b_start : 0,
+					b !== null ? b_end : 0,
+				)
 			}
 
 			// Not a valid An+B pattern
@@ -125,7 +146,10 @@ export class ANplusBParser {
 		}
 
 		// Handle +n pattern
-		if (this.lexer.token_type === TOKEN_DELIM && this.source.charCodeAt(this.lexer.token_start) === CHAR_PLUS) {
+		if (
+			this.lexer.token_type === TOKEN_DELIM &&
+			this.source.charCodeAt(this.lexer.token_start) === CHAR_PLUS
+		) {
 			// Look ahead for 'n'
 			const saved = this.lexer.save_position()
 			this.lexer.next_token_fast(true)
@@ -156,7 +180,13 @@ export class ANplusBParser {
 						b_start = this.lexer.token_start
 						b_end = this.lexer.token_end
 					}
-					return this.create_anplusb_node(node_start, a_start, a_end, b !== null ? b_start : 0, b !== null ? b_end : 0)
+					return this.create_anplusb_node(
+						node_start,
+						a_start,
+						a_end,
+						b !== null ? b_start : 0,
+						b !== null ? b_end : 0,
+					)
 				}
 			}
 
@@ -263,8 +293,20 @@ export class ANplusBParser {
 		this.lexer.skip_whitespace_in_range(this.expr_end)
 	}
 
-	private create_anplusb_node(start: number, a_start: number, a_end: number, b_start: number, b_end: number): number {
-		const node = this.arena.create_node(NTH_SELECTOR, start, this.lexer.pos - start, this.lexer.line, 1)
+	private create_anplusb_node(
+		start: number,
+		a_start: number,
+		a_end: number,
+		b_start: number,
+		b_end: number,
+	): number {
+		const node = this.arena.create_node(
+			NTH_SELECTOR,
+			start,
+			this.lexer.pos - start,
+			this.lexer.line,
+			1,
+		)
 
 		// Store 'a' coefficient in content fields if it exists (length > 0)
 		if (a_end > a_start) {

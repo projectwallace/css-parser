@@ -190,7 +190,8 @@ describe('Value Node Types', () => {
 		describe('PARENTHESIS', () => {
 			it('should have correct offset and length', () => {
 				const root = parse('div { width: calc((100% - 50px) / 2); }')
-				const func = root.first_child?.first_child?.next_sibling?.first_child?.first_child!.children[0]
+				const func =
+					root.first_child?.first_child?.next_sibling?.first_child?.first_child!.children[0]
 				const paren = func?.children[0]
 				expect(paren?.start).toBe(18)
 				expect(paren?.length).toBe(13)
@@ -201,7 +202,8 @@ describe('Value Node Types', () => {
 
 			it('should have correct line and column on line 2', () => {
 				const root = parse('div {\n  width: calc((100% - 50px) / 2);\n}')
-				const func = root.first_child?.first_child?.next_sibling?.first_child?.first_child!.children[0]
+				const func =
+					root.first_child?.first_child?.next_sibling?.first_child?.first_child!.children[0]
 				const paren = func?.children[0]
 				expect(paren?.start).toBe(20)
 				expect(paren?.length).toBe(13)
@@ -289,13 +291,15 @@ describe('Value Node Types', () => {
 
 		it('OPERATOR type constant', () => {
 			const root = parse('div { font-family: Arial, sans-serif; }')
-			const comma = root.first_child?.first_child?.next_sibling?.first_child?.first_child!.children[1]
+			const comma =
+				root.first_child?.first_child?.next_sibling?.first_child?.first_child!.children[1]
 			expect(comma?.type).toBe(OPERATOR)
 		})
 
 		it('PARENTHESIS type constant', () => {
 			const root = parse('div { width: calc((100% - 50px) / 2); }')
-			const func = root.first_child?.first_child?.next_sibling?.first_child?.first_child!.children[0]
+			const func =
+				root.first_child?.first_child?.next_sibling?.first_child?.first_child!.children[0]
 			const paren = func?.children[0]
 			expect(paren?.type).toBe(PARENTHESIS)
 		})
@@ -306,7 +310,9 @@ describe('Value Node Types', () => {
 		})
 
 		it('UNICODE_RANGE type constant', () => {
-			const root = parse('@font-face { unicode-range: u+0460-052f, u+1c80-1c8a, u+20b4, u+2de0-2dff, u+a640-a69f, u+fe2e-fe2f; }')
+			const root = parse(
+				'@font-face { unicode-range: u+0460-052f, u+1c80-1c8a, u+20b4, u+2de0-2dff, u+a640-a69f, u+fe2e-fe2f; }',
+			)
 			const atrule = root.first_child
 			const declaration = atrule?.block?.first_child
 			const unicode_range = declaration?.first_child?.children[0]
@@ -347,13 +353,15 @@ describe('Value Node Types', () => {
 
 		it('OPERATOR type_name', () => {
 			const root = parse('div { font-family: Arial, sans-serif; }')
-			const comma = root.first_child?.first_child?.next_sibling?.first_child?.first_child!.children[1]
+			const comma =
+				root.first_child?.first_child?.next_sibling?.first_child?.first_child!.children[1]
 			expect(comma?.type_name).toBe('Operator')
 		})
 
 		it('PARENTHESIS type_name', () => {
 			const root = parse('div { width: calc((100% - 50px) / 2); }')
-			const func = root.first_child?.first_child?.next_sibling?.first_child?.first_child!.children[0]
+			const func =
+				root.first_child?.first_child?.next_sibling?.first_child?.first_child!.children[0]
 			const paren = func?.children[0]
 			expect(paren?.type_name).toBe('Parentheses')
 		})
@@ -913,7 +921,9 @@ describe('Value Node Types', () => {
 			})
 
 			it('should parse wildcard variations', () => {
-				const root = parse('@font-face { unicode-range: u+?, u+??, u+???, u+????, u+?????, u+??????; }')
+				const root = parse(
+					'@font-face { unicode-range: u+?, u+??, u+???, u+????, u+?????, u+??????; }',
+				)
 				const decl = root.first_child?.block?.first_child
 
 				expect(decl?.first_child!.children[0].type).toBe(UNICODE_RANGE)

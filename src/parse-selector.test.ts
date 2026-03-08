@@ -1260,7 +1260,9 @@ describe('Selector Nodes', () => {
 			})
 
 			it('should parse complex selector list', () => {
-				const { arena, rootNode, source } = parseSelectorInternal('div.container, .wrapper > p, #app')
+				const { arena, rootNode, source } = parseSelectorInternal(
+					'div.container, .wrapper > p, #app',
+				)
 
 				expect(rootNode).not.toBeNull()
 				if (!rootNode) return
@@ -1296,7 +1298,11 @@ describe('Selector Nodes', () => {
 				const selector = selector_list.children[0]
 				expect(selector.type).toBe(SELECTOR)
 				expect(selector.text).toBe('a /* comment */ /*comment */ b')
-				expect(selector.children.map((child) => child.type)).toEqual([TYPE_SELECTOR, COMBINATOR, TYPE_SELECTOR])
+				expect(selector.children.map((child) => child.type)).toEqual([
+					TYPE_SELECTOR,
+					COMBINATOR,
+					TYPE_SELECTOR,
+				])
 			})
 
 			it('should parse selector with comments around child combinator', () => {
@@ -1305,7 +1311,11 @@ describe('Selector Nodes', () => {
 				const selector = selector_list.children[0]
 				expect(selector.type).toBe(SELECTOR)
 				expect(selector.text).toBe('a /* comment */ > /*comment */ b')
-				expect(selector.children.map((child) => child.type)).toEqual([TYPE_SELECTOR, COMBINATOR, TYPE_SELECTOR])
+				expect(selector.children.map((child) => child.type)).toEqual([
+					TYPE_SELECTOR,
+					COMBINATOR,
+					TYPE_SELECTOR,
+				])
 			})
 
 			it('should parse selector with comments around sibling combinator', () => {
@@ -1314,7 +1324,11 @@ describe('Selector Nodes', () => {
 				const selector = selector_list.children[0]
 				expect(selector.type).toBe(SELECTOR)
 				expect(selector.text).toBe('a /* comment */ + /*comment */ b')
-				expect(selector.children.map((child) => child.type)).toEqual([TYPE_SELECTOR, COMBINATOR, TYPE_SELECTOR])
+				expect(selector.children.map((child) => child.type)).toEqual([
+					TYPE_SELECTOR,
+					COMBINATOR,
+					TYPE_SELECTOR,
+				])
 			})
 
 			it('should parse selector with comments around adjecent sibling combinator', () => {
@@ -1323,7 +1337,11 @@ describe('Selector Nodes', () => {
 				const selector = selector_list.children[0]
 				expect(selector.type).toBe(SELECTOR)
 				expect(selector.text).toBe('a /* comment */ ~ /*comment */ b')
-				expect(selector.children.map((child) => child.type)).toEqual([TYPE_SELECTOR, COMBINATOR, TYPE_SELECTOR])
+				expect(selector.children.map((child) => child.type)).toEqual([
+					TYPE_SELECTOR,
+					COMBINATOR,
+					TYPE_SELECTOR,
+				])
 			})
 		})
 

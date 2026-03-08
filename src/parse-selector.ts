@@ -45,7 +45,11 @@ import {
 	TOKEN_PERCENTAGE,
 	type TokenType,
 } from './token-types'
-import { skip_whitespace_forward, skip_whitespace_and_comments_forward, skip_whitespace_and_comments_backward } from './parse-utils'
+import {
+	skip_whitespace_forward,
+	skip_whitespace_and_comments_forward,
+	skip_whitespace_and_comments_backward,
+} from './parse-utils'
 import {
 	is_whitespace,
 	str_equals,
@@ -85,7 +89,13 @@ export class SelectorParser {
 
 	// Parse a selector range into selector nodes (standalone use)
 	// Always returns a NODE_SELECTOR_LIST with selector components as children
-	parse_selector(start: number, end: number, line: number = 1, column: number = 1, allow_relative: boolean = true): number | null {
+	parse_selector(
+		start: number,
+		end: number,
+		line: number = 1,
+		column: number = 1,
+		allow_relative: boolean = true,
+	): number | null {
 		this.selector_end = end
 
 		// Position lexer at selector start
@@ -155,7 +165,13 @@ export class SelectorParser {
 
 		// Always wrap in selector list node, even for single selectors
 		if (selectors.length >= 1) {
-			let list_node = this.arena.create_node(SELECTOR_LIST, list_start, this.lexer.pos - list_start, list_line, list_column)
+			let list_node = this.arena.create_node(
+				SELECTOR_LIST,
+				list_start,
+				this.lexer.pos - list_start,
+				list_line,
+				list_column,
+			)
 
 			// Link selector wrapper nodes as children
 			this.arena.append_children(list_node, selectors)
@@ -345,23 +361,27 @@ export class SelectorParser {
 				// Pseudo-class function: :nth-child(), :is()
 				return this.parse_pseudo_function(start, end)
 
-		case TOKEN_PERCENTAGE:
-			// Percentage selector (for @keyframes): 0%, 50%, 100%
-			return this.create_node(DIMENSION, start, end)
+			case TOKEN_PERCENTAGE:
+				// Percentage selector (for @keyframes): 0%, 50%, 100%
+				return this.create_node(DIMENSION, start, end)
 
-		case TOKEN_WHITESPACE:
-		case TOKEN_COMMA:
-			// These signal end of compound selector
-			return null
+			case TOKEN_WHITESPACE:
+			case TOKEN_COMMA:
+				// These signal end of compound selector
+				return null
 
-		default:
-			return null
+			default:
+				return null
 		}
 	}
 
 	// Parse the local part after | in a namespace selector (E or *)
 	// Returns the node type (TYPE or UNIVERSAL) or null if invalid
-	private parse_namespace_local_part(selector_start: number, namespace_start: number, namespace_length: number): number | null {
+	private parse_namespace_local_part(
+		selector_start: number,
+		namespace_start: number,
+		namespace_length: number,
+	): number | null {
 		const saved = this.lexer.save_position()
 		this.lexer.next_token_fast(false)
 
@@ -369,7 +389,10 @@ export class SelectorParser {
 		if (this.lexer.token_type === TOKEN_IDENT) {
 			// ns|type
 			node_type = TYPE_SELECTOR
-		} else if (this.lexer.token_type === TOKEN_DELIM && this.source.charCodeAt(this.lexer.token_start) === CHAR_ASTERISK) {
+		} else if (
+			this.lexer.token_type === TOKEN_DELIM &&
+			this.source.charCodeAt(this.lexer.token_start) === CHAR_ASTERISK
+		) {
 			// ns|*
 			node_type = UNIVERSAL_SELECTOR
 		} else {
@@ -395,7 +418,10 @@ export class SelectorParser {
 		this.skip_whitespace()
 
 		// Check if followed by | (namespace separator)
-		if (this.lexer.pos < this.selector_end && this.source.charCodeAt(this.lexer.pos) === CHAR_PIPE) {
+		if (
+			this.lexer.pos < this.selector_end &&
+			this.source.charCodeAt(this.lexer.pos) === CHAR_PIPE
+		) {
 			this.lexer.pos++ // skip |
 			let node = this.parse_namespace_local_part(start, start, end - start)
 			if (node !== null) return node
@@ -420,7 +446,10 @@ export class SelectorParser {
 		this.skip_whitespace()
 
 		// Check if followed by | (any-namespace prefix)
-		if (this.lexer.pos < this.selector_end && this.source.charCodeAt(this.lexer.pos) === CHAR_PIPE) {
+		if (
+			this.lexer.pos < this.selector_end &&
+			this.source.charCodeAt(this.lexer.pos) === CHAR_PIPE
+		) {
 			this.lexer.pos++ // skip |
 			let node = this.parse_namespace_local_part(start, start, end - start)
 			if (node !== null) return node
@@ -464,7 +493,13 @@ export class SelectorParser {
 			if (is_combinator(ch)) {
 				// > + ~ (combinator text excludes leading whitespace)
 				// Use token's line and column for the combinator position
-				return this.create_node_at(COMBINATOR, this.lexer.token_start, this.lexer.token_end, this.lexer.token_line, this.lexer.token_column)
+				return this.create_node_at(
+					COMBINATOR,
+					this.lexer.token_start,
+					this.lexer.token_end,
+					this.lexer.token_line,
+					this.lexer.token_column,
+				)
 			}
 		}
 
@@ -474,7 +509,13 @@ export class SelectorParser {
 			this.lexer.restore_position(saved_whitespace_start)
 			this.skip_whitespace()
 			// Use the position at the start of the whitespace
-			return this.create_node_at(COMBINATOR, saved_whitespace_start.pos, this.lexer.pos, saved_whitespace_start.line, saved_whitespace_start.column)
+			return this.create_node_at(
+				COMBINATOR,
+				saved_whitespace_start.pos,
+				this.lexer.pos,
+				saved_whitespace_start.line,
+				saved_whitespace_start.column,
+			)
 		}
 
 		// No combinator found, reset position
@@ -697,7 +738,10 @@ export class SelectorParser {
 
 		// Check for double colon (::)
 		let is_pseudo_element = false
-		if (this.lexer.pos < this.selector_end && this.source.charCodeAt(this.lexer.pos) === CHAR_COLON) {
+		if (
+			this.lexer.pos < this.selector_end &&
+			this.source.charCodeAt(this.lexer.pos) === CHAR_COLON
+		) {
 			is_pseudo_element = true
 			this.lexer.pos++ // skip second colon
 		} else {
@@ -710,7 +754,11 @@ export class SelectorParser {
 
 		let token_type = this.lexer.token_type
 		if (token_type === TOKEN_IDENT) {
-			let node = this.create_node(is_pseudo_element ? PSEUDO_ELEMENT_SELECTOR : PSEUDO_CLASS_SELECTOR, start, this.lexer.token_end)
+			let node = this.create_node(
+				is_pseudo_element ? PSEUDO_ELEMENT_SELECTOR : PSEUDO_CLASS_SELECTOR,
+				start,
+				this.lexer.token_end,
+			)
 
 			// Content is the pseudo name (without colons)
 			this.arena.set_content_start_delta(node, this.lexer.token_start - start)
@@ -733,7 +781,10 @@ export class SelectorParser {
 	}
 
 	// Parse pseudo-class function after we've seen the colon
-	private parse_pseudo_function_after_colon(start: number, is_pseudo_element: boolean): number | null {
+	private parse_pseudo_function_after_colon(
+		start: number,
+		is_pseudo_element: boolean,
+	): number | null {
 		let func_name_start = this.lexer.token_start
 		let func_name_end = this.lexer.token_end - 1 // Exclude the '('
 
@@ -760,7 +811,11 @@ export class SelectorParser {
 			}
 		}
 
-		let node = this.create_node(is_pseudo_element ? PSEUDO_ELEMENT_SELECTOR : PSEUDO_CLASS_SELECTOR, start, end)
+		let node = this.create_node(
+			is_pseudo_element ? PSEUDO_ELEMENT_SELECTOR : PSEUDO_CLASS_SELECTOR,
+			start,
+			end,
+		)
 		// Content is the function name (without colons and parentheses)
 		this.arena.set_content_start_delta(node, func_name_start - start)
 		this.arena.set_content_length(node, func_name_end - func_name_start)
@@ -792,7 +847,13 @@ export class SelectorParser {
 				// Recursively parse the content as a selector
 				// Only :has() accepts relative selectors (starting with combinator)
 				let allow_relative = str_equals('has', func_name_substr)
-				let child_selector = this.parse_selector(content_start, content_end, this.lexer.line, this.lexer.column, allow_relative)
+				let child_selector = this.parse_selector(
+					content_start,
+					content_end,
+					this.lexer.line,
+					this.lexer.column,
+					allow_relative,
+				)
 
 				// Restore lexer state and selector_end
 				this.selector_end = saved_selector_end
@@ -960,13 +1021,25 @@ export class SelectorParser {
 
 	private create_node(type: number, start: number, end: number): number {
 		// Use token's line/column since most nodes are created from token positions
-		let node = this.arena.create_node(type, start, end - start, this.lexer.token_line, this.lexer.token_column)
+		let node = this.arena.create_node(
+			type,
+			start,
+			end - start,
+			this.lexer.token_line,
+			this.lexer.token_column,
+		)
 		this.arena.set_content_start_delta(node, 0)
 		this.arena.set_content_length(node, end - start)
 		return node
 	}
 
-	private create_node_at(type: number, start: number, end: number, line: number, column: number): number {
+	private create_node_at(
+		type: number,
+		start: number,
+		end: number,
+		line: number,
+		column: number,
+	): number {
 		let node = this.arena.create_node(type, start, end - start, line, column)
 		this.arena.set_content_start_delta(node, 0)
 		this.arena.set_content_length(node, end - start)

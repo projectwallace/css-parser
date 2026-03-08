@@ -37,7 +37,12 @@ export class DeclarationParser {
 	}
 
 	// Parse a declaration range into a declaration node (standalone use)
-	parse_declaration(start: number, end: number, line: number = 1, column: number = 1): number | null {
+	parse_declaration(
+		start: number,
+		end: number,
+		line: number = 1,
+		column: number = 1,
+	): number | null {
 		// Create a fresh lexer instance for standalone parsing
 		const lexer = new Lexer(this.source)
 		lexer.seek(start, line, column)
@@ -79,7 +84,10 @@ export class DeclarationParser {
 				const is_custom_property = second_char === 45 // '--'
 
 				// Use fast vendor prefix check (no allocations)
-				if (!is_custom_property && !is_vendor_prefixed(this.source, lexer.token_start, lexer.token_end)) {
+				if (
+					!is_custom_property &&
+					!is_vendor_prefixed(this.source, lexer.token_start, lexer.token_end)
+				) {
 					// This is a browser hack like -property
 					has_browser_hack = true
 					browser_hack_start = lexer.token_start
@@ -119,7 +127,11 @@ export class DeclarationParser {
 		}
 
 		// Expect identifier, at-keyword, or hash token (property name) - whitespace already skipped by caller
-		if (lexer.token_type !== TOKEN_IDENT && lexer.token_type !== TOKEN_AT_KEYWORD && lexer.token_type !== TOKEN_HASH) {
+		if (
+			lexer.token_type !== TOKEN_IDENT &&
+			lexer.token_type !== TOKEN_AT_KEYWORD &&
+			lexer.token_type !== TOKEN_HASH
+		) {
 			return null
 		}
 
@@ -220,13 +232,24 @@ export class DeclarationParser {
 			// Parse value into structured nodes (only if enabled)
 			if (this.value_parser) {
 				// CRITICAL: Pass value_start_line and value_start_column to value parser
-				let valueNode = this.value_parser.parse_value(value_start, trimmed[1], value_start_line, value_start_column)
+				let valueNode = this.value_parser.parse_value(
+					value_start,
+					trimmed[1],
+					value_start_line,
+					value_start_column,
+				)
 
 				// Link VALUE node as single child of the declaration
 				this.arena.append_children(declaration, [valueNode])
 			} else {
 				// Create RAW node for unparsed value text
-				let rawNode = this.arena.create_node(RAW, trimmed[0], trimmed[1] - trimmed[0], value_start_line, value_start_column)
+				let rawNode = this.arena.create_node(
+					RAW,
+					trimmed[0],
+					trimmed[1] - trimmed[0],
+					value_start_line,
+					value_start_column,
+				)
 				this.arena.append_children(declaration, [rawNode])
 			}
 		} else {
@@ -236,7 +259,12 @@ export class DeclarationParser {
 
 			// Create empty VALUE node for consistency
 			if (this.value_parser) {
-				let valueNode = this.value_parser.parse_value(value_start, value_start, value_start_line, value_start_column)
+				let valueNode = this.value_parser.parse_value(
+					value_start,
+					value_start,
+					value_start_line,
+					value_start_column,
+				)
 				this.arena.append_children(declaration, [valueNode])
 			}
 		}

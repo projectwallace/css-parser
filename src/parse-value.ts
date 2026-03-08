@@ -1,6 +1,19 @@
 // Value Parser - Parses CSS declaration values into structured AST nodes
 import { Lexer } from './tokenize'
-import { CSSDataArena, IDENTIFIER, NUMBER, DIMENSION, STRING, HASH, FUNCTION, OPERATOR, PARENTHESIS, URL, UNICODE_RANGE, VALUE } from './arena'
+import {
+	CSSDataArena,
+	IDENTIFIER,
+	NUMBER,
+	DIMENSION,
+	STRING,
+	HASH,
+	FUNCTION,
+	OPERATOR,
+	PARENTHESIS,
+	URL,
+	UNICODE_RANGE,
+	VALUE,
+} from './arena'
 import {
 	TOKEN_IDENT,
 	TOKEN_NUMBER,
@@ -16,7 +29,14 @@ import {
 	TOKEN_RIGHT_PAREN,
 	TOKEN_UNICODE_RANGE,
 } from './token-types'
-import { is_whitespace, CHAR_MINUS_HYPHEN, CHAR_PLUS, CHAR_ASTERISK, CHAR_FORWARD_SLASH, str_equals } from './string-utils'
+import {
+	is_whitespace,
+	CHAR_MINUS_HYPHEN,
+	CHAR_PLUS,
+	CHAR_ASTERISK,
+	CHAR_FORWARD_SLASH,
+	str_equals,
+} from './string-utils'
 import { CSSNode } from './css-node'
 
 /** @internal */
@@ -58,7 +78,13 @@ export class ValueParser {
 		let last_node_end =
 			this.arena.get_start_offset(last_node_index) + this.arena.get_length(last_node_index)
 
-		let value_node = this.arena.create_node(VALUE, first_node_start, last_node_end - first_node_start, start_line, start_column)
+		let value_node = this.arena.create_node(
+			VALUE,
+			first_node_start,
+			last_node_end - first_node_start,
+			start_line,
+			start_column,
+		)
 
 		// Link value tokens as children
 		this.arena.append_children(value_node, value_nodes)
@@ -151,7 +177,13 @@ export class ValueParser {
 	}
 
 	private create_node(node_type: number, start: number, end: number): number {
-		let node = this.arena.create_node(node_type, start, end - start, this.lexer.token_line, this.lexer.token_column)
+		let node = this.arena.create_node(
+			node_type,
+			start,
+			end - start,
+			this.lexer.token_line,
+			this.lexer.token_column,
+		)
 		// Skip set_content_start_delta since delta = start - start = 0 (already zero-initialized)
 		this.arena.set_content_length(node, end - start)
 		return node
@@ -164,7 +196,12 @@ export class ValueParser {
 	private parse_operator_node(start: number, end: number): number | null {
 		// Only create operator nodes for specific delimiters: + - * /
 		let ch = this.source.charCodeAt(start)
-		if (ch === CHAR_PLUS || ch === CHAR_MINUS_HYPHEN || ch === CHAR_ASTERISK || ch === CHAR_FORWARD_SLASH) {
+		if (
+			ch === CHAR_PLUS ||
+			ch === CHAR_MINUS_HYPHEN ||
+			ch === CHAR_ASTERISK ||
+			ch === CHAR_FORWARD_SLASH
+		) {
 			return this.create_operator_node(start, end)
 		}
 		// Other delimiters are ignored for now

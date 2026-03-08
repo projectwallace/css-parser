@@ -33,7 +33,15 @@ import {
 	TOKEN_DIMENSION,
 	type TokenType,
 } from './token-types'
-import { str_equals, is_whitespace, strip_vendor_prefix, CHAR_COLON, CHAR_LESS_THAN, CHAR_GREATER_THAN, CHAR_EQUALS } from './string-utils'
+import {
+	str_equals,
+	is_whitespace,
+	strip_vendor_prefix,
+	CHAR_COLON,
+	CHAR_LESS_THAN,
+	CHAR_GREATER_THAN,
+	CHAR_EQUALS,
+} from './string-utils'
 import { trim_boundaries, skip_whitespace_and_comments_forward } from './parse-utils'
 import { CSSNode } from './css-node'
 
@@ -53,7 +61,13 @@ export class AtRulePreludeParser {
 	}
 
 	// Parse an at-rule prelude into nodes (standalone use)
-	parse_prelude(at_rule_name: string, start: number, end: number, line: number = 1, column: number = 1): number[] {
+	parse_prelude(
+		at_rule_name: string,
+		start: number,
+		end: number,
+		line: number = 1,
+		column: number = 1,
+	): number[] {
 		this.prelude_end = end
 
 		// Position lexer at prelude start
@@ -127,7 +141,13 @@ export class AtRulePreludeParser {
 	}
 
 	private create_node(type: number, start: number, end: number): number {
-		return this.arena.create_node(type, start, end - start, this.lexer.token_line, this.lexer.token_column)
+		return this.arena.create_node(
+			type,
+			start,
+			end - start,
+			this.lexer.token_line,
+			this.lexer.token_column,
+		)
 	}
 
 	private is_and_or_not(str: string): boolean {
@@ -189,7 +209,11 @@ export class AtRulePreludeParser {
 					components.push(op)
 				} else {
 					// Media type: screen, print, all
-					let media_type = this.create_node(MEDIA_TYPE, this.lexer.token_start, this.lexer.token_end)
+					let media_type = this.create_node(
+						MEDIA_TYPE,
+						this.lexer.token_start,
+						this.lexer.token_end,
+					)
 					components.push(media_type)
 				}
 			} else {
@@ -558,7 +582,11 @@ export class AtRulePreludeParser {
 		this.next_token()
 
 		// Accept TOKEN_URL, TOKEN_FUNCTION (url(...)), or TOKEN_STRING
-		if (this.lexer.token_type !== TOKEN_URL && this.lexer.token_type !== TOKEN_FUNCTION && this.lexer.token_type !== TOKEN_STRING) {
+		if (
+			this.lexer.token_type !== TOKEN_URL &&
+			this.lexer.token_type !== TOKEN_FUNCTION &&
+			this.lexer.token_type !== TOKEN_STRING
+		) {
 			return null
 		}
 
@@ -846,7 +874,9 @@ export class AtRulePreludeParser {
 				this.next_token()
 				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
 				if (str_equals('to', text)) {
-					nodes.push(this.create_node(PRELUDE_OPERATOR, this.lexer.token_start, this.lexer.token_end))
+					nodes.push(
+						this.create_node(PRELUDE_OPERATOR, this.lexer.token_start, this.lexer.token_end),
+					)
 				}
 			} else {
 				this.next_token()
@@ -873,7 +903,12 @@ export class AtRulePreludeParser {
 	}
 
 	// Parse media feature range syntax: (50px <= width <= 100px)
-	private parse_feature_range(feature_start: number, feature_end: number, content_start: number, content_end: number): number {
+	private parse_feature_range(
+		feature_start: number,
+		feature_end: number,
+		content_start: number,
+		content_end: number,
+	): number {
 		let range_node = this.create_node(FEATURE_RANGE, feature_start, feature_end)
 		let children: number[] = []
 		let feature_name_start = -1

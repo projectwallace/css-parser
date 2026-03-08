@@ -48,7 +48,10 @@ describe('walk', () => {
 	})
 
 	it('should visit nodes in depth-first order', () => {
-		const root = parse('body { color: red; margin: 0; } div { padding: 1rem; }', { parse_selectors: false, parse_values: true })
+		const root = parse('body { color: red; margin: 0; } div { padding: 1rem; }', {
+			parse_selectors: false,
+			parse_values: true,
+		})
 		const visited: number[] = []
 
 		walk(root, (node) => {
@@ -76,7 +79,10 @@ describe('walk', () => {
 	})
 
 	it('should visit nested rules', () => {
-		const root = parse('.parent { color: red; .child { color: blue; } }', { parse_selectors: false, parse_values: false })
+		const root = parse('.parent { color: red; .child { color: blue; } }', {
+			parse_selectors: false,
+			parse_values: false,
+		})
 		const visited: number[] = []
 
 		walk(root, (node) => {
@@ -137,7 +143,10 @@ describe('walk', () => {
 	})
 
 	it('should allow collecting property names', () => {
-		const root = parse('body { color: red; margin: 0; padding: 1rem; }', { parse_selectors: false, parse_values: false })
+		const root = parse('body { color: red; margin: 0; padding: 1rem; }', {
+			parse_selectors: false,
+			parse_values: false,
+		})
 		const properties: string[] = []
 
 		walk(root, (node) => {
@@ -198,7 +207,10 @@ describe('walk', () => {
 	})
 
 	it('should track depth in nested structures', () => {
-		const root = parse('.a { .b { .c { color: red; } } }', { parse_selectors: false, parse_values: true })
+		const root = parse('.a { .b { .c { color: red; } } }', {
+			parse_selectors: false,
+			parse_values: true,
+		})
 		const ruleDepths: number[] = []
 
 		walk(root, (node, depth) => {
@@ -507,8 +519,28 @@ describe('walk enter/leave', () => {
 			},
 		})
 
-		expect(enter).toEqual([STYLESHEET, AT_RULE, RAW, BLOCK, STYLE_RULE, RAW, BLOCK, DECLARATION, RAW])
-		expect(leave).toEqual([RAW, RAW, RAW, DECLARATION, BLOCK, STYLE_RULE, BLOCK, AT_RULE, STYLESHEET])
+		expect(enter).toEqual([
+			STYLESHEET,
+			AT_RULE,
+			RAW,
+			BLOCK,
+			STYLE_RULE,
+			RAW,
+			BLOCK,
+			DECLARATION,
+			RAW,
+		])
+		expect(leave).toEqual([
+			RAW,
+			RAW,
+			RAW,
+			DECLARATION,
+			BLOCK,
+			STYLE_RULE,
+			BLOCK,
+			AT_RULE,
+			STYLESHEET,
+		])
 	})
 
 	test('only enter', () => {
@@ -520,7 +552,17 @@ describe('walk enter/leave', () => {
 			},
 		})
 
-		expect(enter).toEqual([STYLESHEET, AT_RULE, RAW, BLOCK, STYLE_RULE, RAW, BLOCK, DECLARATION, RAW])
+		expect(enter).toEqual([
+			STYLESHEET,
+			AT_RULE,
+			RAW,
+			BLOCK,
+			STYLE_RULE,
+			RAW,
+			BLOCK,
+			DECLARATION,
+			RAW,
+		])
 	})
 
 	test('only leave', () => {
@@ -532,7 +574,17 @@ describe('walk enter/leave', () => {
 			},
 		})
 
-		expect(leave).toEqual([RAW, RAW, RAW, DECLARATION, BLOCK, STYLE_RULE, BLOCK, AT_RULE, STYLESHEET])
+		expect(leave).toEqual([
+			RAW,
+			RAW,
+			RAW,
+			DECLARATION,
+			BLOCK,
+			STYLE_RULE,
+			BLOCK,
+			AT_RULE,
+			STYLESHEET,
+		])
 	})
 
 	test('neither', () => {

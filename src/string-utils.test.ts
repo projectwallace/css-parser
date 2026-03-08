@@ -399,61 +399,61 @@ describe('string-utils', () => {
 	})
 })
 
-	describe('str_index_of', () => {
-		it('should find single character in string', () => {
-			expect(str_index_of('hello', 'e')).toBe(1)
-		})
-
-		it('should find character case-insensitively', () => {
-			expect(str_index_of('HELLO', 'e')).toBe(1)
-			expect(str_index_of('Hello', 'e')).toBe(1)
-		})
-
-		it('should return -1 for character not found', () => {
-			expect(str_index_of('hello', 'x')).toBe(-1)
-		})
-
-		it('should find first occurrence', () => {
-			expect(str_index_of('hello', 'l')).toBe(2)
-		})
-
-		it('should find multi-character substring', () => {
-			expect(str_index_of('2n+1', 'n')).toBe(1)
-			expect(str_index_of('2N+1', 'n')).toBe(1)
-		})
-
-		it('should find multi-character substring case-insensitively', () => {
-			expect(str_index_of('HELLO', 'lo')).toBe(3)
-			expect(str_index_of('Hello', 'lo')).toBe(3)
-		})
-
-		it('should return -1 for substring not found', () => {
-			expect(str_index_of('hello', 'xyz')).toBe(-1)
-		})
-
-		it('should work with An+B patterns', () => {
-			expect(str_index_of('2n', 'n')).toBe(1)
-			expect(str_index_of('2N', 'n')).toBe(1)
-			expect(str_index_of('-5n-2', 'n')).toBe(2)
-			expect(str_index_of('-5N-2', 'n')).toBe(2)
-		})
-
-		it('should handle empty search string', () => {
-			expect(str_index_of('hello', '')).toBe(-1)
-		})
-
-		it('should find at string start', () => {
-			expect(str_index_of('hello', 'h')).toBe(0)
-			expect(str_index_of('HELLO', 'h')).toBe(0)
-		})
-
-		it('should find at string end', () => {
-			expect(str_index_of('hello', 'o')).toBe(4)
-			expect(str_index_of('HELLO', 'o')).toBe(4)
-		})
-
-		it('should find exact match', () => {
-			expect(str_index_of('n', 'n')).toBe(0)
-			expect(str_index_of('N', 'n')).toBe(0)
-		})
+describe('str_index_of', () => {
+	it('should find single character in string', () => {
+		expect(str_index_of('hello', 'e')).toBe(1)
 	})
+
+	it('should find character case-insensitively', () => {
+		expect(str_index_of('HELLO', 'e')).toBe(1)
+		expect(str_index_of('Hello', 'e')).toBe(1)
+	})
+
+	it('should return -1 for character not found', () => {
+		expect(str_index_of('hello', 'x')).toBe(-1)
+	})
+
+	it('should find first occurrence', () => {
+		expect(str_index_of('hello', 'l')).toBe(2)
+	})
+
+	it('should find multi-character substring', () => {
+		expect(str_index_of('2n+1', 'n')).toBe(1)
+		expect(str_index_of('2N+1', 'n')).toBe(1)
+	})
+
+	it('should find multi-character substring case-insensitively', () => {
+		expect(str_index_of('HELLO', 'lo')).toBe(3)
+		expect(str_index_of('Hello', 'lo')).toBe(3)
+	})
+
+	it('should return -1 for substring not found', () => {
+		expect(str_index_of('hello', 'xyz')).toBe(-1)
+	})
+
+	it('should work with An+B patterns', () => {
+		expect(str_index_of('2n', 'n')).toBe(1)
+		expect(str_index_of('2N', 'n')).toBe(1)
+		expect(str_index_of('-5n-2', 'n')).toBe(2)
+		expect(str_index_of('-5N-2', 'n')).toBe(2)
+	})
+
+	it('should handle empty search string', () => {
+		expect(str_index_of('hello', '')).toBe(-1)
+	})
+
+	it('should find at string start', () => {
+		expect(str_index_of('hello', 'h')).toBe(0)
+		expect(str_index_of('HELLO', 'h')).toBe(0)
+	})
+
+	it('should find at string end', () => {
+		expect(str_index_of('hello', 'o')).toBe(4)
+		expect(str_index_of('HELLO', 'o')).toBe(4)
+	})
+
+	it('should find exact match', () => {
+		expect(str_index_of('n', 'n')).toBe(0)
+		expect(str_index_of('N', 'n')).toBe(0)
+	})
+})

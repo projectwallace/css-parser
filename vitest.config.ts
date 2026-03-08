@@ -15,7 +15,7 @@ export default defineConfig({
 				'**/benchmark/**',
 				'**/*.test.ts',
 				'**/*.config.ts',
-			]
-		}
-	}
+			],
+		},
+	},
 })

@@ -1358,7 +1358,8 @@ describe('At-Rule Prelude Nodes', () => {
 			})
 
 			it('should parse with all features combined', () => {
-				const css = '@import url("styles.css") layer(base) supports(display: grid) screen and (min-width: 768px);'
+				const css =
+					'@import url("styles.css") layer(base) supports(display: grid) screen and (min-width: 768px);'
 				const ast = parse(css, { parse_atrule_preludes: true })
 				const atRule = ast.first_child!
 				const children = atRule.prelude?.children || []
@@ -1521,7 +1522,9 @@ describe('At-Rule Prelude Nodes', () => {
 					const ast = parse(css)
 					const atRule = ast.first_child!
 
-					expect(atRule?.prelude?.text).toBe('url("a.css") layer(utilities) supports(display: flex) screen')
+					expect(atRule?.prelude?.text).toBe(
+						'url("a.css") layer(utilities) supports(display: flex) screen',
+					)
 					expect(atRule?.prelude?.length).toBe(60)
 				})
 			})
@@ -2024,7 +2027,9 @@ describe('Comment Handling in At-Rule Preludes', () => {
 		})
 
 		it('should parse supports with comments between queries', () => {
-			const root = parse('@supports (display: grid) /* comment */ or /* comment */ (display: flex) { }')
+			const root = parse(
+				'@supports (display: grid) /* comment */ or /* comment */ (display: flex) { }',
+			)
 			const atrule = root.first_child
 			expect(atrule?.name).toBe('supports')
 			expect(atrule?.prelude?.children.length).toBeGreaterThan(0)
