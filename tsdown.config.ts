@@ -15,6 +15,7 @@ export default defineConfig({
 	],
 	dts: true,
 	publint: true,
+	outExtensions: () => ({ js: '.js', dts: '.d.ts' }),
 	plugins: [
 		codecovRollupPlugin({
 			enableBundleAnalysis: process.env.CODECOV_TOKEN !== undefined,
@@ -23,3 +24,4 @@ export default defineConfig({
 		}),
 	],
 })
+
