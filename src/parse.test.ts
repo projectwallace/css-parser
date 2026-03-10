@@ -13,6 +13,8 @@ import {
 	ATTRIBUTE_SELECTOR,
 	NESTING_SELECTOR,
 	URL,
+	RAW,
+	AT_RULE_PRELUDE,
 } from './constants'
 import { ATTR_OPERATOR_PIPE_EQUAL } from './arena'
 
@@ -1109,9 +1111,68 @@ describe('Core Nodes', () => {
 					let atrule = root.first_child!
 					expect(atrule.name).toBe('imaginary-atrule')
 					expect(atrule.value).toBe('prelude-stuff')
-					// Unknown at-rules don't have structured prelude parsing, but prelude wrapper exists
+					// Unknown at-rules get a RAW prelude (not AT_RULE_PRELUDE)
 					expect(atrule.prelude).not.toBeNull()
+					expect(atrule.prelude?.type).toBe(RAW)
 					expect(atrule.prelude?.text).toBe('prelude-stuff')
+				})
+
+				test('unknown at-rule without block has RAW prelude and no block', () => {
+					let source = '@custom prelude;'
+					let root = parse(source)
+
+					let atrule = root.first_child!
+					expect(atrule.name).toBe('custom')
+					expect(atrule.prelude?.type).toBe(RAW)
+					expect(atrule.prelude?.text).toBe('prelude')
+					expect(atrule.block).toBeNull()
+				})
+
+				test('unknown at-rule block can contain declarations', () => {
+					let source = '@custom { color: red }'
+					let root = parse(source)
+
+					let atrule = root.first_child!
+					expect(atrule.name).toBe('custom')
+					let block = atrule.block!
+					expect(block).not.toBeNull()
+					let declaration = block.first_child!
+					expect(declaration.type).toBe(DECLARATION)
+					expect(declaration.property).toBe('color')
+				})
+
+				test('unknown at-rule block can contain style rules', () => {
+					let source = '@custom { .a { color: red } }'
+					let root = parse(source)
+
+					let atrule = root.first_child!
+					let block = atrule.block!
+					let rule = block.first_child!
+					expect(rule.type).toBe(STYLE_RULE)
+				})
+
+				test('unknown at-rule block can contain nested at-rules', () => {
+					let source = '@custom { @media (width) { } }'
+					let root = parse(source)
+
+					let atrule = root.first_child!
+					let block = atrule.block!
+					let nested = block.first_child!
+					expect(nested.type).toBe(AT_RULE)
+					expect(nested.name).toBe('media')
+				})
+
+				test('known at-rule @keyframes still has AT_RULE_PRELUDE and correctly parsed frames', () => {
+					let source = '@keyframes foo { from { opacity: 0 } to { opacity: 1 } }'
+					let root = parse(source)
+
+					let atrule = root.first_child!
+					expect(atrule.name).toBe('keyframes')
+					expect(atrule.prelude?.type).toBe(AT_RULE_PRELUDE)
+					expect(atrule.prelude?.text).toBe('foo')
+					let block = atrule.block!
+					let from_rule = block.first_child!
+					expect(from_rule.type).toBe(STYLE_RULE)
 				})
 
 				test('value string matches prelude text for at-rules', () => {
