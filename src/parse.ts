@@ -69,6 +69,7 @@ let CONDITIONAL_AT_RULES = new Set([
 	'nest',
 	'scope',
 	'starting-style',
+	'function',
 ])
 
 /** @internal */
