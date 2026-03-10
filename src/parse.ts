@@ -61,15 +61,6 @@ let DECLARATION_AT_RULES = new Set([
 	'position-try',
 	'view-transition',
 ])
-let CONDITIONAL_AT_RULES = new Set([
-	'media',
-	'supports',
-	'container',
-	'layer',
-	'nest',
-	'scope',
-	'starting-style',
-])
 
 /** @internal */
 export class Parser {
@@ -423,14 +414,6 @@ export class Parser {
 
 			// Create AT_RULE_PRELUDE wrapper if prelude parsing is enabled
 			if (this.prelude_parser) {
-				prelude_wrapper = this.arena.create_node(
-					AT_RULE_PRELUDE,
-					trimmed[0],
-					trimmed[1] - trimmed[0],
-					at_rule_line,
-					at_rule_column,
-				)
-
 				// Parse prelude and add structured nodes as children
 				let prelude_nodes = this.prelude_parser.parse_prelude(
 					at_rule_name,
@@ -440,7 +423,22 @@ export class Parser {
 					at_rule_column,
 				)
 				if (prelude_nodes.length > 0) {
+					prelude_wrapper = this.arena.create_node(
+						AT_RULE_PRELUDE,
+						trimmed[0],
+						trimmed[1] - trimmed[0],
+						at_rule_line,
+						at_rule_column,
+					)
 					this.arena.append_children(prelude_wrapper, prelude_nodes)
+				} else {
+					prelude_wrapper = this.arena.create_node(
+						RAW,
+						trimmed[0],
+						trimmed[1] - trimmed[0],
+						at_rule_line,
+						at_rule_column,
+					)
 				}
 			} else {
 				prelude_wrapper = this.arena.create_node(
@@ -475,7 +473,6 @@ export class Parser {
 
 			// Determine what to parse inside the block based on the at-rule name
 			let has_declarations = this.atrule_has_declarations(at_rule_name)
-			let is_conditional = this.atrule_is_conditional(at_rule_name)
 			let block_children: number[] = []
 
 			if (has_declarations) {
@@ -491,8 +488,8 @@ export class Parser {
 						this.next_token()
 					}
 				}
-			} else if (is_conditional) {
-				// Conditional at-rules can contain both declarations and rules (CSS Nesting)
+			} else {
+				// Parse declarations + rules + at-rules (like @media, @keyframes, unknown at-rules)
 				while (!this.is_eof()) {
 					let token_type = this.peek_type()
 					if (token_type === TOKEN_RIGHT_BRACE) break
@@ -521,19 +518,6 @@ export class Parser {
 						block_children.push(nested_rule)
 					} else {
 						// Skip unknown tokens
-						this.next_token()
-					}
-				}
-			} else {
-				// Parse nested rules only (like @keyframes)
-				while (!this.is_eof()) {
-					let token_type = this.peek_type()
-					if (token_type === TOKEN_RIGHT_BRACE) break
-
-					let rule = this.parse_rule()
-					if (rule !== null) {
-						block_children.push(rule)
-					} else {
 						this.next_token()
 					}
 				}
@@ -589,11 +573,6 @@ export class Parser {
 	// Determine if an at-rule contains declarations or nested rules
 	private atrule_has_declarations(name: string): boolean {
 		return DECLARATION_AT_RULES.has(name.toLowerCase())
-	}
-
-	// Determine if an at-rule is conditional (can contain both declarations and rules in CSS Nesting)
-	private atrule_is_conditional(name: string): boolean {
-		return CONDITIONAL_AT_RULES.has(name.toLowerCase())
 	}
 }
 

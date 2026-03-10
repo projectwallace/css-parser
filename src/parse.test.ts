@@ -13,6 +13,8 @@ import {
 	ATTRIBUTE_SELECTOR,
 	NESTING_SELECTOR,
 	URL,
+	RAW,
+	AT_RULE_PRELUDE,
 } from './constants'
 import { ATTR_OPERATOR_PIPE_EQUAL } from './arena'
 
@@ -1109,9 +1111,68 @@ describe('Core Nodes', () => {
 					let atrule = root.first_child!
 					expect(atrule.name).toBe('imaginary-atrule')
 					expect(atrule.value).toBe('prelude-stuff')
-					// Unknown at-rules don't have structured prelude parsing, but prelude wrapper exists
+					// Unknown at-rules get a RAW prelude (not AT_RULE_PRELUDE)
 					expect(atrule.prelude).not.toBeNull()
+					expect(atrule.prelude?.type).toBe(RAW)
 					expect(atrule.prelude?.text).toBe('prelude-stuff')
+				})
+
+				test('unknown at-rule without block has RAW prelude and no block', () => {
+					let source = '@custom prelude;'
+					let root = parse(source)
+
+					let atrule = root.first_child!
+					expect(atrule.name).toBe('custom')
+					expect(atrule.prelude?.type).toBe(RAW)
+					expect(atrule.prelude?.text).toBe('prelude')
+					expect(atrule.block).toBeNull()
+				})
+
+				test('unknown at-rule block can contain declarations', () => {
+					let source = '@custom { color: red }'
+					let root = parse(source)
+
+					let atrule = root.first_child!
+					expect(atrule.name).toBe('custom')
+					let block = atrule.block!
+					expect(block).not.toBeNull()
+					let declaration = block.first_child!
+					expect(declaration.type).toBe(DECLARATION)
+					expect(declaration.property).toBe('color')
+				})
+
+				test('unknown at-rule block can contain style rules', () => {
+					let source = '@custom { .a { color: red } }'
+					let root = parse(source)
+
+					let atrule = root.first_child!
+					let block = atrule.block!
+					let rule = block.first_child!
+					expect(rule.type).toBe(STYLE_RULE)
+				})
+
+				test('unknown at-rule block can contain nested at-rules', () => {
+					let source = '@custom { @media (width) { } }'
+					let root = parse(source)
+
+					let atrule = root.first_child!
+					let block = atrule.block!
+					let nested = block.first_child!
+					expect(nested.type).toBe(AT_RULE)
+					expect(nested.name).toBe('media')
+				})
+
+				test('known at-rule @keyframes still has AT_RULE_PRELUDE and correctly parsed frames', () => {
+					let source = '@keyframes foo { from { opacity: 0 } to { opacity: 1 } }'
+					let root = parse(source)
+
+					let atrule = root.first_child!
+					expect(atrule.name).toBe('keyframes')
+					expect(atrule.prelude?.type).toBe(AT_RULE_PRELUDE)
+					expect(atrule.prelude?.text).toBe('foo')
+					let block = atrule.block!
+					let from_rule = block.first_child!
+					expect(from_rule.type).toBe(STYLE_RULE)
 				})
 
 				test('value string matches prelude text for at-rules', () => {
@@ -2108,6 +2169,68 @@ describe('Core Nodes', () => {
 				let keyframes = root.first_child!
 				let block = keyframes.block!
 				expect(block.children.length).toBe(3)
+			})
+		})
+
+		describe('@function at-rule', () => {
+			test('@function basic', () => {
+				let source =
+					'@function --transparent(--color, --alpha) { result: oklch(from var(--color) l c h / var(--alpha)); }'
+				let root = parse(source, { parse_atrule_preludes: false })
+
+				let fn = root.first_child!
+				expect(fn.type).toBe(AT_RULE)
+				expect(fn.name).toBe('function')
+				expect(fn.has_block).toBe(true)
+
+				let block = fn.block!
+				expect(block.children.length).toBe(1)
+
+				let result_decl = block.first_child!
+				expect(result_decl.type).toBe(DECLARATION)
+				expect(result_decl.property).toBe('result')
+			})
+
+			test('@function with local custom properties', () => {
+				let source =
+					'@function --anim(--animation, --count) { --duration: 1s; --easing: linear; result: var(--animation) var(--duration) var(--count) var(--easing); }'
+				let root = parse(source, { parse_atrule_preludes: false })
+
+				let fn = root.first_child!
+				let block = fn.block!
+				expect(block.children.length).toBe(3)
+
+				let [dur, ease, result_decl] = block.children
+				expect(dur.type).toBe(DECLARATION)
+				expect(dur.property).toBe('--duration')
+				expect(ease.property).toBe('--easing')
+				expect(result_decl.property).toBe('result')
+			})
+
+			test('@function with nested @media', () => {
+				let source =
+					'@function --narrow-wide(--narrow, --wide) { result: var(--wide); @media (width < 700px) { result: var(--narrow); } }'
+				let root = parse(source, { parse_atrule_preludes: false })
+
+				let fn = root.first_child!
+				let block = fn.block!
+				expect(block.children.length).toBe(2)
+
+				let [result_decl, media] = block.children
+				expect(result_decl.type).toBe(DECLARATION)
+				expect(result_decl.property).toBe('result')
+				expect(media.type).toBe(AT_RULE)
+				expect(media.name).toBe('media')
+			})
+
+			test('@function with no parameters', () => {
+				let source = '@function --my-func() { result: 42px; }'
+				let root = parse(source, { parse_atrule_preludes: false })
+
+				let fn = root.first_child!
+				expect(fn.type).toBe(AT_RULE)
+				expect(fn.name).toBe('function')
+				expect(fn.has_block).toBe(true)
 			})
 		})
 

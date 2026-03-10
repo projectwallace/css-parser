@@ -59,17 +59,8 @@ export class DeclarationParser {
 		let browser_hack_line = 1
 		let browser_hack_column = 1
 
-		// Handle @property and #property (tokenized as single tokens)
-		if (lexer.token_type === TOKEN_AT_KEYWORD || lexer.token_type === TOKEN_HASH) {
-			// These tokens already include the @ or # prefix in their text
-			// Mark as browser hack since @ and # prefixes are not standard CSS
-			has_browser_hack = true
-			browser_hack_start = lexer.token_start
-			browser_hack_line = lexer.token_line
-			browser_hack_column = lexer.token_column
-		} else if (lexer.token_type === TOKEN_IDENT) {
-			// Check if identifier starts with browser hack character
-			// Some hacks like -property, _property are tokenized as single identifiers
+		// Fast path: TOKEN_IDENT is by far the most common case (regular properties like color, margin, etc.)
+		if (lexer.token_type === TOKEN_IDENT) {
 			const first_char = this.source.charCodeAt(lexer.token_start)
 			if (first_char === 95) {
 				// '_' - underscore prefix is always a browser hack
@@ -78,51 +69,45 @@ export class DeclarationParser {
 				browser_hack_line = lexer.token_line
 				browser_hack_column = lexer.token_column
 			} else if (first_char === 45) {
-				// '-' - hyphen prefix could be vendor prefix, custom property, or browser hack
-				// Check if it's a custom property (starts with --)
-				const second_char = this.source.charCodeAt(lexer.token_start + 1)
-				const is_custom_property = second_char === 45 // '--'
-
-				// Use fast vendor prefix check (no allocations)
+				// '-' - hyphen prefix: vendor prefix, custom property, or browser hack
 				if (
-					!is_custom_property &&
+					this.source.charCodeAt(lexer.token_start + 1) !== 45 && // not '--' custom property
 					!is_vendor_prefixed(this.source, lexer.token_start, lexer.token_end)
 				) {
-					// This is a browser hack like -property
 					has_browser_hack = true
 					browser_hack_start = lexer.token_start
 					browser_hack_line = lexer.token_line
 					browser_hack_column = lexer.token_column
 				}
 			}
-		} else {
-			// Browser hacks can use various token types as prefixes
-			const is_browser_hack_token =
-				lexer.token_type === TOKEN_DELIM ||
-				lexer.token_type === TOKEN_LEFT_PAREN ||
-				lexer.token_type === TOKEN_RIGHT_PAREN ||
-				lexer.token_type === TOKEN_LEFT_BRACKET ||
-				lexer.token_type === TOKEN_RIGHT_BRACKET ||
-				lexer.token_type === TOKEN_COMMA ||
-				lexer.token_type === TOKEN_COLON
+			// else: normal ident start (a-z, A-Z, etc.) - no hack possible, skip all checks
+		} else if (lexer.token_type === TOKEN_AT_KEYWORD || lexer.token_type === TOKEN_HASH) {
+			// Handle @property and #property hacks (tokenized as single tokens)
+			has_browser_hack = true
+			browser_hack_start = lexer.token_start
+			browser_hack_line = lexer.token_line
+			browser_hack_column = lexer.token_column
+		} else if (
+			lexer.token_type === TOKEN_DELIM ||
+			lexer.token_type === TOKEN_LEFT_PAREN ||
+			lexer.token_type === TOKEN_RIGHT_PAREN ||
+			lexer.token_type === TOKEN_LEFT_BRACKET ||
+			lexer.token_type === TOKEN_RIGHT_BRACKET ||
+			lexer.token_type === TOKEN_COMMA ||
+			lexer.token_type === TOKEN_COLON
+		) {
+			// Browser hacks can use various token types as prefixes (e.g., * hack)
+			const delim_saved = lexer.save_position()
+			browser_hack_start = lexer.token_start
+			browser_hack_line = lexer.token_line
+			browser_hack_column = lexer.token_column
 
-			if (is_browser_hack_token) {
-				// Save position in case this isn't a browser hack
-				const delim_saved = lexer.save_position()
-				browser_hack_start = lexer.token_start
-				browser_hack_line = lexer.token_line
-				browser_hack_column = lexer.token_column
+			lexer.next_token_fast(true) // skip whitespace
 
-				// Consume delimiter and check if next token is identifier
-				lexer.next_token_fast(true) // skip whitespace
-
-				if ((lexer.token_type as TokenType) === TOKEN_IDENT) {
-					// This is a browser hack!
-					has_browser_hack = true
-				} else {
-					// Not a browser hack, restore position
-					lexer.restore_position(delim_saved)
-				}
+			if ((lexer.token_type as TokenType) === TOKEN_IDENT) {
+				has_browser_hack = true
+			} else {
+				lexer.restore_position(delim_saved)
 			}
 		}
 

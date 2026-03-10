@@ -99,6 +99,8 @@ export class AtRulePreludeParser {
 			case 'font-feature-values':
 			case 'page':
 				return this.parse_identifier()
+			case 'function':
+				return this.parse_function_prelude()
 			case 'import':
 				return this.parse_import_prelude()
 			case 'charset':
@@ -500,6 +502,26 @@ export class AtRulePreludeParser {
 		}
 
 		return nodes
+	}
+
+	// Parse @function prelude: --function-name(--param1, --param2, ...) [returns <type>]?
+	// The function name is a dashed-ident immediately followed by '(' (TOKEN_FUNCTION).
+	// Parameters and return type remain in the raw prelude text (accessible via .value).
+	private parse_function_prelude(): number[] {
+		this.skip_whitespace()
+		if (this.lexer.pos >= this.prelude_end) return []
+
+		this.next_token()
+
+		// @function prelude starts with a <dashed-function> token like --name(
+		// which the CSS tokenizer produces as TOKEN_FUNCTION (includes the '(')
+		if (this.lexer.token_type !== TOKEN_FUNCTION) return []
+
+		// Create an IDENTIFIER node for just the function name (without '(')
+		let name_start = this.lexer.token_start
+		let name_end = this.lexer.token_end - 1 // Exclude '('
+
+		return [this.create_node(IDENTIFIER, name_start, name_end)]
 	}
 
 	// Parse single identifier: keyframe name, property name
