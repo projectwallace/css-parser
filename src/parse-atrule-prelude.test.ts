@@ -2141,10 +2141,10 @@ and (min-width: 768px) { }`)
 			expect(atRule.type).toBe(AT_RULE)
 			expect(atRule.name).toBe('function')
 
-			const children = atRule.prelude?.children.filter((c) => c.type !== BLOCK) || []
-			expect(children.length).toBe(1)
-			expect(children[0].type).toBe(IDENTIFIER)
-			expect(children[0].text).toBe('--transparent')
+			const children = atRule.prelude?.children
+			expect(children?.length).toBe(1)
+			expect(children?.[0].type).toBe(IDENTIFIER)
+			expect(children?.[0].text).toBe('--transparent')
 		})
 
 		it('should parse function with no parameters', () => {
@@ -2152,7 +2152,7 @@ and (min-width: 768px) { }`)
 			const ast = parse(css)
 			const atRule = ast.first_child!
 
-			const children = atRule.prelude?.children.filter((c) => c.type !== BLOCK) || []
+			const children = atRule.prelude?.children || []
 			expect(children.length).toBe(1)
 			expect(children[0].type).toBe(IDENTIFIER)
 			expect(children[0].text).toBe('--my-func')
