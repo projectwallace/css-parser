@@ -1798,6 +1798,43 @@ describe('parse_atrule_prelude()', () => {
 		})
 	})
 
+	describe('function', () => {
+		test('should parse function name', () => {
+			const result = parse_atrule_prelude('function', '--transparent(--color, --alpha)')
+
+			expect(result.length).toBe(1)
+			expect(result[0].type).toBe(IDENTIFIER)
+			expect(result[0].text).toBe('--transparent')
+		})
+
+		test('should parse function name with no parameters', () => {
+			const result = parse_atrule_prelude('function', '--my-func()')
+
+			expect(result.length).toBe(1)
+			expect(result[0].type).toBe(IDENTIFIER)
+			expect(result[0].text).toBe('--my-func')
+		})
+
+		test('should parse function name with type annotations', () => {
+			const result = parse_atrule_prelude('function', '--add(--a <integer>, --b <integer>)')
+
+			expect(result.length).toBe(1)
+			expect(result[0].type).toBe(IDENTIFIER)
+			expect(result[0].text).toBe('--add')
+		})
+
+		test('should parse function name with returns clause', () => {
+			const result = parse_atrule_prelude(
+				'function',
+				'--clamp-it(--val, --min, --max) returns <number>',
+			)
+
+			expect(result.length).toBe(1)
+			expect(result[0].type).toBe(IDENTIFIER)
+			expect(result[0].text).toBe('--clamp-it')
+		})
+	})
+
 	describe('@import', () => {
 		test('should parse import with URL string', () => {
 			const result = parse_atrule_prelude('import', 'url("styles.css")')
@@ -2091,6 +2128,46 @@ and (min-width: 768px) { }`)
 			expect(mediaQuery?.type).toBe(MEDIA_QUERY)
 			// Should still parse the media feature after the multiline comment
 			expect(mediaQuery?.children.length).toBeGreaterThan(0)
+		})
+	})
+
+	describe('@function', () => {
+		it('should parse function name as IDENTIFIER', () => {
+			const css =
+				'@function --transparent(--color, --alpha) { result: oklch(from var(--color) l c h / var(--alpha)); }'
+			const ast = parse(css)
+			const atRule = ast.first_child!
+
+			expect(atRule.type).toBe(AT_RULE)
+			expect(atRule.name).toBe('function')
+
+			const children = atRule.prelude?.children
+			expect(children?.length).toBe(1)
+			expect(children?.[0].type).toBe(IDENTIFIER)
+			expect(children?.[0].text).toBe('--transparent')
+		})
+
+		it('should parse function with no parameters', () => {
+			const css = '@function --my-func() { result: 42px; }'
+			const ast = parse(css)
+			const atRule = ast.first_child!
+
+			const children = atRule.prelude?.children || []
+			expect(children.length).toBe(1)
+			expect(children[0].type).toBe(IDENTIFIER)
+			expect(children[0].text).toBe('--my-func')
+		})
+
+		it('should parse function name location', () => {
+			const css = '@function --my-func(--x) { result: var(--x); }'
+			const ast = parse(css)
+			const atRule = ast.first_child!
+			const ident = atRule.prelude!.first_child!
+
+			// '@function ' = 10 chars, so name starts at offset 10
+			expect(ident.start).toBe(10)
+			expect(ident.text).toBe('--my-func')
+			expect(ident.length).toBe(9)
 		})
 	})
 })
