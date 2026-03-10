@@ -1824,7 +1824,10 @@ describe('parse_atrule_prelude()', () => {
 		})
 
 		test('should parse function name with returns clause', () => {
-			const result = parse_atrule_prelude('function', '--clamp-it(--val, --min, --max) returns <number>')
+			const result = parse_atrule_prelude(
+				'function',
+				'--clamp-it(--val, --min, --max) returns <number>',
+			)
 
 			expect(result.length).toBe(1)
 			expect(result[0].type).toBe(IDENTIFIER)
@@ -2130,7 +2133,8 @@ and (min-width: 768px) { }`)
 
 	describe('@function', () => {
 		it('should parse function name as IDENTIFIER', () => {
-			const css = '@function --transparent(--color, --alpha) { result: oklch(from var(--color) l c h / var(--alpha)); }'
+			const css =
+				'@function --transparent(--color, --alpha) { result: oklch(from var(--color) l c h / var(--alpha)); }'
 			const ast = parse(css)
 			const atRule = ast.first_child!
 

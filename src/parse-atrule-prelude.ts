@@ -504,7 +504,6 @@ export class AtRulePreludeParser {
 		return nodes
 	}
 
-
 	// Parse @function prelude: --function-name(--param1, --param2, ...) [returns <type>]?
 	// The function name is a dashed-ident immediately followed by '(' (TOKEN_FUNCTION).
 	// Parameters and return type remain in the raw prelude text (accessible via .value).

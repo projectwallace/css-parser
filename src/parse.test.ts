@@ -2113,7 +2113,8 @@ describe('Core Nodes', () => {
 
 		describe('@function at-rule', () => {
 			test('@function basic', () => {
-				let source = '@function --transparent(--color, --alpha) { result: oklch(from var(--color) l c h / var(--alpha)); }'
+				let source =
+					'@function --transparent(--color, --alpha) { result: oklch(from var(--color) l c h / var(--alpha)); }'
 				let root = parse(source, { parse_atrule_preludes: false })
 
 				let fn = root.first_child!
@@ -2130,7 +2131,8 @@ describe('Core Nodes', () => {
 			})
 
 			test('@function with local custom properties', () => {
-				let source = '@function --anim(--animation, --count) { --duration: 1s; --easing: linear; result: var(--animation) var(--duration) var(--count) var(--easing); }'
+				let source =
+					'@function --anim(--animation, --count) { --duration: 1s; --easing: linear; result: var(--animation) var(--duration) var(--count) var(--easing); }'
 				let root = parse(source, { parse_atrule_preludes: false })
 
 				let fn = root.first_child!
@@ -2145,7 +2147,8 @@ describe('Core Nodes', () => {
 			})
 
 			test('@function with nested @media', () => {
-				let source = '@function --narrow-wide(--narrow, --wide) { result: var(--wide); @media (width < 700px) { result: var(--narrow); } }'
+				let source =
+					'@function --narrow-wide(--narrow, --wide) { result: var(--wide); @media (width < 700px) { result: var(--narrow); } }'
 				let root = parse(source, { parse_atrule_preludes: false })
 
 				let fn = root.first_child!
