@@ -2111,6 +2111,68 @@ describe('Core Nodes', () => {
 			})
 		})
 
+		describe('@function at-rule', () => {
+			test('@function basic', () => {
+				let source =
+					'@function --transparent(--color, --alpha) { result: oklch(from var(--color) l c h / var(--alpha)); }'
+				let root = parse(source, { parse_atrule_preludes: false })
+
+				let fn = root.first_child!
+				expect(fn.type).toBe(AT_RULE)
+				expect(fn.name).toBe('function')
+				expect(fn.has_block).toBe(true)
+
+				let block = fn.block!
+				expect(block.children.length).toBe(1)
+
+				let result_decl = block.first_child!
+				expect(result_decl.type).toBe(DECLARATION)
+				expect(result_decl.property).toBe('result')
+			})
+
+			test('@function with local custom properties', () => {
+				let source =
+					'@function --anim(--animation, --count) { --duration: 1s; --easing: linear; result: var(--animation) var(--duration) var(--count) var(--easing); }'
+				let root = parse(source, { parse_atrule_preludes: false })
+
+				let fn = root.first_child!
+				let block = fn.block!
+				expect(block.children.length).toBe(3)
+
+				let [dur, ease, result_decl] = block.children
+				expect(dur.type).toBe(DECLARATION)
+				expect(dur.property).toBe('--duration')
+				expect(ease.property).toBe('--easing')
+				expect(result_decl.property).toBe('result')
+			})
+
+			test('@function with nested @media', () => {
+				let source =
+					'@function --narrow-wide(--narrow, --wide) { result: var(--wide); @media (width < 700px) { result: var(--narrow); } }'
+				let root = parse(source, { parse_atrule_preludes: false })
+
+				let fn = root.first_child!
+				let block = fn.block!
+				expect(block.children.length).toBe(2)
+
+				let [result_decl, media] = block.children
+				expect(result_decl.type).toBe(DECLARATION)
+				expect(result_decl.property).toBe('result')
+				expect(media.type).toBe(AT_RULE)
+				expect(media.name).toBe('media')
+			})
+
+			test('@function with no parameters', () => {
+				let source = '@function --my-func() { result: 42px; }'
+				let root = parse(source, { parse_atrule_preludes: false })
+
+				let fn = root.first_child!
+				expect(fn.type).toBe(AT_RULE)
+				expect(fn.name).toBe('function')
+				expect(fn.has_block).toBe(true)
+			})
+		})
+
 		describe('@nest at-rule', () => {
 			test('@nest with & selector', () => {
 				let source = '.parent { @nest & .child { color: blue; } }'
