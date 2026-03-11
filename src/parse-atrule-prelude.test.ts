@@ -1371,7 +1371,8 @@ describe('At-Rule Prelude Nodes', () => {
 			})
 
 			it('should parse with all features combined', () => {
-				const css = '@import url("styles.css") layer(base) supports(display: grid) screen and (min-width: 768px);'
+				const css =
+					'@import url("styles.css") layer(base) supports(display: grid) screen and (min-width: 768px);'
 				const ast = parse(css, { parse_atrule_preludes: true })
 				const atRule = ast.first_child!
 				const children = atRule.prelude?.children || []
@@ -1534,7 +1535,9 @@ describe('At-Rule Prelude Nodes', () => {
 					const ast = parse(css)
 					const atRule = ast.first_child!
 
-					expect(atRule?.prelude?.text).toBe('url("a.css") layer(utilities) supports(display: flex) screen')
+					expect(atRule?.prelude?.text).toBe(
+						'url("a.css") layer(utilities) supports(display: flex) screen',
+					)
 					expect(atRule?.prelude?.length).toBe(60)
 				})
 			})
@@ -1834,7 +1837,10 @@ describe('parse_atrule_prelude()', () => {
 		})
 
 		test('should parse function name with returns clause', () => {
-			const result = parse_atrule_prelude('function', '--clamp-it(--val, --min, --max) returns <number>')
+			const result = parse_atrule_prelude(
+				'function',
+				'--clamp-it(--val, --min, --max) returns <number>',
+			)
 
 			expect(result.length).toBe(1)
 			expect(result[0].type).toBe(IDENTIFIER)
@@ -2071,7 +2077,9 @@ describe('Comment Handling in At-Rule Preludes', () => {
 		})
 
 		it('should parse supports with comments between queries', () => {
-			const root = parse('@supports (display: grid) /* comment */ or /* comment */ (display: flex) { }')
+			const root = parse(
+				'@supports (display: grid) /* comment */ or /* comment */ (display: flex) { }',
+			)
 			const atrule = root.first_child
 			expect(atrule?.name).toBe('supports')
 			expect(atrule?.prelude?.children.length).toBeGreaterThan(0)
@@ -2138,7 +2146,8 @@ and (min-width: 768px) { }`)
 
 	describe('@function', () => {
 		it('should parse function name as IDENTIFIER', () => {
-			const css = '@function --transparent(--color, --alpha) { result: oklch(from var(--color) l c h / var(--alpha)); }'
+			const css =
+				'@function --transparent(--color, --alpha) { result: oklch(from var(--color) l c h / var(--alpha)); }'
 			const ast = parse(css)
 			const atRule = ast.first_child!
 
