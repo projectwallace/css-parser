@@ -60,13 +60,7 @@ import {
 	ATTR_FLAG_CASE_SENSITIVE,
 } from './arena'
 
-import {
-	CHAR_MINUS_HYPHEN,
-	CHAR_PLUS,
-	is_whitespace,
-	is_vendor_prefixed,
-	str_starts_with,
-} from './string-utils'
+import { CHAR_MINUS_HYPHEN, CHAR_PLUS, is_whitespace, is_vendor_prefixed, str_starts_with } from './string-utils'
 import { parse_dimension } from './parse-dimension'
 
 // Type name lookup table - maps numeric type to CSSTree-compatible strings
@@ -272,7 +266,7 @@ export class CSSNode {
 	/** Get the "content" text (at-rule name for at-rules, layer name for import layers) */
 	get name(): string | undefined {
 		let { type } = this
-		if (type === DECLARATION || type === OPERATOR || type === SELECTOR) return
+		if (type === DECLARATION || type === OPERATOR || type === SELECTOR || type === MEDIA_FEATURE) return
 		return this.get_content()
 	}
 
@@ -295,6 +289,10 @@ export class CSSNode {
 	 */
 	get value(): CSSNode | string | number | null | undefined {
 		let { type, text, first_child } = this
+
+		if (type === AT_RULE) return undefined
+
+		if (type === MEDIA_TYPE) return text
 
 		// For DECLARATION nodes with parsed values, return the VALUE node
 		// For DECLARATION nodes without parsed values, fall through to get raw text
@@ -446,7 +444,7 @@ export class CSSNode {
 	get has_prelude(): boolean {
 		let { type } = this
 		if (type === AT_RULE) {
-			return this.arena.get_value_length(this.index) > 0
+			return this.first_child !== null && this.first_child.type !== BLOCK
 		}
 		if (type === STYLE_RULE) {
 			return this.first_child !== null

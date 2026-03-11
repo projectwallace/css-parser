@@ -409,26 +409,39 @@ describe('At-Rule Prelude Nodes', () => {
 				// First child should be a media query
 				expect(children[0].type).toBe(MEDIA_QUERY)
 
-				// Query should have a media type child
-				const queryChildren = children[0].children
-				expect(queryChildren.some((c) => c.type === MEDIA_TYPE)).toBe(true)
+				const mediaType = children[0].first_child!
+				expect(mediaType.type).toBe(MEDIA_TYPE)
+				expect(mediaType.value).toBe('screen')
 			})
 
-			it('should parse media feature', () => {
+			it('should parse media feature (min-width: 768px)', () => {
 				const css = '@media (min-width: 768px) { }'
 				const ast = parse(css)
 				const atRule = ast.first_child!
-				const children = atRule.prelude?.children || []
+				const prelude = atRule.prelude!
+				const query = prelude.first_child!
 
-				expect(children[0].type).toBe(MEDIA_QUERY)
-
-				// Query should have a media feature child
-				const queryChildren = children[0].children
-				expect(queryChildren.some((c) => c.type === MEDIA_FEATURE)).toBe(true)
+				expect(query.type).toBe(MEDIA_QUERY)
 
 				// Feature should have content
-				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE)
-				expect(feature?.name).toBe('min-width')
+				const feature = query.first_child
+				expect(feature?.property).toBe('min-width')
+				expect(feature?.name).toBeUndefined()
+			})
+
+			it('should parse media feature (hover)', () => {
+				const css = '@media (hover) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child!
+				const prelude = atRule.prelude!
+				const query = prelude.first_child!
+
+				expect(query.type).toBe(MEDIA_QUERY)
+
+				// Feature should have content
+				const feature = query.first_child
+				expect(feature?.property).toBe('hover')
+				expect(feature?.name).toBeUndefined()
 			})
 
 			it('should trim whitespace and comments from media features', () => {
@@ -439,7 +452,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const queryChildren = children[0].children
 				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE)
 
-				expect(feature?.name).toBe('min-width')
+				expect(feature?.property).toBe('min-width')
 			})
 
 			it('should parse complex media query with and operator', () => {
@@ -475,7 +488,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const queryChildren = atRule.prelude?.children[0].children || []
 				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE)
 
-				expect(feature?.name).toBe('orientation')
+				expect(feature?.property).toBe('orientation')
 				expect(feature?.children.length).toBe(1)
 				expect(feature?.children[0].type).toBe(IDENTIFIER)
 			})
@@ -487,7 +500,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const queryChildren = atRule.prelude?.children[0].children || []
 				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE)
 
-				expect(feature?.name).toBe('hover')
+				expect(feature?.property).toBe('hover')
 			})
 
 			it('should parse feature values as typed children', () => {
@@ -497,7 +510,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const queryChildren = atRule.prelude?.children[0].children || []
 				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE)
 
-				expect(feature?.name).toBe('min-width')
+				expect(feature?.property).toBe('min-width')
 				expect(feature?.children.length).toBe(1)
 				expect(feature?.children[0].type).toBe(DIMENSION)
 			})
@@ -1358,8 +1371,7 @@ describe('At-Rule Prelude Nodes', () => {
 			})
 
 			it('should parse with all features combined', () => {
-				const css =
-					'@import url("styles.css") layer(base) supports(display: grid) screen and (min-width: 768px);'
+				const css = '@import url("styles.css") layer(base) supports(display: grid) screen and (min-width: 768px);'
 				const ast = parse(css, { parse_atrule_preludes: true })
 				const atRule = ast.first_child!
 				const children = atRule.prelude?.children || []
@@ -1522,9 +1534,7 @@ describe('At-Rule Prelude Nodes', () => {
 					const ast = parse(css)
 					const atRule = ast.first_child!
 
-					expect(atRule?.prelude?.text).toBe(
-						'url("a.css") layer(utilities) supports(display: flex) screen',
-					)
+					expect(atRule?.prelude?.text).toBe('url("a.css") layer(utilities) supports(display: flex) screen')
 					expect(atRule?.prelude?.length).toBe(60)
 				})
 			})
@@ -1824,10 +1834,7 @@ describe('parse_atrule_prelude()', () => {
 		})
 
 		test('should parse function name with returns clause', () => {
-			const result = parse_atrule_prelude(
-				'function',
-				'--clamp-it(--val, --min, --max) returns <number>',
-			)
+			const result = parse_atrule_prelude('function', '--clamp-it(--val, --min, --max) returns <number>')
 
 			expect(result.length).toBe(1)
 			expect(result[0].type).toBe(IDENTIFIER)
@@ -2064,9 +2071,7 @@ describe('Comment Handling in At-Rule Preludes', () => {
 		})
 
 		it('should parse supports with comments between queries', () => {
-			const root = parse(
-				'@supports (display: grid) /* comment */ or /* comment */ (display: flex) { }',
-			)
+			const root = parse('@supports (display: grid) /* comment */ or /* comment */ (display: flex) { }')
 			const atrule = root.first_child
 			expect(atrule?.name).toBe('supports')
 			expect(atrule?.prelude?.children.length).toBeGreaterThan(0)
@@ -2133,8 +2138,7 @@ and (min-width: 768px) { }`)
 
 	describe('@function', () => {
 		it('should parse function name as IDENTIFIER', () => {
-			const css =
-				'@function --transparent(--color, --alpha) { result: oklch(from var(--color) l c h / var(--alpha)); }'
+			const css = '@function --transparent(--color, --alpha) { result: oklch(from var(--color) l c h / var(--alpha)); }'
 			const ast = parse(css)
 			const atRule = ast.first_child!
 
