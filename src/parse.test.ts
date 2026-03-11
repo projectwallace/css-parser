@@ -1087,7 +1087,6 @@ describe('Core Nodes', () => {
 
 					let atrule = root.first_child!
 					expect(atrule.name).toBe('charset')
-					expect(atrule.value).toBe('"UTF-8"')
 					expect(atrule.prelude).not.toBeNull()
 					expect(atrule.prelude?.text).toBe('"UTF-8"')
 				})
@@ -1098,7 +1097,6 @@ describe('Core Nodes', () => {
 
 					let atrule = root.first_child!
 					expect(atrule.name).toBe('namespace')
-					expect(atrule.value).toBe('svg url(http://www.w3.org/2000/svg)')
 					// @namespace doesn't have structured prelude parsing, but prelude wrapper exists
 					expect(atrule.prelude).not.toBeNull()
 					expect(atrule.prelude?.text).toBe('svg url(http://www.w3.org/2000/svg)')
@@ -1110,7 +1108,6 @@ describe('Core Nodes', () => {
 
 					let atrule = root.first_child!
 					expect(atrule.name).toBe('imaginary-atrule')
-					expect(atrule.value).toBe('prelude-stuff')
 					// Unknown at-rules get a RAW prelude (not AT_RULE_PRELUDE)
 					expect(atrule.prelude).not.toBeNull()
 					expect(atrule.prelude?.type).toBe(RAW)
@@ -1151,6 +1148,21 @@ describe('Core Nodes', () => {
 					expect(rule.type).toBe(STYLE_RULE)
 				})
 
+				test('unknown at-rule with prelude block can contain style rules', () => {
+					let source = '@custom test { .a { color: red } }'
+					let root = parse(source)
+
+					let atrule = root.first_child!
+					let block = atrule.block!
+					let rule = block.first_child!
+					expect(rule.type).toBe(STYLE_RULE)
+
+					expect(atrule.value).toBeUndefined()
+
+					let prelude = atrule.prelude!
+					expect(prelude.type).toBe(RAW)
+				})
+
 				test('unknown at-rule block can contain nested at-rules', () => {
 					let source = '@custom { @media (width) { } }'
 					let root = parse(source)
@@ -1180,9 +1192,6 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let atrule = root.first_child!
-					// value returns the raw string from arena, prelude returns the wrapper node
-					expect(typeof atrule.value).toBe('string')
-					expect(atrule.value).toBe('(min-width: 768px)')
 					expect(atrule.prelude?.text).toBe('(min-width: 768px)')
 				})
 

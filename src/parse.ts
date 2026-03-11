@@ -409,9 +409,6 @@ export class Parser {
 		let trimmed = trim_boundaries(this.source, prelude_start, prelude_end)
 		let prelude_wrapper: number | null = null
 		if (trimmed) {
-			this.arena.set_value_start_delta(at_rule, trimmed[0] - at_rule_start)
-			this.arena.set_value_length(at_rule, trimmed[1] - trimmed[0])
-
 			// Create AT_RULE_PRELUDE wrapper if prelude parsing is enabled
 			if (this.prelude_parser) {
 				// Parse prelude and add structured nodes as children
