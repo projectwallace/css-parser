@@ -194,7 +194,12 @@ export function str_index_of(str: string, searchChar: string): number {
  * @param searchChar - The lowercase character/substring to find
  * @returns The offset from start of the first match, or -1 if not found
  */
-export function str_index_of_at(source: string, start: number, end: number, searchChar: string): number {
+export function str_index_of_at(
+	source: string,
+	start: number,
+	end: number,
+	searchChar: string,
+): number {
 	if (searchChar.length === 0) {
 		return -1
 	}

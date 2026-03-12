@@ -716,7 +716,9 @@ export class AtRulePreludeParser {
 		// Check for 'supports(' function
 		if (this.lexer.token_type === TOKEN_FUNCTION) {
 			// -1 to exclude '('
-			if (str_equals_at(this.source, this.lexer.token_start, this.lexer.token_end - 1, 'supports')) {
+			if (
+				str_equals_at(this.source, this.lexer.token_start, this.lexer.token_end - 1, 'supports')
+			) {
 				let supports_start = this.lexer.token_start
 				let content_start = this.lexer.token_end // After the opening '('
 
