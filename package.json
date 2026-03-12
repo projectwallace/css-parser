@@ -71,6 +71,7 @@
 		"benchmark:memory": "npm run build && node --expose-gc benchmark/memory.ts",
 		"lint": "oxlint --config .oxlintrc.json && oxfmt --check",
 		"check": "tsc --noEmit",
+		"knip": "knip",
 		"precommit": "npm run test -- --run; npm run lint; npm run check"
 	},
 	"devDependencies": {
@@ -80,6 +81,7 @@
 		"@vitest/coverage-v8": "^4.0.8",
 		"bootstrap": "^5.3.8",
 		"css-tree": "^3.1.0",
+		"knip": "^5.86.0",
 		"oxfmt": "^0.36.0",
 		"oxlint": "^1.28.0",
 		"postcss": "^8.5.6",

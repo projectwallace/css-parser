@@ -61,3 +61,14 @@ jobs:
         with:
           node-version: 22
       - run: npm audit --audit-level=high
+
+  knip:
+    name: Knip (dead code detection)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run knip
