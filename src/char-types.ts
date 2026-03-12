@@ -21,9 +21,9 @@
 // - Cache-friendly (128 bytes fits in L1 cache)
 // - Supports overlapping categories (e.g., '5' is both digit and hex)
 
-export let CHAR_ALPHA = 1 << 0 // 1
+let CHAR_ALPHA = 1 << 0 // 1
 export let CHAR_DIGIT = 1 << 1 // 2
-export let CHAR_HEX = 1 << 2 // 4
+let CHAR_HEX = 1 << 2 // 4
 export let CHAR_WHITESPACE = 1 << 3 // 8
 export let CHAR_NEWLINE = 1 << 4 // 16
 export let CHAR_IDENT = 1 << 5 // 32
@@ -74,15 +74,11 @@ for (let i = 0; i < 128; i++) {
 char_types[0x2d] |= CHAR_IDENT // hyphen -
 char_types[0x5f] |= CHAR_IDENT // underscore _
 
-export function is_digit(ch: number): boolean {
-	return ch < 128 && (char_types[ch] & CHAR_DIGIT) !== 0
-}
-
 export function is_hex_digit(ch: number): boolean {
 	return ch < 128 && (char_types[ch] & CHAR_HEX) !== 0
 }
 
-export function is_alpha(ch: number): boolean {
+function is_alpha(ch: number): boolean {
 	return ch < 128 && (char_types[ch] & CHAR_ALPHA) !== 0
 }
 
@@ -90,19 +86,9 @@ export function is_whitespace(ch: number): boolean {
 	return ch < 128 && (char_types[ch] & CHAR_WHITESPACE) !== 0
 }
 
-export function is_newline(ch: number): boolean {
-	return ch < 128 && (char_types[ch] & CHAR_NEWLINE) !== 0
-}
-
 // CSS ident start: letter, underscore, or non-ASCII (>= 0x80)
 export function is_ident_start(ch: number): boolean {
 	if (ch >= 0x80) return true // Non-ASCII
 	if (ch === 0x5f) return true // _
 	return is_alpha(ch)
-}
-
-// CSS ident char: ident start, digit, or hyphen
-export function is_ident_char(ch: number): boolean {
-	if (ch === 0x2d) return true // -
-	return is_ident_start(ch) || is_digit(ch)
 }

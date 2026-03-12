@@ -1,0 +1,4 @@
+{
+	"ignore": ["/benchmark/**"],
+	"ignoreDependencies": ["@projectwallace/preset-oxlint", "bootstrap", "tailwindcss"]
+}
