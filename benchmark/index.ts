@@ -18,7 +18,7 @@ const tailwindCSS = fs.readFileSync(
 	'utf-8',
 )
 
-const bench = new Bench({ time: 1000 })
+const bench = new Bench({ time: 1000, warmup: true })
 
 // Tokenizer benchmarks
 bench
@@ -110,8 +110,6 @@ bench
 		})
 	})
 
-// Run benchmarks
-await bench.warmup()
 await bench.run()
 
 // File sizes
@@ -135,11 +133,14 @@ function getFileSize(taskName: string): string {
 
 // Display results
 console.table(
-	bench.tasks.map(({ name, result }) => ({
-		'Task Name': name,
-		'File Size': getFileSize(name),
-		'ops/sec': result?.hz?.toFixed(0) ?? 'N/A',
-		'Average Time (ms)': result?.mean ? (result.mean * 1000).toFixed(4) : 'N/A',
-		Margin: result?.rme ? `±${result.rme.toFixed(2)}%` : 'N/A',
-	})),
+	bench.tasks.map(({ name, result }) => {
+		const stats = result && 'latency' in result ? result : null
+		return {
+			'Task Name': name,
+			'File Size': getFileSize(name),
+			'ops/sec': stats?.throughput.mean.toFixed(0) ?? 'N/A',
+			'Average Time (ms)': stats?.latency.mean.toFixed(4) ?? 'N/A',
+			Margin: stats?.latency.rme != null ? `±${stats.latency.rme.toFixed(2)}%` : 'N/A',
+		}
+	}),
 )
