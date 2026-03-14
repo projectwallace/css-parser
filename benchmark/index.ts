@@ -3,9 +3,12 @@ import { Bench } from 'tinybench'
 import { parse, tokenize, walk } from '../dist/index.js'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
+import { spawnSync } from 'node:child_process'
 // @ts-expect-error
 import * as csstree from 'css-tree'
 import * as postcss from 'postcss'
+
+const CSSKIT = path.resolve('node_modules/csskit/bin/csskit')
 
 // Sample CSS for benchmarking - realistic production-like CSS
 const largeCSS = fs.readFileSync(path.resolve('benchmark/medium.css'), 'utf-8')
@@ -79,6 +82,13 @@ bench
 			count++
 		})
 	})
+	.add('Parse/walk - csskit - Bootstrap CSS', () => {
+		let result = spawnSync(CSSKIT, ['tree', '-'], { input: bootstrapCSS, maxBuffer: 50 * 1024 * 1024 })
+		let count = 0
+		for (const _line of result.stdout.toString().split('\n')) {
+			count++
+		}
+	})
 
 bench
 	.add('Parse/walk - Wallace - Tailwind CSS', () => {
@@ -108,6 +118,13 @@ bench
 			let line = node.source?.start?.line
 			count++
 		})
+	})
+	.add('Parse/walk - csskit - Tailwind CSS', () => {
+		let result = spawnSync(CSSKIT, ['tree', '-'], { input: tailwindCSS, maxBuffer: 50 * 1024 * 1024 })
+		let count = 0
+		for (const _line of result.stdout.toString().split('\n')) {
+			count++
+		}
 	})
 
 await bench.run()

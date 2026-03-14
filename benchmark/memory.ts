@@ -5,9 +5,12 @@
 import { parse, walk } from '../dist/index.js'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
+import { spawnSync } from 'node:child_process'
 // @ts-expect-error
 import * as csstree from 'css-tree'
 import * as postcss from 'postcss'
+
+const CSSKIT = path.resolve('node_modules/csskit/bin/csskit')
 
 // Check if GC is available
 if (typeof global.gc !== 'function') {
@@ -69,7 +72,7 @@ function forceGC(rounds = 5): void {
 function measureMemory(
 	fileName: string,
 	cssContent: string,
-	parser: 'wallace' | 'csstree' | 'postcss',
+	parser: 'wallace' | 'csstree' | 'postcss' | 'csskit',
 ): MemoryResult {
 	// Force GC and get baseline
 	forceGC()
@@ -84,6 +87,8 @@ function measureMemory(
 		ast = csstree.parse(cssContent, { positions: true })
 	} else if (parser === 'postcss') {
 		ast = postcss.parse(cssContent)
+	} else if (parser === 'csskit') {
+		ast = spawnSync(CSSKIT, ['tree', '-'], { input: cssContent, maxBuffer: 50 * 1024 * 1024 })
 	}
 
 	const afterParse = getMemorySnapshot()
@@ -108,6 +113,10 @@ function measureMemory(
 			const line = node.source?.start?.line
 			count++
 		})
+	} else if (parser === 'csskit') {
+		for (const _line of ast.stdout.toString().split('\n')) {
+			count++
+		}
 	}
 
 	const afterWalk = getMemorySnapshot()
@@ -139,7 +148,7 @@ function measureMemory(
 function runBenchmark(
 	name: string,
 	css: string,
-	parser: 'wallace' | 'csstree' | 'postcss',
+	parser: 'wallace' | 'csstree' | 'postcss' | 'csskit',
 	iterations = 3,
 ): MemoryResult {
 	const results: MemoryResult[] = []
@@ -175,7 +184,7 @@ const testFiles = [
 	{ name: 'tailwind.css', content: tailwindCSS },
 ]
 
-const parsers: Array<'wallace' | 'csstree' | 'postcss'> = ['wallace', 'csstree', 'postcss']
+const parsers: Array<'wallace' | 'csstree' | 'postcss' | 'csskit'> = ['wallace', 'csstree', 'postcss', 'csskit']
 
 for (const parser of parsers) {
 	console.log(`\n${parser.toUpperCase()} Parser`)
@@ -219,6 +228,7 @@ const comparisonTable = testFiles.map((file) => {
 	const wallace = comparisonResults[file.name]['wallace']
 	const tree = comparisonResults[file.name]['csstree']
 	const post = comparisonResults[file.name]['postcss']
+	const csskit = comparisonResults[file.name]['csskit']
 
 	return {
 		File: file.name,
@@ -226,6 +236,7 @@ const comparisonTable = testFiles.map((file) => {
 		'Wallace (MB)': formatBytes(wallace),
 		'CSSTree (MB)': formatBytes(tree),
 		'PostCSS (MB)': formatBytes(post),
+		'csskit (MB)': formatBytes(csskit),
 		'Wallace vs CSSTree': `${((wallace / tree) * 100).toFixed(1)}%`,
 		'Wallace vs PostCSS': `${((wallace / post) * 100).toFixed(1)}%`,
 	}
