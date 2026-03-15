@@ -10,6 +10,15 @@ updates:
     ignore:
       - dependency-name: 'bootstrap'
       - dependency-name: 'tailwindcss'
+    groups:
+      vite:
+        patterns:
+          - '@vitest/coverage-v8'
+          - 'vitest'
+      oxc:
+        patterns:
+          - 'oxlint'
+          - 'oxfmt'
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
