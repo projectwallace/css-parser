@@ -68,6 +68,7 @@ import {
 	CHAR_SINGLE_QUOTE,
 	CHAR_DOUBLE_QUOTE,
 	CHAR_COLON,
+	CHAR_MINUS_HYPHEN,
 } from './string-utils'
 import { ANplusBParser } from './parse-anplusb'
 import { CSSNode } from './css-node'
@@ -411,6 +412,16 @@ export class SelectorParser {
 	// Parse type selector or namespace selector (ns|E or ns|*)
 	// Called when we've seen an IDENT token
 	private parse_type_or_namespace_selector(start: number, end: number): number | null {
+		// Dashed idents (--foo) are CSS custom property names and cannot be type selectors.
+		// They appear legitimately as arguments to pseudo-element functions like
+		// ::view-transition-new(--my-ident), so we must not classify them as TYPE_SELECTOR.
+		if (
+			this.source.charCodeAt(start) === CHAR_MINUS_HYPHEN &&
+			this.source.charCodeAt(start + 1) === CHAR_MINUS_HYPHEN
+		) {
+			return null
+		}
+
 		// Save position before skipping whitespace/comments
 		const saved = this.lexer.save_position()
 
