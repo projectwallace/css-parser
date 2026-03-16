@@ -2241,6 +2241,32 @@ describe('Core Nodes', () => {
 				expect(fn.name).toBe('function')
 				expect(fn.has_block).toBe(true)
 			})
+
+			test('multiple @function rules with result: descriptor are all parsed (#187)', () => {
+				// Regression test: @function blocks with result: descriptor caused subsequent
+				// @function rules to be skipped (every other rule was silently dropped)
+				let source =
+					'@function --a() { result: red; }\n@function --b() { result: blue; }\n@function --c() { result: green; }'
+				let root = parse(source)
+
+				expect(root.children.length).toBe(3)
+
+				let [a, b, c] = root.children
+				expect(a.type).toBe(AT_RULE)
+				expect(a.name).toBe('function')
+				expect(b.type).toBe(AT_RULE)
+				expect(b.name).toBe('function')
+				expect(c.type).toBe(AT_RULE)
+				expect(c.name).toBe('function')
+
+				// Verify each function's block contains exactly one declaration
+				expect(a.block!.children.length).toBe(1)
+				expect(a.block!.first_child!.property).toBe('result')
+				expect(b.block!.children.length).toBe(1)
+				expect(b.block!.first_child!.property).toBe('result')
+				expect(c.block!.children.length).toBe(1)
+				expect(c.block!.first_child!.property).toBe('result')
+			})
 		})
 
 		describe('@nest at-rule', () => {
