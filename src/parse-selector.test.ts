@@ -2851,6 +2851,69 @@ describe('Selector Nodes', () => {
 			})
 		})
 
+		describe('Dashed idents in pseudo-element functions', () => {
+			it('should not parse dashed ident as type selector in ::view-transition-new()', () => {
+				const root = parse_selector('::view-transition-new(--light-box-img)')
+				const selector = root.first_child
+				const pseudoElement = selector?.first_child
+				expect(pseudoElement?.type).toBe(PSEUDO_ELEMENT_SELECTOR)
+				expect(pseudoElement?.name).toBe('view-transition-new')
+				// The dashed ident should NOT produce a TYPE_SELECTOR child
+				const child = pseudoElement?.first_child
+				expect(child?.type).not.toBe(TYPE_SELECTOR)
+			})
+
+			it('should not parse dashed ident as type selector in ::view-transition-old()', () => {
+				const root = parse_selector('::view-transition-old(--light-box-img)')
+				const selector = root.first_child
+				const pseudoElement = selector?.first_child
+				expect(pseudoElement?.type).toBe(PSEUDO_ELEMENT_SELECTOR)
+				expect(pseudoElement?.name).toBe('view-transition-old')
+				const child = pseudoElement?.first_child
+				expect(child?.type).not.toBe(TYPE_SELECTOR)
+			})
+
+			it('should parse selector list with multiple view-transition pseudo-elements with dashed idents', () => {
+				const root = parse_selector(
+					'::view-transition-new(--light-box-img), ::view-transition-old(--light-box-img)',
+				)
+				expect(root.children.length).toBe(2)
+				const [sel1, sel2] = root.children
+				const pe1 = sel1?.first_child
+				const pe2 = sel2?.first_child
+				expect(pe1?.type).toBe(PSEUDO_ELEMENT_SELECTOR)
+				expect(pe1?.name).toBe('view-transition-new')
+				expect(pe1?.first_child?.type).not.toBe(TYPE_SELECTOR)
+				expect(pe2?.type).toBe(PSEUDO_ELEMENT_SELECTOR)
+				expect(pe2?.name).toBe('view-transition-old')
+				expect(pe2?.first_child?.type).not.toBe(TYPE_SELECTOR)
+			})
+
+			it('should still parse normal idents as type selectors inside pseudo-class functions', () => {
+				const root = parse_selector(':is(div, span)')
+				const selector = root.first_child
+				const pseudoClass = selector?.first_child
+				expect(pseudoClass?.type).toBe(PSEUDO_CLASS_SELECTOR)
+				expect(pseudoClass?.name).toBe('is')
+				// Normal idents inside :is() should still produce TYPE_SELECTOR nodes
+				const selectorList = pseudoClass?.first_child
+				const firstSel = selectorList?.first_child
+				expect(firstSel?.first_child?.type).toBe(TYPE_SELECTOR)
+			})
+
+			it('should not parse dashed ident as type selector in ::slotted()', () => {
+				// ::slotted() normally takes a compound selector, but if a dashed ident
+				// is used it should not be classified as a type selector
+				const root = parse_selector('::slotted(--custom)')
+				const selector = root.first_child
+				const pseudoElement = selector?.first_child
+				expect(pseudoElement?.type).toBe(PSEUDO_ELEMENT_SELECTOR)
+				expect(pseudoElement?.name).toBe('slotted')
+				const child = pseudoElement?.first_child
+				expect(child?.type).not.toBe(TYPE_SELECTOR)
+			})
+		})
+
 		describe('Multiline comments', () => {
 			it('should handle multiline comments in selectors', () => {
 				const root = parse_selector(`div
