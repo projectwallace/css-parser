@@ -2714,6 +2714,30 @@ describe('Core Nodes', () => {
 		})
 	})
 
+	describe('Regression tests', () => {
+		test('issue #170: pseudo-class selector at start of rule inside at-rule should not be parsed as TypeSelector', () => {
+			let source = `@media all {\n\t:focus-visible {}\n}`
+			let ast = parse(source)
+
+			const mediaRule = ast.first_child!
+			expect(mediaRule.type).toBe(AT_RULE)
+
+			const block = mediaRule.block!
+			const styleRule = block.first_child!
+			expect(styleRule.type).toBe(STYLE_RULE)
+
+			const selectorList = styleRule.first_child!
+			expect(selectorList.type).toBe(SELECTOR_LIST)
+
+			const selector = selectorList.first_child!
+			expect(selector.type).toBe(SELECTOR)
+
+			const pseudoClass = selector.first_child!
+			expect(pseudoClass.type).toBe(PSEUDO_CLASS_SELECTOR)
+			expect(pseudoClass.name).toBe('focus-visible')
+		})
+	})
+
 	describe('Large inline SVG', () => {
 		test('should correctly parse declaration with huge inline SVG background-image', () => {
 			// Generate a very long SVG string (> 65535 chars)

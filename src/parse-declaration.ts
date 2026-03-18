@@ -53,8 +53,12 @@ export class DeclarationParser {
 
 	// Parse a declaration using a provided lexer (used by Parser to avoid re-tokenization)
 	parse_declaration_with_lexer(lexer: Lexer, end: number): number | null {
+		// Save initial position so we can fully restore if parsing fails after consuming a delimiter prefix
+		const initial_saved = lexer.save_position()
+
 		// Check for browser hack prefix (single delimiter/special character before identifier)
 		let has_browser_hack = false
+		let has_delimiter_prefix = false
 		let browser_hack_start = 0
 		let browser_hack_line = 1
 		let browser_hack_column = 1
@@ -106,6 +110,7 @@ export class DeclarationParser {
 
 			if ((lexer.token_type as TokenType) === TOKEN_IDENT) {
 				has_browser_hack = true
+				has_delimiter_prefix = true
 			} else {
 				lexer.restore_position(delim_saved)
 			}
@@ -133,8 +138,10 @@ export class DeclarationParser {
 
 		// Expect ':' (type assertion needed because TS doesn't know next_token mutates token_type)
 		if ((lexer.token_type as TokenType) !== TOKEN_COLON) {
-			// Restore lexer state and return null
-			lexer.restore_position(saved)
+			// Restore lexer state and return null.
+			// If we consumed a delimiter prefix (e.g. ':' before the property name), we must restore
+			// all the way back to before that prefix so the caller's lexer position is correct.
+			lexer.restore_position(has_delimiter_prefix ? initial_saved : saved)
 			return null
 		}
 		lexer.next_token_fast(true) // consume ':', skip whitespace
