@@ -12,6 +12,8 @@ export default defineConfig({
 		'./src/parse-value.ts',
 		'./src/parse-anplusb.ts',
 		'./src/parse-dimension.ts',
+		'./src/walk.ts',
+		'./src/constants.ts',
 	],
 	platform: 'neutral',
 	dts: true,
