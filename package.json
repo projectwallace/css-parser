@@ -60,6 +60,14 @@
 		"./parse-dimension": {
 			"types": "./dist/parse-dimension.d.ts",
 			"import": "./dist/parse-dimension.js"
+		},
+		"./walker": {
+			"types": "./dist/walk.d.ts",
+			"import": "./dist/walk.js"
+		},
+		"./nodes": {
+			"types": "./dist/constants.d.ts",
+			"import": "./dist/constants.js"
 		}
 	},
 	"scripts": {
