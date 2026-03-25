@@ -74,6 +74,26 @@ describe('CSSNode', () => {
 		})
 	})
 
+	describe('child_count', () => {
+		test('should return the number of children', () => {
+			const source = 'body { color: red; margin: 0; padding: 10px; }'
+			const root = parse(source, { parse_selectors: false, parse_values: false })
+			const block = root.first_child!.block!
+			expect(block.child_count).toBe(3)
+		})
+
+		test('should return 0 for a node with no children', () => {
+			const root = parse('', { parse_selectors: false, parse_values: false })
+			expect(root.child_count).toBe(0)
+		})
+
+		test('should match children.length', () => {
+			const source = 'body { color: red; } div { margin: 0; }'
+			const root = parse(source, { parse_selectors: false, parse_values: false })
+			expect(root.child_count).toBe(root.children.length)
+		})
+	})
+
 	describe('has_prelude', () => {
 		test('should return true for @media with prelude', () => {
 			const source = '@media (min-width: 768px) { body { color: red; } }'
