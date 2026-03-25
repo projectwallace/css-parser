@@ -584,6 +584,17 @@ export class CSSNode {
 		return this.arena.has_children(this.index)
 	}
 
+	/** Count children without allocating an intermediate array */
+	get child_count(): number {
+		let count = 0
+		let child_index = this.arena.get_first_child(this.index)
+		while (child_index !== 0) {
+			count++
+			child_index = this.arena.get_next_sibling(child_index)
+		}
+		return count
+	}
+
 	/** Get all children as an array */
 	get children(): CSSNode[] {
 		let result: CSSNode[] = []
