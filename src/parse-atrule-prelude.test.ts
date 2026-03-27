@@ -678,6 +678,37 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(fn.value).toBe('--custom: 1')
 			})
 
+			it('should parse container query with name only (no conditions)', () => {
+				// Container conditions are optional when a container name is specified
+				// See https://bugzilla.mozilla.org/show_bug.cgi?id=2016474
+				const css = '@container sidebar { }'
+				const ast = parse(css)
+				const atRule = ast.first_child!
+				const children = atRule.prelude?.children || []
+
+				expect(children[0].type).toBe(CONTAINER_QUERY)
+
+				const [ident] = children[0].children
+				expect(ident.type).toBe(IDENTIFIER)
+				expect(ident.text).toBe('sidebar')
+				expect(ident.type_name).toBe('Identifier')
+			})
+
+			it('should parse container query with hyphenated name only', () => {
+				// Container conditions are optional when a container name is specified
+				// See https://bugzilla.mozilla.org/show_bug.cgi?id=2016474
+				const css = '@container my-layout { .card { color: red } }'
+				const ast = parse(css)
+				const atRule = ast.first_child!
+				const children = atRule.prelude?.children || []
+
+				expect(children[0].type).toBe(CONTAINER_QUERY)
+
+				const [ident] = children[0].children
+				expect(ident.type).toBe(IDENTIFIER)
+				expect(ident.text).toBe('my-layout')
+			})
+
 			it('should handle a very complex container query', () => {
 				const css = `@container style(--themeBackground),
 						not style(background-color: red),
