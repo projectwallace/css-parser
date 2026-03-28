@@ -742,6 +742,58 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(style6.type_name).toBe('Function')
 				expect(style6.name).toBe('style')
 			})
+
+			it('should parse scroll-state container query', () => {
+				const css = '@container scroll-state(scrollable: right) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child!
+				const children = atRule.prelude?.children || []
+
+				expect(children[0].type).toBe(CONTAINER_QUERY)
+
+				const [fn] = children[0].children
+				expect(fn.type_name).toBe('Function')
+				expect(fn.text).toBe('scroll-state(scrollable: right)')
+				expect(fn.name).toBe('scroll-state')
+				expect(fn.value).toBe('scrollable: right')
+			})
+
+			it('should parse named scroll-state container query', () => {
+				const css = '@container sidebar scroll-state(stuck: top) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child!
+				const children = atRule.prelude?.children || []
+
+				expect(children[0].type).toBe(CONTAINER_QUERY)
+
+				const [ident, fn] = children[0].children
+				expect(ident.type_name).toBe('Identifier')
+				expect(ident.text).toBe('sidebar')
+				expect(fn.type_name).toBe('Function')
+				expect(fn.text).toBe('scroll-state(stuck: top)')
+				expect(fn.name).toBe('scroll-state')
+				expect(fn.value).toBe('stuck: top')
+			})
+
+			it('should parse scroll-state container query with logical operators', () => {
+				const css =
+					'@container scroll-state(scrollable: right) and scroll-state(snapped: x) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child!
+				const children = atRule.prelude?.children || []
+
+				expect(children[0].type).toBe(CONTAINER_QUERY)
+
+				const [fn1, op, fn2] = children[0].children
+				expect(fn1.type_name).toBe('Function')
+				expect(fn1.name).toBe('scroll-state')
+				expect(fn1.value).toBe('scrollable: right')
+				expect(op.type_name).toBe('Operator')
+				expect(op.text).toBe('and')
+				expect(fn2.type_name).toBe('Function')
+				expect(fn2.name).toBe('scroll-state')
+				expect(fn2.value).toBe('snapped: x')
+			})
 		})
 
 		describe('@supports', () => {

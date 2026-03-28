@@ -346,7 +346,7 @@ export class AtRulePreludeParser {
 					components.push(feature)
 				}
 			}
-			// Function: style(--custom: 1)
+			// Function: style(--custom: 1) or scroll-state(scrollable: right)
 			else if (token_type === TOKEN_FUNCTION) {
 				let func_name = this.source.substring(this.lexer.token_start, this.lexer.token_end - 1) // -1 to exclude '('
 
