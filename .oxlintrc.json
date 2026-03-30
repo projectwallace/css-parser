@@ -1,10 +1,13 @@
 {
 	"$schema": "./node_modules/oxlint/configuration_schema.json",
 	"extends": ["@projectwallace/preset-oxlint"],
+	"jsPlugins": ["./lint-plugin-naming-convention.js"],
 	"env": {
 		"node": true,
 		"browser": true
 	},
-	"rules": {},
+	"rules": {
+		"naming-convention/no-camel-case": "error"
+	},
 	"ignorePatterns": ["node_modules"]
 }
