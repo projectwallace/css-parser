@@ -159,6 +159,7 @@ export type CSSNodeType =
 	| typeof OPERATOR
 	| typeof PARENTHESIS
 	| typeof URL
+	| typeof UNICODE_RANGE
 	| typeof VALUE
 	| typeof SELECTOR_LIST
 	| typeof TYPE_SELECTOR

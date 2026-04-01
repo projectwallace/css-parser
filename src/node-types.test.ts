@@ -83,21 +83,21 @@ describe('type predicates — runtime', () => {
 	})
 
 	it('is_dimension identifies dimension nodes', () => {
-		const decl = parse_declaration('width: 100px', { parse_values: true })
+		const decl = parse_declaration('width: 100px')
 		const value_node = decl.first_child! // VALUE wrapper
 		const dim = value_node.first_child! // DIMENSION
 		expect(is_dimension(dim)).toBe(true)
 	})
 
 	it('is_number identifies number nodes', () => {
-		const decl = parse_declaration('z-index: 42', { parse_values: true })
+		const decl = parse_declaration('z-index: 42')
 		const value_node = decl.first_child!
 		const num = value_node.first_child!
 		expect(is_number(num)).toBe(true)
 	})
 
 	it('is_function identifies function nodes', () => {
-		const decl = parse_declaration('color: rgb(0,0,0)', { parse_values: true })
+		const decl = parse_declaration('color: rgb(0,0,0)')
 		const value_node = decl.first_child!
 		const fn = value_node.first_child!
 		expect(is_function(fn)).toBe(true)
@@ -185,7 +185,7 @@ describe('type narrowing — compile-time', () => {
 	})
 
 	it('is_dimension narrows value to number, unit to string, value_as_number to number', () => {
-		const decl = parse_declaration('width: 100px', { parse_values: true })
+		const decl = parse_declaration('width: 100px')
 		const dim = decl.first_child!.first_child!
 		if (is_dimension(dim)) {
 			expectTypeOf(dim).toMatchTypeOf<DimensionNode>()
@@ -196,7 +196,7 @@ describe('type narrowing — compile-time', () => {
 	})
 
 	it('is_number narrows value to number and value_as_number to number', () => {
-		const decl = parse_declaration('z-index: 42', { parse_values: true })
+		const decl = parse_declaration('z-index: 42')
 		const num = decl.first_child!.first_child!
 		if (is_number(num)) {
 			expectTypeOf(num).toMatchTypeOf<NumberNode>()
@@ -206,7 +206,7 @@ describe('type narrowing — compile-time', () => {
 	})
 
 	it('is_function narrows name to string', () => {
-		const decl = parse_declaration('color: rgb(0,0,0)', { parse_values: true })
+		const decl = parse_declaration('color: rgb(0,0,0)')
 		const fn = decl.first_child!.first_child!
 		if (is_function(fn)) {
 			expectTypeOf(fn).toMatchTypeOf<FunctionNode>()
