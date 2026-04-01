@@ -27,8 +27,6 @@ import type {
 	RuleNode,
 	AtruleNode,
 	DeclarationNode,
-	SelectorNode,
-	SelectorListNode,
 	BlockNode,
 	NumberNode,
 	DimensionNode,
@@ -87,7 +85,7 @@ describe('type predicates — runtime', () => {
 	it('is_dimension identifies dimension nodes', () => {
 		const decl = parse_declaration('width: 100px', { parse_values: true })
 		const value_node = decl.first_child! // VALUE wrapper
-		const dim = value_node.first_child!  // DIMENSION
+		const dim = value_node.first_child! // DIMENSION
 		expect(is_dimension(dim)).toBe(true)
 	})
 
@@ -251,9 +249,9 @@ describe('type narrowing — compile-time', () => {
 		function extract_name(node: AnyCssNode): string | undefined {
 			switch (node.type) {
 				case 3: // AT_RULE
-					return node.name  // must be string here
+					return node.name // must be string here
 				case 4: // DECLARATION
-					return node.property  // must be string here
+					return node.property // must be string here
 				default:
 					return undefined
 			}
@@ -274,8 +272,8 @@ describe('type narrowing — compile-time', () => {
 describe('selector subtypes', () => {
 	it('is_pseudo_class_selector narrows name to string', () => {
 		const root = parse_selector(':hover')
-		const sel = root.first_child!  // Selector
-		const pseudo = sel.first_child!  // PseudoClassSelector
+		const sel = root.first_child! // Selector
+		const pseudo = sel.first_child! // PseudoClassSelector
 		if (is_pseudo_class_selector(pseudo)) {
 			expectTypeOf(pseudo).toMatchTypeOf<PseudoClassSelectorNode>()
 			expectTypeOf(pseudo.name).toEqualTypeOf<string>()
@@ -296,8 +294,8 @@ describe('selector subtypes', () => {
 
 	it('is_nth_selector preserves nth_a and nth_b types', () => {
 		const root = parse_selector(':nth-child(2n+1)')
-		const pseudo = root.first_child!.first_child!  // PseudoClassSelector
-		const nth = pseudo.first_child!  // NthSelector inside
+		const pseudo = root.first_child!.first_child! // PseudoClassSelector
+		const nth = pseudo.first_child! // NthSelector inside
 		if (is_nth_selector(nth)) {
 			expectTypeOf(nth).toMatchTypeOf<NthSelectorNode>()
 			expectTypeOf(nth.nth_a).toEqualTypeOf<string | undefined>()
