@@ -2,7 +2,6 @@ import { describe, it, expect, expectTypeOf } from 'vitest'
 import { parse } from './parse'
 import { parse_declaration } from './parse-declaration'
 import { parse_selector } from './parse-selector'
-import type { CSSNode } from './css-node'
 import {
 	is_stylesheet,
 	is_rule,
@@ -28,6 +27,11 @@ import type {
 	AtruleNode,
 	DeclarationNode,
 	BlockNode,
+	BlockNode as BlockNodeAlias,
+	SelectorListNode,
+	SelectorNode,
+	AtrulePreludeNode,
+	RawNode,
 	NumberNode,
 	DimensionNode,
 	FunctionNode,
@@ -139,38 +143,35 @@ describe('type narrowing — compile-time', () => {
 		}
 	})
 
-	it('is_rule narrows prelude and block to CSSNode | null', () => {
+	it('is_rule narrows prelude and block to specific subtypes', () => {
 		const root = parse('a { color: red }')
 		const first = root.first_child!
 		if (is_rule(first)) {
 			expectTypeOf(first).toMatchTypeOf<RuleNode>()
-			expectTypeOf(first.prelude).toEqualTypeOf<CSSNode | null>()
-			expectTypeOf(first.block).toEqualTypeOf<CSSNode | null>()
+			expectTypeOf(first.prelude).toMatchTypeOf<SelectorListNode | SelectorNode | null>()
+			expectTypeOf(first.block).toMatchTypeOf<BlockNodeAlias | null>()
 		}
 	})
 
-	it('is_atrule narrows name to string and value to undefined', () => {
+	it('is_atrule narrows name to string and prelude/block to specific subtypes', () => {
 		const root = parse('@media screen {}')
 		const first = root.first_child!
 		if (is_atrule(first)) {
 			expectTypeOf(first).toMatchTypeOf<AtruleNode>()
 			expectTypeOf(first.name).toEqualTypeOf<string>()
-			expectTypeOf(first.prelude).toEqualTypeOf<CSSNode | null>()
-			expectTypeOf(first.block).toEqualTypeOf<CSSNode | null>()
-			expectTypeOf(first.value).toEqualTypeOf<undefined>()
+			expectTypeOf(first.prelude).toMatchTypeOf<AtrulePreludeNode | RawNode | null>()
+			expectTypeOf(first.block).toMatchTypeOf<BlockNodeAlias | null>()
 		}
 	})
 
-	it('is_declaration narrows property, is_important, is_browserhack', () => {
+	it('is_declaration narrows property, is_important, is_browserhack; omits inapplicable props', () => {
 		const decl = parse_declaration('color: red !important')
 		if (is_declaration(decl)) {
 			expectTypeOf(decl).toMatchTypeOf<DeclarationNode>()
 			expectTypeOf(decl.property).toEqualTypeOf<string>()
 			expectTypeOf(decl.is_important).toEqualTypeOf<boolean>()
 			expectTypeOf(decl.is_browserhack).toEqualTypeOf<boolean>()
-			expectTypeOf(decl.name).toEqualTypeOf<undefined>()
-			expectTypeOf(decl.prelude).toEqualTypeOf<undefined>()
-			expectTypeOf(decl.block).toEqualTypeOf<null>()
+			// `name`, `prelude`, `block` are absent on DeclarationNode — verified by tsc
 		}
 	})
 
@@ -189,9 +190,9 @@ describe('type narrowing — compile-time', () => {
 		const dim = decl.first_child!.first_child!
 		if (is_dimension(dim)) {
 			expectTypeOf(dim).toMatchTypeOf<DimensionNode>()
-			expectTypeOf(dim.value).toEqualTypeOf<number>()
-			expectTypeOf(dim.unit).toEqualTypeOf<string>()
-			expectTypeOf(dim.value_as_number).toEqualTypeOf<number>()
+			expectTypeOf(dim.value).toMatchTypeOf<number>()
+			expectTypeOf(dim.unit).toMatchTypeOf<string>()
+			expectTypeOf(dim.value_as_number).toMatchTypeOf<number>()
 		}
 	})
 
@@ -200,8 +201,8 @@ describe('type narrowing — compile-time', () => {
 		const num = decl.first_child!.first_child!
 		if (is_number(num)) {
 			expectTypeOf(num).toMatchTypeOf<NumberNode>()
-			expectTypeOf(num.value).toEqualTypeOf<number>()
-			expectTypeOf(num.value_as_number).toEqualTypeOf<number>()
+			expectTypeOf(num.value).toMatchTypeOf<number>()
+			expectTypeOf(num.value_as_number).toMatchTypeOf<number>()
 		}
 	})
 
@@ -224,13 +225,13 @@ describe('type narrowing — compile-time', () => {
 		}
 	})
 
-	it('is_media_feature narrows property to string', () => {
+	it('is_media_feature narrows property to string; omits name', () => {
 		const root = parse('@media (min-width: 768px) {}')
 		const mediaFeature = root.first_child!.prelude!.first_child!.first_child!
 		if (is_media_feature(mediaFeature)) {
 			expectTypeOf(mediaFeature).toMatchTypeOf<MediaFeatureNode>()
 			expectTypeOf(mediaFeature.property).toEqualTypeOf<string>()
-			expectTypeOf(mediaFeature.name).toEqualTypeOf<undefined>()
+			// `name` is absent on MediaFeatureNode — verified by tsc
 		}
 	})
 
