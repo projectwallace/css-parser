@@ -276,8 +276,6 @@ export interface NthSelectorNode extends CssNodeCommon {
 
 export interface NthOfSelectorNode extends CssNodeCommon {
 	readonly type: typeof NTH_OF_SELECTOR
-	readonly nth_a: string | undefined
-	readonly nth_b: string | undefined
 	/** The An+B formula node */
 	readonly nth: NthSelectorNode | undefined
 	/** The selector list from :nth-child(An+B of <selector>) */
