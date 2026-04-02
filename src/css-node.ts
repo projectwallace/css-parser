@@ -410,12 +410,12 @@ export class CSSNode {
 		let ch1 = this.source.charCodeAt(pos)
 		let ch2 = pos + 1 < node_end ? this.source.charCodeAt(pos + 1) : 0
 
-		if (ch1 === CHAR_EQUALS) return '='
-		if (ch1 === CHAR_TILDE && ch2 === CHAR_EQUALS) return '~='
-		if (ch1 === CHAR_PIPE && ch2 === CHAR_EQUALS) return '|='
-		if (ch1 === CHAR_CARET && ch2 === CHAR_EQUALS) return '^='
-		if (ch1 === CHAR_DOLLAR && ch2 === CHAR_EQUALS) return '$='
-		if (ch1 === CHAR_ASTERISK && ch2 === CHAR_EQUALS) return '*='
+		if (ch1 === CHAR_EQUALS) return this.source.substring(pos, pos + 1)
+		if (ch1 === CHAR_TILDE && ch2 === CHAR_EQUALS) return this.source.substring(pos, pos + 2)
+		if (ch1 === CHAR_PIPE && ch2 === CHAR_EQUALS) return this.source.substring(pos, pos + 2)
+		if (ch1 === CHAR_CARET && ch2 === CHAR_EQUALS) return this.source.substring(pos, pos + 2)
+		if (ch1 === CHAR_DOLLAR && ch2 === CHAR_EQUALS) return this.source.substring(pos, pos + 2)
+		if (ch1 === CHAR_ASTERISK && ch2 === CHAR_EQUALS) return this.source.substring(pos, pos + 2)
 		return null
 	}
 
@@ -441,8 +441,9 @@ export class CSSNode {
 
 		if (pos >= node_end) return null
 		let flag_ch = this.source.charCodeAt(pos)
-		if (flag_ch === 0x69 || flag_ch === 0x49) return 'i' // i or I
-		if (flag_ch === 0x73 || flag_ch === 0x53) return 's' // s or S
+		if (flag_ch === 0x69 || flag_ch === 0x49 || flag_ch === 0x73 || flag_ch === 0x53) {
+			return this.source.substring(pos, pos + 1)
+		}
 		return null
 	}
 

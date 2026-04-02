@@ -1081,7 +1081,7 @@ describe('Selector Nodes', () => {
 				if (!root) return
 				const attr = root.first_child!.first_child!
 				expect(attr.type).toBe(ATTRIBUTE_SELECTOR)
-				expect(attr.attr_flags).toBe('i')
+				expect(attr.attr_flags).toBe('I')
 			})
 
 			it('should parse attribute with whitespace before flag', () => {
