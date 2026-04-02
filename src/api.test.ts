@@ -362,7 +362,7 @@ describe('CSSNode', () => {
 			const root = parse(source)
 			const rule = root.first_child! as Rule
 			const selector = rule.first_child! as SelectorList
-			const declaration = selector.next_sibling! as Rule
+			const _declaration = selector.next_sibling! as Rule
 
 			// Only rules have blocks
 		})

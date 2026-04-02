@@ -8,8 +8,6 @@ import {
 	NthSelector,
 	PseudoClassSelector,
 	PseudoElementSelector,
-	SelectorList,
-	Selector,
 	TypeSelector,
 	UniversalSelector,
 } from './node-types'

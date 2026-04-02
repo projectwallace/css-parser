@@ -29,7 +29,6 @@ import type {
 	Block,
 	Block as BlockNodeAlias,
 	SelectorList,
-	Selector,
 	AtrulePrelude,
 	Raw,
 	Number,

@@ -22,8 +22,6 @@ import type {
 	Declaration,
 	Block,
 	AttributeSelector,
-	AnyCss,
-	Function,
 	PseudoClassSelector,
 	PseudoElementSelector,
 	CssNodeCommon,
@@ -2004,7 +2002,12 @@ describe('Core Nodes', () => {
 
 				let card = root.first_child!
 				let [_selector, block] = card.children
-				let [decl1, title, decl2, body] = block.children as [Declaration, CssNodeCommon, Declaration, CssNodeCommon]
+				let [decl1, title, decl2, body] = block.children as [
+					Declaration,
+					CssNodeCommon,
+					Declaration,
+					CssNodeCommon,
+				]
 
 				expect(decl1.type).toBe(DECLARATION)
 				expect(decl1.property).toBe('color')

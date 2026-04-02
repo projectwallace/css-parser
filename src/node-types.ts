@@ -108,20 +108,19 @@ export interface CssNodeCommon {
  *   rule.clone().prelude   // PlainCSSNode | null  — not PlainCSSNode | undefined
  *   rule.clone().block     // PlainCSSNode | null
  */
-export type ToPlain<T extends CssNodeCommon> = PlainCSSNode &
-	{ type: T['type'] } & {
-		[K in Exclude<
-			keyof T,
-			keyof CssNodeCommon | symbol | 'attr_operator' | 'attr_flags'
-		> as T[K] extends (...args: any[]) => any ? never : K]: T[K] extends
-			| CssNodeCommon
-			| null
-			| undefined
-			? PlainCSSNode | Exclude<T[K], CssNodeCommon>
-			: T[K] extends CssNodeCommon[]
-				? PlainCSSNode[]
-				: T[K]
-	}
+export type ToPlain<T extends CssNodeCommon> = PlainCSSNode & { type: T['type'] } & {
+	[K in Exclude<
+		keyof T,
+		keyof CssNodeCommon | symbol | 'attr_operator' | 'attr_flags'
+	> as T[K] extends (...args: any[]) => any ? never : K]: T[K] extends
+		| CssNodeCommon
+		| null
+		| undefined
+		? PlainCSSNode | Exclude<T[K], CssNodeCommon>
+		: T[K] extends CssNodeCommon[]
+			? PlainCSSNode[]
+			: T[K]
+}
 
 // ---------------------------------------------------------------------------
 // Structural nodes
@@ -404,9 +403,24 @@ export interface LayerName extends CssNodeCommon {
 	clone(options?: CloneOptions): ToPlain<LayerName>
 }
 
+/**
+ * A parenthesised selector argument in an at-rule prelude.
+ *
+ * This node type exists because at-rule preludes that contain selectors (like
+ * @scope) cannot reuse SELECTOR_LIST: that type already appears inside the
+ * rule's block, and mixing the two would make traversal ambiguous. A distinct
+ * type lets walkers and tooling distinguish "this is a selector used as a
+ * scoping argument" from "this is a selector that matches elements".
+ *
+ * Currently produced only by @scope:
+ *   @scope (.parent) to (.child) { }
+ *          ^^^^^^^^^    ^^^^^^^^  — each parenthesised group is a PRELUDE_SELECTORLIST
+ *
+ * `value` is the raw selector text inside the parentheses, trimmed of
+ * whitespace: ".parent" from "(.parent)".
+ */
 export interface PreludeSelectorList extends CssNodeCommon {
 	readonly type: typeof PRELUDE_SELECTORLIST
-	/** The selector text inside the parentheses, e.g. ".parent" from "(.parent)" */
 	readonly value: string
 	clone(options?: CloneOptions): ToPlain<PreludeSelectorList>
 }

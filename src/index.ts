@@ -99,6 +99,7 @@ export {
 	type PreludeOperator,
 	type FeatureRange,
 	type AtrulePrelude,
+	type PreludeSelectorList,
 	is_stylesheet,
 	is_rule,
 	is_atrule,
@@ -140,4 +141,5 @@ export {
 	is_prelude_operator,
 	is_feature_range,
 	is_atrule_prelude,
+	is_prelude_selectorlist,
 } from './node-types'
