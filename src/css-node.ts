@@ -63,6 +63,12 @@ import {
 import {
 	CHAR_MINUS_HYPHEN,
 	CHAR_PLUS,
+	CHAR_EQUALS,
+	CHAR_TILDE,
+	CHAR_PIPE,
+	CHAR_CARET,
+	CHAR_DOLLAR,
+	CHAR_ASTERISK,
 	is_whitespace,
 	is_vendor_prefixed,
 	str_starts_with,
@@ -385,19 +391,59 @@ export class CSSNode {
 	/**
 	 * Get the attribute operator (for attribute selectors: =, ~=, |=, ^=, $=, *=)
 	 * Returns one of the ATTR_OPERATOR_* constants
+	 * Derived from source text between the attribute name and value.
 	 */
 	get attr_operator(): number | undefined {
 		if (this.type !== ATTRIBUTE_SELECTOR) return undefined
-		return this.arena.get_attr_operator(this.index)
+
+		let content_start = this.arena.get_content_start(this.index)
+		let content_end = content_start + this.arena.get_content_length(this.index)
+		let node_start = this.arena.get_start_offset(this.index)
+		let node_end = node_start + this.arena.get_length(this.index)
+
+		// Skip whitespace after attribute name
+		let pos = content_end
+		while (pos < node_end && is_whitespace(this.source.charCodeAt(pos))) pos++
+
+		if (pos >= node_end) return ATTR_OPERATOR_NONE
+
+		let ch1 = this.source.charCodeAt(pos)
+		let ch2 = pos + 1 < node_end ? this.source.charCodeAt(pos + 1) : 0
+
+		if (ch1 === CHAR_EQUALS) return ATTR_OPERATOR_EQUAL
+		if (ch1 === CHAR_TILDE && ch2 === CHAR_EQUALS) return ATTR_OPERATOR_TILDE_EQUAL
+		if (ch1 === CHAR_PIPE && ch2 === CHAR_EQUALS) return ATTR_OPERATOR_PIPE_EQUAL
+		if (ch1 === CHAR_CARET && ch2 === CHAR_EQUALS) return ATTR_OPERATOR_CARET_EQUAL
+		if (ch1 === CHAR_DOLLAR && ch2 === CHAR_EQUALS) return ATTR_OPERATOR_DOLLAR_EQUAL
+		if (ch1 === CHAR_ASTERISK && ch2 === CHAR_EQUALS) return ATTR_OPERATOR_STAR_EQUAL
+		return ATTR_OPERATOR_NONE
 	}
 
 	/**
 	 * Get the attribute flags (for attribute selectors: i, s)
 	 * Returns one of the ATTR_FLAG_* constants
+	 * Derived from source text after the attribute value.
 	 */
 	get attr_flags(): number | undefined {
 		if (this.type !== ATTRIBUTE_SELECTOR) return undefined
-		return this.arena.get_attr_flags(this.index)
+
+		let value_len = this.arena.get_value_length(this.index)
+		if (value_len === 0) return ATTR_FLAG_NONE
+
+		let value_start = this.arena.get_value_start(this.index)
+		let value_end = value_start + value_len
+		let node_start = this.arena.get_start_offset(this.index)
+		let node_end = node_start + this.arena.get_length(this.index)
+
+		// Skip whitespace after value
+		let pos = value_end
+		while (pos < node_end && is_whitespace(this.source.charCodeAt(pos))) pos++
+
+		if (pos >= node_end) return ATTR_FLAG_NONE
+		let flag_ch = this.source.charCodeAt(pos)
+		if (flag_ch === 0x69 || flag_ch === 0x49) return ATTR_FLAG_CASE_INSENSITIVE // i or I
+		if (flag_ch === 0x73 || flag_ch === 0x53) return ATTR_FLAG_CASE_SENSITIVE // s or S
+		return ATTR_FLAG_NONE
 	}
 
 	/** Get the unit for dimension nodes (e.g., "px" from "100px", "%" from "50%") */

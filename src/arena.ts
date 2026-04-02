@@ -1,6 +1,6 @@
 // CSS Data Arena - Single contiguous ArrayBuffer for all AST nodes
 //
-// Each node occupies 36 bytes with the following layout:
+// Each node occupies 32 bytes with the following layout:
 // Offset | Size | Field
 // -------|------|-------------
 //   0    |  1   | type
@@ -15,14 +15,11 @@
 //  22    |  2   | valueLength
 //  24    |  4   | startLine
 //  28    |  4   | startColumn
-//  32    |  1   | attr_operator
-//  33    |  1   | attr_flags
-//  34    |  2   | (padding)
 //
 // HOW THE ARENA WORKS:
-// 1. BYTES_PER_NODE defines the size of each node (36 bytes). The ArrayBuffer size is calculated
-//    as: capacity × BYTES_PER_NODE. For example, 1024 nodes = 36,864 bytes (36KB).
-//    Node indices map to byte offsets via: node_offset = node_index × 36.
+// 1. BYTES_PER_NODE defines the size of each node (32 bytes). The ArrayBuffer size is calculated
+//    as: capacity × BYTES_PER_NODE. For example, 1024 nodes = 32,768 bytes (32KB).
+//    Node indices map to byte offsets via: node_offset = node_index × 32.
 //
 // 2. We use a single DataView over the ArrayBuffer to read/write different types at specific offsets.
 //    - Uint8: 1-byte reads/writes for type, flags (e.g., view.getUint8(offset))
@@ -30,18 +27,20 @@
 //    - Uint32: 4-byte reads/writes for startOffset, pointers, line, column (e.g., view.getUint32(offset, true))
 //    The 'true' parameter specifies little-endian byte order (native on x86/ARM CPUs).
 //
-// 3. Padding (2 bytes at offsets 34-35) ensures memory alignment for performance:
+// 3. All fields are naturally aligned:
 //    - Uint32 fields align to 4-byte boundaries (offsets 4, 8, 12, 24, 28)
 //    - Uint16 fields align to 2-byte boundaries (offsets 2, 16, 18, 20, 22)
 //    Aligned access is faster (single CPU instruction) vs unaligned (multiple memory accesses).
-//    Modern CPUs penalize unaligned reads/writes, making padding essential for performance.
+//    Modern CPUs penalize unaligned reads/writes, making alignment essential for performance.
 //
 // 4. Delta offsets (contentStartDelta, valueStartDelta) save memory: instead of storing absolute
 //    positions as uint32 (4 bytes), we store relative offsets as uint16 (2 bytes). Removing unused
 //    lastChild field saved another 4 bytes. startColumn was changed from Uint16 to Uint32 to avoid
-//    overflow on long lines (common in minified CSS). Node size: 44→40→36 bytes.
+//    overflow on long lines (common in minified CSS). attr_operator and attr_flags were removed
+//    from the arena — they are derived on demand from the source text via content/value positions.
+//    Node size: 44→40→36→32 bytes.
 
-let BYTES_PER_NODE = 36
+let BYTES_PER_NODE = 32
 
 // Node type constants
 export const STYLESHEET = 1
@@ -218,16 +217,6 @@ export class CSSDataArena {
 		return this.view.getUint16(this.node_offset(node_index) + 20, true)
 	}
 
-	// Read attribute operator (for NODE_SELECTOR_ATTRIBUTE)
-	get_attr_operator(node_index: number): number {
-		return this.view.getUint8(this.node_offset(node_index) + 32)
-	}
-
-	// Read attribute flags (for NODE_SELECTOR_ATTRIBUTE)
-	get_attr_flags(node_index: number): number {
-		return this.view.getUint8(this.node_offset(node_index) + 33)
-	}
-
 	// Read first child index (0 = no children)
 	get_first_child(node_index: number): number {
 		return this.view.getUint32(this.node_offset(node_index) + 4, true)
@@ -293,16 +282,6 @@ export class CSSDataArena {
 	// Write content length
 	set_content_length(node_index: number, length: number): void {
 		this.view.setUint16(this.node_offset(node_index) + 20, length, true)
-	}
-
-	// Write attribute operator (for NODE_SELECTOR_ATTRIBUTE)
-	set_attr_operator(node_index: number, operator: number): void {
-		this.view.setUint8(this.node_offset(node_index) + 32, operator)
-	}
-
-	// Write attribute flags (for NODE_SELECTOR_ATTRIBUTE)
-	set_attr_flags(node_index: number, flags: number): void {
-		this.view.setUint8(this.node_offset(node_index) + 33, flags)
 	}
 
 	// Write first child index
