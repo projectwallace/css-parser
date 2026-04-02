@@ -695,7 +695,6 @@ export class SelectorParser {
 			this.arena.set_value_start_delta(node, value_start - this.arena.get_start_offset(node))
 			this.arena.set_value_length(node, value_end - value_start)
 		}
-
 	}
 
 	// Parse pseudo-class or pseudo-element (:hover, ::before)
