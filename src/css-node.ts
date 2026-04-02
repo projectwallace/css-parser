@@ -348,7 +348,7 @@ export class CSSNode {
 			// For unquoted URLs, fall through to value delta logic below
 		}
 
-		if (type === OPERATOR) {
+		if (type === OPERATOR || type === LAYER_NAME) {
 			return this.get_content()
 		}
 

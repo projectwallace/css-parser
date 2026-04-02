@@ -489,9 +489,8 @@ export class AtRulePreludeParser {
 			if (token_type === TOKEN_IDENT) {
 				// Layer name
 				let layer = this.create_node(LAYER_NAME, this.lexer.token_start, this.lexer.token_end)
-				// Set value to the layer name text (same as the full node text)
-				this.arena.set_value_start_delta(layer, 0)
-				this.arena.set_value_length(layer, this.lexer.token_end - this.lexer.token_start)
+				this.arena.set_content_start_delta(layer, 0)
+				this.arena.set_content_length(layer, this.lexer.token_end - this.lexer.token_start)
 				nodes.push(layer)
 			} else if (token_type === TOKEN_COMMA) {
 				// Skip comma separator
@@ -689,11 +688,8 @@ export class AtRulePreludeParser {
 				if (content_length > 0) {
 					let trimmed = trim_boundaries(this.source, content_start, content_start + content_length)
 					if (trimmed) {
-						// Set both content fields (for .name) and value fields (for .value)
 						this.arena.set_content_start_delta(layer_node, trimmed[0] - layer_start)
 						this.arena.set_content_length(layer_node, trimmed[1] - trimmed[0])
-						this.arena.set_value_start_delta(layer_node, trimmed[0] - layer_start)
-						this.arena.set_value_length(layer_node, trimmed[1] - trimmed[0])
 					}
 				}
 
