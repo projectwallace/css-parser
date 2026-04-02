@@ -16,7 +16,6 @@ import {
 	RAW,
 	AT_RULE_PRELUDE,
 } from './constants'
-import { ATTR_OPERATOR_PIPE_EQUAL } from './arena'
 
 describe('Core Nodes', () => {
 	describe('Locations', () => {
@@ -719,7 +718,7 @@ describe('Core Nodes', () => {
 					expect(selector.type).toBe(SELECTOR)
 					const s = selector.children[0]
 					expect(s.type).toBe(ATTRIBUTE_SELECTOR)
-					expect(s.attr_operator).toEqual(ATTR_OPERATOR_PIPE_EQUAL)
+					expect(s.attr_operator).toEqual('|=')
 					expect(s.name).toBe('root')
 					expect(s.value).toBe('"test"')
 				})

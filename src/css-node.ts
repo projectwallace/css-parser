@@ -390,10 +390,10 @@ export class CSSNode {
 
 	/**
 	 * Get the attribute operator (for attribute selectors: =, ~=, |=, ^=, $=, *=)
-	 * Returns one of the ATTR_OPERATOR_* constants
+	 * Returns the operator string, or null if no operator is present ([attr] form).
 	 * Derived from source text between the attribute name and value.
 	 */
-	get attr_operator(): number | undefined {
+	get attr_operator(): string | null | undefined {
 		if (this.type !== ATTRIBUTE_SELECTOR) return undefined
 
 		let content_start = this.arena.get_content_start(this.index)
@@ -405,30 +405,30 @@ export class CSSNode {
 		let pos = content_end
 		while (pos < node_end && is_whitespace(this.source.charCodeAt(pos))) pos++
 
-		if (pos >= node_end) return ATTR_OPERATOR_NONE
+		if (pos >= node_end) return null
 
 		let ch1 = this.source.charCodeAt(pos)
 		let ch2 = pos + 1 < node_end ? this.source.charCodeAt(pos + 1) : 0
 
-		if (ch1 === CHAR_EQUALS) return ATTR_OPERATOR_EQUAL
-		if (ch1 === CHAR_TILDE && ch2 === CHAR_EQUALS) return ATTR_OPERATOR_TILDE_EQUAL
-		if (ch1 === CHAR_PIPE && ch2 === CHAR_EQUALS) return ATTR_OPERATOR_PIPE_EQUAL
-		if (ch1 === CHAR_CARET && ch2 === CHAR_EQUALS) return ATTR_OPERATOR_CARET_EQUAL
-		if (ch1 === CHAR_DOLLAR && ch2 === CHAR_EQUALS) return ATTR_OPERATOR_DOLLAR_EQUAL
-		if (ch1 === CHAR_ASTERISK && ch2 === CHAR_EQUALS) return ATTR_OPERATOR_STAR_EQUAL
-		return ATTR_OPERATOR_NONE
+		if (ch1 === CHAR_EQUALS) return '='
+		if (ch1 === CHAR_TILDE && ch2 === CHAR_EQUALS) return '~='
+		if (ch1 === CHAR_PIPE && ch2 === CHAR_EQUALS) return '|='
+		if (ch1 === CHAR_CARET && ch2 === CHAR_EQUALS) return '^='
+		if (ch1 === CHAR_DOLLAR && ch2 === CHAR_EQUALS) return '$='
+		if (ch1 === CHAR_ASTERISK && ch2 === CHAR_EQUALS) return '*='
+		return null
 	}
 
 	/**
 	 * Get the attribute flags (for attribute selectors: i, s)
-	 * Returns one of the ATTR_FLAG_* constants
+	 * Returns "i" (case-insensitive), "s" (case-sensitive), or null if no flag is present.
 	 * Derived from source text after the attribute value.
 	 */
-	get attr_flags(): number | undefined {
+	get attr_flags(): string | null | undefined {
 		if (this.type !== ATTRIBUTE_SELECTOR) return undefined
 
 		let value_len = this.arena.get_value_length(this.index)
-		if (value_len === 0) return ATTR_FLAG_NONE
+		if (value_len === 0) return null
 
 		let value_start = this.arena.get_value_start(this.index)
 		let value_end = value_start + value_len
@@ -439,11 +439,11 @@ export class CSSNode {
 		let pos = value_end
 		while (pos < node_end && is_whitespace(this.source.charCodeAt(pos))) pos++
 
-		if (pos >= node_end) return ATTR_FLAG_NONE
+		if (pos >= node_end) return null
 		let flag_ch = this.source.charCodeAt(pos)
-		if (flag_ch === 0x69 || flag_ch === 0x49) return ATTR_FLAG_CASE_INSENSITIVE // i or I
-		if (flag_ch === 0x73 || flag_ch === 0x53) return ATTR_FLAG_CASE_SENSITIVE // s or S
-		return ATTR_FLAG_NONE
+		if (flag_ch === 0x69 || flag_ch === 0x49) return 'i' // i or I
+		if (flag_ch === 0x73 || flag_ch === 0x53) return 's' // s or S
+		return null
 	}
 
 	/** Get the unit for dimension nodes (e.g., "px" from "100px", "%" from "50%") */
@@ -811,8 +811,8 @@ export class CSSNode {
 
 		// 6. Extract selector-specific properties
 		if (type === ATTRIBUTE_SELECTOR) {
-			plain.attr_operator = ATTR_OPERATOR_NAMES[this.attr_operator!]
-			plain.attr_flags = ATTR_FLAG_NAMES[this.attr_flags!]
+			plain.attr_operator = this.attr_operator
+			plain.attr_flags = this.attr_flags
 		}
 		if (type === NTH_SELECTOR || type === NTH_OF_SELECTOR) {
 			plain.nth_a = this.nth_a

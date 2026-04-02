@@ -36,9 +36,7 @@
 // 4. Delta offsets (contentStartDelta, valueStartDelta) save memory: instead of storing absolute
 //    positions as uint32 (4 bytes), we store relative offsets as uint16 (2 bytes). Removing unused
 //    lastChild field saved another 4 bytes. startColumn was changed from Uint16 to Uint32 to avoid
-//    overflow on long lines (common in minified CSS). attr_operator and attr_flags were removed
-//    from the arena — they are derived on demand from the source text via content/value positions.
-//    Node size: 44→40→36→32 bytes.
+//    overflow on long lines (common in minified CSS).
 
 let BYTES_PER_NODE = 32
 

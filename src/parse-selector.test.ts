@@ -1,6 +1,6 @@
 import { describe, it, expect, test } from 'vitest'
 import { SelectorParser, parse_selector } from './parse-selector'
-import { ATTR_OPERATOR_EQUAL, CSSDataArena } from './arena'
+import { CSSDataArena } from './arena'
 import {
 	SELECTOR,
 	SELECTOR_LIST,
@@ -16,9 +16,6 @@ import {
 	NTH_SELECTOR,
 	NTH_OF_SELECTOR,
 	LANG_SELECTOR,
-	ATTR_FLAG_NONE,
-	ATTR_FLAG_CASE_INSENSITIVE,
-	ATTR_FLAG_CASE_SENSITIVE,
 } from './arena'
 
 // Helper for low-level testing
@@ -1024,8 +1021,8 @@ describe('Selector Nodes', () => {
 				expect(attr_selector?.type_name).toBe('AttributeSelector')
 				expect(attr_selector?.value).toBe('"value"')
 				expect(attr_selector?.name).toBe('data-test')
-				expect(attr_selector?.attr_operator).toBe(ATTR_OPERATOR_EQUAL)
-				expect(attr_selector?.attr_flags).toBe(ATTR_FLAG_NONE)
+				expect(attr_selector?.attr_operator).toBe('=')
+				expect(attr_selector?.attr_flags).toBe(null)
 			})
 
 			it('should trim whitespace and comments from attribute selectors', () => {
@@ -1036,8 +1033,8 @@ describe('Selector Nodes', () => {
 				expect(attr_selector?.type_name).toBe('AttributeSelector')
 				expect(attr_selector?.value).toBe('"value"')
 				expect(attr_selector?.name).toBe('data-test')
-				expect(attr_selector?.attr_operator).toBe(ATTR_OPERATOR_EQUAL)
-				expect(attr_selector?.attr_flags).toBe(ATTR_FLAG_NONE)
+				expect(attr_selector?.attr_operator).toBe('=')
+				expect(attr_selector?.attr_flags).toBe(null)
 				expect(attr_selector?.text).toBe(input)
 			})
 
@@ -1049,7 +1046,7 @@ describe('Selector Nodes', () => {
 				expect(attr.type).toBe(ATTRIBUTE_SELECTOR)
 				expect(attr.text).toBe('[type="text" i]')
 				expect(attr.name).toBe('type')
-				expect(attr.attr_flags).toBe(ATTR_FLAG_CASE_INSENSITIVE)
+				expect(attr.attr_flags).toBe('i')
 			})
 
 			it('should parse attribute with case-insensitive flag using CSSNode API', () => {
@@ -1063,8 +1060,8 @@ describe('Selector Nodes', () => {
 				expect(selector.type).toBe(SELECTOR)
 				let attr = selector.first_child!
 				expect(attr.type).toBe(ATTRIBUTE_SELECTOR)
-				expect(attr.attr_flags).toBe(ATTR_FLAG_CASE_INSENSITIVE)
-				expect(attr.attr_operator).toBe(ATTR_OPERATOR_EQUAL)
+				expect(attr.attr_flags).toBe('i')
+				expect(attr.attr_operator).toBe('=')
 			})
 
 			it('should parse attribute with case-sensitive flag', () => {
@@ -1075,7 +1072,7 @@ describe('Selector Nodes', () => {
 				expect(attr.type).toBe(ATTRIBUTE_SELECTOR)
 				expect(attr.text).toBe('[type="text" s]')
 				expect(attr.name).toBe('type')
-				expect(attr.attr_flags).toBe(ATTR_FLAG_CASE_SENSITIVE)
+				expect(attr.attr_flags).toBe('s')
 			})
 
 			it('should parse attribute with uppercase case-insensitive flag', () => {
@@ -1084,7 +1081,7 @@ describe('Selector Nodes', () => {
 				if (!root) return
 				const attr = root.first_child!.first_child!
 				expect(attr.type).toBe(ATTRIBUTE_SELECTOR)
-				expect(attr.attr_flags).toBe(ATTR_FLAG_CASE_INSENSITIVE)
+				expect(attr.attr_flags).toBe('i')
 			})
 
 			it('should parse attribute with whitespace before flag', () => {
@@ -1093,7 +1090,7 @@ describe('Selector Nodes', () => {
 				if (!root) return
 				const attr = root.first_child!.first_child!
 				expect(attr.type).toBe(ATTRIBUTE_SELECTOR)
-				expect(attr.attr_flags).toBe(ATTR_FLAG_CASE_INSENSITIVE)
+				expect(attr.attr_flags).toBe('i')
 			})
 
 			it('should parse attribute without flag', () => {
@@ -1102,24 +1099,24 @@ describe('Selector Nodes', () => {
 				if (!root) return
 				const attr = root.first_child!.first_child!
 				expect(attr.type).toBe(ATTRIBUTE_SELECTOR)
-				expect(attr.attr_flags).toBe(ATTR_FLAG_NONE)
+				expect(attr.attr_flags).toBe(null)
 			})
 
 			it('should handle flag with various operators', () => {
 				// Test with ^= operator
 				const root1 = parse_selector('[class^="btn" i]')
 				if (!root1) throw new Error('Expected root1')
-				expect(root1.first_child!.first_child!.attr_flags).toBe(ATTR_FLAG_CASE_INSENSITIVE)
+				expect(root1.first_child!.first_child!.attr_flags).toBe('i')
 
 				// Test with $= operator
 				const root2 = parse_selector('[class$="btn" s]')
 				if (!root2) throw new Error('Expected root2')
-				expect(root2.first_child!.first_child!.attr_flags).toBe(ATTR_FLAG_CASE_SENSITIVE)
+				expect(root2.first_child!.first_child!.attr_flags).toBe('s')
 
 				// Test with ~= operator
 				const root3 = parse_selector('[class~="active" i]')
 				if (!root3) throw new Error('Expected root3')
-				expect(root3.first_child!.first_child!.attr_flags).toBe(ATTR_FLAG_CASE_INSENSITIVE)
+				expect(root3.first_child!.first_child!.attr_flags).toBe('i')
 			})
 		})
 
