@@ -17,16 +17,6 @@ import {
 	LANG_SELECTOR,
 	DIMENSION,
 	FLAG_HAS_PARENS,
-	ATTR_OPERATOR_NONE,
-	ATTR_OPERATOR_EQUAL,
-	ATTR_OPERATOR_TILDE_EQUAL,
-	ATTR_OPERATOR_PIPE_EQUAL,
-	ATTR_OPERATOR_CARET_EQUAL,
-	ATTR_OPERATOR_DOLLAR_EQUAL,
-	ATTR_OPERATOR_STAR_EQUAL,
-	ATTR_FLAG_NONE,
-	ATTR_FLAG_CASE_INSENSITIVE,
-	ATTR_FLAG_CASE_SENSITIVE,
 } from './arena'
 import {
 	TOKEN_IDENT,
@@ -626,8 +616,6 @@ export class SelectorParser {
 
 		if (pos >= end) {
 			// No operator, just [attr]
-			this.arena.set_attr_operator(node, ATTR_OPERATOR_NONE)
-			this.arena.set_attr_flags(node, ATTR_FLAG_NONE)
 			return
 		}
 
@@ -638,31 +626,23 @@ export class SelectorParser {
 		if (ch1 === CHAR_EQUALS) {
 			// =
 			operator_end = pos + 1
-			this.arena.set_attr_operator(node, ATTR_OPERATOR_EQUAL)
 		} else if (ch1 === CHAR_TILDE && ch2 === CHAR_EQUALS) {
 			// ~=
 			operator_end = pos + 2
-			this.arena.set_attr_operator(node, ATTR_OPERATOR_TILDE_EQUAL)
 		} else if (ch1 === CHAR_PIPE && ch2 === CHAR_EQUALS) {
 			// |=
 			operator_end = pos + 2
-			this.arena.set_attr_operator(node, ATTR_OPERATOR_PIPE_EQUAL)
 		} else if (ch1 === CHAR_CARET && ch2 === CHAR_EQUALS) {
 			// ^=
 			operator_end = pos + 2
-			this.arena.set_attr_operator(node, ATTR_OPERATOR_CARET_EQUAL)
 		} else if (ch1 === CHAR_DOLLAR && ch2 === CHAR_EQUALS) {
 			// $=
 			operator_end = pos + 2
-			this.arena.set_attr_operator(node, ATTR_OPERATOR_DOLLAR_EQUAL)
 		} else if (ch1 === CHAR_ASTERISK && ch2 === CHAR_EQUALS) {
 			// *=
 			operator_end = pos + 2
-			this.arena.set_attr_operator(node, ATTR_OPERATOR_STAR_EQUAL)
 		} else {
 			// No valid operator
-			this.arena.set_attr_operator(node, ATTR_OPERATOR_NONE)
-			this.arena.set_attr_flags(node, ATTR_FLAG_NONE)
 			return
 		}
 
@@ -671,7 +651,6 @@ export class SelectorParser {
 
 		if (pos >= end) {
 			// No value after operator
-			this.arena.set_attr_flags(node, ATTR_FLAG_NONE)
 			return
 		}
 
@@ -715,24 +694,6 @@ export class SelectorParser {
 		if (value_end > value_start) {
 			this.arena.set_value_start_delta(node, value_start - this.arena.get_start_offset(node))
 			this.arena.set_value_length(node, value_end - value_start)
-		}
-
-		// Check for attribute flags (i or s) after the value
-		// Skip whitespace and comments after value
-		pos = skip_whitespace_and_comments_forward(this.source, value_end, end)
-
-		if (pos < end) {
-			let flag_ch = this.source.charCodeAt(pos)
-			// Check for 'i' (case-insensitive) or 's' (case-sensitive)
-			if (flag_ch === 0x69 /* i */ || flag_ch === 0x49 /* I */) {
-				this.arena.set_attr_flags(node, ATTR_FLAG_CASE_INSENSITIVE)
-			} else if (flag_ch === 0x73 /* s */ || flag_ch === 0x53 /* S */) {
-				this.arena.set_attr_flags(node, ATTR_FLAG_CASE_SENSITIVE)
-			} else {
-				this.arena.set_attr_flags(node, ATTR_FLAG_NONE)
-			}
-		} else {
-			this.arena.set_attr_flags(node, ATTR_FLAG_NONE)
 		}
 	}
 
