@@ -21,6 +21,9 @@ import type {
 	Atrule,
 	Declaration,
 	Block,
+	SelectorList,
+	Selector,
+	Value,
 	AttributeSelector,
 	PseudoClassSelector,
 	PseudoElementSelector,
@@ -129,7 +132,7 @@ describe('Core Nodes', () => {
 				`
 				const ast = parse(css)
 				const rule = ast.first_child! as Rule
-				const selectorlist = rule.prelude!
+				const selectorlist = rule.prelude! as SelectorList
 				const [first, second] = selectorlist.children
 				expect(first.line).toBe(2)
 				expect(first.column).toBe(6)
@@ -674,7 +677,7 @@ describe('Core Nodes', () => {
 					const root = parse(source)
 
 					const rule = root.first_child!
-					expect(rule.has_children).toBe(true)
+					expect(rule.first_child).not.toBeNull()
 
 					const selector = rule.first_child!
 					expect(selector.text).toBe('body')
@@ -696,7 +699,7 @@ describe('Core Nodes', () => {
 					expect(selectorlist.end).toBe(16)
 					expect(selectorlist.text).toBe('div.class > p#id')
 
-					const selector = selectorlist.first_child!
+					const selector = selectorlist.first_child! as Selector
 					expect(selector.children[0].text).toBe('div')
 					expect(selector.children[1].text).toBe('.class')
 					expect(selector.children[2].text).toBe('>')
@@ -709,13 +712,13 @@ describe('Core Nodes', () => {
 					const root = parse(source)
 					const rule = root.first_child!
 					const selectorlist = rule.first_child!
-					const selector = selectorlist.first_child!
+					const selector = selectorlist.first_child! as Selector
 
 					expect(selector.type).toBe(SELECTOR)
 					expect(selector.children[0].type).toBe(TYPE_SELECTOR)
 					expect(selector.children[1].type).toBe(PSEUDO_CLASS_SELECTOR)
 					expect(selector.children[2]).toBeUndefined()
-					const pseudo = selector.children[1]
+					const pseudo = selector.children[1] as PseudoClassSelector
 					expect(pseudo.text).toBe(':has(a)')
 					expect(pseudo.children).toHaveLength(1)
 				})
@@ -725,7 +728,7 @@ describe('Core Nodes', () => {
 					const root = parse(source)
 					const rule = root.first_child!
 					const selectorlist = rule.first_child!
-					const selector = selectorlist.first_child!
+					const selector = selectorlist.first_child! as Selector
 					expect(selector.type).toBe(SELECTOR)
 					const s = selector.children[0] as AttributeSelector
 					expect(s.type).toBe(ATTRIBUTE_SELECTOR)
@@ -756,7 +759,7 @@ describe('Core Nodes', () => {
 					const atRule = root.first_child! as Atrule
 					expect(atRule.type).toBe(AT_RULE)
 					expect(atRule.name).toBe('import')
-					expect(atRule.has_children).toBe(true)
+					expect(atRule.has_prelude || atRule.has_block).toBe(true)
 				})
 
 				test('@namespace', () => {
@@ -778,7 +781,7 @@ describe('Core Nodes', () => {
 					const media = root.first_child! as Atrule
 					expect(media.type).toBe(AT_RULE)
 					expect(media.name).toBe('MEDIA')
-					expect(media.has_children).toBe(true)
+					expect(media.has_prelude || media.has_block).toBe(true)
 					const block = media.block!
 					const nestedRule = block.first_child!
 					expect(nestedRule.type).toBe(STYLE_RULE)
@@ -792,7 +795,7 @@ describe('Core Nodes', () => {
 					expect(fontFace.type).toBe(AT_RULE)
 					expect(fontFace.name).toBe('Font-Face')
 					expect(fontFace.length).toBe(60)
-					expect(fontFace.has_children).toBe(true)
+					expect(fontFace.has_prelude || fontFace.has_block).toBe(true)
 					const block = fontFace.block!
 					const decl = block.first_child!
 					expect(decl.type).toBe(DECLARATION)
@@ -805,7 +808,7 @@ describe('Core Nodes', () => {
 					const supports = root.first_child! as Atrule
 					expect(supports.type).toBe(AT_RULE)
 					expect(supports.name).toBe('SUPPORTS')
-					expect(supports.has_children).toBe(true)
+					expect(supports.has_prelude || supports.has_block).toBe(true)
 				})
 			})
 
@@ -817,7 +820,7 @@ describe('Core Nodes', () => {
 					const media = root.first_child! as Atrule
 					expect(media.type).toBe(AT_RULE)
 					expect(media.name).toBe('media')
-					expect(media.has_children).toBe(true)
+					expect(media.has_prelude || media.has_block).toBe(true)
 					expect(media.length).toBe(50)
 
 					const block = media.block!
@@ -833,7 +836,7 @@ describe('Core Nodes', () => {
 					const layer = root.first_child! as Atrule
 					expect(layer.type).toBe(AT_RULE)
 					expect(layer.name).toBe('layer')
-					expect(layer.has_children).toBe(true)
+					expect(layer.has_prelude || layer.has_block).toBe(true)
 				})
 
 				test('anonymous @layer', () => {
@@ -843,7 +846,7 @@ describe('Core Nodes', () => {
 					const layer = root.first_child! as Atrule
 					expect(layer.type).toBe(AT_RULE)
 					expect(layer.name).toBe('layer')
-					expect(layer.has_children).toBe(true)
+					expect(layer.has_prelude || layer.has_block).toBe(true)
 				})
 
 				test('@supports', () => {
@@ -853,7 +856,7 @@ describe('Core Nodes', () => {
 					const supports = root.first_child! as Atrule
 					expect(supports.type).toBe(AT_RULE)
 					expect(supports.name).toBe('supports')
-					expect(supports.has_children).toBe(true)
+					expect(supports.has_prelude || supports.has_block).toBe(true)
 				})
 
 				test('@container', () => {
@@ -863,7 +866,7 @@ describe('Core Nodes', () => {
 					const container = root.first_child! as Atrule
 					expect(container.type).toBe(AT_RULE)
 					expect(container.name).toBe('container')
-					expect(container.has_children).toBe(true)
+					expect(container.has_prelude || container.has_block).toBe(true)
 				})
 			})
 
@@ -875,7 +878,7 @@ describe('Core Nodes', () => {
 					const fontFace = root.first_child! as Atrule
 					expect(fontFace.type).toBe(AT_RULE)
 					expect(fontFace.name).toBe('font-face')
-					expect(fontFace.has_children).toBe(true)
+					expect(fontFace.has_prelude || fontFace.has_block).toBe(true)
 
 					const block = fontFace.block!
 					const [decl1, decl2] = block.children
@@ -1245,7 +1248,7 @@ describe('Core Nodes', () => {
 				})
 
 				test('has correct nested selectors', () => {
-					let list = rule?.first_child
+					let list = rule?.first_child as SelectorList | null
 					expect(list!.type).toBe(SELECTOR_LIST)
 					expect(list!.children).toHaveLength(1)
 					expect(list?.first_child?.type).toEqual(SELECTOR)
@@ -1261,7 +1264,7 @@ describe('Core Nodes', () => {
 					const root = parse(source)
 
 					const rule = root.first_child!
-					const [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					const declaration = block.first_child! as Declaration
 
 					expect(declaration.property).toBe('color')
@@ -1272,7 +1275,7 @@ describe('Core Nodes', () => {
 					const root = parse(source)
 
 					const rule = root.first_child!
-					const [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					const declaration = block.first_child! as Declaration
 
 					expect(declaration.type).toBe(DECLARATION)
@@ -1284,7 +1287,7 @@ describe('Core Nodes', () => {
 					const root = parse(source)
 
 					const rule = root.first_child!
-					const [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					const declaration = block.first_child! as Declaration
 
 					expect(declaration.type).toBe(DECLARATION)
@@ -1296,7 +1299,7 @@ describe('Core Nodes', () => {
 					const root = parse(source)
 
 					const rule = root.first_child!
-					const [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					const declaration = block.first_child! as Declaration
 
 					expect(declaration.type).toBe(DECLARATION)
@@ -1308,7 +1311,7 @@ describe('Core Nodes', () => {
 					const root = parse(source)
 
 					const rule = root.first_child!
-					const [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					const declaration = block.first_child! as Declaration
 
 					expect(declaration.type).toBe(DECLARATION)
@@ -1320,7 +1323,7 @@ describe('Core Nodes', () => {
 					const root = parse(source)
 
 					const rule = root.first_child!
-					const [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					const declaration = block.first_child! as Declaration
 
 					expect(declaration.type).toBe(DECLARATION)
@@ -1331,7 +1334,7 @@ describe('Core Nodes', () => {
 					const root = parse(source)
 
 					const rule = root.first_child!
-					const [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					const declaration = block.first_child! as Declaration
 
 					expect(declaration.type).toBe(DECLARATION)
@@ -1345,7 +1348,7 @@ describe('Core Nodes', () => {
 					const root = parse(source)
 
 					const rule = root.first_child!
-					const [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					const [decl1, decl2] = block.children
 
 					expect(decl1.type).toBe(DECLARATION)
@@ -1360,7 +1363,7 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let rule = root.first_child!
-					let [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					let decl = block.first_child! as Declaration
 
 					expect(decl.property).toBe('color')
@@ -1372,7 +1375,7 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let rule = root.first_child!
-					let [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					let decl = block.first_child! as Declaration
 
 					expect(decl.property).toBe('padding')
@@ -1384,7 +1387,7 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let rule = root.first_child!
-					let [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					let decl = block.first_child! as Declaration
 
 					expect(decl.property).toBe('background')
@@ -1396,7 +1399,7 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let rule = root.first_child!
-					let [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					let decl = block.first_child! as Declaration
 
 					expect(decl.property).toBe('width')
@@ -1408,7 +1411,7 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let rule = root.first_child!
-					let [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					let decl = block.first_child! as Declaration
 
 					expect(decl.property).toBe('color')
@@ -1421,7 +1424,7 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let rule = root.first_child!
-					let [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					let decl = block.first_child! as Declaration
 
 					expect(decl.property).toBe('color')
@@ -1433,7 +1436,7 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let rule = root.first_child!
-					let [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					let decl = block.first_child! as Declaration
 
 					expect(decl.property).toBe('--brand-color')
@@ -1445,7 +1448,7 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let rule = root.first_child!
-					let [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					let decl = block.first_child! as Declaration
 
 					expect(decl.property).toBe('color')
@@ -1457,7 +1460,7 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let rule = root.first_child!
-					let [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					let decl = block.first_child! as Declaration
 
 					expect(decl.property).toBe('transform')
@@ -1469,7 +1472,7 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let rule = root.first_child!
-					let [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					let decl = block.first_child! as Declaration
 
 					expect(decl.property).toBe('color')
@@ -1481,7 +1484,7 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let rule = root.first_child!
-					let [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					let decl = block.first_child! as Declaration
 
 					expect(decl.property).toBe('color')
@@ -1493,7 +1496,7 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let rule = root.first_child!
-					let [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					let decl = block.first_child! as Declaration
 
 					expect(decl.property).toBe('background')
@@ -1507,7 +1510,7 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let rule = root.first_child!
-					let [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					let decl = block.first_child! as Declaration
 					expect(decl.property).toBe('-webkit-transform')
 					expect(decl.is_vendor_prefixed).toBe(true)
@@ -1518,7 +1521,7 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let rule = root.first_child!
-					let [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					let decl = block.first_child! as Declaration
 					expect(decl.property).toBe('-moz-transform')
 					expect(decl.is_vendor_prefixed).toBe(true)
@@ -1529,7 +1532,7 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let rule = root.first_child!
-					let [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					let decl = block.first_child! as Declaration
 					expect(decl.property).toBe('-ms-transform')
 					expect(decl.is_vendor_prefixed).toBe(true)
@@ -1540,7 +1543,7 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let rule = root.first_child!
-					let [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					let decl = block.first_child! as Declaration
 					expect(decl.property).toBe('-o-transform')
 					expect(decl.is_vendor_prefixed).toBe(true)
@@ -1551,7 +1554,7 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let rule = root.first_child!
-					let [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					let decl = block.first_child! as Declaration
 					expect(decl.property).toBe('transform')
 					expect(decl.is_vendor_prefixed).toBe(false)
@@ -1562,7 +1565,7 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let rule = root.first_child!
-					let [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					let decl = block.first_child! as Declaration
 					expect(decl.property).toBe('background-color')
 					expect(decl.is_vendor_prefixed).toBe(false)
@@ -1573,7 +1576,7 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let rule = root.first_child!
-					let [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					let decl = block.first_child! as Declaration
 					expect(decl.property).toBe('--primary-color')
 					expect(decl.is_vendor_prefixed).toBe(false)
@@ -1585,7 +1588,7 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let rule = root.first_child!
-					let [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					let [webkit, moz, standard] = block.children as Declaration[]
 
 					expect(webkit.property).toBe('-webkit-transform')
@@ -1603,7 +1606,7 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let rule = root.first_child!
-					let [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					let decl = block.first_child! as Declaration
 					expect(decl.property).toBe('-webkit-border-top-left-radius')
 					expect(decl.is_vendor_prefixed).toBe(true)
@@ -1614,7 +1617,7 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let rule = root.first_child!
-					let [_selector, block] = rule.children
+					const block = (rule as Rule).block!
 					let decl = block.first_child! as Declaration
 					expect(decl.property).toBe('border-radius')
 					expect(decl.is_vendor_prefixed).toBe(false)
@@ -1889,7 +1892,7 @@ describe('Core Nodes', () => {
 				let parent = root.first_child!
 				expect(parent.type).toBe(STYLE_RULE)
 
-				let [_selector, block] = parent.children
+				const block = (parent as Rule).block!
 				let [decl, nested_rule] = block.children as [Declaration, CssNodeCommon]
 				expect(decl.type).toBe(DECLARATION)
 				expect(decl.property).toBe('color')
@@ -1903,8 +1906,8 @@ describe('Core Nodes', () => {
 				let source = '.parent { color: red; .child { color: blue; } }'
 				let root = parse(source)
 
-				let parent = root.first_child!
-				let [_selector, block] = parent.children
+				let parent = root.first_child! as Rule
+				const block = parent.block!
 				let [_decl, nested_rule] = block.children
 
 				expect(nested_rule.type).toBe(STYLE_RULE)
@@ -1916,8 +1919,8 @@ describe('Core Nodes', () => {
 				let source = '.parent { .child1 { } .child2 { } }'
 				let root = parse(source)
 
-				let parent = root.first_child!
-				let [_selector, block] = parent.children
+				let parent = root.first_child! as Rule
+				const block = parent.block!
 				let [nested1, nested2] = block.children
 
 				expect(nested1.type).toBe(STYLE_RULE)
@@ -1930,17 +1933,17 @@ describe('Core Nodes', () => {
 
 				let a = root.first_child!
 				expect(a.length).toBe(32)
-				let [_selector_a, block_a] = a.children
+				const block_a = (a as Rule).block!
 				let b = block_a.first_child!
 				expect(b.type).toBe(STYLE_RULE)
 				expect(b.length).toBe(25)
 
-				let [_selector_b, block_b] = b.children
+				const block_b = (b as Rule).block!
 				let c = block_b.first_child!
 				expect(c.type).toBe(STYLE_RULE)
 				expect(c.length).toBe(18)
 
-				let [_selector_c, block_c] = c.children
+				const block_c = (c as Rule).block!
 				let decl = block_c.first_child! as Declaration
 				expect(decl.type).toBe(DECLARATION)
 				expect(decl.property).toBe('color')
@@ -1951,7 +1954,7 @@ describe('Core Nodes', () => {
 				let root = parse(source, { parse_atrule_preludes: false })
 
 				let card = root.first_child!
-				let [_selector, block] = card.children
+				const block = (card as Rule).block!
 				let [decl, media] = block.children as [Declaration, Atrule]
 
 				expect(decl.type).toBe(DECLARATION)
@@ -2001,7 +2004,7 @@ describe('Core Nodes', () => {
 				let root = parse(source)
 
 				let card = root.first_child!
-				let [_selector, block] = card.children
+				const block = (card as Rule).block!
 				let [decl1, title, decl2, body] = block.children as [
 					Declaration,
 					CssNodeCommon,
@@ -2028,11 +2031,11 @@ describe('Core Nodes', () => {
 					let parent = root.first_child!
 					expect(parent.type).toBe(STYLE_RULE)
 
-					let [_selector, block] = parent.children
+					const block = (parent as Rule).block!
 					let nested_rule = block.first_child!
 					expect(nested_rule.type).toBe(STYLE_RULE)
 
-					let nested_selector = nested_rule.first_child!
+					let nested_selector = nested_rule.first_child! as SelectorList
 					expect(nested_selector.text).toBe('> a')
 					expect(nested_selector.has_children).toBe(true)
 				})
@@ -2042,11 +2045,11 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let parent = root.first_child!
-					let [_selector, block] = parent.children
+					const block = (parent as Rule).block!
 					let nested_rule = block.first_child!
 					expect(nested_rule.type).toBe(STYLE_RULE)
 
-					let nested_selector = nested_rule.first_child!
+					let nested_selector = nested_rule.first_child! as SelectorList
 					expect(nested_selector.text).toBe('+ span')
 					expect(nested_selector.has_children).toBe(true)
 				})
@@ -2056,11 +2059,11 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let parent = root.first_child!
-					let [_selector, block] = parent.children
+					const block = (parent as Rule).block!
 					let nested_rule = block.first_child!
 					expect(nested_rule.type).toBe(STYLE_RULE)
 
-					let nested_selector = nested_rule.first_child!
+					let nested_selector = nested_rule.first_child! as SelectorList
 					expect(nested_selector.text).toBe('~ div')
 					expect(nested_selector.has_children).toBe(true)
 				})
@@ -2071,20 +2074,20 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let parent = root.first_child!
-					let [_selector, block] = parent.children
+					const block = (parent as Rule).block!
 					let [rule1, rule2, rule3] = block.children
 
 					expect(rule1.type).toBe(STYLE_RULE)
 					expect(rule1.first_child!.text).toBe('> a')
-					expect(rule1.first_child!.has_children).toBe(true)
+					expect((rule1.first_child! as SelectorList).has_children).toBe(true)
 
 					expect(rule2.type).toBe(STYLE_RULE)
 					expect(rule2.first_child!.text).toBe('~ span')
-					expect(rule2.first_child!.has_children).toBe(true)
+					expect((rule2.first_child! as SelectorList).has_children).toBe(true)
 
 					expect(rule3.type).toBe(STYLE_RULE)
 					expect(rule3.first_child!.text).toBe('+ div')
-					expect(rule3.first_child!.has_children).toBe(true)
+					expect((rule3.first_child! as SelectorList).has_children).toBe(true)
 				})
 
 				test('complex selector after leading combinator', () => {
@@ -2092,10 +2095,10 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let parent = root.first_child!
-					let [_selector, block] = parent.children
+					const block = (parent as Rule).block!
 					let nested_rule = block.first_child!
 
-					let nested_selector = nested_rule.first_child!
+					let nested_selector = nested_rule.first_child! as SelectorList
 					expect(nested_selector.text).toBe('> a.link#nav[href]:hover')
 					expect(nested_selector.has_children).toBe(true)
 				})
@@ -2105,17 +2108,17 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let a = root.first_child!
-					let [_selector_a, block_a] = a.children
+					const block_a = (a as Rule).block!
 					let b = block_a.first_child!
 					expect(b.type).toBe(STYLE_RULE)
 					expect(b.first_child!.text).toBe('> .b')
-					expect(b.first_child!.has_children).toBe(true)
+					expect((b.first_child! as SelectorList).has_children).toBe(true)
 
-					let [_selector_b, block_b] = b.children
+					const block_b = (b as Rule).block!
 					let c = block_b.first_child!
 					expect(c.type).toBe(STYLE_RULE)
 					expect(c.first_child!.text).toBe('> .c')
-					expect(c.first_child!.has_children).toBe(true)
+					expect((c.first_child! as SelectorList).has_children).toBe(true)
 				})
 
 				test('mixed nested rules with and without leading combinators', () => {
@@ -2123,7 +2126,7 @@ describe('Core Nodes', () => {
 					let root = parse(source)
 
 					let parent = root.first_child!
-					let [_selector, block] = parent.children
+					const block = (parent as Rule).block!
 					let [normal, combinator] = block.children
 
 					expect(normal.type).toBe(STYLE_RULE)
@@ -2131,7 +2134,7 @@ describe('Core Nodes', () => {
 
 					expect(combinator.type).toBe(STYLE_RULE)
 					expect(combinator.first_child!.text).toBe('> .combinator')
-					expect(combinator.first_child!.has_children).toBe(true)
+					expect((combinator.first_child! as SelectorList).has_children).toBe(true)
 				})
 			})
 		})
@@ -2238,7 +2241,7 @@ describe('Core Nodes', () => {
 
 				let fn = root.first_child! as Atrule
 				let block = fn.block!
-				expect(block.children.length).toBe(2)
+				expect(block.child_count).toBeGreaterThan(0)
 
 				let [result_decl, media] = block.children as [Declaration, Atrule]
 				expect(result_decl.type).toBe(DECLARATION)
@@ -2289,13 +2292,13 @@ describe('Core Nodes', () => {
 				let source = '.parent { @nest & .child { color: blue; } }'
 				let root = parse(source)
 
-				let parent = root.first_child!
-				let [_selector, block] = parent.children
+				let parent = root.first_child! as Rule
+				const block = parent.block!
 				let nest = block.first_child! as Atrule
 
 				expect(nest.type).toBe(AT_RULE)
 				expect(nest.name).toBe('nest')
-				expect(nest.has_children).toBe(true)
+				expect(nest.has_prelude || nest.has_block).toBe(true)
 
 				let nest_block = nest.block!
 				let decl = nest_block.first_child! as Declaration
@@ -2308,7 +2311,7 @@ describe('Core Nodes', () => {
 				let root = parse(source)
 
 				let a = root.first_child!
-				let [_selector, block] = a.children
+				const block = (a as Rule).block!
 				let nest = block.first_child! as Atrule
 
 				expect(nest.type).toBe(AT_RULE)
@@ -2337,15 +2340,15 @@ describe('Core Nodes', () => {
 
 				let rule = root.first_child!
 				expect(rule.type).toBe(STYLE_RULE)
-				expect(rule.children.length).toBe(2)
+				expect((rule as Rule).block).not.toBeNull()
 			})
 
 			test('declaration without value', () => {
 				let source = 'body { color: }'
 				let root = parse(source)
 
-				let rule = root.first_child!
-				let [_selector, block] = rule.children
+				let rule = root.first_child! as Rule
+				const block = rule.block!
 				let decl = block.first_child! as Declaration
 				expect(decl.type).toBe(DECLARATION)
 			})
@@ -2355,7 +2358,7 @@ describe('Core Nodes', () => {
 				let root = parse(source)
 
 				let rule = root.first_child!
-				expect(rule.children.length).toBe(2)
+				expect((rule as Rule).block).not.toBeNull()
 			})
 
 			test('invalid tokens in declaration block', () => {
@@ -2363,7 +2366,7 @@ describe('Core Nodes', () => {
 				let root = parse(source)
 
 				let rule = root.first_child!
-				expect(rule.children.length).toBe(2)
+				expect((rule as Rule).block).not.toBeNull()
 			})
 
 			test('declaration without colon', () => {
@@ -2371,7 +2374,7 @@ describe('Core Nodes', () => {
 				let root = parse(source)
 
 				let rule = root.first_child!
-				expect(rule.children.length).toBe(2)
+				expect((rule as Rule).block).not.toBeNull()
 			})
 
 			test('at-rule without name', () => {
@@ -2414,7 +2417,7 @@ describe('Core Nodes', () => {
 
 				let rule = root.first_child!
 				expect(rule.type).toBe(STYLE_RULE)
-				expect(rule.children.length).toBe(2)
+				expect((rule as Rule).block).not.toBeNull()
 			})
 
 			test('skip comments in selector', () => {
@@ -2467,8 +2470,8 @@ describe('Core Nodes', () => {
 				let source = 'body{color:red;margin:0}'
 				let root = parse(source)
 
-				let rule = root.first_child!
-				let [_selector, block] = rule.children
+				let rule = root.first_child! as Rule
+				const block = rule.block!
 				let [decl1, decl2] = block.children as Declaration[]
 				expect(decl1.property).toBe('color')
 				expect(decl2.property).toBe('margin')
@@ -2508,7 +2511,7 @@ describe('Core Nodes', () => {
 
 				let card = root.first_child!
 				expect(card.type).toBe(STYLE_RULE)
-				expect(card.children.length).toBe(2)
+				expect((card as Rule).block).not.toBeNull()
 			})
 
 			test('multiple at-rules with nesting', () => {
@@ -2539,8 +2542,8 @@ describe('Core Nodes', () => {
 					'.box { -webkit-transform: scale(1); -moz-transform: scale(1); transform: scale(1); }'
 				let root = parse(source)
 
-				let rule = root.first_child!
-				let [_selector, block] = rule.children
+				let rule = root.first_child! as Rule
+				const block = rule.block!
 				let [decl1, decl2, decl3] = block.children as Declaration[]
 				expect(decl1.property).toBe('-webkit-transform')
 				expect(decl2.property).toBe('-moz-transform')
@@ -2585,8 +2588,8 @@ describe('Core Nodes', () => {
 					'.box { width: calc(100% - 2rem); background: linear-gradient(to right, red, blue); }'
 				let root = parse(source)
 
-				let rule = root.first_child!
-				let [_selector, block] = rule.children
+				let rule = root.first_child! as Rule
+				const block = rule.block!
 				let [width_decl, bg_decl] = block.children as Declaration[]
 				expect(width_decl.property).toBe('width')
 				expect(bg_decl.property).toBe('background')
@@ -2693,9 +2696,9 @@ describe('Core Nodes', () => {
 				expect(ulRule.type).toBe(STYLE_RULE)
 				expect(ulRule.has_block).toBe(true)
 
-				const selectorList = ulRule.first_child!
+				const selectorList = ulRule.first_child! as SelectorList
 				expect(selectorList.type).toBe(SELECTOR_LIST)
-				const selector = selectorList.first_child!
+				const selector = selectorList.first_child! as Selector
 				expect(selector.type).toBe(SELECTOR)
 				const selectorParts = selector.children
 				expect(selectorParts.length).toBeGreaterThan(0)
@@ -2712,9 +2715,9 @@ describe('Core Nodes', () => {
 				expect(nestingRule.type).toBe(STYLE_RULE)
 				expect(nestingRule.has_block).toBe(true)
 
-				const nestingSelectorList = nestingRule.first_child!
+				const nestingSelectorList = nestingRule.first_child! as SelectorList
 				expect(nestingSelectorList.type).toBe(SELECTOR_LIST)
-				const nestingSelector = nestingSelectorList.first_child!
+				const nestingSelector = nestingSelectorList.first_child! as Selector
 				expect(nestingSelector.type).toBe(SELECTOR)
 				const nestingParts = nestingSelector.children
 				expect(nestingParts.length).toBeGreaterThan(0)

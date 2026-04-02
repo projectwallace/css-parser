@@ -5,6 +5,7 @@ import {
 	DECLARATION,
 	STYLE_RULE,
 	AT_RULE,
+	RAW,
 	NTH_SELECTOR,
 	SELECTOR_LIST,
 	PSEUDO_CLASS_SELECTOR,
@@ -17,6 +18,7 @@ import { CSSNode, PlainCSSNode } from './css-node'
 import {
 	Rule,
 	Atrule,
+	AtrulePrelude,
 	Declaration,
 	Block,
 	NthOfSelector,
@@ -76,11 +78,10 @@ describe('CSSNode', () => {
 				parse_atrule_preludes: false,
 			})
 
-			const importRule = root.first_child!
-			const children = [...importRule]
+			const importRule = root.first_child! as Atrule
 
 			// RAW prelude node is created when parse_atrule_preludes is false
-			expect(children).toHaveLength(1)
+			expect(importRule.prelude?.type).toBe(RAW)
 		})
 	})
 
@@ -120,7 +121,7 @@ describe('CSSNode', () => {
 			const source = '@media screen and (min-width: 768px) { }'
 			const root = parse(source)
 			const media = root.first_child! as Atrule
-			const prelude = media.prelude!
+			const prelude = media.prelude! as AtrulePrelude
 
 			// Prelude is a wrapper node containing the structured children
 			expect(prelude).not.toBeUndefined()
@@ -335,7 +336,7 @@ describe('CSSNode', () => {
 
 			expect(importRule.type).toBe(AT_RULE)
 			expect(importRule.has_block).toBe(false)
-			expect(importRule.has_children).toBe(true) // Has prelude children
+			expect(importRule.has_prelude).toBe(true) // Has prelude
 			expect(importRule.has_prelude).toBe(true)
 		})
 
@@ -348,13 +349,13 @@ describe('CSSNode', () => {
 			const importRule = root.first_child! as Atrule
 			const layerRule = importRule.next_sibling! as Atrule
 
-			// @import has children (preludes) but no block
+			// @import has prelude but no block
 			expect(importRule.has_block).toBe(false)
-			expect(importRule.has_children).toBe(true)
+			expect(importRule.has_prelude).toBe(true)
 
-			// @layer has both children and a block
+			// @layer has both prelude and a block
 			expect(layerRule.has_block).toBe(true)
-			expect(layerRule.has_children).toBe(true)
+			expect(layerRule.has_prelude).toBe(true)
 		})
 
 		test('should return false for non-rule nodes', () => {

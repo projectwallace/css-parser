@@ -81,14 +81,27 @@ export interface CssNodeCommon {
 	readonly start: number
 	readonly length: number
 	readonly end: number
+	/** Low-level linked-list pointer used by walk()/traverse(). Prefer .children on nodes that have it. */
 	readonly first_child: CssNodeCommon | null
+	/** Low-level linked-list pointer used by walk()/traverse(). */
 	readonly next_sibling: CssNodeCommon | null
 	readonly has_next: boolean
+	clone(options?: CloneOptions): PlainCSSNode
+}
+
+/**
+ * Mixin for node types that have child nodes.
+ *
+ * Only a subset of node types expose children — structural and container nodes
+ * like StyleSheet, Block, SelectorList, Value, Function, etc. Leaf nodes
+ * (Identifier, Number, Dimension, …) do not extend WithChildren, reflecting
+ * that they never carry child nodes in a well-formed tree.
+ */
+export interface WithChildren {
 	readonly has_children: boolean
 	readonly child_count: number
-	readonly children: CssNodeCommon[]
-	[Symbol.iterator](): Iterator<CssNodeCommon>
-	clone(options?: CloneOptions): PlainCSSNode
+	readonly children: AnyCss[]
+	[Symbol.iterator](): Iterator<AnyCss>
 }
 
 /**
@@ -111,7 +124,13 @@ export interface CssNodeCommon {
 export type ToPlain<T extends CssNodeCommon> = PlainCSSNode & { type: T['type'] } & {
 	[K in Exclude<
 		keyof T,
-		keyof CssNodeCommon | symbol | 'attr_operator' | 'attr_flags'
+		| keyof CssNodeCommon
+		| symbol
+		| 'attr_operator'
+		| 'attr_flags'
+		| 'has_children'
+		| 'child_count'
+		| 'children'
 	> as T[K] extends (...args: any[]) => any ? never : K]: T[K] extends
 		| CssNodeCommon
 		| null
@@ -126,7 +145,7 @@ export type ToPlain<T extends CssNodeCommon> = PlainCSSNode & { type: T['type'] 
 // Structural nodes
 // ---------------------------------------------------------------------------
 
-export interface StyleSheet extends CssNodeCommon {
+export interface StyleSheet extends CssNodeCommon, WithChildren {
 	readonly type: typeof STYLESHEET
 	clone(options?: CloneOptions): ToPlain<StyleSheet>
 }
@@ -167,17 +186,17 @@ export interface Declaration extends CssNodeCommon {
 	clone(options?: CloneOptions): ToPlain<Declaration>
 }
 
-export interface Selector extends CssNodeCommon {
+export interface Selector extends CssNodeCommon, WithChildren {
 	readonly type: typeof SELECTOR
 	clone(options?: CloneOptions): ToPlain<Selector>
 }
 
-export interface SelectorList extends CssNodeCommon {
+export interface SelectorList extends CssNodeCommon, WithChildren {
 	readonly type: typeof SELECTOR_LIST
 	clone(options?: CloneOptions): ToPlain<SelectorList>
 }
 
-export interface Block extends CssNodeCommon {
+export interface Block extends CssNodeCommon, WithChildren {
 	readonly type: typeof BLOCK
 	readonly is_empty: boolean
 	clone(options?: CloneOptions): ToPlain<Block>
@@ -227,7 +246,7 @@ export interface Hash extends CssNodeCommon {
 	clone(options?: CloneOptions): ToPlain<Hash>
 }
 
-export interface Function extends CssNodeCommon {
+export interface Function extends CssNodeCommon, WithChildren {
 	readonly type: typeof FUNCTION
 	/** Function name, e.g. "rgb", "calc" */
 	readonly name: string
@@ -243,7 +262,7 @@ export interface Operator extends CssNodeCommon {
 	clone(options?: CloneOptions): ToPlain<Operator>
 }
 
-export interface Parenthesis extends CssNodeCommon {
+export interface Parenthesis extends CssNodeCommon, WithChildren {
 	readonly type: typeof PARENTHESIS
 	clone(options?: CloneOptions): ToPlain<Parenthesis>
 }
@@ -260,7 +279,7 @@ export interface UnicodeRange extends CssNodeCommon {
 	clone(options?: CloneOptions): ToPlain<UnicodeRange>
 }
 
-export interface Value extends CssNodeCommon {
+export interface Value extends CssNodeCommon, WithChildren {
 	readonly type: typeof VALUE
 	clone(options?: CloneOptions): ToPlain<Value>
 }
@@ -301,14 +320,14 @@ export interface AttributeSelector extends CssNodeCommon {
 	clone(options?: CloneOptions): ToPlain<AttributeSelector>
 }
 
-export interface PseudoClassSelector extends CssNodeCommon {
+export interface PseudoClassSelector extends CssNodeCommon, WithChildren {
 	readonly type: typeof PSEUDO_CLASS_SELECTOR
 	/** Pseudo-class name without colon, e.g. "hover" */
 	readonly name: string
 	clone(options?: CloneOptions): ToPlain<PseudoClassSelector>
 }
 
-export interface PseudoElementSelector extends CssNodeCommon {
+export interface PseudoElementSelector extends CssNodeCommon, WithChildren {
 	readonly type: typeof PSEUDO_ELEMENT_SELECTOR
 	/** Pseudo-element name without colons, e.g. "before" */
 	readonly name: string
@@ -359,17 +378,17 @@ export interface LangSelector extends CssNodeCommon {
 // At-rule prelude nodes
 // ---------------------------------------------------------------------------
 
-export interface AtrulePrelude extends CssNodeCommon {
+export interface AtrulePrelude extends CssNodeCommon, WithChildren {
 	readonly type: typeof AT_RULE_PRELUDE
 	clone(options?: CloneOptions): ToPlain<AtrulePrelude>
 }
 
-export interface MediaQuery extends CssNodeCommon {
+export interface MediaQuery extends CssNodeCommon, WithChildren {
 	readonly type: typeof MEDIA_QUERY
 	clone(options?: CloneOptions): ToPlain<MediaQuery>
 }
 
-export interface MediaFeature extends CssNodeCommon {
+export interface MediaFeature extends CssNodeCommon, WithChildren {
 	readonly type: typeof MEDIA_FEATURE
 	/** Feature name, e.g. "min-width" */
 	readonly property: string
@@ -383,7 +402,7 @@ export interface MediaType extends CssNodeCommon {
 	clone(options?: CloneOptions): ToPlain<MediaType>
 }
 
-export interface ContainerQuery extends CssNodeCommon {
+export interface ContainerQuery extends CssNodeCommon, WithChildren {
 	readonly type: typeof CONTAINER_QUERY
 	clone(options?: CloneOptions): ToPlain<ContainerQuery>
 }
@@ -430,7 +449,7 @@ export interface PreludeOperator extends CssNodeCommon {
 	clone(options?: CloneOptions): ToPlain<PreludeOperator>
 }
 
-export interface FeatureRange extends CssNodeCommon {
+export interface FeatureRange extends CssNodeCommon, WithChildren {
 	readonly type: typeof FEATURE_RANGE
 	/** The feature name in a range comparison, e.g. "width" from "(width >= 400px)" */
 	readonly name: string

@@ -1,15 +1,18 @@
 import { describe, it, expect, test } from 'vitest'
 import { SelectorParser, parse_selector } from './parse-selector'
 import { CSSDataArena } from './arena'
-import {
+import type {
 	AttributeSelector,
 	ClassSelector,
 	IdSelector,
 	NthSelector,
 	PseudoClassSelector,
 	PseudoElementSelector,
+	Selector,
+	SelectorList,
 	TypeSelector,
 	UniversalSelector,
+	WithChildren,
 } from './node-types'
 import {
 	SELECTOR,
@@ -83,7 +86,7 @@ describe('Selector Nodes', () => {
 		describe('TYPE_SELECTOR', () => {
 			test('start and length', () => {
 				const node = parse_selector('div')
-				const selector = node.first_child!
+				const selector = node.first_child! as Selector
 				const typeSelector = selector.first_child!
 				expect(typeSelector.start).toBe(0)
 				expect(typeSelector.length).toBe(3)
@@ -94,7 +97,7 @@ describe('Selector Nodes', () => {
 		describe('CLASS_SELECTOR', () => {
 			test('start and length', () => {
 				const node = parse_selector('.my-class')
-				const selector = node.first_child!
+				const selector = node.first_child! as Selector
 				const classSelector = selector.first_child!
 				expect(classSelector.start).toBe(0)
 				expect(classSelector.length).toBe(9)
@@ -105,7 +108,7 @@ describe('Selector Nodes', () => {
 		describe('ID_SELECTOR', () => {
 			test('start and length', () => {
 				const node = parse_selector('#my-id')
-				const selector = node.first_child!
+				const selector = node.first_child! as Selector
 				const idSelector = selector.first_child!
 				expect(idSelector.start).toBe(0)
 				expect(idSelector.length).toBe(6)
@@ -116,7 +119,7 @@ describe('Selector Nodes', () => {
 		describe('ATTRIBUTE_SELECTOR', () => {
 			test('start and length', () => {
 				const node = parse_selector('[disabled]')
-				const selector = node.first_child!
+				const selector = node.first_child! as Selector
 				const attrSelector = selector.first_child!
 				expect(attrSelector.start).toBe(0)
 				expect(attrSelector.length).toBe(10)
@@ -125,7 +128,7 @@ describe('Selector Nodes', () => {
 
 			test('start and length with value', () => {
 				const node = parse_selector('[type="text"]')
-				const selector = node.first_child!
+				const selector = node.first_child! as Selector
 				const attrSelector = selector.first_child!
 				expect(attrSelector.start).toBe(0)
 				expect(attrSelector.length).toBe(13)
@@ -136,7 +139,7 @@ describe('Selector Nodes', () => {
 		describe('PSEUDO_CLASS_SELECTOR', () => {
 			test('start and length for simple pseudo-class', () => {
 				const node = parse_selector('a:hover')
-				const selector = node.first_child!
+				const selector = node.first_child! as Selector
 				const [_type, pseudoClass] = selector.children
 				expect(pseudoClass.start).toBe(1)
 				expect(pseudoClass.length).toBe(6)
@@ -145,7 +148,7 @@ describe('Selector Nodes', () => {
 
 			test('start and length for pseudo-class with function', () => {
 				const node = parse_selector('li:nth-child(2n+1)')
-				const selector = node.first_child!
+				const selector = node.first_child! as Selector
 				const [_type, pseudoClass] = selector.children
 				expect(pseudoClass.start).toBe(2)
 				expect(pseudoClass.length).toBe(16)
@@ -156,7 +159,7 @@ describe('Selector Nodes', () => {
 		describe('PSEUDO_ELEMENT_SELECTOR', () => {
 			test('start and length', () => {
 				const node = parse_selector('p::before')
-				const selector = node.first_child!
+				const selector = node.first_child! as Selector
 				const [_type, pseudoElement] = selector.children
 				expect(pseudoElement.start).toBe(1)
 				expect(pseudoElement.length).toBe(8)
@@ -167,7 +170,7 @@ describe('Selector Nodes', () => {
 		describe('COMBINATOR', () => {
 			test('start and length for child combinator', () => {
 				const node = parse_selector('div > p')
-				const selector = node.first_child!
+				const selector = node.first_child! as Selector
 				const [_div, combinator, _p] = selector.children
 				expect(combinator.start).toBeGreaterThan(2)
 				expect(combinator.length).toBeGreaterThan(0)
@@ -176,7 +179,7 @@ describe('Selector Nodes', () => {
 
 			test('line and column for child combinator', () => {
 				const node = parse_selector('div > p')
-				const selector = node.first_child!
+				const selector = node.first_child! as Selector
 				const [_div, combinator, _p] = selector.children
 				expect(combinator.line).toBe(1)
 				expect(combinator.column).toBe(5) // '>' is at position 4 (0-indexed), column 5 (1-indexed)
@@ -184,7 +187,7 @@ describe('Selector Nodes', () => {
 
 			test('line and column for descendant combinator', () => {
 				const node = parse_selector('div p')
-				const selector = node.first_child!
+				const selector = node.first_child! as Selector
 				const [_div, combinator, _p] = selector.children
 				expect(combinator.line).toBe(1)
 				expect(combinator.column).toBe(4) // space starts at position 3 (0-indexed), column 4 (1-indexed)
@@ -194,7 +197,7 @@ describe('Selector Nodes', () => {
 
 			test('line and column for multiline descendant combinator', () => {
 				const node = parse_selector('div\n  p')
-				const selector = node.first_child!
+				const selector = node.first_child! as Selector
 				const [_div, combinator, _p] = selector.children
 				expect(combinator.line).toBe(1)
 				expect(combinator.column).toBe(4) // newline starts at position 3 (0-indexed), column 4 (1-indexed)
@@ -204,7 +207,7 @@ describe('Selector Nodes', () => {
 
 			test('line and column for adjacent sibling combinator', () => {
 				const node = parse_selector('h1 + p')
-				const selector = node.first_child!
+				const selector = node.first_child! as Selector
 				const [_h1, combinator, _p] = selector.children
 				expect(combinator.line).toBe(1)
 				expect(combinator.column).toBe(4) // '+' is at position 3 (0-indexed), column 4 (1-indexed)
@@ -213,7 +216,7 @@ describe('Selector Nodes', () => {
 
 			test('line and column for general sibling combinator', () => {
 				const node = parse_selector('h1 ~ p')
-				const selector = node.first_child!
+				const selector = node.first_child! as Selector
 				const [_h1, combinator, _p] = selector.children
 				expect(combinator.line).toBe(1)
 				expect(combinator.column).toBe(4) // '~' is at position 3 (0-indexed), column 4 (1-indexed)
@@ -222,7 +225,7 @@ describe('Selector Nodes', () => {
 
 			test('line and column for combinator with leading whitespace', () => {
 				const node = parse_selector('div  >  p')
-				const selector = node.first_child!
+				const selector = node.first_child! as Selector
 				const [_div, combinator, _p] = selector.children
 				expect(combinator.line).toBe(1)
 				expect(combinator.column).toBe(6) // '>' is at position 5 (0-indexed), column 6 (1-indexed)
@@ -232,7 +235,7 @@ describe('Selector Nodes', () => {
 
 			test('line and column for multiline combinator with newline before >', () => {
 				const node = parse_selector('div\n>\np')
-				const selector = node.first_child!
+				const selector = node.first_child! as Selector
 				const [_div, combinator, _p] = selector.children
 				expect(combinator.line).toBe(2)
 				expect(combinator.column).toBe(1) // '>' is at start of line 2
@@ -244,7 +247,7 @@ describe('Selector Nodes', () => {
 		describe('UNIVERSAL_SELECTOR', () => {
 			test('start and length', () => {
 				const node = parse_selector('*')
-				const selector = node.first_child!
+				const selector = node.first_child! as Selector
 				const universalSelector = selector.first_child!
 				expect(universalSelector.start).toBe(0)
 				expect(universalSelector.length).toBe(1)
@@ -255,7 +258,7 @@ describe('Selector Nodes', () => {
 		describe('NESTING_SELECTOR', () => {
 			test('start and length', () => {
 				const node = parse_selector('&')
-				const selector = node.first_child!
+				const selector = node.first_child! as Selector
 				const nestingSelector = selector.first_child!
 				expect(nestingSelector.start).toBe(0)
 				expect(nestingSelector.length).toBe(1)
@@ -266,7 +269,7 @@ describe('Selector Nodes', () => {
 		describe('NTH_SELECTOR', () => {
 			test('start and length in :nth-child()', () => {
 				const node = parse_selector(':nth-child(2n+1)')
-				const selector = node.first_child!
+				const selector = node.first_child! as Selector
 				const pseudoClass = selector.first_child!
 				const nthNode = pseudoClass.first_child!
 				expect(nthNode.type).toBe(NTH_SELECTOR)
@@ -279,7 +282,7 @@ describe('Selector Nodes', () => {
 		describe('NTH_OF_SELECTOR', () => {
 			test('start and length in :nth-child() with "of" syntax', () => {
 				const node = parse_selector(':nth-child(2n of .selector)')
-				const selector = node.first_child!
+				const selector = node.first_child! as Selector
 				const pseudoClass = selector.first_child!
 				const nthOfNode = pseudoClass.first_child!
 				expect(nthOfNode.type).toBe(NTH_OF_SELECTOR)
@@ -292,7 +295,7 @@ describe('Selector Nodes', () => {
 		describe('LANG_SELECTOR', () => {
 			test('start and length in :lang()', () => {
 				const node = parse_selector(':lang(en)')
-				const selector = node.first_child!
+				const selector = node.first_child! as Selector
 				const pseudoClass = selector.first_child!
 				const langNode = pseudoClass.first_child!
 				expect(langNode.type).toBe(LANG_SELECTOR)
@@ -309,76 +312,76 @@ describe('Selector Nodes', () => {
 
 		test('SELECTOR type constant', () => {
 			const node = parse_selector('div')
-			const selector = node.first_child!
+			const selector = node.first_child! as Selector
 			expect(selector.type).toBe(SELECTOR)
 		})
 
 		test('TYPE_SELECTOR type constant', () => {
 			const node = parse_selector('div')
-			const selector = node.first_child!
+			const selector = node.first_child! as Selector
 			const typeSelector = selector.first_child!
 			expect(typeSelector.type).toBe(TYPE_SELECTOR)
 		})
 
 		test('CLASS_SELECTOR type constant', () => {
 			const node = parse_selector('.my-class')
-			const selector = node.first_child!
+			const selector = node.first_child! as Selector
 			const classSelector = selector.first_child!
 			expect(classSelector.type).toBe(CLASS_SELECTOR)
 		})
 
 		test('ID_SELECTOR type constant', () => {
 			const node = parse_selector('#my-id')
-			const selector = node.first_child!
+			const selector = node.first_child! as Selector
 			const idSelector = selector.first_child!
 			expect(idSelector.type).toBe(ID_SELECTOR)
 		})
 
 		test('ATTRIBUTE_SELECTOR type constant', () => {
 			const node = parse_selector('[disabled]')
-			const selector = node.first_child!
+			const selector = node.first_child! as Selector
 			const attrSelector = selector.first_child!
 			expect(attrSelector.type).toBe(ATTRIBUTE_SELECTOR)
 		})
 
 		test('PSEUDO_CLASS_SELECTOR type constant', () => {
 			const node = parse_selector('a:hover')
-			const selector = node.first_child!
+			const selector = node.first_child! as Selector
 			const pseudoClass = selector.children[1]
 			expect(pseudoClass.type).toBe(PSEUDO_CLASS_SELECTOR)
 		})
 
 		test('PSEUDO_ELEMENT_SELECTOR type constant', () => {
 			const node = parse_selector('p::before')
-			const selector = node.first_child!
+			const selector = node.first_child! as Selector
 			const pseudoElement = selector.children[1]
 			expect(pseudoElement.type).toBe(PSEUDO_ELEMENT_SELECTOR)
 		})
 
 		test('COMBINATOR type constant', () => {
 			const node = parse_selector('div > p')
-			const selector = node.first_child!
+			const selector = node.first_child! as Selector
 			const combinator = selector.children[1]
 			expect(combinator.type).toBe(COMBINATOR)
 		})
 
 		test('UNIVERSAL_SELECTOR type constant', () => {
 			const node = parse_selector('*')
-			const selector = node.first_child!
+			const selector = node.first_child! as Selector
 			const universalSelector = selector.first_child!
 			expect(universalSelector.type).toBe(UNIVERSAL_SELECTOR)
 		})
 
 		test('NESTING_SELECTOR type constant', () => {
 			const node = parse_selector('&')
-			const selector = node.first_child!
+			const selector = node.first_child! as Selector
 			const nestingSelector = selector.first_child!
 			expect(nestingSelector.type).toBe(NESTING_SELECTOR)
 		})
 
 		test('NTH_SELECTOR type constant', () => {
 			const node = parse_selector(':nth-child(2n+1)')
-			const selector = node.first_child!
+			const selector = node.first_child! as Selector
 			const pseudoClass = selector.first_child!
 			const nthNode = pseudoClass.first_child!
 			expect(nthNode.type).toBe(NTH_SELECTOR)
@@ -386,7 +389,7 @@ describe('Selector Nodes', () => {
 
 		test('NTH_OF_SELECTOR type constant', () => {
 			const node = parse_selector(':nth-child(2n of .selector)')
-			const selector = node.first_child!
+			const selector = node.first_child! as Selector
 			const pseudoClass = selector.first_child!
 			const nthOfNode = pseudoClass.first_child!
 			expect(nthOfNode.type).toBe(NTH_OF_SELECTOR)
@@ -394,7 +397,7 @@ describe('Selector Nodes', () => {
 
 		test('LANG_SELECTOR type constant', () => {
 			const node = parse_selector(':lang(en)')
-			const selector = node.first_child!
+			const selector = node.first_child! as Selector
 			const pseudoClass = selector.first_child!
 			const langNode = pseudoClass.first_child!
 			expect(langNode.type).toBe(LANG_SELECTOR)
@@ -409,76 +412,76 @@ describe('Selector Nodes', () => {
 
 		test('SELECTOR type_name', () => {
 			const node = parse_selector('div')
-			const selector = node.first_child!
+			const selector = node.first_child! as Selector
 			expect(selector.type_name).toBe('Selector')
 		})
 
 		test('TYPE_SELECTOR type_name', () => {
 			const node = parse_selector('div')
-			const selector = node.first_child!
+			const selector = node.first_child! as Selector
 			const typeSelector = selector.first_child!
 			expect(typeSelector.type_name).toBe('TypeSelector')
 		})
 
 		test('CLASS_SELECTOR type_name', () => {
 			const node = parse_selector('.my-class')
-			const selector = node.first_child!
+			const selector = node.first_child! as Selector
 			const classSelector = selector.first_child!
 			expect(classSelector.type_name).toBe('ClassSelector')
 		})
 
 		test('ID_SELECTOR type_name', () => {
 			const node = parse_selector('#my-id')
-			const selector = node.first_child!
+			const selector = node.first_child! as Selector
 			const idSelector = selector.first_child!
 			expect(idSelector.type_name).toBe('IdSelector')
 		})
 
 		test('ATTRIBUTE_SELECTOR type_name', () => {
 			const node = parse_selector('[disabled]')
-			const selector = node.first_child!
+			const selector = node.first_child! as Selector
 			const attrSelector = selector.first_child!
 			expect(attrSelector.type_name).toBe('AttributeSelector')
 		})
 
 		test('PSEUDO_CLASS_SELECTOR type_name', () => {
 			const node = parse_selector('a:hover')
-			const selector = node.first_child!
+			const selector = node.first_child! as Selector
 			const pseudoClass = selector.children[1]
 			expect(pseudoClass.type_name).toBe('PseudoClassSelector')
 		})
 
 		test('PSEUDO_ELEMENT_SELECTOR type_name', () => {
 			const node = parse_selector('p::before')
-			const selector = node.first_child!
+			const selector = node.first_child! as Selector
 			const pseudoElement = selector.children[1]
 			expect(pseudoElement.type_name).toBe('PseudoElementSelector')
 		})
 
 		test('COMBINATOR type_name', () => {
 			const node = parse_selector('div > p')
-			const selector = node.first_child!
+			const selector = node.first_child! as Selector
 			const combinator = selector.children[1]
 			expect(combinator.type_name).toBe('Combinator')
 		})
 
 		test('UNIVERSAL_SELECTOR type_name', () => {
 			const node = parse_selector('*')
-			const selector = node.first_child!
+			const selector = node.first_child! as Selector
 			const universalSelector = selector.first_child!
 			expect(universalSelector.type_name).toBe('UniversalSelector')
 		})
 
 		test('NESTING_SELECTOR type_name', () => {
 			const node = parse_selector('&')
-			const selector = node.first_child!
+			const selector = node.first_child! as Selector
 			const nestingSelector = selector.first_child!
 			expect(nestingSelector.type_name).toBe('NestingSelector')
 		})
 
 		test('NTH_SELECTOR type_name', () => {
 			const node = parse_selector(':nth-child(2n+1)')
-			const selector = node.first_child!
+			const selector = node.first_child! as Selector
 			const pseudoClass = selector.first_child!
 			const nthNode = pseudoClass.first_child!
 			expect(nthNode.type_name).toBe('Nth')
@@ -486,7 +489,7 @@ describe('Selector Nodes', () => {
 
 		test('NTH_OF_SELECTOR type_name', () => {
 			const node = parse_selector(':nth-child(2n of .selector)')
-			const selector = node.first_child!
+			const selector = node.first_child! as Selector
 			const pseudoClass = selector.first_child!
 			const nthOfNode = pseudoClass.first_child!
 			expect(nthOfNode.type_name).toBe('NthOf')
@@ -494,7 +497,7 @@ describe('Selector Nodes', () => {
 
 		test('LANG_SELECTOR type_name', () => {
 			const node = parse_selector(':lang(en)')
-			const selector = node.first_child!
+			const selector = node.first_child! as Selector
 			const pseudoClass = selector.first_child!
 			const langNode = pseudoClass.first_child!
 			expect(langNode.type_name).toBe('Lang')
@@ -514,7 +517,7 @@ describe('Selector Nodes', () => {
 				const node = parse_selector('div')
 				expect(node.type).toBe(SELECTOR_LIST)
 
-				const firstSelector = node.first_child
+				const firstSelector = node.first_child as Selector | null
 				expect(firstSelector?.type).toBe(SELECTOR)
 
 				const typeNode = firstSelector?.first_child
@@ -524,7 +527,7 @@ describe('Selector Nodes', () => {
 
 			it('should parse class selector', () => {
 				const node = parse_selector('.my-class')
-				const firstSelector = node.first_child
+				const firstSelector = node.first_child as Selector | null
 				const classNode = firstSelector?.first_child as ClassSelector | null | undefined
 
 				expect(classNode?.type).toBe(CLASS_SELECTOR)
@@ -533,7 +536,7 @@ describe('Selector Nodes', () => {
 
 			it('should parse ID selector', () => {
 				const node = parse_selector('#my-id')
-				const firstSelector = node.first_child
+				const firstSelector = node.first_child as Selector | null
 				const idNode = firstSelector?.first_child as IdSelector | null | undefined
 
 				expect(idNode?.type).toBe(ID_SELECTOR)
@@ -542,7 +545,7 @@ describe('Selector Nodes', () => {
 
 			it('should parse compound selector', () => {
 				const node = parse_selector('div.container#app')
-				const firstSelector = node.first_child
+				const firstSelector = node.first_child as Selector | null
 				const children = firstSelector?.children || []
 
 				expect(children.length).toBe(3)
@@ -553,7 +556,7 @@ describe('Selector Nodes', () => {
 
 			it('should parse complex selector with descendant combinator', () => {
 				const node = parse_selector('div .container')
-				const firstSelector = node.first_child
+				const firstSelector = node.first_child as Selector | null
 				const children = firstSelector?.children || []
 
 				expect(children.length).toBe(3) // div, combinator, .container
@@ -804,17 +807,17 @@ describe('Selector Nodes', () => {
 				const root = parse_selector(':is(a )')
 				const selector = root.first_child
 				const pseudo = selector?.first_child
-				const [list] = pseudo!.children
-				const [a] = list.children
+				const [list] = (pseudo! as PseudoClassSelector).children
+				const [a] = (list as SelectorList).children
 				expect(a.text).toBe('a')
 			})
 
 			it('should parse trailing tab in :is() pseudo-class', () => {
 				const root = parse_selector(':is(a	)')
-				const selector = root.first_child!
+				const selector = root.first_child! as Selector
 				const pseudo = selector.first_child!
-				const [list] = pseudo.children
-				const [a] = list.children
+				const [list] = (pseudo as PseudoClassSelector).children
+				const [a] = (list as SelectorList).children
 				expect(a.text).toBe('a')
 			})
 
@@ -929,7 +932,7 @@ describe('Selector Nodes', () => {
 				const pseudoElement = root.first_child!.first_child! as PseudoElementSelector
 				expect(pseudoElement.type).toBe(PSEUDO_ELEMENT_SELECTOR)
 				expect(pseudoElement.name).toBe('before')
-				expect(pseudoElement.has_children).toBe(false) // Not a function
+				expect(pseudoElement.first_child).toBeNull() // Not a function
 			})
 
 			it('should indicate ::slotted() has function syntax even when empty', () => {
@@ -1066,7 +1069,7 @@ describe('Selector Nodes', () => {
 				if (!root) return
 
 				expect(root.type).toBe(SELECTOR_LIST)
-				let selector = root.first_child!
+				let selector = root.first_child! as Selector
 				expect(selector.type).toBe(SELECTOR)
 				let attr = selector.first_child! as AttributeSelector
 				expect(attr.type).toBe(ATTRIBUTE_SELECTOR)
@@ -1275,7 +1278,7 @@ describe('Selector Nodes', () => {
 			it('should parse selector with comments around descending combinator', () => {
 				const selector_list = parse_selector('a /* comment */ /*comment */ b')
 				expect(selector_list.children).toHaveLength(1)
-				const selector = selector_list.children[0]
+				const selector = selector_list.children[0] as Selector
 				expect(selector.type).toBe(SELECTOR)
 				expect(selector.text).toBe('a /* comment */ /*comment */ b')
 				expect(selector.children.map((child) => child.type)).toEqual([
@@ -1288,7 +1291,7 @@ describe('Selector Nodes', () => {
 			it('should parse selector with comments around child combinator', () => {
 				const selector_list = parse_selector('a /* comment */ > /*comment */ b')
 				expect(selector_list.children).toHaveLength(1)
-				const selector = selector_list.children[0]
+				const selector = selector_list.children[0] as Selector
 				expect(selector.type).toBe(SELECTOR)
 				expect(selector.text).toBe('a /* comment */ > /*comment */ b')
 				expect(selector.children.map((child) => child.type)).toEqual([
@@ -1301,7 +1304,7 @@ describe('Selector Nodes', () => {
 			it('should parse selector with comments around sibling combinator', () => {
 				const selector_list = parse_selector('a /* comment */ + /*comment */ b')
 				expect(selector_list.children).toHaveLength(1)
-				const selector = selector_list.children[0]
+				const selector = selector_list.children[0] as Selector
 				expect(selector.type).toBe(SELECTOR)
 				expect(selector.text).toBe('a /* comment */ + /*comment */ b')
 				expect(selector.children.map((child) => child.type)).toEqual([
@@ -1314,7 +1317,7 @@ describe('Selector Nodes', () => {
 			it('should parse selector with comments around adjecent sibling combinator', () => {
 				const selector_list = parse_selector('a /* comment */ ~ /*comment */ b')
 				expect(selector_list.children).toHaveLength(1)
-				const selector = selector_list.children[0]
+				const selector = selector_list.children[0] as Selector
 				expect(selector.type).toBe(SELECTOR)
 				expect(selector.text).toBe('a /* comment */ ~ /*comment */ b')
 				expect(selector.children.map((child) => child.type)).toEqual([
@@ -1394,19 +1397,19 @@ describe('Selector Nodes', () => {
 				const root = parse_selector('div:has(a)')
 
 				expect(root.first_child?.type).toBe(SELECTOR)
-				expect(root.first_child!.children).toHaveLength(2)
-				const [_, has] = root.first_child!.children
+				expect((root.first_child! as Selector).children).toHaveLength(2)
+				const [_, has] = (root.first_child! as Selector).children
 
 				expect(has.type).toBe(PSEUDO_CLASS_SELECTOR)
 				expect(has.text).toBe(':has(a)')
 
 				// Check children of :has() - should contain selector list with > combinator and p type selector
-				expect(has.has_children).toBe(true)
+				expect((has as PseudoClassSelector).has_children).toBe(true)
 				const selectorList = has.first_child!
 				expect(selectorList.type).toBe(SELECTOR_LIST)
 
 				// Selector list contains one selector
-				const selector = selectorList.first_child!
+				const selector = selectorList.first_child! as Selector
 				expect(selector.type).toBe(SELECTOR)
 
 				const selectorParts = selector.children
@@ -1419,8 +1422,8 @@ describe('Selector Nodes', () => {
 				const root = parse_selector('div:has(> p)')
 
 				expect(root.first_child?.type).toBe(SELECTOR)
-				expect(root.first_child!.children).toHaveLength(2)
-				const [div, has] = root.first_child!.children
+				expect((root.first_child! as Selector).children).toHaveLength(2)
+				const [div, has] = (root.first_child! as Selector).children
 				expect(div.type).toBe(TYPE_SELECTOR)
 				expect(div.text).toBe('div')
 
@@ -1428,12 +1431,12 @@ describe('Selector Nodes', () => {
 				expect(has.text).toBe(':has(> p)')
 
 				// Check children of :has() - should contain selector list with > combinator and p type selector
-				expect(has.has_children).toBe(true)
+				expect((has as PseudoClassSelector).has_children).toBe(true)
 				const selectorList = has.first_child!
 				expect(selectorList.type).toBe(SELECTOR_LIST)
 
 				// Selector list contains one selector
-				const selector = selectorList.first_child!
+				const selector = selectorList.first_child! as Selector
 				expect(selector.type).toBe(SELECTOR)
 
 				const selectorParts = selector.children
@@ -1446,9 +1449,9 @@ describe('Selector Nodes', () => {
 
 			it('should parse :has() with adjacent sibling combinator (+)', () => {
 				const root = parse_selector('div:has(+ p)')
-				const has = root.first_child!.children[1]
+				const has = (root.first_child! as Selector).children[1]
 				const selectorList = has.first_child!
-				const selector = selectorList.first_child!
+				const selector = selectorList.first_child! as Selector
 				const parts = selector.children
 
 				expect(parts).toHaveLength(2)
@@ -1460,9 +1463,9 @@ describe('Selector Nodes', () => {
 
 			it('should parse :has() with general sibling combinator (~)', () => {
 				const root = parse_selector('div:has(~ p)')
-				const has = root.first_child!.children[1]
+				const has = (root.first_child! as Selector).children[1]
 				const selectorList = has.first_child!
-				const selector = selectorList.first_child!
+				const selector = selectorList.first_child! as Selector
 				const parts = selector.children
 
 				expect(parts).toHaveLength(2)
@@ -1474,9 +1477,9 @@ describe('Selector Nodes', () => {
 
 			it('should parse :has() with descendant selector (no combinator)', () => {
 				const root = parse_selector('div:has(p)')
-				const has = root.first_child!.children[1]
+				const has = (root.first_child! as Selector).children[1]
 				const selectorList = has.first_child!
-				const selector = selectorList.first_child!
+				const selector = selectorList.first_child! as Selector
 
 				expect(selector.children).toHaveLength(1)
 				expect(selector.children[0].type).toBe(TYPE_SELECTOR)
@@ -1485,33 +1488,33 @@ describe('Selector Nodes', () => {
 
 			it('should parse :has() with multiple selectors', () => {
 				const root = parse_selector('div:has(> p, + span)')
-				const has = root.first_child!.children[1]
+				const has = (root.first_child! as Selector).children[1]
 
 				// Should have 2 selector children (selector list with 2 items)
-				expect(has.children).toHaveLength(1) // Selector list
+				expect((has as PseudoClassSelector).children).toHaveLength(1) // Selector list
 				const selectorList = has.first_child!
-				expect(selectorList.children).toHaveLength(2) // Two selectors in the list
+				expect((selectorList as SelectorList).children).toHaveLength(2) // Two selectors in the list
 
 				// First selector: > p
-				const firstSelector = selectorList.children[0]
-				expect(firstSelector.children).toHaveLength(2)
-				expect(firstSelector.children[0].text).toBe('>')
-				expect(firstSelector.children[1].text).toBe('p')
+				const firstSelector = (selectorList as SelectorList).children[0]
+				expect((firstSelector as Selector).children).toHaveLength(2)
+				expect((firstSelector as Selector).children[0].text).toBe('>')
+				expect((firstSelector as Selector).children[1].text).toBe('p')
 
 				// Second selector: + span
-				const secondSelector = selectorList.children[1]
-				expect(secondSelector.children).toHaveLength(2)
-				expect(secondSelector.children[0].text).toBe('+')
-				expect(secondSelector.children[1].text).toBe('span')
+				const secondSelector = (selectorList as SelectorList).children[1]
+				expect((secondSelector as Selector).children).toHaveLength(2)
+				expect((secondSelector as Selector).children[0].text).toBe('+')
+				expect((secondSelector as Selector).children[1].text).toBe('span')
 			})
 
 			it('should handle empty :has()', () => {
 				const root = parse_selector('div:has()')
-				const has = root.first_child!.children[1]
+				const has = (root.first_child! as Selector).children[1]
 
 				expect(has.type).toBe(PSEUDO_CLASS_SELECTOR)
 				expect(has.text).toBe(':has()')
-				expect(has.has_children).toBe(true) // Has function syntax (parentheses)
+				expect((has as PseudoClassSelector).has_children).toBe(true) // Has function syntax (parentheses)
 			})
 
 			it('should parse nesting with ampersand', () => {
@@ -1909,23 +1912,23 @@ describe('Selector Nodes', () => {
 					expect(nthOfNode.text).toBe('2n of .selector')
 
 					// NTH_OF has two children: An+B and selector list
-					expect(nthOfNode.children).toHaveLength(2)
+					expect((nthOfNode as unknown as WithChildren).children).toHaveLength(2)
 					const anplusb = nthOfNode.first_child! as NthSelector
 					expect(anplusb.type).toBe(NTH_SELECTOR)
 					expect(anplusb.nth_a).toBe('2n')
 					expect(anplusb.nth_b).toBeUndefined()
 
 					// Second child is the selector list
-					const selectorList = nthOfNode.children[1]
+					const selectorList = (nthOfNode as unknown as WithChildren).children[1]
 					expect(selectorList.type).toBe(SELECTOR_LIST)
-					const selector = selectorList.first_child!
+					const selector = selectorList.first_child! as Selector
 					expect(selector.type).toBe(SELECTOR)
 					expect(selector.first_child!.text).toBe('.selector')
 				})
 
 				test(':nth-child(1 of li)', () => {
 					const root = parse_selector('ul:has(:nth-child(1 of li))')
-					const nth = root.first_child!.children[1]
+					const nth = (root.first_child! as Selector).children[1]
 					expect(nth.type).toBe(PSEUDO_CLASS_SELECTOR)
 					expect(nth.text).toBe(':has(:nth-child(1 of li))')
 				})
@@ -1939,9 +1942,9 @@ describe('Selector Nodes', () => {
 					expect(nth?.first_child?.type).toBe(NTH_OF_SELECTOR)
 					const nth_of = nth?.first_child
 					expect(nth_of?.text).toBe('1 /* test */ of /* test */ li')
-					expect(nth_of?.children).toHaveLength(2)
-					expect(nth_of?.children[0].type_name).toBe('Nth')
-					expect(nth_of?.children[1].type_name).toBe('SelectorList')
+					expect((nth_of as unknown as WithChildren | null | undefined)?.children).toHaveLength(2)
+					expect((nth_of as unknown as WithChildren | null | undefined)?.children[0].type_name).toBe('Nth')
+					expect((nth_of as unknown as WithChildren | null | undefined)?.children[1].type_name).toBe('SelectorList')
 				})
 
 				test(':nth-child(3n OF .test)', () => {
@@ -1953,7 +1956,7 @@ describe('Selector Nodes', () => {
 					expect(nth?.first_child?.type).toBe(NTH_OF_SELECTOR)
 					const nth_of = nth?.first_child
 					expect(nth_of?.text).toBe('3n OF .test')
-					expect(nth_of?.children).toHaveLength(2)
+					expect((nth_of as unknown as WithChildren | null | undefined)?.children).toHaveLength(2)
 				})
 			})
 		})
@@ -1966,11 +1969,11 @@ describe('Selector Nodes', () => {
 				expect(root.type).toBe(SELECTOR_LIST)
 
 				// First selector in the list
-				const selector = root.first_child!
+				const selector = root.first_child! as Selector
 				expect(selector.type).toBe(SELECTOR)
 
 				// Selector has :lang() pseudo-class
-				const langPseudoClass = selector.first_child!
+				const langPseudoClass = selector.first_child! as PseudoClassSelector
 				expect(langPseudoClass.type).toBe(PSEUDO_CLASS_SELECTOR)
 				expect(langPseudoClass.text).toBe(':lang("nl", "de")')
 
@@ -1992,8 +1995,8 @@ describe('Selector Nodes', () => {
 			test(':lang(en, fr) with unquoted identifiers', () => {
 				const root = parse_selector(':lang(en, fr)')
 
-				const selector = root.first_child!
-				const langPseudoClass = selector.first_child!
+				const selector = root.first_child! as Selector
+				const langPseudoClass = selector.first_child! as PseudoClassSelector
 
 				expect(langPseudoClass.type).toBe(PSEUDO_CLASS_SELECTOR)
 				expect(langPseudoClass.text).toBe(':lang(en, fr)')
@@ -2015,8 +2018,8 @@ describe('Selector Nodes', () => {
 			test(':lang(en-US) single language with hyphen', () => {
 				const root = parse_selector(':lang(en-US)')
 
-				const selector = root.first_child!
-				const langPseudoClass = selector.first_child!
+				const selector = root.first_child! as Selector
+				const langPseudoClass = selector.first_child! as PseudoClassSelector
 
 				expect(langPseudoClass.type).toBe(PSEUDO_CLASS_SELECTOR)
 				expect(langPseudoClass.text).toBe(':lang(en-US)')
@@ -2032,8 +2035,8 @@ describe('Selector Nodes', () => {
 			test(':lang("*-Latn") wildcard pattern', () => {
 				const root = parse_selector(':lang("*-Latn")')
 
-				const selector = root.first_child!
-				const langPseudoClass = selector.first_child!
+				const selector = root.first_child! as Selector
+				const langPseudoClass = selector.first_child! as PseudoClassSelector
 
 				expect(langPseudoClass.type).toBe(PSEUDO_CLASS_SELECTOR)
 				expect(langPseudoClass.text).toBe(':lang("*-Latn")')
@@ -2055,31 +2058,31 @@ describe('Selector Nodes', () => {
 				expect(root.type).toBe(SELECTOR_LIST)
 
 				// First selector in the list
-				const selector = root.first_child!
+				const selector = root.first_child! as Selector
 				expect(selector.type).toBe(SELECTOR)
 
 				// Selector has :is() pseudo-class
-				const isPseudoClass = selector.first_child!
+				const isPseudoClass = selector.first_child! as PseudoClassSelector
 				expect(isPseudoClass.type).toBe(PSEUDO_CLASS_SELECTOR)
 				expect(isPseudoClass.text).toBe(':is(a, b)')
 
 				// :is() has 1 child: a selector list
 				expect(isPseudoClass.children).toHaveLength(1)
-				const innerSelectorList = isPseudoClass.first_child!
+				const innerSelectorList = isPseudoClass.first_child! as SelectorList
 				expect(innerSelectorList.type).toBe(SELECTOR_LIST)
 
 				// The selector list has 2 children: selector for 'a' and selector for 'b'
 				expect(innerSelectorList.children).toHaveLength(2)
 
 				// First selector: 'a'
-				const selectorA = innerSelectorList.children[0]
+				const selectorA = innerSelectorList.children[0] as Selector
 				expect(selectorA.type).toBe(SELECTOR)
 				expect(selectorA.children).toHaveLength(1)
 				expect(selectorA.children[0].type).toBe(TYPE_SELECTOR)
 				expect(selectorA.children[0].text).toBe('a')
 
 				// Second selector: 'b'
-				const selectorB = innerSelectorList.children[1]
+				const selectorB = innerSelectorList.children[1] as Selector
 				expect(selectorB.type).toBe(SELECTOR)
 				expect(selectorB.children).toHaveLength(1)
 				expect(selectorB.children[0].type).toBe(TYPE_SELECTOR)
@@ -2346,7 +2349,7 @@ describe('Selector Nodes', () => {
 				expect(result.text).toBe('ns|div.class')
 
 				const selector = result.first_child
-				const children = selector?.children || []
+				const children = (selector as Selector | null)?.children || []
 				expect(children.length).toBe(2)
 				expect(children[0].type).toBe(TYPE_SELECTOR)
 				expect(children[0].text).toBe('ns|div')
@@ -2361,7 +2364,7 @@ describe('Selector Nodes', () => {
 				expect(result.text).toBe('ns|*#id')
 
 				const selector = result.first_child
-				const children = selector?.children || []
+				const children = (selector as Selector | null)?.children || []
 				expect(children.length).toBe(2)
 				expect(children[0].type).toBe(UNIVERSAL_SELECTOR)
 				expect(children[0].text).toBe('ns|*')
@@ -2375,7 +2378,7 @@ describe('Selector Nodes', () => {
 				expect(result.text).toBe('ns|div > *|span')
 
 				const selector = result.first_child
-				const children = selector?.children || []
+				const children = (selector as Selector | null)?.children || []
 				expect(children.length).toBe(3) // div, >, span
 				expect(children[0].type).toBe(TYPE_SELECTOR)
 				expect(children[0].text).toBe('ns|div')
@@ -2416,7 +2419,7 @@ describe('Selector Nodes', () => {
 				expect(result.text).toBe('ns|div[attr="value"]')
 
 				const selector = result.first_child
-				const children = selector?.children || []
+				const children = (selector as Selector | null)?.children || []
 				expect(children.length).toBe(2)
 				expect(children[0].type).toBe(TYPE_SELECTOR)
 				expect((children[0] as TypeSelector).name).toBe('ns')
@@ -2430,7 +2433,7 @@ describe('Selector Nodes', () => {
 				expect(result.text).toBe('ns|a:hover')
 
 				const selector = result.first_child
-				const children = selector?.children || []
+				const children = (selector as Selector | null)?.children || []
 				expect(children.length).toBe(2)
 				expect(children[0].type).toBe(TYPE_SELECTOR)
 				expect((children[0] as TypeSelector).name).toBe('ns')
@@ -2477,7 +2480,7 @@ describe('Selector Nodes', () => {
 				const nestedList = pseudo?.first_child
 				expect(nestedList?.type).toBe(SELECTOR_LIST)
 
-				const nestedSelectors = nestedList?.children || []
+				const nestedSelectors = (nestedList as SelectorList | null | undefined)?.children || []
 				expect(nestedSelectors.length).toBe(2)
 
 				const firstNestedType = nestedSelectors[0].first_child
@@ -2559,15 +2562,15 @@ describe('Selector Nodes', () => {
 				let root = parse_selector(':hello')
 				let pseudo = root.first_child?.first_child
 				expect(pseudo?.type).toBe(PSEUDO_CLASS_SELECTOR)
-				expect(pseudo?.has_children).toBe(false)
+				expect((pseudo as PseudoClassSelector | null | undefined)?.has_children).toBe(false)
 			})
 
 			test('should parse unknown pseudo-class with empty parens', () => {
 				let root = parse_selector(':hello()')
 				let pseudo = root.first_child?.first_child
 				expect(pseudo?.type).toBe(PSEUDO_CLASS_SELECTOR)
-				expect(pseudo?.has_children).toBe(true)
-				expect(pseudo?.children.length).toBe(0)
+				expect((pseudo as PseudoClassSelector | null | undefined)?.has_children).toBe(true)
+				expect((pseudo as PseudoClassSelector | null | undefined)?.children.length).toBe(0)
 			})
 
 			test('should parse attribute selector', () => {
@@ -2697,7 +2700,7 @@ describe('Selector Nodes', () => {
 
 			it('should handle comment after namespace prefix where no pipe exists', () => {
 				const root = parse_selector('div /* comment */ .class')
-				const selector = root.first_child
+				const selector = root.first_child as Selector | null
 				// Comment acts as whitespace, creating a descendant combinator
 				expect(selector?.children.length).toBe(3)
 				const [type, combinator, classSelector] = selector?.children || []
@@ -2710,7 +2713,7 @@ describe('Selector Nodes', () => {
 		describe('Pseudo-element with comments', () => {
 			it('should parse pseudo-element with comment before second colon', () => {
 				const root = parse_selector('div: /* comment */ :before')
-				const selector = root.first_child
+				const selector = root.first_child as Selector | null
 				const pseudoElement = selector?.children[1] as PseudoElementSelector | undefined
 				expect(pseudoElement?.type).toBe(PSEUDO_ELEMENT_SELECTOR)
 				expect(pseudoElement?.name).toBe('before')
@@ -2718,7 +2721,7 @@ describe('Selector Nodes', () => {
 
 			it('should parse pseudo-class when comment after first colon', () => {
 				const root = parse_selector('div:/* comment */hover')
-				const selector = root.first_child
+				const selector = root.first_child as Selector | null
 				expect(selector?.children.length).toBe(2)
 				const [type, pseudoClass] = selector?.children || []
 				expect(type?.type).toBe(TYPE_SELECTOR)
@@ -2901,7 +2904,7 @@ describe('Selector Nodes', () => {
 with
 newlines */
 > p`)
-				const selector = root.first_child
+				const selector = root.first_child as Selector | null
 				expect(selector?.children.length).toBe(3)
 				const [div, combinator, p] = selector?.children || []
 				expect(div?.type).toBe(TYPE_SELECTOR)

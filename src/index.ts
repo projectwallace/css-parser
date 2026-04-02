@@ -56,6 +56,7 @@ export { NODE_TYPES } from './constants'
 // Node subtypes and type predicate functions
 export {
 	type CssNodeCommon,
+	type WithChildren,
 	type AnyCss,
 	type ToPlain,
 	type StyleSheet,

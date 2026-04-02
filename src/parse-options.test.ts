@@ -23,7 +23,7 @@ describe('Parser Options', () => {
 			const declaration = block?.first_child
 			expect(declaration).not.toBeNull()
 			expect(declaration?.type).toBe(DECLARATION)
-			expect(declaration?.has_children).toBe(true)
+			expect(declaration?.first_child).not.toBeNull()
 			expect(declaration?.first_child?.type).toBe(VALUE)
 		})
 
@@ -39,7 +39,7 @@ describe('Parser Options', () => {
 			// Check value is parsed
 			const block = selector?.next_sibling
 			const declaration = block?.first_child
-			expect(declaration?.has_children).toBe(true)
+			expect(declaration?.first_child).not.toBeNull()
 			expect(declaration?.first_child?.type).toBe(VALUE)
 		})
 	})
@@ -62,10 +62,10 @@ describe('Parser Options', () => {
 			expect(declaration?.type).toBe(DECLARATION)
 			expect(declaration?.property).toBe('color')
 			expect((declaration?.value as PlainCSSNode)?.text).toBe('red') // Raw value text still available
-			expect(declaration?.has_children).toBe(true) // RAW value node exists
+			expect(declaration?.first_child).not.toBeNull() // RAW value node exists
 			expect(declaration?.first_child?.type).toBe(RAW)
 			expect(declaration?.first_child?.text).toBe('red')
-			expect(declaration?.children).toHaveLength(1)
+			expect(declaration?.first_child).not.toBeNull()
 		})
 
 		it('should handle complex values without parsing', () => {
@@ -77,7 +77,7 @@ describe('Parser Options', () => {
 
 			expect(declaration?.property).toBe('margin')
 			expect((declaration?.value as PlainCSSNode)?.text).toBe('10px 20px')
-			expect(declaration?.has_children).toBe(true)
+			expect(declaration?.first_child).not.toBeNull()
 		})
 
 		it('should handle function values without parsing', () => {
@@ -89,7 +89,7 @@ describe('Parser Options', () => {
 
 			expect(declaration?.property).toBe('color')
 			expect((declaration?.value as PlainCSSNode)?.text).toBe('rgb(255, 0, 0)')
-			expect(declaration?.has_children).toBe(true)
+			expect(declaration?.first_child).not.toBeNull()
 		})
 	})
 
@@ -103,12 +103,12 @@ describe('Parser Options', () => {
 			expect(selector).not.toBeNull()
 			expect(selector?.type).toBe(RAW)
 			expect(selector?.text).toBe('body')
-			expect(selector?.has_children).toBe(false) // No detailed selector nodes
+			expect(selector?.first_child).toBeNull() // No detailed selector nodes
 
 			// Values should still be parsed
 			const block = selector?.next_sibling
 			const declaration = block?.first_child
-			expect(declaration?.has_children).toBe(true)
+			expect(declaration?.first_child).not.toBeNull()
 			expect(declaration?.first_child?.type).toBe(VALUE)
 		})
 
@@ -137,7 +137,7 @@ describe('Parser Options', () => {
 
 			expect(selector?.type).toBe(RAW)
 			expect(selector?.text).toBe('div.container#app')
-			expect(selector?.has_children).toBe(false)
+			expect(selector?.first_child).toBeNull()
 		})
 
 		it('should handle selector lists without parsing', () => {
@@ -147,7 +147,7 @@ describe('Parser Options', () => {
 
 			expect(selector?.type).toBe(RAW)
 			expect(selector?.text).toBe('div, p, span')
-			expect(selector?.has_children).toBe(false)
+			expect(selector?.first_child).toBeNull()
 		})
 	})
 
@@ -160,7 +160,7 @@ describe('Parser Options', () => {
 			const selector = rule?.first_child
 			expect(selector?.type).toBe(RAW)
 			expect(selector?.text).toBe('body')
-			expect(selector?.has_children).toBe(false)
+			expect(selector?.first_child).toBeNull()
 
 			// Declaration should have a RAW value child
 			const block = selector?.next_sibling
@@ -168,7 +168,7 @@ describe('Parser Options', () => {
 			expect(declaration?.type).toBe(DECLARATION)
 			expect(declaration?.property).toBe('color')
 			expect((declaration?.value as PlainCSSNode)?.text).toBe('red')
-			expect(declaration?.has_children).toBe(true)
+			expect(declaration?.first_child).not.toBeNull()
 		})
 
 		it('should handle complex CSS without detailed parsing', () => {
@@ -183,18 +183,18 @@ describe('Parser Options', () => {
 
 			const selector = rule?.first_child
 			expect(selector?.type).toBe(RAW)
-			expect(selector?.has_children).toBe(false)
+			expect(selector?.first_child).toBeNull()
 
 			const block = selector?.next_sibling
 			const decl1 = block?.first_child as Declaration | null | undefined
 			expect(decl1?.property).toBe('margin')
 			expect((decl1?.value as PlainCSSNode)?.text).toBe('10px 20px')
-			expect(decl1?.has_children).toBe(true)
+			expect(decl1?.first_child).not.toBeNull()
 
 			const decl2 = decl1?.next_sibling as Declaration | null | undefined
 			expect(decl2?.property).toBe('color')
 			expect((decl2?.value as PlainCSSNode)?.text).toBe('rgb(255, 0, 0)')
-			expect(decl2?.has_children).toBe(true)
+			expect(decl2?.first_child).not.toBeNull()
 		})
 	})
 
@@ -255,7 +255,7 @@ describe('Parser Options', () => {
 
 			// Should use defaults (both enabled)
 			expect(selector?.type).toBe(SELECTOR_LIST)
-			expect(declaration?.has_children).toBe(true)
+			expect(declaration?.first_child).not.toBeNull()
 		})
 
 		it('should accept partial options', () => {
@@ -268,7 +268,7 @@ describe('Parser Options', () => {
 			// Selector should still be parsed (default true)
 			expect(selector?.type).toBe(SELECTOR_LIST)
 			// Values should not be parsed as VALUE nodes (explicitly false), but RAW child exists
-			expect(declaration?.has_children).toBe(true)
+			expect(declaration?.first_child).not.toBeNull()
 		})
 	})
 
@@ -281,7 +281,7 @@ describe('Parser Options', () => {
 			expect(prelude).not.toBeNull()
 			expect(prelude?.type).toBe(RAW)
 			expect(prelude?.text).toBe('screen')
-			expect(prelude?.has_children).toBe(false)
+			expect(prelude?.first_child).toBeNull()
 		})
 
 		it('should return RAW for various at-rule types', () => {
@@ -409,7 +409,7 @@ describe('Parser Options', () => {
 			const selector = rule?.first_child
 			const block = selector?.next_sibling
 			const declaration = block?.first_child
-			expect(declaration?.has_children).toBe(true) // RAW value node present even with parse_values: false
+			expect(declaration?.first_child).not.toBeNull() // RAW value node present even with parse_values: false
 		})
 	})
 })

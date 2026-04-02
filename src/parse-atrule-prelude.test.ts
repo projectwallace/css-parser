@@ -3,6 +3,10 @@ import { parse } from './parse'
 import { parse_atrule_prelude } from './parse-atrule-prelude'
 import type {
 	Atrule,
+	AtrulePrelude,
+	Block,
+	ContainerQuery,
+	MediaQuery,
 	MediaType,
 	MediaFeature,
 	FeatureRange,
@@ -186,7 +190,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@media screen and (min-width: 768px) { }'
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
-				const mediaQuery = atRule.prelude!.first_child!
+				const mediaQuery = atRule.prelude!.first_child! as MediaQuery
 				const operator = mediaQuery.children[1]
 
 				expect(operator.type).toBe(PRELUDE_OPERATOR)
@@ -302,7 +306,7 @@ describe('At-Rule Prelude Nodes', () => {
 			const css = '@media screen and (min-width: 768px) { }'
 			const ast = parse(css)
 			const atRule = ast.first_child! as Atrule
-			const mediaQuery = atRule.prelude!.first_child!
+			const mediaQuery = atRule.prelude!.first_child! as MediaQuery
 			const operator = mediaQuery.children[1]
 
 			expect(operator.type).toBe(PRELUDE_OPERATOR)
@@ -388,7 +392,7 @@ describe('At-Rule Prelude Nodes', () => {
 			const css = '@media screen and (min-width: 768px) { }'
 			const ast = parse(css)
 			const atRule = ast.first_child! as Atrule
-			const mediaQuery = atRule.prelude!.first_child!
+			const mediaQuery = atRule.prelude!.first_child! as MediaQuery
 			const operator = mediaQuery.children[1]
 
 			expect(operator.type_name).toBe('Operator')
@@ -415,13 +419,13 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(atRule?.name).toBe('media')
 
 				// Should have prelude children
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 				expect(children.length).toBeGreaterThan(0)
 
 				// First child should be a media query
 				expect(children[0].type).toBe(MEDIA_QUERY)
 
-				const mediaType = children[0].first_child! as MediaType
+				const mediaType = (children[0] as ContainerQuery).first_child! as MediaType
 				expect(mediaType.type).toBe(MEDIA_TYPE)
 				expect(mediaType.value).toBe('screen')
 			})
@@ -458,8 +462,8 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@media (/* comment */   min-width: 768px   /* test */) { }'
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
-				const queryChildren = children[0].children
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
+				const queryChildren = (children[0] as MediaQuery).children
 				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE) as
 					| MediaFeature
 					| undefined
@@ -471,11 +475,11 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@media screen and (min-width: 768px) { }'
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				expect(children[0].type).toBe(MEDIA_QUERY)
 
-				const queryChildren = children[0].children
+				const queryChildren = (children[0] as MediaQuery).children
 				// Should have: media type, operator, media feature
 				expect(queryChildren.some((c) => c.type === MEDIA_TYPE)).toBe(true)
 				expect(queryChildren.some((c) => c.type === PRELUDE_OPERATOR)).toBe(true)
@@ -486,9 +490,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@media (min-width: 768px) and (max-width: 1024px) { }'
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
-				const queryChildren = children[0].children
+				const queryChildren = (children[0] as MediaQuery).children
 				const features = queryChildren.filter((c) => c.type === MEDIA_FEATURE)
 				expect(features.length).toBe(2)
 			})
@@ -497,7 +501,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@media (orientation: portrait) { }'
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
-				const queryChildren = atRule.prelude?.children[0].children || []
+				const queryChildren = ((atRule.prelude as AtrulePrelude | null)?.children[0] as MediaQuery | undefined)?.children || []
 				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE) as
 					| MediaFeature
 					| undefined
@@ -511,7 +515,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@media (hover) { }'
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
-				const queryChildren = atRule.prelude?.children[0].children || []
+				const queryChildren = ((atRule.prelude as AtrulePrelude | null)?.children[0] as MediaQuery | undefined)?.children || []
 				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE) as
 					| MediaFeature
 					| undefined
@@ -523,7 +527,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@media (min-width: 768px) { }'
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
-				const queryChildren = atRule.prelude?.children[0].children || []
+				const queryChildren = ((atRule.prelude as AtrulePrelude | null)?.children[0] as MediaQuery | undefined)?.children || []
 				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE) as
 					| MediaFeature
 					| undefined
@@ -537,7 +541,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@media (orientation: portrait) { }'
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
-				const queryChildren = atRule.prelude?.children[0].children || []
+				const queryChildren = ((atRule.prelude as AtrulePrelude | null)?.children[0] as MediaQuery | undefined)?.children || []
 				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE)
 
 				expect(feature?.children.length).toBe(1)
@@ -549,7 +553,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@media (hover) { }'
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
-				const queryChildren = atRule.prelude?.children[0].children || []
+				const queryChildren = ((atRule.prelude as AtrulePrelude | null)?.children[0] as MediaQuery | undefined)?.children || []
 				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE)
 
 				expect(feature?.children.length).toBe(0)
@@ -559,7 +563,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@media (width >= 400px) { }'
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
-				const queryChildren = atRule.prelude?.children[0].children || []
+				const queryChildren = ((atRule.prelude as AtrulePrelude | null)?.children[0] as MediaQuery | undefined)?.children || []
 				const range = queryChildren.find((c) => c.type === FEATURE_RANGE) as
 					| FeatureRange
 					| undefined
@@ -577,7 +581,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@media (50px <= width <= 100px) { }'
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
-				const queryChildren = atRule.prelude?.children[0].children || []
+				const queryChildren = ((atRule.prelude as AtrulePrelude | null)?.children[0] as MediaQuery | undefined)?.children || []
 				const range = queryChildren.find((c) => c.type === FEATURE_RANGE) as
 					| FeatureRange
 					| undefined
@@ -597,7 +601,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@media (400px < width) { }'
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
-				const queryChildren = atRule.prelude?.children[0].children || []
+				const queryChildren = ((atRule.prelude as AtrulePrelude | null)?.children[0] as MediaQuery | undefined)?.children || []
 				const range = queryChildren.find((c) => c.type === FEATURE_RANGE) as
 					| FeatureRange
 					| undefined
@@ -615,7 +619,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@media (width = 500px) { }'
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
-				const queryChildren = atRule.prelude?.children[0].children || []
+				const queryChildren = ((atRule.prelude as AtrulePrelude | null)?.children[0] as MediaQuery | undefined)?.children || []
 				const range = queryChildren.find((c) => c.type === FEATURE_RANGE) as
 					| FeatureRange
 					| undefined
@@ -633,7 +637,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@media screen, print { }'
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				// Should have 2 media query nodes
 				const queries = children.filter((c) => c.type === MEDIA_QUERY)
@@ -655,7 +659,7 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(atRule?.type).toBe(AT_RULE)
 				expect(atRule?.name).toBe('container')
 
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 				expect(children.length).toBeGreaterThan(0)
 				expect(children[0].type).toBe(CONTAINER_QUERY)
 			})
@@ -664,11 +668,11 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@container sidebar (min-width: 400px) { }'
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				expect(children[0].type).toBe(CONTAINER_QUERY)
 
-				const [ident, media_feature] = children[0].children
+				const [ident, media_feature] = (children[0] as ContainerQuery).children
 				// Should have name and feature
 				expect(ident.type).toBe(IDENTIFIER)
 				expect(media_feature.type).toBe(MEDIA_FEATURE)
@@ -678,11 +682,11 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@container style(--custom: 1) { }'
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				expect(children[0].type).toBe(CONTAINER_QUERY)
 
-				const [fn] = children[0].children as Function[]
+				const [fn] = (children[0] as ContainerQuery).children as Function[]
 				expect(fn.type_name).toBe('Function')
 				expect(fn.text).toBe('style(--custom: 1)')
 				expect(fn.value).toBe('--custom: 1')
@@ -692,11 +696,11 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@container mytest style(--custom: 1) { }'
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				expect(children[0].type).toBe(CONTAINER_QUERY)
 
-				const [ident, fn] = children[0].children as [CssNodeCommon, Function]
+				const [ident, fn] = (children[0] as ContainerQuery).children as [CssNodeCommon, Function]
 				expect(ident.type_name).toBe('Identifier')
 				expect(ident.text).toBe('mytest')
 				expect(fn.type_name).toBe('Function')
@@ -710,11 +714,11 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@container sidebar { }'
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				expect(children[0].type).toBe(CONTAINER_QUERY)
 
-				const [ident] = children[0].children
+				const [ident] = (children[0] as ContainerQuery).children
 				expect(ident.type).toBe(IDENTIFIER)
 				expect(ident.text).toBe('sidebar')
 				expect(ident.type_name).toBe('Identifier')
@@ -726,11 +730,11 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@container my-layout { .card { color: red } }'
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				expect(children[0].type).toBe(CONTAINER_QUERY)
 
-				const [ident] = children[0].children
+				const [ident] = (children[0] as ContainerQuery).children
 				expect(ident.type).toBe(IDENTIFIER)
 				expect(ident.text).toBe('my-layout')
 			})
@@ -744,10 +748,10 @@ describe('At-Rule Prelude Nodes', () => {
 				}`
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 				expect(children[0].type).toBe(CONTAINER_QUERY)
 
-				const container = children[0]
+				const container = (children[0] as ContainerQuery)
 				const [style1, not1, style2, style3, and, style4, style5, or, style6] =
 					container.children as Function[]
 				expect(style1.type_name).toBe('Function')
@@ -780,7 +784,7 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(atRule?.type).toBe(AT_RULE)
 				expect(atRule?.name).toBe('supports')
 
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 				expect(children.some((c) => c.type === SUPPORTS_QUERY)).toBe(true)
 
 				const query = children.find((c) => c.type === SUPPORTS_QUERY) as SupportsQuery | undefined
@@ -791,7 +795,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@supports (/* comment */   display: flex   /* test */) { }'
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 				const query = children.find((c) => c.type === SUPPORTS_QUERY) as SupportsQuery | undefined
 
 				expect(query?.value).toBe('display: flex')
@@ -801,7 +805,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@supports (display: flex) and (gap: 1rem) { }'
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				// Should have 2 queries and 1 operator
 				const queries = children.filter((c) => c.type === SUPPORTS_QUERY)
@@ -822,7 +826,7 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(atRule?.name).toBe('layer')
 
 				// Filter out block node to get only prelude children
-				const children = atRule.prelude?.children.filter((c) => c.type !== BLOCK) || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children.filter((c) => c.type !== BLOCK) || []
 				expect(children.length).toBe(1)
 				expect(children[0].type).toBe(LAYER_NAME)
 				expect(children[0].type_name).toBe('Layer')
@@ -835,7 +839,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
 
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 				expect(children.length).toBe(3)
 
 				expect(children[0].type).toBe(LAYER_NAME)
@@ -862,7 +866,7 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(atRule?.name).toBe('keyframes')
 
 				// Filter out block node to get only prelude children
-				const children = atRule.prelude?.children.filter((c) => c.type !== BLOCK) || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children.filter((c) => c.type !== BLOCK) || []
 				expect(children.length).toBe(1)
 				expect(children[0].type).toBe(IDENTIFIER)
 				expect(children[0].text).toBe('slidein')
@@ -879,7 +883,7 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(atRule?.name).toBe('property')
 
 				// Filter out block node to get only prelude children
-				const children = atRule.prelude?.children.filter((c) => c.type !== BLOCK) || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children.filter((c) => c.type !== BLOCK) || []
 				expect(children.length).toBe(1)
 				expect(children[0].type).toBe(IDENTIFIER)
 				expect(children[0].text).toBe('--my-color')
@@ -897,7 +901,7 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(atRule?.is_vendor_prefixed).toBe(true)
 
 				// Should have identifier prelude like @keyframes
-				const children = atRule.prelude?.children.filter((c) => c.type !== BLOCK) || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children.filter((c) => c.type !== BLOCK) || []
 				expect(children.length).toBe(1)
 				expect(children[0].type).toBe(IDENTIFIER)
 				expect(children[0].text).toBe('slidein')
@@ -912,7 +916,7 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(atRule?.name).toBe('-moz-keyframes')
 				expect(atRule?.is_vendor_prefixed).toBe(true)
 
-				const children = atRule.prelude?.children.filter((c) => c.type !== BLOCK) || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children.filter((c) => c.type !== BLOCK) || []
 				expect(children.length).toBe(1)
 				expect(children[0].type).toBe(IDENTIFIER)
 				expect(children[0].text).toBe('fadein')
@@ -927,7 +931,7 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(atRule?.name).toBe('-o-keyframes')
 				expect(atRule?.is_vendor_prefixed).toBe(true)
 
-				const children = atRule.prelude?.children.filter((c) => c.type !== BLOCK) || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children.filter((c) => c.type !== BLOCK) || []
 				expect(children.length).toBe(1)
 				expect(children[0].type).toBe(IDENTIFIER)
 				expect(children[0].text).toBe('rotate')
@@ -942,7 +946,7 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(atRule?.name).toBe('-webkit-supports')
 				expect(atRule?.is_vendor_prefixed).toBe(true)
 
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 				expect(children.length).toBeGreaterThan(0)
 				expect(children[0].type).toBe(SUPPORTS_QUERY)
 			})
@@ -956,7 +960,7 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(atRule?.name).toBe('-moz-supports')
 				expect(atRule?.is_vendor_prefixed).toBe(true)
 
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 				expect(children.length).toBeGreaterThan(0)
 				expect(children[0].type).toBe(SUPPORTS_QUERY)
 			})
@@ -972,7 +976,7 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(atRule?.name).toBe('font-face')
 
 				// @font-face has no prelude, children should be declarations
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 				if (children.length > 0) {
 					// If parse_values is enabled, there might be declaration children
 					expect(children[0].type).not.toBe(IDENTIFIER)
@@ -1029,14 +1033,14 @@ describe('At-Rule Prelude Nodes', () => {
 				const root = parse('@view-transition { navigation: auto; }')
 				const atRule = root.first_child! as Atrule
 				expect(atRule.name).toBe('view-transition')
-				const children = atRule.prelude?.children ?? []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children ?? []
 				expect(children.length).toBe(0)
 			})
 
 			it('should parse declarations in block', () => {
 				const root = parse('@view-transition { navigation: auto; }')
 				const atRule = root.first_child! as Atrule
-				const block = atRule.first_child
+				const block = atRule.first_child as Block | null
 				expect(block?.type).toBe(BLOCK)
 				expect(block?.children.length).toBeGreaterThan(0)
 			})
@@ -1047,14 +1051,14 @@ describe('At-Rule Prelude Nodes', () => {
 				const root = parse('@starting-style { .foo { color: red; } }')
 				const atRule = root.first_child! as Atrule
 				expect(atRule.name).toBe('starting-style')
-				const children = atRule.prelude?.children ?? []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children ?? []
 				expect(children.length).toBe(0)
 			})
 
 			it('should parse nested rules in block', () => {
 				const root = parse('@starting-style { .foo { color: red; } }')
 				const atRule = root.first_child! as Atrule
-				const block = atRule.first_child
+				const block = atRule.first_child as Block | null
 				expect(block?.type).toBe(BLOCK)
 				expect(block?.children.length).toBeGreaterThan(0)
 			})
@@ -1074,7 +1078,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const root = parse('@page { margin: 1cm; }')
 				const atRule = root.first_child! as Atrule
 				expect(atRule.name).toBe('page')
-				const children = atRule.prelude?.children ?? []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children ?? []
 				expect(children.length).toBe(0)
 			})
 		})
@@ -1095,7 +1099,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const root = parse('@namespace "http://www.w3.org/1999/xhtml";')
 				const atRule = root.first_child! as Atrule
 				expect(atRule.name).toBe('namespace')
-				const children = atRule.prelude?.children ?? []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children ?? []
 				expect(children.length).toBe(1)
 				expect(children[0].type).toBe(URL)
 				expect(children[0].text).toBe('"http://www.w3.org/1999/xhtml"')
@@ -1105,7 +1109,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const root = parse('@namespace url("http://www.w3.org/1999/xhtml");')
 				const atRule = root.first_child! as Atrule
 				expect(atRule.name).toBe('namespace')
-				const children = atRule.prelude?.children ?? []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children ?? []
 				expect(children.length).toBe(1)
 				expect(children[0].type).toBe(URL)
 			})
@@ -1114,7 +1118,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const root = parse('@namespace svg url("http://www.w3.org/2000/svg");')
 				const atRule = root.first_child! as Atrule
 				expect(atRule.name).toBe('namespace')
-				const children = atRule.prelude?.children ?? []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children ?? []
 				expect(children.length).toBe(2)
 				expect(children[0].type).toBe(IDENTIFIER)
 				expect(children[0].text).toBe('svg')
@@ -1124,7 +1128,7 @@ describe('At-Rule Prelude Nodes', () => {
 			it('should parse prefix + string', () => {
 				const root = parse('@namespace svg "http://www.w3.org/2000/svg";')
 				const atRule = root.first_child! as Atrule
-				const children = atRule.prelude?.children ?? []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children ?? []
 				expect(children.length).toBe(2)
 				expect(children[0].type).toBe(IDENTIFIER)
 				expect(children[1].type).toBe(URL)
@@ -1136,7 +1140,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const root = parse('@scope (.parent) { p { color: black; } }')
 				const atRule = root.first_child! as Atrule
 				expect(atRule.name).toBe('scope')
-				const children = atRule.prelude?.children ?? []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children ?? []
 				expect(children.length).toBe(1)
 				expect(children[0].type).toBe(PRELUDE_SELECTORLIST)
 				expect((children[0] as PreludeSelectorList).value).toBe('.parent')
@@ -1145,7 +1149,7 @@ describe('At-Rule Prelude Nodes', () => {
 			it('should parse scope with start and end selectors', () => {
 				const root = parse('@scope (.light) to (.dark) { p { color: black; } }')
 				const atRule = root.first_child! as Atrule
-				const children = atRule.prelude?.children ?? []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children ?? []
 				expect(children.length).toBe(3)
 				expect(children[0].type).toBe(PRELUDE_SELECTORLIST)
 				expect((children[0] as PreludeSelectorList).value).toBe('.light')
@@ -1158,16 +1162,16 @@ describe('At-Rule Prelude Nodes', () => {
 			it('should have no prelude children for bare @scope', () => {
 				const root = parse('@scope { p { color: black; } }')
 				const atRule = root.first_child! as Atrule
-				const children = atRule.prelude?.children ?? []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children ?? []
 				expect(children.length).toBe(0)
 			})
 
 			it('should parse nested rules in block', () => {
 				const root = parse('@scope (.parent) { p { color: black; } }')
 				const atRule = root.first_child! as Atrule
-				const block = atRule.children.find((c) => c.type === BLOCK)
+				const block = atRule.block
 				expect(block?.type).toBe(BLOCK)
-				expect(block?.children.length).toBeGreaterThan(0)
+				expect((block as Block | undefined)?.children.length).toBeGreaterThan(0)
 			})
 		})
 
@@ -1176,7 +1180,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const root = parse('@custom-media --small (max-width: 30em);')
 				const atRule = root.first_child! as Atrule
 				expect(atRule.name).toBe('custom-media')
-				const children = atRule.prelude?.children ?? []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children ?? []
 				expect(children.length).toBeGreaterThan(1)
 				expect(children[0].type).toBe(IDENTIFIER)
 				expect(children[0].text).toBe('--small')
@@ -1196,7 +1200,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@media screen { }'
 				const ast = parse(css, { parse_atrule_preludes: true })
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				expect(children.some((c) => c.type === MEDIA_QUERY)).toBe(true)
 			})
@@ -1205,7 +1209,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@media screen { }'
 				const ast = parse(css, { parse_atrule_preludes: false })
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				expect(children.some((c) => c.type === MEDIA_QUERY)).toBe(false)
 			})
@@ -1227,7 +1231,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@import url("styles.css");'
 				const ast = parse(css, { parse_atrule_preludes: true })
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				expect(children.length).toBeGreaterThan(0)
 				expect(children[0].type).toBe(URL)
@@ -1238,7 +1242,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@import "styles.css";'
 				const ast = parse(css, { parse_atrule_preludes: true })
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				expect(children.length).toBeGreaterThan(0)
 				expect(children[0].type).toBe(URL)
@@ -1249,7 +1253,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@import url("example.com");'
 				const ast = parse(css, { parse_atrule_preludes: true })
 				const atRule = ast.first_child! as Atrule
-				const url = atRule.prelude?.children[0] as Url | undefined
+				const url = (atRule.prelude as AtrulePrelude | null)?.children[0] as Url | undefined
 
 				expect(url?.type).toBe(URL)
 				expect(url?.text).toBe('url("example.com")')
@@ -1261,7 +1265,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@import "example.com";'
 				const ast = parse(css, { parse_atrule_preludes: true })
 				const atRule = ast.first_child! as Atrule
-				const url = atRule.prelude?.children[0] as Url | undefined
+				const url = (atRule.prelude as AtrulePrelude | null)?.children[0] as Url | undefined
 
 				expect(url?.type).toBe(URL)
 				expect(url?.text).toBe('"example.com"')
@@ -1273,7 +1277,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@import url("styles.css") layer;'
 				const ast = parse(css, { parse_atrule_preludes: true })
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				expect(children.length).toBe(2)
 				expect(children[0].type).toBe(URL)
@@ -1286,7 +1290,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@import url("styles.css") LAYER;'
 				const ast = parse(css, { parse_atrule_preludes: true })
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				expect(children.length).toBe(2)
 				expect(children[0].type).toBe(URL)
@@ -1299,7 +1303,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@import url("styles.css") layer(utilities);'
 				const ast = parse(css, { parse_atrule_preludes: true })
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				expect(children.length).toBe(2)
 				expect(children[0].type).toBe(URL)
@@ -1312,7 +1316,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@import url("styles.css") layer(   utilities   );'
 				const ast = parse(css, { parse_atrule_preludes: true })
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				expect(children[1].type).toBe(LAYER_NAME)
 				expect((children[1] as LayerName).name).toBe('utilities')
@@ -1322,7 +1326,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@import url("styles.css") layer(/* comment */utilities/* test */);'
 				const ast = parse(css, { parse_atrule_preludes: true })
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				expect(children[1].type).toBe(LAYER_NAME)
 				expect((children[1] as LayerName).name).toBe('utilities')
@@ -1332,7 +1336,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@import url("foo.css") layer(/* test */named.nested     );'
 				const ast = parse(css, { parse_atrule_preludes: true })
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				expect(children[1].type).toBe(LAYER_NAME)
 				expect((children[1] as LayerName).name).toBe('named.nested')
@@ -1342,7 +1346,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@import url("styles.css") supports(display: grid);'
 				const ast = parse(css, { parse_atrule_preludes: true })
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				expect(children.length).toBe(2)
 				expect(children[0].type).toBe(URL)
@@ -1354,7 +1358,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@import url("styles.css") screen;'
 				const ast = parse(css, { parse_atrule_preludes: true })
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				expect(children.length).toBe(2)
 				expect(children[0].type).toBe(URL)
@@ -1365,7 +1369,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@import url("styles.css") (min-width: 768px);'
 				const ast = parse(css, { parse_atrule_preludes: true })
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				expect(children.length).toBe(2)
 				expect(children[0].type).toBe(URL)
@@ -1377,7 +1381,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@import url("styles.css") screen and (min-width: 768px);'
 				const ast = parse(css, { parse_atrule_preludes: true })
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				expect(children.length).toBe(2)
 				expect(children[0].type).toBe(URL)
@@ -1388,7 +1392,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@import url("styles.css") layer(base) screen;'
 				const ast = parse(css, { parse_atrule_preludes: true })
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				expect(children.length).toBe(3)
 				expect(children[0].type).toBe(URL)
@@ -1403,7 +1407,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@import url("styles.css") layer(base) supports(display: grid);'
 				const ast = parse(css, { parse_atrule_preludes: true })
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				expect(children.length).toBe(3)
 				expect(children[0].type).toBe(URL)
@@ -1420,7 +1424,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@import url("styles.css") supports(display: grid) screen;'
 				const ast = parse(css, { parse_atrule_preludes: true })
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				expect(children.length).toBe(3)
 				expect(children[0].type).toBe(URL)
@@ -1433,7 +1437,7 @@ describe('At-Rule Prelude Nodes', () => {
 					'@import url("styles.css") layer(base) supports(display: grid) screen and (min-width: 768px);'
 				const ast = parse(css, { parse_atrule_preludes: true })
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				expect(children.length).toBe(4)
 				expect(children[0].type).toBe(URL)
@@ -1446,7 +1450,7 @@ describe('At-Rule Prelude Nodes', () => {
 				const css = '@import url("styles.css") supports((display: grid) and (gap: 1rem));'
 				const ast = parse(css, { parse_atrule_preludes: true })
 				const atRule = ast.first_child! as Atrule
-				const children = atRule.prelude?.children || []
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 				expect(children.length).toBe(2)
 				expect(children[0].type).toBe(URL)
@@ -1605,10 +1609,10 @@ describe('At-Rule Prelude Nodes', () => {
 					const css = '@media screen and (min-width: 768px) { }'
 					const ast = parse(css)
 					const atRule = ast.first_child! as Atrule
-					const children = atRule.prelude?.children || []
+					const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 					// First child should be media query
-					const mediaQuery = children[0]
+					const mediaQuery = (children[0] as ContainerQuery)
 					expect(mediaQuery.type).toBe(MEDIA_QUERY)
 					expect(mediaQuery.text).toBe('screen and (min-width: 768px)')
 					expect(mediaQuery.text.length).toBe(29)
@@ -1618,8 +1622,8 @@ describe('At-Rule Prelude Nodes', () => {
 					const css = '@media screen { }'
 					const ast = parse(css)
 					const atRule = ast.first_child! as Atrule
-					const children = atRule.prelude?.children || []
-					const mediaQuery = children[0]
+					const children = (atRule.prelude as AtrulePrelude | null)?.children || []
+					const mediaQuery = (children[0] as ContainerQuery)
 					const queryChildren = mediaQuery?.children || []
 
 					const mediaType = queryChildren.find((c) => c.type === MEDIA_TYPE)
@@ -1631,8 +1635,8 @@ describe('At-Rule Prelude Nodes', () => {
 					const css = '@media (min-width: 768px) { }'
 					const ast = parse(css)
 					const atRule = ast.first_child! as Atrule
-					const children = atRule.prelude?.children || []
-					const mediaQuery = children[0]
+					const children = (atRule.prelude as AtrulePrelude | null)?.children || []
+					const mediaQuery = (children[0] as ContainerQuery)
 					const queryChildren = mediaQuery?.children || []
 
 					const mediaFeature = queryChildren.find((c) => c.type === MEDIA_FEATURE)
@@ -1644,7 +1648,7 @@ describe('At-Rule Prelude Nodes', () => {
 					const css = '@container sidebar (min-width: 400px) { }'
 					const ast = parse(css)
 					const atRule = ast.first_child! as Atrule
-					const children = atRule.prelude?.children || []
+					const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 					const containerQuery = children.find((c) => c.type === CONTAINER_QUERY)
 					expect(containerQuery?.text).toBe('sidebar (min-width: 400px)')
@@ -1655,7 +1659,7 @@ describe('At-Rule Prelude Nodes', () => {
 					const css = '@supports (display: flex) { }'
 					const ast = parse(css)
 					const atRule = ast.first_child! as Atrule
-					const children = atRule.prelude?.children || []
+					const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 					const supportsQuery = children.find((c) => c.type === SUPPORTS_QUERY)
 					expect(supportsQuery?.text).toBe('(display: flex)')
@@ -1666,7 +1670,7 @@ describe('At-Rule Prelude Nodes', () => {
 					const css = '@layer utilities { }'
 					const ast = parse(css)
 					const atRule = ast.first_child! as Atrule
-					const children = atRule.prelude?.children || []
+					const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 					const layerName = children.find((c) => c.type === LAYER_NAME)
 					expect(layerName?.text).toBe('utilities')
@@ -1677,7 +1681,7 @@ describe('At-Rule Prelude Nodes', () => {
 					const css = '@import url("styles.css") screen;'
 					const ast = parse(css)
 					const atRule = ast.first_child! as Atrule
-					const children = atRule.prelude?.children || []
+					const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 					const importUrl = children.find((c) => c.type === URL)
 					expect(importUrl?.text).toBe('url("styles.css")')
@@ -1688,7 +1692,7 @@ describe('At-Rule Prelude Nodes', () => {
 					const css = '@import "styles.css" layer(utilities);'
 					const ast = parse(css)
 					const atRule = ast.first_child! as Atrule
-					const children = atRule.prelude?.children || []
+					const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 					const importLayer = children.find((c) => c.type === LAYER_NAME)
 					expect(importLayer?.text).toBe('layer(utilities)')
@@ -1699,7 +1703,7 @@ describe('At-Rule Prelude Nodes', () => {
 					const css = '@import url("a.css") supports(display: flex);'
 					const ast = parse(css)
 					const atRule = ast.first_child! as Atrule
-					const children = atRule.prelude?.children || []
+					const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
 					const importSupports = children.find((c) => c.type === SUPPORTS_QUERY)
 					expect(importSupports?.text).toBe('supports(display: flex)')
@@ -1710,8 +1714,8 @@ describe('At-Rule Prelude Nodes', () => {
 					const css = '@media screen and (min-width: 768px) { }'
 					const ast = parse(css)
 					const atRule = ast.first_child! as Atrule
-					const children = atRule.prelude?.children || []
-					const mediaQuery = children[0]
+					const children = (atRule.prelude as AtrulePrelude | null)?.children || []
+					const mediaQuery = (children[0] as ContainerQuery)
 					const queryChildren = mediaQuery?.children || []
 
 					const operator = queryChildren.find((c) => c.type === PRELUDE_OPERATOR)
@@ -2039,21 +2043,21 @@ describe('Case-insensitive at-rule keywords', () => {
 		const atrule = root.first_child as Atrule | null
 		expect(atrule?.name).toBe('media')
 		// Verify the prelude was parsed (operators are case-insensitive)
-		expect(atrule?.children.length).toBeGreaterThan(0)
+		expect((atrule?.prelude as AtrulePrelude | null)?.children.length).toBeGreaterThan(0)
 	})
 
 	it('should parse OR operator in uppercase', () => {
 		const root = parse('@supports (display: grid) OR (display: flex) { }')
 		const atrule = root.first_child as Atrule | null
 		expect(atrule?.name).toBe('supports')
-		expect(atrule?.children.length).toBeGreaterThan(0)
+		expect((atrule?.prelude as AtrulePrelude | null)?.children.length).toBeGreaterThan(0)
 	})
 
 	it('should parse NOT operator in uppercase', () => {
 		const root = parse('@supports NOT (display: grid) { }')
 		const atrule = root.first_child as Atrule | null
 		expect(atrule?.name).toBe('supports')
-		expect(atrule?.children.length).toBeGreaterThan(0)
+		expect((atrule?.prelude as AtrulePrelude | null)?.children.length).toBeGreaterThan(0)
 	})
 })
 
@@ -2094,7 +2098,7 @@ describe('Comment Handling in At-Rule Preludes', () => {
 			const root = parse('@media screen /* comment */ , /* comment */ print { }')
 			const atrule = root.first_child as Atrule | null
 			expect(atrule?.name).toBe('media')
-			const prelude = atrule?.prelude
+			const prelude = atrule?.prelude as AtrulePrelude | null | undefined
 			expect(prelude?.children.length).toBe(2)
 		})
 
@@ -2140,7 +2144,7 @@ describe('Comment Handling in At-Rule Preludes', () => {
 			)
 			const atrule = root.first_child as Atrule | null
 			expect(atrule?.name).toBe('supports')
-			expect(atrule?.prelude?.children.length).toBeGreaterThan(0)
+			expect((atrule?.prelude as AtrulePrelude | null)?.children.length).toBeGreaterThan(0)
 		})
 	})
 
@@ -2149,7 +2153,7 @@ describe('Comment Handling in At-Rule Preludes', () => {
 			const root = parse('@layer foo /* comment */ , /* comment */ bar { }')
 			const atrule = root.first_child as Atrule | null
 			expect(atrule?.name).toBe('layer')
-			const prelude = atrule?.prelude
+			const prelude = atrule?.prelude as AtrulePrelude | null | undefined
 			expect(prelude?.children.length).toBe(2)
 			const [layer1, layer2] = prelude?.children || []
 			expect(layer1?.type).toBe(LAYER_NAME)
@@ -2164,14 +2168,14 @@ describe('Comment Handling in At-Rule Preludes', () => {
 			const root = parse('@import /* comment */ "styles.css";')
 			const atrule = root.first_child as Atrule | null
 			expect(atrule?.name).toBe('import')
-			expect(atrule?.prelude?.children.length).toBeGreaterThan(0)
+			expect((atrule?.prelude as AtrulePrelude | null)?.children.length).toBeGreaterThan(0)
 		})
 
 		it('should parse import with comment before layer', () => {
 			const root = parse('@import "styles.css" /* comment */ layer(base);')
 			const atrule = root.first_child as Atrule | null
 			expect(atrule?.name).toBe('import')
-			expect(atrule?.prelude?.children.length).toBeGreaterThan(0)
+			expect((atrule?.prelude as AtrulePrelude | null)?.children.length).toBeGreaterThan(0)
 		})
 	})
 
@@ -2195,7 +2199,7 @@ newlines */
 and (min-width: 768px) { }`)
 			const atrule = root.first_child as Atrule | null
 			expect(atrule?.name).toBe('media')
-			const mediaQuery = atrule?.prelude?.first_child
+			const mediaQuery = atrule?.prelude?.first_child as MediaQuery | undefined
 			expect(mediaQuery?.type).toBe(MEDIA_QUERY)
 			// Should still parse the media feature after the multiline comment
 			expect(mediaQuery?.children.length).toBeGreaterThan(0)
@@ -2212,7 +2216,7 @@ and (min-width: 768px) { }`)
 			expect(atRule.type).toBe(AT_RULE)
 			expect(atRule.name).toBe('function')
 
-			const children = atRule.prelude?.children
+			const children = (atRule.prelude as AtrulePrelude | null)?.children
 			expect(children?.length).toBe(1)
 			expect(children?.[0].type).toBe(IDENTIFIER)
 			expect(children?.[0].text).toBe('--transparent')
@@ -2223,7 +2227,7 @@ and (min-width: 768px) { }`)
 			const ast = parse(css)
 			const atRule = ast.first_child! as Atrule
 
-			const children = atRule.prelude?.children || []
+			const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 			expect(children.length).toBe(1)
 			expect(children[0].type).toBe(IDENTIFIER)
 			expect(children[0].text).toBe('--my-func')
