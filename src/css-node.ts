@@ -713,7 +713,6 @@ export class CSSNode {
 		return first?.next_sibling ?? undefined // Second child is NODE_SELECTOR_LIST
 	}
 
-
 	// --- Node Cloning ---
 
 	/**

@@ -460,7 +460,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const atRule = ast.first_child! as Atrule
 				const children = atRule.prelude?.children || []
 				const queryChildren = children[0].children
-				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE) as MediaFeature | undefined
+				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE) as
+					| MediaFeature
+					| undefined
 
 				expect(feature?.property).toBe('min-width')
 			})
@@ -496,7 +498,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
 				const queryChildren = atRule.prelude?.children[0].children || []
-				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE) as MediaFeature | undefined
+				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE) as
+					| MediaFeature
+					| undefined
 
 				expect(feature?.property).toBe('orientation')
 				expect(feature?.children.length).toBe(1)
@@ -508,7 +512,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
 				const queryChildren = atRule.prelude?.children[0].children || []
-				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE) as MediaFeature | undefined
+				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE) as
+					| MediaFeature
+					| undefined
 
 				expect(feature?.property).toBe('hover')
 			})
@@ -518,7 +524,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
 				const queryChildren = atRule.prelude?.children[0].children || []
-				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE) as MediaFeature | undefined
+				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE) as
+					| MediaFeature
+					| undefined
 
 				expect(feature?.property).toBe('min-width')
 				expect(feature?.children.length).toBe(1)
@@ -552,7 +560,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
 				const queryChildren = atRule.prelude?.children[0].children || []
-				const range = queryChildren.find((c) => c.type === FEATURE_RANGE) as FeatureRange | undefined
+				const range = queryChildren.find((c) => c.type === FEATURE_RANGE) as
+					| FeatureRange
+					| undefined
 
 				expect(range?.type).toBe(FEATURE_RANGE)
 				expect(range?.name).toBe('width')
@@ -568,7 +578,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
 				const queryChildren = atRule.prelude?.children[0].children || []
-				const range = queryChildren.find((c) => c.type === FEATURE_RANGE) as FeatureRange | undefined
+				const range = queryChildren.find((c) => c.type === FEATURE_RANGE) as
+					| FeatureRange
+					| undefined
 
 				expect(range?.type).toBe(FEATURE_RANGE)
 				expect(range?.name).toBe('width')
@@ -586,7 +598,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
 				const queryChildren = atRule.prelude?.children[0].children || []
-				const range = queryChildren.find((c) => c.type === FEATURE_RANGE) as FeatureRange | undefined
+				const range = queryChildren.find((c) => c.type === FEATURE_RANGE) as
+					| FeatureRange
+					| undefined
 
 				expect(range?.type).toBe(FEATURE_RANGE)
 				expect(range?.name).toBe('width')
@@ -602,7 +616,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
 				const queryChildren = atRule.prelude?.children[0].children || []
-				const range = queryChildren.find((c) => c.type === FEATURE_RANGE) as FeatureRange | undefined
+				const range = queryChildren.find((c) => c.type === FEATURE_RANGE) as
+					| FeatureRange
+					| undefined
 
 				expect(range?.type).toBe(FEATURE_RANGE)
 				expect(range?.name).toBe('width')
@@ -732,7 +748,8 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(children[0].type).toBe(CONTAINER_QUERY)
 
 				const container = children[0]
-				const [style1, not1, style2, style3, and, style4, style5, or, style6] = container.children as Function[]
+				const [style1, not1, style2, style3, and, style4, style5, or, style6] =
+					container.children as Function[]
 				expect(style1.type_name).toBe('Function')
 				expect(style1.name).toBe('style')
 				expect(not1.type_name).toBe('Operator')
