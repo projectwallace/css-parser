@@ -213,13 +213,13 @@ describe('type narrowing — compile-time', () => {
 		}
 	})
 
-	it('is_attribute_selector narrows attr_operator and attr_flags to number', () => {
+	it('is_attribute_selector narrows attr_operator and attr_flags to string | null', () => {
 		const root = parse_selector('[href]')
 		const attr = root.first_child!.first_child!
 		if (is_attribute_selector(attr)) {
 			expectTypeOf(attr).toMatchTypeOf<AttributeSelector>()
-			expectTypeOf(attr.attr_operator).toEqualTypeOf<number>()
-			expectTypeOf(attr.attr_flags).toEqualTypeOf<number>()
+			expectTypeOf(attr.attr_operator).toEqualTypeOf<string | null>()
+			expectTypeOf(attr.attr_flags).toEqualTypeOf<string | null>()
 		}
 	})
 

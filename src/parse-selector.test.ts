@@ -1054,7 +1054,7 @@ describe('Selector Nodes', () => {
 				const root = parse_selector('[type="text" i]')
 				expect(root).not.toBeNull()
 				if (!root) return
-				const attr = root.first_child!.first_child!
+				const attr = root.first_child!.first_child! as AttributeSelector
 				expect(attr.type).toBe(ATTRIBUTE_SELECTOR)
 				expect(attr.text).toBe('[type="text" i]')
 				expect(attr.name).toBe('type')
@@ -1080,7 +1080,7 @@ describe('Selector Nodes', () => {
 				const root = parse_selector('[type="text" s]')
 				expect(root).not.toBeNull()
 				if (!root) return
-				const attr = root.first_child!.first_child!
+				const attr = root.first_child!.first_child! as AttributeSelector
 				expect(attr.type).toBe(ATTRIBUTE_SELECTOR)
 				expect(attr.text).toBe('[type="text" s]')
 				expect(attr.name).toBe('type')
@@ -1091,7 +1091,7 @@ describe('Selector Nodes', () => {
 				const root = parse_selector('[type="text" I]')
 				expect(root).not.toBeNull()
 				if (!root) return
-				const attr = root.first_child!.first_child!
+				const attr = root.first_child!.first_child! as AttributeSelector
 				expect(attr.type).toBe(ATTRIBUTE_SELECTOR)
 				expect(attr.attr_flags).toBe('I')
 			})
@@ -1100,7 +1100,7 @@ describe('Selector Nodes', () => {
 				const root = parse_selector('[type="text"   i]')
 				expect(root).not.toBeNull()
 				if (!root) return
-				const attr = root.first_child!.first_child!
+				const attr = root.first_child!.first_child! as AttributeSelector
 				expect(attr.type).toBe(ATTRIBUTE_SELECTOR)
 				expect(attr.attr_flags).toBe('i')
 			})
@@ -1109,7 +1109,7 @@ describe('Selector Nodes', () => {
 				const root = parse_selector('[type="text"]')
 				expect(root).not.toBeNull()
 				if (!root) return
-				const attr = root.first_child!.first_child!
+				const attr = root.first_child!.first_child! as AttributeSelector
 				expect(attr.type).toBe(ATTRIBUTE_SELECTOR)
 				expect(attr.attr_flags).toBe(null)
 			})
@@ -1118,17 +1118,17 @@ describe('Selector Nodes', () => {
 				// Test with ^= operator
 				const root1 = parse_selector('[class^="btn" i]')
 				if (!root1) throw new Error('Expected root1')
-				expect(root1.first_child!.first_child!.attr_flags).toBe('i')
+				expect((root1.first_child!.first_child! as AttributeSelector).attr_flags).toBe('i')
 
 				// Test with $= operator
 				const root2 = parse_selector('[class$="btn" s]')
 				if (!root2) throw new Error('Expected root2')
-				expect(root2.first_child!.first_child!.attr_flags).toBe('s')
+				expect((root2.first_child!.first_child! as AttributeSelector).attr_flags).toBe('s')
 
 				// Test with ~= operator
 				const root3 = parse_selector('[class~="active" i]')
 				if (!root3) throw new Error('Expected root3')
-				expect(root3.first_child!.first_child!.attr_flags).toBe('i')
+				expect((root3.first_child!.first_child! as AttributeSelector).attr_flags).toBe('i')
 			})
 		})
 

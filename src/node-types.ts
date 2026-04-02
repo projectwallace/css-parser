@@ -295,20 +295,11 @@ export interface AttributeSelector extends CssNodeCommon {
 	readonly type: typeof ATTRIBUTE_SELECTOR
 	/** Attribute name, e.g. "href" from "[href]" */
 	readonly name: string
-	/** One of the ATTR_OPERATOR_* constants */
-	readonly attr_operator: number
-	/** One of the ATTR_FLAG_* constants */
-	readonly attr_flags: number
-	clone(
-		options?: CloneOptions,
-	): PlainCSSNode & {
-		type: typeof ATTRIBUTE_SELECTOR
-		name: string
-		/** Operator as a string, e.g. "=", "~=", "|=" */
-		attr_operator: string
-		/** Flags as a string, e.g. "i", "s", or "" */
-		attr_flags: string
-	}
+	/** Operator string, e.g. "=", "~=", "|="; null if no operator ([attr] form) */
+	readonly attr_operator: string | null
+	/** Flag character, e.g. "i", "s"; null if no flag */
+	readonly attr_flags: string | null
+	clone(options?: CloneOptions): ToPlain<AttributeSelector>
 }
 
 export interface PseudoClassSelector extends CssNodeCommon {
