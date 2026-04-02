@@ -148,7 +148,7 @@ describe('type narrowing — compile-time', () => {
 		const first = root.first_child!
 		if (is_rule(first)) {
 			expectTypeOf(first).toMatchTypeOf<Rule>()
-			expectTypeOf(first.prelude).toMatchTypeOf<SelectorList | Selector | null>()
+			expectTypeOf(first.prelude).toMatchTypeOf<SelectorList | Raw | null>()
 			expectTypeOf(first.block).toMatchTypeOf<BlockNodeAlias | null>()
 		}
 	})
@@ -185,24 +185,22 @@ describe('type narrowing — compile-time', () => {
 		}
 	})
 
-	it('is_dimension narrows value to number, unit to string, value_as_number to number', () => {
+	it('is_dimension narrows value to number and unit to string', () => {
 		const decl = parse_declaration('width: 100px')
 		const dim = decl.first_child!.first_child!
 		if (is_dimension(dim)) {
 			expectTypeOf(dim).toMatchTypeOf<Dimension>()
 			expectTypeOf(dim.value).toMatchTypeOf<number>()
 			expectTypeOf(dim.unit).toMatchTypeOf<string>()
-			expectTypeOf(dim.value_as_number).toMatchTypeOf<number>()
 		}
 	})
 
-	it('is_number narrows value to number and value_as_number to number', () => {
+	it('is_number narrows value to number', () => {
 		const decl = parse_declaration('z-index: 42')
 		const num = decl.first_child!.first_child!
 		if (is_number(num)) {
 			expectTypeOf(num).toMatchTypeOf<Number>()
 			expectTypeOf(num.value).toMatchTypeOf<number>()
-			expectTypeOf(num.value_as_number).toMatchTypeOf<number>()
 		}
 	})
 

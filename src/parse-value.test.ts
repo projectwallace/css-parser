@@ -744,7 +744,6 @@ describe('Value Node Types', () => {
 
 				expect(decl?.first_child!.children).toHaveLength(1)
 				expect(decl?.first_child!.children[0].type).toBe(URL)
-				expect((decl?.first_child!.children[0] as Url).name).toBe('url')
 				expect(decl?.first_child!.children[0].children).toHaveLength(1)
 				expect(decl?.first_child!.children[0].children[0].type).toBe(STRING)
 				expect(decl?.first_child!.children[0].children[0].text).toBe('"image.png"')
@@ -758,7 +757,6 @@ describe('Value Node Types', () => {
 				const func = decl?.first_child!.children[0] as Url | undefined
 
 				expect(func?.type).toBe(URL)
-				expect(func?.name).toBe('url')
 
 				// URL function should not parse children - content is available via node.value
 				expect(func?.has_children).toBe(false)
@@ -784,7 +782,6 @@ describe('Value Node Types', () => {
 
 				expect(decl?.first_child!.children).toHaveLength(1)
 				expect(decl?.first_child!.children[0].type).toBe(URL)
-				expect((decl?.first_child!.children[0] as Url).name).toBe('url')
 				expect(decl?.first_child!.children[0].children).toHaveLength(1)
 				expect(decl?.first_child!.children[0].children[0].type).toBe(STRING)
 				expect(decl?.first_child!.children[0].children[0].text).toBe("'image.png'")
@@ -803,8 +800,7 @@ describe('Value Node Types', () => {
 					const func = decl?.first_child!.children[0] as Url | undefined
 
 					expect(func?.type).toBe(URL)
-					expect(func?.name).toBe('url')
-					expect(func?.value).toBe(input)
+						expect(func?.value).toBe(input)
 				})
 
 				test('does not break parsing declarations coming after', () => {
@@ -830,7 +826,6 @@ describe('Value Node Types', () => {
 				const func = decl?.first_child!.children[0] as Url | undefined
 
 				expect(func?.type).toBe(URL)
-				expect(func?.name).toBe('url')
 				expect(func?.has_children).toBe(false)
 				expect(func?.value).toBe('data:image/svg+xml,<svg></svg>')
 			})
@@ -840,7 +835,6 @@ describe('Value Node Types', () => {
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				expect(decl?.first_child!.children.length).toBeGreaterThan(1)
 				expect(decl?.first_child!.children[0].type).toBe(URL)
-				expect((decl?.first_child!.children[0] as Url).name).toBe('url')
 				expect(decl?.first_child!.children[1].type).toBe(IDENTIFIER)
 				expect(decl?.first_child!.children[1].text).toBe('no-repeat')
 			})
@@ -967,14 +961,14 @@ describe('Value Node Types', () => {
 		})
 	})
 
-	describe('value_as_number getter', () => {
+	describe('numeric value getter', () => {
 		it('should return number for NUMBER nodes', () => {
 			const root = parse('div { opacity: 0.5; }')
 			const decl = root.first_child?.first_child?.next_sibling?.first_child
 			const numberNode = decl?.first_child!.children[0] as Number | undefined
 
 			expect(numberNode?.type).toBe(NUMBER)
-			expect(numberNode?.value_as_number).toBe(0.5)
+			expect(numberNode?.value).toBe(0.5)
 		})
 
 		it('should return number for DIMENSION nodes', () => {
@@ -983,7 +977,7 @@ describe('Value Node Types', () => {
 			const dimNode = decl?.first_child!.children[0] as Dimension | undefined
 
 			expect(dimNode?.type).toBe(DIMENSION)
-			expect(dimNode?.value_as_number).toBe(100)
+			expect(dimNode?.value).toBe(100)
 		})
 
 		it('should handle negative numbers', () => {
@@ -992,7 +986,7 @@ describe('Value Node Types', () => {
 			const dimNode = decl?.first_child!.children[0] as Dimension | undefined
 
 			expect(dimNode?.type).toBe(DIMENSION)
-			expect(dimNode?.value_as_number).toBe(-10)
+			expect(dimNode?.value).toBe(-10)
 		})
 
 		it('should handle zero', () => {
@@ -1001,7 +995,7 @@ describe('Value Node Types', () => {
 			const numberNode = decl?.first_child!.children[0] as Number | undefined
 
 			expect(numberNode?.type).toBe(NUMBER)
-			expect(numberNode?.value_as_number).toBe(0)
+			expect(numberNode?.value).toBe(0)
 		})
 
 		it('should handle decimal numbers', () => {
@@ -1010,7 +1004,7 @@ describe('Value Node Types', () => {
 			const numberNode = decl?.first_child!.children[0] as Number | undefined
 
 			expect(numberNode?.type).toBe(NUMBER)
-			expect(numberNode?.value_as_number).toBe(1.5)
+			expect(numberNode?.value).toBe(1.5)
 		})
 
 		it('should handle percentage dimensions', () => {
@@ -1019,36 +1013,10 @@ describe('Value Node Types', () => {
 			const dimNode = decl?.first_child!.children[0] as Dimension | undefined
 
 			expect(dimNode?.type).toBe(DIMENSION)
-			expect(dimNode?.value_as_number).toBe(50)
+			expect(dimNode?.value).toBe(50)
 			expect(dimNode?.unit).toBe('%')
 		})
 
-		it('should return null for IDENTIFIER nodes', () => {
-			const root = parse('div { color: red; }')
-			const decl = root.first_child?.first_child?.next_sibling?.first_child
-			const identNode = decl?.first_child!.children[0] as unknown as { value_as_number: number | null } | undefined
-
-			expect((identNode as any)?.type).toBe(IDENTIFIER)
-			expect(identNode?.value_as_number).toBeNull()
-		})
-
-		it('should return null for STRING nodes', () => {
-			const root = parse('div { content: "hello"; }')
-			const decl = root.first_child?.first_child?.next_sibling?.first_child
-			const stringNode = decl?.first_child!.children[0] as unknown as { value_as_number: number | null } | undefined
-
-			expect((stringNode as any)?.type).toBe(STRING)
-			expect(stringNode?.value_as_number).toBeNull()
-		})
-
-		it('should return null for FUNCTION nodes', () => {
-			const root = parse('div { width: calc(100% - 20px); }')
-			const decl = root.first_child?.first_child?.next_sibling?.first_child
-			const funcNode = decl?.first_child!.children[0] as unknown as { value_as_number: number | null } | undefined
-
-			expect((funcNode as any)?.type).toBe(FUNCTION)
-			expect(funcNode?.value_as_number).toBeNull()
-		})
 	})
 
 	describe('Case-insensitive function names', () => {

@@ -2784,7 +2784,6 @@ describe('Core Nodes', () => {
 			// Verify the value is parsed into nodes
 			const urlNode = declaration.first_child!.first_child! as Url
 			expect(urlNode.type).toBe(URL)
-			expect(urlNode.name).toBe('url')
 
 			// Verify the URL node text (full url(...) including function name and parens)
 			const expectedUrlText = `url("data:image/svg+xml,${longSvg}")`

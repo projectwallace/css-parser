@@ -713,41 +713,42 @@ describe('CSSNode', () => {
 			})
 		})
 
-		describe('selector_list helper (NODE_SELECTOR_PSEUDO_CLASS)', () => {
-			test('returns selector list for :is()', () => {
+		describe('functional pseudo-class children', () => {
+			test('first_child is selector list for :is()', () => {
 				const result = parse_selector(':is(.foo, #bar)')
 				const selector = result.first_child as Selector | null
 				const pseudo = selector?.first_child as PseudoClassSelector | null
 
 				expect(pseudo?.type).toBe(PSEUDO_CLASS_SELECTOR)
-				expect(pseudo?.selector_list).not.toBeUndefined()
-				expect(pseudo?.selector_list?.type).toBe(SELECTOR_LIST)
-				expect(pseudo?.selector_list?.text).toBe('.foo, #bar')
+				expect(pseudo?.first_child).not.toBeNull()
+				expect(pseudo?.first_child?.type).toBe(SELECTOR_LIST)
+				expect(pseudo?.first_child?.text).toBe('.foo, #bar')
 			})
 
-			test('returns selector list for :nth-child(of)', () => {
+			test('first_child is NthOfSelector for :nth-child(of)', () => {
 				const result = parse_selector(':nth-child(2n of .foo)')
 				const selector = result.first_child as Selector | null
 				const pseudo = selector?.first_child as PseudoClassSelector | null
+				const nthOf = pseudo?.first_child as NthOfSelector | null
 
-				expect(pseudo?.selector_list).not.toBeUndefined()
-				expect(pseudo?.selector_list?.text).toBe('.foo')
+				expect(nthOf?.selector).not.toBeNull()
+				expect(nthOf?.selector?.text).toBe('.foo')
 			})
 
-			test('returns null for pseudo-classes without selectors', () => {
+			test('first_child is null for pseudo-classes without selectors', () => {
 				const result = parse_selector(':hover')
 				const selector = result.first_child as Selector | null
 				const pseudo = selector?.first_child as PseudoClassSelector | null
 
-				expect(pseudo?.selector_list).toBeUndefined()
+				expect(pseudo?.first_child).toBeNull()
 			})
 
-			test('returns null for :nth-child without "of"', () => {
+			test('first_child is NthSelector (no NthOfSelector) for :nth-child without "of"', () => {
 				const result = parse_selector(':nth-child(2n)')
 				const selector = result.first_child as Selector | null
 				const pseudo = selector?.first_child as PseudoClassSelector | null
 
-				expect(pseudo?.selector_list).toBeUndefined()
+				expect(pseudo?.first_child?.type).toBe(NTH_SELECTOR)
 			})
 
 			test('works with :not()', () => {
@@ -755,8 +756,8 @@ describe('CSSNode', () => {
 				const selector = result.first_child as Selector | null
 				const pseudo = selector?.first_child as PseudoClassSelector | null
 
-				expect(pseudo?.selector_list).not.toBeUndefined()
-				expect(pseudo?.selector_list?.text).toBe('.excluded')
+				expect(pseudo?.first_child).not.toBeNull()
+				expect(pseudo?.first_child?.text).toBe('.excluded')
 			})
 
 			test('works with :has()', () => {
@@ -764,8 +765,8 @@ describe('CSSNode', () => {
 				const selector = result.first_child as Selector | null
 				const pseudo = selector?.first_child as PseudoClassSelector | null
 
-				expect(pseudo?.selector_list).not.toBeUndefined()
-				expect(pseudo?.selector_list?.text).toBe('> .child')
+				expect(pseudo?.first_child).not.toBeNull()
+				expect(pseudo?.first_child?.text).toBe('> .child')
 			})
 
 			test('works with :where()', () => {
@@ -773,17 +774,18 @@ describe('CSSNode', () => {
 				const selector = result.first_child as Selector | null
 				const pseudo = selector?.first_child as PseudoClassSelector | null
 
-				expect(pseudo?.selector_list).not.toBeUndefined()
-				expect(pseudo?.selector_list?.text).toBe('article, section')
+				expect(pseudo?.first_child).not.toBeNull()
+				expect(pseudo?.first_child?.text).toBe('article, section')
 			})
 
 			test('complex :nth-child with multiple selectors', () => {
 				const result = parse_selector(':nth-child(3n+2 of .item, .element, #special)')
 				const selector = result.first_child as Selector | null
 				const pseudo = selector?.first_child as PseudoClassSelector | null
+				const nthOf = pseudo?.first_child as NthOfSelector | null
 
-				expect(pseudo?.selector_list).not.toBeUndefined()
-				expect(pseudo?.selector_list?.text).toBe('.item, .element, #special')
+				expect(nthOf?.selector).not.toBeNull()
+				expect(nthOf?.selector?.text).toBe('.item, .element, #special')
 			})
 		})
 	})

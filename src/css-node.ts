@@ -359,18 +359,6 @@ export class CSSNode {
 		return this.source.substring(start, start + length)
 	}
 
-	/** Get the numeric value for NUMBER and DIMENSION nodes, or null for other node types */
-	get value_as_number(): number | null {
-		let { text, type } = this
-		if (type === NUMBER) {
-			return Number.parseFloat(text)
-		}
-		if (type === DIMENSION) {
-			return parse_dimension(text).value
-		}
-		return null
-	}
-
 	/**
 	 * Get the prelude node:
 	 * - For at-rules: AT_RULE_PRELUDE wrapper containing structured prelude children (media queries, layer names, etc.)
@@ -725,31 +713,6 @@ export class CSSNode {
 		return first?.next_sibling ?? undefined // Second child is NODE_SELECTOR_LIST
 	}
 
-	// --- Pseudo-Class Selector List Helper ---
-
-	/**
-	 * Get selector list from pseudo-class functions
-	 * Works for :is(.a), :not(.b), :has(.c), :where(.d), :nth-child(2n of .e)
-	 */
-	get selector_list(): CSSNode | undefined {
-		if (this.type !== PSEUDO_CLASS_SELECTOR) return undefined
-
-		let child = this.first_child
-		if (!child) return undefined
-
-		// For simple cases (:is, :not, :where, :has), first_child is the selector list
-		if (child.type === SELECTOR_LIST) {
-			return child
-		}
-
-		// For :nth-child(of) cases, need to look inside NODE_SELECTOR_NTH_OF
-		if (child.type === NTH_OF_SELECTOR) {
-			// Use the convenience getter we just added
-			return child.selector
-		}
-
-		return undefined
-	}
 
 	// --- Node Cloning ---
 

@@ -102,8 +102,8 @@ export interface StyleSheet extends CssNodeCommon {
 export interface Rule extends CssNodeCommon {
 	readonly type: typeof STYLE_RULE
 	readonly name: string
-	/** SELECTOR_LIST (parse_selectors=true) or SELECTOR, or null */
-	readonly prelude: SelectorList | Selector | null
+	/** SELECTOR_LIST (parse_selectors=true), RAW (parse_selectors=false), or null */
+	readonly prelude: SelectorList | Raw | null
 	readonly block: Block | null
 	readonly has_prelude: boolean
 	readonly has_block: boolean
@@ -126,8 +126,8 @@ export interface Declaration extends CssNodeCommon {
 	readonly type: typeof DECLARATION
 	/** Property name, e.g. "color" */
 	readonly property: string
-	/** VALUE node (parse_values=true), raw string, or null */
-	readonly value: Value | string | null
+	/** VALUE node (parse_values=true), RAW node (parse_values=false), or null */
+	readonly value: Value | Raw | null
 	readonly is_important: boolean
 	readonly is_browserhack: boolean
 }
@@ -165,13 +165,11 @@ export interface Identifier extends CssNodeCommon {
 export interface Number extends CssNodeCommon {
 	readonly type: typeof NUMBER
 	readonly value: number
-	readonly value_as_number: number
 }
 
 export interface Dimension extends CssNodeCommon {
 	readonly type: typeof DIMENSION
 	readonly value: number
-	readonly value_as_number: number
 	/** Unit string, e.g. "px", "%" */
 	readonly unit: string
 }
@@ -204,8 +202,6 @@ export interface Parenthesis extends CssNodeCommon {
 
 export interface Url extends CssNodeCommon {
 	readonly type: typeof URL
-	/** Always "url" */
-	readonly name: string
 	/** URL content, e.g. '"image.png"' (with quotes) or 'mycursor.cur' (unquoted) */
 	readonly value: string | null
 }
@@ -254,8 +250,6 @@ export interface PseudoClassSelector extends CssNodeCommon {
 	readonly type: typeof PSEUDO_CLASS_SELECTOR
 	/** Pseudo-class name without colon, e.g. "hover" */
 	readonly name: string
-	/** Selector list for functional pseudo-classes like :is(), :not(), :has() */
-	readonly selector_list: SelectorList | undefined
 }
 
 export interface PseudoElementSelector extends CssNodeCommon {
@@ -266,13 +260,14 @@ export interface PseudoElementSelector extends CssNodeCommon {
 
 export interface Combinator extends CssNodeCommon {
 	readonly type: typeof COMBINATOR
+	/** Combinator character(s), e.g. " ", ">", "~", "+", "||", "/deep/" */
 	readonly name: string
 }
 
 export interface UniversalSelector extends CssNodeCommon {
 	readonly type: typeof UNIVERSAL_SELECTOR
-	/** Namespace qualifier (e.g. 'ns' in 'ns|*'), undefined if no namespace */
-	readonly name: string | undefined
+	/** Namespace qualifier (e.g. 'ns' in 'ns|*'), null if no namespace */
+	readonly name: string | null
 }
 
 export interface NestingSelector extends CssNodeCommon {
@@ -288,9 +283,9 @@ export interface NthSelector extends CssNodeCommon {
 export interface NthOfSelector extends CssNodeCommon {
 	readonly type: typeof NTH_OF_SELECTOR
 	/** The An+B formula node */
-	readonly nth: NthSelector | undefined
+	readonly nth: NthSelector | null
 	/** The selector list from :nth-child(An+B of <selector>) */
-	readonly selector: SelectorList | undefined
+	readonly selector: SelectorList | null
 }
 
 export interface LangSelector extends CssNodeCommon {
