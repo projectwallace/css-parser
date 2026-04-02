@@ -44,7 +44,7 @@ import {
 } from './string-utils'
 import { trim_boundaries, skip_whitespace_and_comments_forward } from './parse-utils'
 import { CSSNode } from './css-node'
-import type { AnyCssNode } from './node-types'
+import type { AnyCss } from './node-types'
 
 /** @internal */
 export class AtRulePreludeParser {
@@ -990,7 +990,7 @@ export class AtRulePreludeParser {
  * @param prelude - The at-rule prelude to parse (e.g., "(min-width: 768px)", "utilities")
  * @returns An array of CSSNode objects representing the parsed prelude
  */
-export function parse_atrule_prelude(at_rule_name: string, prelude: string): AnyCssNode[] {
+export function parse_atrule_prelude(at_rule_name: string, prelude: string): AnyCss[] {
 	// Create an arena for the prelude nodes
 	const arena = new CSSDataArena(CSSDataArena.capacity_for_source(prelude.length))
 
@@ -1001,5 +1001,5 @@ export function parse_atrule_prelude(at_rule_name: string, prelude: string): Any
 	const node_indices = prelude_parser.parse_prelude(at_rule_name, 0, prelude.length)
 
 	// Wrap each node index in a CSSNode
-	return node_indices.map((index) => new CSSNode(arena, prelude, index) as AnyCssNode)
+	return node_indices.map((index) => new CSSNode(arena, prelude, index) as AnyCss)
 }

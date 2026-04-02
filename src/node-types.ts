@@ -3,7 +3,7 @@
 // Design: every subtype extends CssNodeCommon (an internal interface with only
 // universal properties) rather than CSSNode directly. This means only the
 // properties that are meaningful for a given node type appear in autocomplete —
-// irrelevant getters like `unit` on a DeclarationNode are simply absent.
+// irrelevant getters like `unit` on a Declaration are simply absent.
 //
 // CSSNode structurally satisfies CssNodeCommon, so all type predicates accept
 // plain CSSNode instances at call sites without any cast needed:
@@ -95,61 +95,61 @@ export interface CssNodeCommon {
 // Structural nodes
 // ---------------------------------------------------------------------------
 
-export interface StyleSheetNode extends CssNodeCommon {
+export interface StyleSheet extends CssNodeCommon {
 	readonly type: typeof STYLESHEET
 }
 
-export interface RuleNode extends CssNodeCommon {
+export interface Rule extends CssNodeCommon {
 	readonly type: typeof STYLE_RULE
 	readonly name: string
 	/** SELECTOR_LIST (parse_selectors=true) or SELECTOR, or null */
-	readonly prelude: SelectorListNode | SelectorNode | null
-	readonly block: BlockNode | null
+	readonly prelude: SelectorList | Selector | null
+	readonly block: Block | null
 	readonly has_prelude: boolean
 	readonly has_block: boolean
 	readonly has_declarations: boolean
 }
 
-export interface AtruleNode extends CssNodeCommon {
+export interface Atrule extends CssNodeCommon {
 	readonly type: typeof AT_RULE
 	/** At-rule keyword, e.g. "media", "keyframes" */
 	readonly name: string
 	/** AT_RULE_PRELUDE (parse_atrule_preludes=true) or RAW, or null */
-	readonly prelude: AtrulePreludeNode | RawNode | null
-	readonly block: BlockNode | null
+	readonly prelude: AtrulePrelude | Raw | null
+	readonly block: Block | null
 	readonly has_prelude: boolean
 	readonly has_block: boolean
 	readonly has_declarations: boolean
 }
 
-export interface DeclarationNode extends CssNodeCommon {
+export interface Declaration extends CssNodeCommon {
 	readonly type: typeof DECLARATION
 	/** Property name, e.g. "color" */
 	readonly property: string
 	/** VALUE node (parse_values=true), raw string, or null */
-	readonly value: ValueNode | string | null
+	readonly value: Value | string | null
 	readonly is_important: boolean
 	readonly is_browserhack: boolean
 }
 
-export interface SelectorNode extends CssNodeCommon {
+export interface Selector extends CssNodeCommon {
 	readonly type: typeof SELECTOR
 }
 
-export interface SelectorListNode extends CssNodeCommon {
+export interface SelectorList extends CssNodeCommon {
 	readonly type: typeof SELECTOR_LIST
 }
 
-export interface BlockNode extends CssNodeCommon {
+export interface Block extends CssNodeCommon {
 	readonly type: typeof BLOCK
 	readonly is_empty: boolean
 }
 
-export interface CommentNode extends CssNodeCommon {
+export interface Comment extends CssNodeCommon {
 	readonly type: typeof COMMENT
 }
 
-export interface RawNode extends CssNodeCommon {
+export interface Raw extends CssNodeCommon {
 	readonly type: typeof RAW
 }
 
@@ -157,18 +157,18 @@ export interface RawNode extends CssNodeCommon {
 // Value nodes
 // ---------------------------------------------------------------------------
 
-export interface IdentifierNode extends CssNodeCommon {
+export interface Identifier extends CssNodeCommon {
 	readonly type: typeof IDENTIFIER
 	readonly name: string
 }
 
-export interface NumberNode extends CssNodeCommon {
+export interface Number extends CssNodeCommon {
 	readonly type: typeof NUMBER
 	readonly value: number
 	readonly value_as_number: number
 }
 
-export interface DimensionNode extends CssNodeCommon {
+export interface Dimension extends CssNodeCommon {
 	readonly type: typeof DIMENSION
 	readonly value: number
 	readonly value_as_number: number
@@ -176,15 +176,15 @@ export interface DimensionNode extends CssNodeCommon {
 	readonly unit: string
 }
 
-export interface StringNode extends CssNodeCommon {
+export interface String extends CssNodeCommon {
 	readonly type: typeof STRING
 }
 
-export interface HashNode extends CssNodeCommon {
+export interface Hash extends CssNodeCommon {
 	readonly type: typeof HASH
 }
 
-export interface FunctionNode extends CssNodeCommon {
+export interface Function extends CssNodeCommon {
 	readonly type: typeof FUNCTION
 	/** Function name, e.g. "rgb", "calc" */
 	readonly name: string
@@ -192,17 +192,17 @@ export interface FunctionNode extends CssNodeCommon {
 	readonly value: string | null
 }
 
-export interface OperatorNode extends CssNodeCommon {
+export interface Operator extends CssNodeCommon {
 	readonly type: typeof OPERATOR
 	/** The operator character(s), e.g. ",", "+", "-" */
 	readonly value: string
 }
 
-export interface ParenthesisNode extends CssNodeCommon {
+export interface Parenthesis extends CssNodeCommon {
 	readonly type: typeof PARENTHESIS
 }
 
-export interface UrlNode extends CssNodeCommon {
+export interface Url extends CssNodeCommon {
 	readonly type: typeof URL
 	/** Always "url" */
 	readonly name: string
@@ -210,11 +210,11 @@ export interface UrlNode extends CssNodeCommon {
 	readonly value: string | null
 }
 
-export interface UnicodeRangeNode extends CssNodeCommon {
+export interface UnicodeRange extends CssNodeCommon {
 	readonly type: typeof UNICODE_RANGE
 }
 
-export interface ValueNode extends CssNodeCommon {
+export interface Value extends CssNodeCommon {
 	readonly type: typeof VALUE
 }
 
@@ -222,25 +222,25 @@ export interface ValueNode extends CssNodeCommon {
 // Selector nodes
 // ---------------------------------------------------------------------------
 
-export interface TypeSelectorNode extends CssNodeCommon {
+export interface TypeSelector extends CssNodeCommon {
 	readonly type: typeof TYPE_SELECTOR
 	/** Element type, e.g. "div", "span" */
 	readonly name: string
 }
 
-export interface ClassSelectorNode extends CssNodeCommon {
+export interface ClassSelector extends CssNodeCommon {
 	readonly type: typeof CLASS_SELECTOR
 	/** Class name without dot, e.g. "foo" from ".foo" */
 	readonly name: string
 }
 
-export interface IdSelectorNode extends CssNodeCommon {
+export interface IdSelector extends CssNodeCommon {
 	readonly type: typeof ID_SELECTOR
 	/** Id without hash, e.g. "bar" from "#bar" */
 	readonly name: string
 }
 
-export interface AttributeSelectorNode extends CssNodeCommon {
+export interface AttributeSelector extends CssNodeCommon {
 	readonly type: typeof ATTRIBUTE_SELECTOR
 	/** Attribute name, e.g. "href" from "[href]" */
 	readonly name: string
@@ -250,50 +250,50 @@ export interface AttributeSelectorNode extends CssNodeCommon {
 	readonly attr_flags: number
 }
 
-export interface PseudoClassSelectorNode extends CssNodeCommon {
+export interface PseudoClassSelector extends CssNodeCommon {
 	readonly type: typeof PSEUDO_CLASS_SELECTOR
 	/** Pseudo-class name without colon, e.g. "hover" */
 	readonly name: string
 	/** Selector list for functional pseudo-classes like :is(), :not(), :has() */
-	readonly selector_list: SelectorListNode | undefined
+	readonly selector_list: SelectorList | undefined
 }
 
-export interface PseudoElementSelectorNode extends CssNodeCommon {
+export interface PseudoElementSelector extends CssNodeCommon {
 	readonly type: typeof PSEUDO_ELEMENT_SELECTOR
 	/** Pseudo-element name without colons, e.g. "before" */
 	readonly name: string
 }
 
-export interface CombinatorNode extends CssNodeCommon {
+export interface Combinator extends CssNodeCommon {
 	readonly type: typeof COMBINATOR
 	readonly name: string
 }
 
-export interface UniversalSelectorNode extends CssNodeCommon {
+export interface UniversalSelector extends CssNodeCommon {
 	readonly type: typeof UNIVERSAL_SELECTOR
 	/** Namespace qualifier (e.g. 'ns' in 'ns|*'), undefined if no namespace */
 	readonly name: string | undefined
 }
 
-export interface NestingSelectorNode extends CssNodeCommon {
+export interface NestingSelector extends CssNodeCommon {
 	readonly type: typeof NESTING_SELECTOR
 }
 
-export interface NthSelectorNode extends CssNodeCommon {
+export interface NthSelector extends CssNodeCommon {
 	readonly type: typeof NTH_SELECTOR
 	readonly nth_a: string | undefined
 	readonly nth_b: string | undefined
 }
 
-export interface NthOfSelectorNode extends CssNodeCommon {
+export interface NthOfSelector extends CssNodeCommon {
 	readonly type: typeof NTH_OF_SELECTOR
 	/** The An+B formula node */
-	readonly nth: NthSelectorNode | undefined
+	readonly nth: NthSelector | undefined
 	/** The selector list from :nth-child(An+B of <selector>) */
-	readonly selector: SelectorListNode | undefined
+	readonly selector: SelectorList | undefined
 }
 
-export interface LangSelectorNode extends CssNodeCommon {
+export interface LangSelector extends CssNodeCommon {
 	readonly type: typeof LANG_SELECTOR
 }
 
@@ -301,112 +301,112 @@ export interface LangSelectorNode extends CssNodeCommon {
 // At-rule prelude nodes
 // ---------------------------------------------------------------------------
 
-export interface AtrulePreludeNode extends CssNodeCommon {
+export interface AtrulePrelude extends CssNodeCommon {
 	readonly type: typeof AT_RULE_PRELUDE
 }
 
-export interface MediaQueryNode extends CssNodeCommon {
+export interface MediaQuery extends CssNodeCommon {
 	readonly type: typeof MEDIA_QUERY
 }
 
-export interface MediaFeatureNode extends CssNodeCommon {
+export interface MediaFeature extends CssNodeCommon {
 	readonly type: typeof MEDIA_FEATURE
 	/** Feature name, e.g. "min-width" */
 	readonly property: string
 }
 
-export interface MediaTypeNode extends CssNodeCommon {
+export interface MediaType extends CssNodeCommon {
 	readonly type: typeof MEDIA_TYPE
 	/** Media type text, e.g. "screen", "print" */
 	readonly value: string
 }
 
-export interface ContainerQueryNode extends CssNodeCommon {
+export interface ContainerQuery extends CssNodeCommon {
 	readonly type: typeof CONTAINER_QUERY
 }
 
-export interface SupportsQueryNode extends CssNodeCommon {
+export interface SupportsQuery extends CssNodeCommon {
 	readonly type: typeof SUPPORTS_QUERY
 	/** The supports condition text, e.g. "display: flex" from "supports(display: flex)" */
 	readonly value: string
 }
 
-export interface LayerNameNode extends CssNodeCommon {
+export interface LayerName extends CssNodeCommon {
 	readonly type: typeof LAYER_NAME
 	readonly name: string
 	/** Alias for name — the layer name string, e.g. "base" from "layer(base)" */
 	readonly value: string
 }
 
-export interface PreludeSelectorListNode extends CssNodeCommon {
+export interface PreludeSelectorList extends CssNodeCommon {
 	readonly type: typeof PRELUDE_SELECTORLIST
 	/** The selector text inside the parentheses, e.g. ".parent" from "(.parent)" */
 	readonly value: string
 }
 
-export interface PreludeOperatorNode extends CssNodeCommon {
+export interface PreludeOperator extends CssNodeCommon {
 	readonly type: typeof PRELUDE_OPERATOR
 }
 
-export interface FeatureRangeNode extends CssNodeCommon {
+export interface FeatureRange extends CssNodeCommon {
 	readonly type: typeof FEATURE_RANGE
 	/** The feature name in a range comparison, e.g. "width" from "(width >= 400px)" */
 	readonly name: string
 }
 
 // ---------------------------------------------------------------------------
-// AnyCssNode — discriminated union of all known subtypes
+// AnyCss — discriminated union of all known subtypes
 //
 // Enables switch/if narrowing without explicit type predicates:
 //
-//   walk(root, (node: AnyCssNode) => {
+//   walk(root, (node: AnyCss) => {
 //     if (node.type === DECLARATION) { node.property /* string */ }
 //   })
 // ---------------------------------------------------------------------------
 
-export type AnyCssNode =
-	| StyleSheetNode
-	| RuleNode
-	| AtruleNode
-	| DeclarationNode
-	| SelectorNode
-	| SelectorListNode
-	| BlockNode
-	| CommentNode
-	| RawNode
-	| IdentifierNode
-	| NumberNode
-	| DimensionNode
-	| StringNode
-	| HashNode
-	| FunctionNode
-	| OperatorNode
-	| ParenthesisNode
-	| UrlNode
-	| UnicodeRangeNode
-	| ValueNode
-	| TypeSelectorNode
-	| ClassSelectorNode
-	| IdSelectorNode
-	| AttributeSelectorNode
-	| PseudoClassSelectorNode
-	| PseudoElementSelectorNode
-	| CombinatorNode
-	| UniversalSelectorNode
-	| NestingSelectorNode
-	| NthSelectorNode
-	| NthOfSelectorNode
-	| LangSelectorNode
-	| AtrulePreludeNode
-	| MediaQueryNode
-	| MediaFeatureNode
-	| MediaTypeNode
-	| ContainerQueryNode
-	| SupportsQueryNode
-	| LayerNameNode
-	| PreludeOperatorNode
-	| FeatureRangeNode
-	| PreludeSelectorListNode
+export type AnyCss =
+	| StyleSheet
+	| Rule
+	| Atrule
+	| Declaration
+	| Selector
+	| SelectorList
+	| Block
+	| Comment
+	| Raw
+	| Identifier
+	| Number
+	| Dimension
+	| String
+	| Hash
+	| Function
+	| Operator
+	| Parenthesis
+	| Url
+	| UnicodeRange
+	| Value
+	| TypeSelector
+	| ClassSelector
+	| IdSelector
+	| AttributeSelector
+	| PseudoClassSelector
+	| PseudoElementSelector
+	| Combinator
+	| UniversalSelector
+	| NestingSelector
+	| NthSelector
+	| NthOfSelector
+	| LangSelector
+	| AtrulePrelude
+	| MediaQuery
+	| MediaFeature
+	| MediaType
+	| ContainerQuery
+	| SupportsQuery
+	| LayerName
+	| PreludeOperator
+	| FeatureRange
+	| PreludeSelectorList
 
 // ---------------------------------------------------------------------------
 // Type predicate functions
@@ -416,129 +416,129 @@ export type AnyCssNode =
 // structurally, so no cast is needed at call sites.
 // ---------------------------------------------------------------------------
 
-export function is_stylesheet(node: CssNodeCommon): node is StyleSheetNode {
+export function is_stylesheet(node: CssNodeCommon): node is StyleSheet {
 	return node.type === STYLESHEET
 }
-export function is_rule(node: CssNodeCommon): node is RuleNode {
+export function is_rule(node: CssNodeCommon): node is Rule {
 	return node.type === STYLE_RULE
 }
-export function is_atrule(node: CssNodeCommon): node is AtruleNode {
+export function is_atrule(node: CssNodeCommon): node is Atrule {
 	return node.type === AT_RULE
 }
-export function is_declaration(node: CssNodeCommon): node is DeclarationNode {
+export function is_declaration(node: CssNodeCommon): node is Declaration {
 	return node.type === DECLARATION
 }
-export function is_selector(node: CssNodeCommon): node is SelectorNode {
+export function is_selector(node: CssNodeCommon): node is Selector {
 	return node.type === SELECTOR
 }
-export function is_selector_list(node: CssNodeCommon): node is SelectorListNode {
+export function is_selector_list(node: CssNodeCommon): node is SelectorList {
 	return node.type === SELECTOR_LIST
 }
-export function is_block(node: CssNodeCommon): node is BlockNode {
+export function is_block(node: CssNodeCommon): node is Block {
 	return node.type === BLOCK
 }
-export function is_comment(node: CssNodeCommon): node is CommentNode {
+export function is_comment(node: CssNodeCommon): node is Comment {
 	return node.type === COMMENT
 }
-export function is_raw(node: CssNodeCommon): node is RawNode {
+export function is_raw(node: CssNodeCommon): node is Raw {
 	return node.type === RAW
 }
-export function is_identifier(node: CssNodeCommon): node is IdentifierNode {
+export function is_identifier(node: CssNodeCommon): node is Identifier {
 	return node.type === IDENTIFIER
 }
-export function is_number(node: CssNodeCommon): node is NumberNode {
+export function is_number(node: CssNodeCommon): node is Number {
 	return node.type === NUMBER
 }
-export function is_dimension(node: CssNodeCommon): node is DimensionNode {
+export function is_dimension(node: CssNodeCommon): node is Dimension {
 	return node.type === DIMENSION
 }
-export function is_string(node: CssNodeCommon): node is StringNode {
+export function is_string(node: CssNodeCommon): node is String {
 	return node.type === STRING
 }
-export function is_hash(node: CssNodeCommon): node is HashNode {
+export function is_hash(node: CssNodeCommon): node is Hash {
 	return node.type === HASH
 }
-export function is_function(node: CssNodeCommon): node is FunctionNode {
+export function is_function(node: CssNodeCommon): node is Function {
 	return node.type === FUNCTION
 }
-export function is_operator(node: CssNodeCommon): node is OperatorNode {
+export function is_operator(node: CssNodeCommon): node is Operator {
 	return node.type === OPERATOR
 }
-export function is_parenthesis(node: CssNodeCommon): node is ParenthesisNode {
+export function is_parenthesis(node: CssNodeCommon): node is Parenthesis {
 	return node.type === PARENTHESIS
 }
-export function is_url(node: CssNodeCommon): node is UrlNode {
+export function is_url(node: CssNodeCommon): node is Url {
 	return node.type === URL
 }
-export function is_unicode_range(node: CssNodeCommon): node is UnicodeRangeNode {
+export function is_unicode_range(node: CssNodeCommon): node is UnicodeRange {
 	return node.type === UNICODE_RANGE
 }
-export function is_value(node: CssNodeCommon): node is ValueNode {
+export function is_value(node: CssNodeCommon): node is Value {
 	return node.type === VALUE
 }
-export function is_type_selector(node: CssNodeCommon): node is TypeSelectorNode {
+export function is_type_selector(node: CssNodeCommon): node is TypeSelector {
 	return node.type === TYPE_SELECTOR
 }
-export function is_class_selector(node: CssNodeCommon): node is ClassSelectorNode {
+export function is_class_selector(node: CssNodeCommon): node is ClassSelector {
 	return node.type === CLASS_SELECTOR
 }
-export function is_id_selector(node: CssNodeCommon): node is IdSelectorNode {
+export function is_id_selector(node: CssNodeCommon): node is IdSelector {
 	return node.type === ID_SELECTOR
 }
-export function is_attribute_selector(node: CssNodeCommon): node is AttributeSelectorNode {
+export function is_attribute_selector(node: CssNodeCommon): node is AttributeSelector {
 	return node.type === ATTRIBUTE_SELECTOR
 }
-export function is_pseudo_class_selector(node: CssNodeCommon): node is PseudoClassSelectorNode {
+export function is_pseudo_class_selector(node: CssNodeCommon): node is PseudoClassSelector {
 	return node.type === PSEUDO_CLASS_SELECTOR
 }
-export function is_pseudo_element_selector(node: CssNodeCommon): node is PseudoElementSelectorNode {
+export function is_pseudo_element_selector(node: CssNodeCommon): node is PseudoElementSelector {
 	return node.type === PSEUDO_ELEMENT_SELECTOR
 }
-export function is_combinator(node: CssNodeCommon): node is CombinatorNode {
+export function is_combinator(node: CssNodeCommon): node is Combinator {
 	return node.type === COMBINATOR
 }
-export function is_universal_selector(node: CssNodeCommon): node is UniversalSelectorNode {
+export function is_universal_selector(node: CssNodeCommon): node is UniversalSelector {
 	return node.type === UNIVERSAL_SELECTOR
 }
-export function is_nesting_selector(node: CssNodeCommon): node is NestingSelectorNode {
+export function is_nesting_selector(node: CssNodeCommon): node is NestingSelector {
 	return node.type === NESTING_SELECTOR
 }
-export function is_nth_selector(node: CssNodeCommon): node is NthSelectorNode {
+export function is_nth_selector(node: CssNodeCommon): node is NthSelector {
 	return node.type === NTH_SELECTOR
 }
-export function is_nth_of_selector(node: CssNodeCommon): node is NthOfSelectorNode {
+export function is_nth_of_selector(node: CssNodeCommon): node is NthOfSelector {
 	return node.type === NTH_OF_SELECTOR
 }
-export function is_lang_selector(node: CssNodeCommon): node is LangSelectorNode {
+export function is_lang_selector(node: CssNodeCommon): node is LangSelector {
 	return node.type === LANG_SELECTOR
 }
-export function is_atrule_prelude(node: CssNodeCommon): node is AtrulePreludeNode {
+export function is_atrule_prelude(node: CssNodeCommon): node is AtrulePrelude {
 	return node.type === AT_RULE_PRELUDE
 }
-export function is_media_query(node: CssNodeCommon): node is MediaQueryNode {
+export function is_media_query(node: CssNodeCommon): node is MediaQuery {
 	return node.type === MEDIA_QUERY
 }
-export function is_media_feature(node: CssNodeCommon): node is MediaFeatureNode {
+export function is_media_feature(node: CssNodeCommon): node is MediaFeature {
 	return node.type === MEDIA_FEATURE
 }
-export function is_media_type(node: CssNodeCommon): node is MediaTypeNode {
+export function is_media_type(node: CssNodeCommon): node is MediaType {
 	return node.type === MEDIA_TYPE
 }
-export function is_container_query(node: CssNodeCommon): node is ContainerQueryNode {
+export function is_container_query(node: CssNodeCommon): node is ContainerQuery {
 	return node.type === CONTAINER_QUERY
 }
-export function is_supports_query(node: CssNodeCommon): node is SupportsQueryNode {
+export function is_supports_query(node: CssNodeCommon): node is SupportsQuery {
 	return node.type === SUPPORTS_QUERY
 }
-export function is_layer_name(node: CssNodeCommon): node is LayerNameNode {
+export function is_layer_name(node: CssNodeCommon): node is LayerName {
 	return node.type === LAYER_NAME
 }
-export function is_prelude_operator(node: CssNodeCommon): node is PreludeOperatorNode {
+export function is_prelude_operator(node: CssNodeCommon): node is PreludeOperator {
 	return node.type === PRELUDE_OPERATOR
 }
-export function is_feature_range(node: CssNodeCommon): node is FeatureRangeNode {
+export function is_feature_range(node: CssNodeCommon): node is FeatureRange {
 	return node.type === FEATURE_RANGE
 }
-export function is_prelude_selectorlist(node: CssNodeCommon): node is PreludeSelectorListNode {
+export function is_prelude_selectorlist(node: CssNodeCommon): node is PreludeSelectorList {
 	return node.type === PRELUDE_SELECTORLIST
 }

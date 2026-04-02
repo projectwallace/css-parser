@@ -21,26 +21,26 @@ import {
 	is_layer_name,
 } from './node-types'
 import type {
-	AnyCssNode,
-	StyleSheetNode,
-	RuleNode,
-	AtruleNode,
-	DeclarationNode,
-	BlockNode,
-	BlockNode as BlockNodeAlias,
-	SelectorListNode,
-	SelectorNode,
-	AtrulePreludeNode,
-	RawNode,
-	NumberNode,
-	DimensionNode,
-	FunctionNode,
-	AttributeSelectorNode,
-	PseudoClassSelectorNode,
-	PseudoElementSelectorNode,
-	NthSelectorNode,
-	MediaFeatureNode,
-	LayerNameNode,
+	AnyCss,
+	StyleSheet,
+	Rule,
+	Atrule,
+	Declaration,
+	Block,
+	Block as BlockNodeAlias,
+	SelectorList,
+	Selector,
+	AtrulePrelude,
+	Raw,
+	Number,
+	Dimension,
+	Function,
+	AttributeSelector,
+	PseudoClassSelector,
+	PseudoElementSelector,
+	NthSelector,
+	MediaFeature,
+	LayerName,
 } from './node-types'
 
 // ---------------------------------------------------------------------------
@@ -75,7 +75,7 @@ describe('type predicates — runtime', () => {
 
 	it('is_block identifies blocks', () => {
 		const root = parse('a { color: red }')
-		const rule = root.first_child! as RuleNode
+		const rule = root.first_child! as Rule
 		expect(is_block(rule.block!)).toBe(true)
 	})
 
@@ -116,7 +116,7 @@ describe('type predicates — runtime', () => {
 	it('is_media_feature identifies media features', () => {
 		// @media (min-width: 768px): atrule > prelude(AT_RULE_PRELUDE) > MediaQuery > MediaFeature
 		const root = parse('@media (min-width: 768px) {}')
-		const atrule = root.first_child! as AtruleNode
+		const atrule = root.first_child! as Atrule
 		const mediaQuery = atrule.prelude!.first_child!
 		const mediaFeature = mediaQuery.first_child!
 		expect(is_media_feature(mediaFeature)).toBe(true)
@@ -125,7 +125,7 @@ describe('type predicates — runtime', () => {
 	it('is_layer_name identifies layer name nodes', () => {
 		// @layer utilities: atrule > prelude(AT_RULE_PRELUDE) > LayerName
 		const root = parse('@layer utilities;')
-		const atrule = root.first_child! as AtruleNode
+		const atrule = root.first_child! as Atrule
 		const layer = atrule.prelude!.first_child!
 		expect(is_layer_name(layer)).toBe(true)
 	})
@@ -139,7 +139,7 @@ describe('type narrowing — compile-time', () => {
 	it('is_stylesheet narrows type field', () => {
 		const root = parse('a {}')
 		if (is_stylesheet(root)) {
-			expectTypeOf(root).toMatchTypeOf<StyleSheetNode>()
+			expectTypeOf(root).toMatchTypeOf<StyleSheet>()
 		}
 	})
 
@@ -147,8 +147,8 @@ describe('type narrowing — compile-time', () => {
 		const root = parse('a { color: red }')
 		const first = root.first_child!
 		if (is_rule(first)) {
-			expectTypeOf(first).toMatchTypeOf<RuleNode>()
-			expectTypeOf(first.prelude).toMatchTypeOf<SelectorListNode | SelectorNode | null>()
+			expectTypeOf(first).toMatchTypeOf<Rule>()
+			expectTypeOf(first.prelude).toMatchTypeOf<SelectorList | Selector | null>()
 			expectTypeOf(first.block).toMatchTypeOf<BlockNodeAlias | null>()
 		}
 	})
@@ -157,9 +157,9 @@ describe('type narrowing — compile-time', () => {
 		const root = parse('@media screen {}')
 		const first = root.first_child!
 		if (is_atrule(first)) {
-			expectTypeOf(first).toMatchTypeOf<AtruleNode>()
+			expectTypeOf(first).toMatchTypeOf<Atrule>()
 			expectTypeOf(first.name).toEqualTypeOf<string>()
-			expectTypeOf(first.prelude).toMatchTypeOf<AtrulePreludeNode | RawNode | null>()
+			expectTypeOf(first.prelude).toMatchTypeOf<AtrulePrelude | Raw | null>()
 			expectTypeOf(first.block).toMatchTypeOf<BlockNodeAlias | null>()
 		}
 	})
@@ -167,20 +167,20 @@ describe('type narrowing — compile-time', () => {
 	it('is_declaration narrows property, is_important, is_browserhack; omits inapplicable props', () => {
 		const decl = parse_declaration('color: red !important')
 		if (is_declaration(decl)) {
-			expectTypeOf(decl).toMatchTypeOf<DeclarationNode>()
+			expectTypeOf(decl).toMatchTypeOf<Declaration>()
 			expectTypeOf(decl.property).toEqualTypeOf<string>()
 			expectTypeOf(decl.is_important).toEqualTypeOf<boolean>()
 			expectTypeOf(decl.is_browserhack).toEqualTypeOf<boolean>()
-			// `name`, `prelude`, `block` are absent on DeclarationNode — verified by tsc
+			// `name`, `prelude`, `block` are absent on Declaration — verified by tsc
 		}
 	})
 
 	it('is_block narrows is_empty to boolean', () => {
 		const root = parse('a { color: red }')
-		const rule = root.first_child! as RuleNode
+		const rule = root.first_child! as Rule
 		const block = rule.block!
 		if (is_block(block)) {
-			expectTypeOf(block).toMatchTypeOf<BlockNode>()
+			expectTypeOf(block).toMatchTypeOf<Block>()
 			expectTypeOf(block.is_empty).toEqualTypeOf<boolean>()
 		}
 	})
@@ -189,7 +189,7 @@ describe('type narrowing — compile-time', () => {
 		const decl = parse_declaration('width: 100px')
 		const dim = decl.first_child!.first_child!
 		if (is_dimension(dim)) {
-			expectTypeOf(dim).toMatchTypeOf<DimensionNode>()
+			expectTypeOf(dim).toMatchTypeOf<Dimension>()
 			expectTypeOf(dim.value).toMatchTypeOf<number>()
 			expectTypeOf(dim.unit).toMatchTypeOf<string>()
 			expectTypeOf(dim.value_as_number).toMatchTypeOf<number>()
@@ -200,7 +200,7 @@ describe('type narrowing — compile-time', () => {
 		const decl = parse_declaration('z-index: 42')
 		const num = decl.first_child!.first_child!
 		if (is_number(num)) {
-			expectTypeOf(num).toMatchTypeOf<NumberNode>()
+			expectTypeOf(num).toMatchTypeOf<Number>()
 			expectTypeOf(num.value).toMatchTypeOf<number>()
 			expectTypeOf(num.value_as_number).toMatchTypeOf<number>()
 		}
@@ -210,7 +210,7 @@ describe('type narrowing — compile-time', () => {
 		const decl = parse_declaration('color: rgb(0,0,0)')
 		const fn = decl.first_child!.first_child!
 		if (is_function(fn)) {
-			expectTypeOf(fn).toMatchTypeOf<FunctionNode>()
+			expectTypeOf(fn).toMatchTypeOf<Function>()
 			expectTypeOf(fn.name).toEqualTypeOf<string>()
 		}
 	})
@@ -219,7 +219,7 @@ describe('type narrowing — compile-time', () => {
 		const root = parse_selector('[href]')
 		const attr = root.first_child!.first_child!
 		if (is_attribute_selector(attr)) {
-			expectTypeOf(attr).toMatchTypeOf<AttributeSelectorNode>()
+			expectTypeOf(attr).toMatchTypeOf<AttributeSelector>()
 			expectTypeOf(attr.attr_operator).toEqualTypeOf<number>()
 			expectTypeOf(attr.attr_flags).toEqualTypeOf<number>()
 		}
@@ -227,27 +227,27 @@ describe('type narrowing — compile-time', () => {
 
 	it('is_media_feature narrows property to string; omits name', () => {
 		const root = parse('@media (min-width: 768px) {}')
-		const mediaFeature = (root.first_child! as AtruleNode).prelude!.first_child!.first_child!
+		const mediaFeature = (root.first_child! as Atrule).prelude!.first_child!.first_child!
 		if (is_media_feature(mediaFeature)) {
-			expectTypeOf(mediaFeature).toMatchTypeOf<MediaFeatureNode>()
+			expectTypeOf(mediaFeature).toMatchTypeOf<MediaFeature>()
 			expectTypeOf(mediaFeature.property).toEqualTypeOf<string>()
-			// `name` is absent on MediaFeatureNode — verified by tsc
+			// `name` is absent on MediaFeature — verified by tsc
 		}
 	})
 
 	it('is_layer_name narrows name to string', () => {
 		const root = parse('@layer utilities;')
-		const layer = (root.first_child! as AtruleNode).prelude!.first_child!
+		const layer = (root.first_child! as Atrule).prelude!.first_child!
 		if (is_layer_name(layer)) {
-			expectTypeOf(layer).toMatchTypeOf<LayerNameNode>()
+			expectTypeOf(layer).toMatchTypeOf<LayerName>()
 			expectTypeOf(layer.name).toEqualTypeOf<string>()
 		}
 	})
 
-	it('AnyCssNode enables switch narrowing', () => {
+	it('AnyCss enables switch narrowing', () => {
 		// This test verifies the discriminated union works for switch narrowing.
 		// The function must compile without type errors.
-		function extract_name(node: AnyCssNode): string | undefined {
+		function extract_name(node: AnyCss): string | undefined {
 			switch (node.type) {
 				case 3: // AT_RULE
 					return node.name // must be string here
@@ -258,10 +258,10 @@ describe('type narrowing — compile-time', () => {
 			}
 		}
 		const root = parse('@media screen {}')
-		const atrule = root.first_child! as AnyCssNode
+		const atrule = root.first_child! as AnyCss
 		expect(extract_name(atrule)).toBe('media')
 
-		const decl = parse_declaration('color: red') as AnyCssNode
+		const decl = parse_declaration('color: red') as AnyCss
 		expect(extract_name(decl)).toBe('color')
 	})
 })
@@ -276,7 +276,7 @@ describe('selector subtypes', () => {
 		const sel = root.first_child! // Selector
 		const pseudo = sel.first_child! // PseudoClassSelector
 		if (is_pseudo_class_selector(pseudo)) {
-			expectTypeOf(pseudo).toMatchTypeOf<PseudoClassSelectorNode>()
+			expectTypeOf(pseudo).toMatchTypeOf<PseudoClassSelector>()
 			expectTypeOf(pseudo.name).toEqualTypeOf<string>()
 			expect(pseudo.name).toBe('hover')
 		}
@@ -287,7 +287,7 @@ describe('selector subtypes', () => {
 		const sel = root.first_child!
 		const pseudo = sel.first_child!
 		if (is_pseudo_element_selector(pseudo)) {
-			expectTypeOf(pseudo).toMatchTypeOf<PseudoElementSelectorNode>()
+			expectTypeOf(pseudo).toMatchTypeOf<PseudoElementSelector>()
 			expectTypeOf(pseudo.name).toEqualTypeOf<string>()
 			expect(pseudo.name).toBe('before')
 		}
@@ -298,7 +298,7 @@ describe('selector subtypes', () => {
 		const pseudo = root.first_child!.first_child! // PseudoClassSelector
 		const nth = pseudo.first_child! // NthSelector inside
 		if (is_nth_selector(nth)) {
-			expectTypeOf(nth).toMatchTypeOf<NthSelectorNode>()
+			expectTypeOf(nth).toMatchTypeOf<NthSelector>()
 			expectTypeOf(nth.nth_a).toEqualTypeOf<string | undefined>()
 			expectTypeOf(nth.nth_b).toEqualTypeOf<string | undefined>()
 		}

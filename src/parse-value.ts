@@ -38,7 +38,7 @@ import {
 	str_equals,
 } from './string-utils'
 import { CSSNode } from './css-node'
-import type { ValueNode } from './node-types'
+import type { Value } from './node-types'
 
 /** @internal */
 export class ValueParser {
@@ -402,7 +402,7 @@ export class ValueParser {
  * @param value_string - The CSS value to parse (e.g., "1px solid red")
  * @returns A CSSNode VALUE wrapper containing the parsed value tokens as children
  */
-export function parse_value(value_string: string): ValueNode {
+export function parse_value(value_string: string): Value {
 	// Create an arena for the value nodes
 	const arena = new CSSDataArena(CSSDataArena.capacity_for_source(value_string.length))
 
@@ -414,5 +414,5 @@ export function parse_value(value_string: string): ValueNode {
 	const value_node_index = value_parser.parse_value(0, value_string.length, 1, 1)
 
 	// Wrap the VALUE node in a CSSNode
-	return new CSSNode(arena, value_string, value_node_index) as ValueNode
+	return new CSSNode(arena, value_string, value_node_index) as Value
 }

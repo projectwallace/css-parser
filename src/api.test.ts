@@ -15,14 +15,14 @@ import {
 } from './arena'
 import { CSSNode, PlainCSSNode } from './css-node'
 import {
-	RuleNode,
-	AtruleNode,
-	DeclarationNode,
-	BlockNode,
-	NthOfSelectorNode,
-	PseudoClassSelectorNode,
-	SelectorListNode,
-	SelectorNode,
+	Rule,
+	Atrule,
+	Declaration,
+	Block,
+	NthOfSelector,
+	PseudoClassSelector,
+	SelectorList,
+	Selector,
 } from './node-types'
 
 describe('CSSNode', () => {
@@ -31,7 +31,7 @@ describe('CSSNode', () => {
 			const source = 'body { color: red; margin: 0; padding: 10px; }'
 			const root = parse(source, { parse_selectors: false, parse_values: false })
 
-			const rule = root.first_child! as RuleNode
+			const rule = root.first_child! as Rule
 			const block = rule.block!
 			const types: number[] = []
 
@@ -60,7 +60,7 @@ describe('CSSNode', () => {
 				parse_atrule_preludes: false,
 			})
 
-			const media = root.first_child! as AtruleNode
+			const media = root.first_child! as Atrule
 			const block = media.block!
 			const children = Array.from(block)
 
@@ -88,7 +88,7 @@ describe('CSSNode', () => {
 		test('should return the number of children', () => {
 			const source = 'body { color: red; margin: 0; padding: 10px; }'
 			const root = parse(source, { parse_selectors: false, parse_values: false })
-			const block = (root.first_child! as RuleNode).block!
+			const block = (root.first_child! as Rule).block!
 			expect(block.child_count).toBe(3)
 		})
 
@@ -108,7 +108,7 @@ describe('CSSNode', () => {
 		test('should return true for @media with prelude', () => {
 			const source = '@media (min-width: 768px) { body { color: red; } }'
 			const root = parse(source)
-			const media = root.first_child! as AtruleNode
+			const media = root.first_child! as Atrule
 
 			expect(media.type).toBe(AT_RULE)
 			expect(media.has_prelude).toBe(true)
@@ -119,7 +119,7 @@ describe('CSSNode', () => {
 		test('prelude node can be walked to access structured children', () => {
 			const source = '@media screen and (min-width: 768px) { }'
 			const root = parse(source)
-			const media = root.first_child! as AtruleNode
+			const media = root.first_child! as Atrule
 			const prelude = media.prelude!
 
 			// Prelude is a wrapper node containing the structured children
@@ -139,7 +139,7 @@ describe('CSSNode', () => {
 		test('should return true for @supports with prelude', () => {
 			const source = '@supports (display: grid) { .grid { display: grid; } }'
 			const root = parse(source)
-			const supports = root.first_child! as AtruleNode
+			const supports = root.first_child! as Atrule
 
 			expect(supports.type).toBe(AT_RULE)
 			expect(supports.has_prelude).toBe(true)
@@ -150,7 +150,7 @@ describe('CSSNode', () => {
 		test('should return true for @layer with name', () => {
 			const source = '@layer utilities { .btn { padding: 1rem; } }'
 			const root = parse(source)
-			const layer = root.first_child! as AtruleNode
+			const layer = root.first_child! as Atrule
 
 			expect(layer.type).toBe(AT_RULE)
 			expect(layer.has_prelude).toBe(true)
@@ -161,7 +161,7 @@ describe('CSSNode', () => {
 		test('should return false for @layer without name', () => {
 			const source = '@layer { .btn { padding: 1rem; } }'
 			const root = parse(source)
-			const layer = root.first_child! as AtruleNode
+			const layer = root.first_child! as Atrule
 
 			expect(layer.type).toBe(AT_RULE)
 			expect(layer.has_prelude).toBe(false)
@@ -171,7 +171,7 @@ describe('CSSNode', () => {
 		test('should return true for @keyframes with name', () => {
 			const source = '@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }'
 			const root = parse(source)
-			const keyframes = root.first_child! as AtruleNode
+			const keyframes = root.first_child! as Atrule
 
 			expect(keyframes.type).toBe(AT_RULE)
 			expect(keyframes.has_prelude).toBe(true)
@@ -182,7 +182,7 @@ describe('CSSNode', () => {
 		test('should return false for @font-face without prelude', () => {
 			const source = '@font-face { font-family: "Custom"; src: url("font.woff2"); }'
 			const root = parse(source)
-			const fontFace = root.first_child! as AtruleNode
+			const fontFace = root.first_child! as Atrule
 
 			expect(fontFace.type).toBe(AT_RULE)
 			expect(fontFace.has_prelude).toBe(false)
@@ -192,7 +192,7 @@ describe('CSSNode', () => {
 		test('should return false for @page without prelude', () => {
 			const source = '@page { margin: 1in; }'
 			const root = parse(source)
-			const page = root.first_child! as AtruleNode
+			const page = root.first_child! as Atrule
 
 			expect(page.type).toBe(AT_RULE)
 			expect(page.has_prelude).toBe(false)
@@ -202,7 +202,7 @@ describe('CSSNode', () => {
 		test('should return true for @import with options', () => {
 			const source = '@import url("styles.css") layer(base) supports(display: flex);'
 			const root = parse(source)
-			const importRule = root.first_child! as AtruleNode
+			const importRule = root.first_child! as Atrule
 
 			expect(importRule.type).toBe(AT_RULE)
 			expect(importRule.has_prelude).toBe(true)
@@ -212,7 +212,7 @@ describe('CSSNode', () => {
 		test('should work efficiently without creating strings', () => {
 			const source = '@media (min-width: 768px) { body { color: red; } }'
 			const root = parse(source)
-			const media = root.first_child! as AtruleNode
+			const media = root.first_child! as Atrule
 
 			// has_prelude should be faster than prelude !== null
 			// because it doesn't allocate a string
@@ -223,7 +223,7 @@ describe('CSSNode', () => {
 		test('should return true for style rules with selectors', () => {
 			const source = 'body { color: red; }'
 			const root = parse(source)
-			const rule = root.first_child! as RuleNode
+			const rule = root.first_child! as Rule
 
 			expect(rule.type).toBe(STYLE_RULE)
 			expect(rule.has_prelude).toBe(true)
@@ -234,10 +234,10 @@ describe('CSSNode', () => {
 		test('should work for other node types that use value field', () => {
 			const source = 'body { color: red; }'
 			const root = parse(source, { parse_values: false })
-			const rule = root.first_child! as RuleNode
+			const rule = root.first_child! as Rule
 			const selector = rule.first_child!
-			const block = selector.next_sibling! as BlockNode
-			const declaration = block.first_child! as DeclarationNode
+			const block = selector.next_sibling! as Block
+			const declaration = block.first_child! as Declaration
 
 			// Rules and selectors don't use value field
 			expect(rule.has_prelude).toBe(true) // has selector
@@ -250,7 +250,7 @@ describe('CSSNode', () => {
 		test('should return true for style rules with blocks', () => {
 			const source = 'body { color: red; }'
 			const root = parse(source)
-			const rule = root.first_child! as RuleNode
+			const rule = root.first_child! as Rule
 
 			expect(rule.type).toBe(STYLE_RULE)
 			expect(rule.has_block).toBe(true)
@@ -259,7 +259,7 @@ describe('CSSNode', () => {
 		test('should return true for empty style rule blocks', () => {
 			const source = 'body { }'
 			const root = parse(source)
-			const rule = root.first_child! as RuleNode
+			const rule = root.first_child! as Rule
 
 			expect(rule.type).toBe(STYLE_RULE)
 			expect(rule.has_block).toBe(true)
@@ -268,7 +268,7 @@ describe('CSSNode', () => {
 		test('should return true for @media with block', () => {
 			const source = '@media (min-width: 768px) { body { color: red; } }'
 			const root = parse(source)
-			const media = root.first_child! as AtruleNode
+			const media = root.first_child! as Atrule
 
 			expect(media.type).toBe(AT_RULE)
 			expect(media.has_block).toBe(true)
@@ -277,7 +277,7 @@ describe('CSSNode', () => {
 		test('should return true for @supports with block', () => {
 			const source = '@supports (display: grid) { .grid { display: grid; } }'
 			const root = parse(source)
-			const supports = root.first_child! as AtruleNode
+			const supports = root.first_child! as Atrule
 
 			expect(supports.type).toBe(AT_RULE)
 			expect(supports.has_block).toBe(true)
@@ -286,7 +286,7 @@ describe('CSSNode', () => {
 		test('should return true for @layer with block', () => {
 			const source = '@layer utilities { .btn { padding: 1rem; } }'
 			const root = parse(source)
-			const layer = root.first_child! as AtruleNode
+			const layer = root.first_child! as Atrule
 
 			expect(layer.type).toBe(AT_RULE)
 			expect(layer.has_block).toBe(true)
@@ -295,7 +295,7 @@ describe('CSSNode', () => {
 		test('should return true for anonymous @layer with block', () => {
 			const source = '@layer { .btn { padding: 1rem; } }'
 			const root = parse(source)
-			const layer = root.first_child! as AtruleNode
+			const layer = root.first_child! as Atrule
 
 			expect(layer.type).toBe(AT_RULE)
 			expect(layer.has_block).toBe(true)
@@ -304,7 +304,7 @@ describe('CSSNode', () => {
 		test('should return true for @font-face with block', () => {
 			const source = '@font-face { font-family: "Custom"; src: url("font.woff2"); }'
 			const root = parse(source)
-			const fontFace = root.first_child! as AtruleNode
+			const fontFace = root.first_child! as Atrule
 
 			expect(fontFace.type).toBe(AT_RULE)
 			expect(fontFace.has_block).toBe(true)
@@ -313,7 +313,7 @@ describe('CSSNode', () => {
 		test('should return true for @keyframes with block', () => {
 			const source = '@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }'
 			const root = parse(source)
-			const keyframes = root.first_child! as AtruleNode
+			const keyframes = root.first_child! as Atrule
 
 			expect(keyframes.type).toBe(AT_RULE)
 			expect(keyframes.has_block).toBe(true)
@@ -322,7 +322,7 @@ describe('CSSNode', () => {
 		test('should return false for @import without block', () => {
 			const source = '@import url("styles.css");'
 			const root = parse(source)
-			const importRule = root.first_child! as AtruleNode
+			const importRule = root.first_child! as Atrule
 
 			expect(importRule.type).toBe(AT_RULE)
 			expect(importRule.has_block).toBe(false)
@@ -331,7 +331,7 @@ describe('CSSNode', () => {
 		test('should return false for @import with preludes but no block', () => {
 			const source = '@import url("styles.css") layer(base) supports(display: flex);'
 			const root = parse(source)
-			const importRule = root.first_child! as AtruleNode
+			const importRule = root.first_child! as Atrule
 
 			expect(importRule.type).toBe(AT_RULE)
 			expect(importRule.has_block).toBe(false)
@@ -345,8 +345,8 @@ describe('CSSNode', () => {
 				@layer utilities { .btn { padding: 1rem; } }
 			`
 			const root = parse(source)
-			const importRule = root.first_child! as AtruleNode
-			const layerRule = importRule.next_sibling! as AtruleNode
+			const importRule = root.first_child! as Atrule
+			const layerRule = importRule.next_sibling! as Atrule
 
 			// @import has children (preludes) but no block
 			expect(importRule.has_block).toBe(false)
@@ -360,9 +360,9 @@ describe('CSSNode', () => {
 		test('should return false for non-rule nodes', () => {
 			const source = 'body { color: red; }'
 			const root = parse(source)
-			const rule = root.first_child! as RuleNode
-			const selector = rule.first_child! as SelectorListNode
-			const declaration = selector.next_sibling! as RuleNode
+			const rule = root.first_child! as Rule
+			const selector = rule.first_child! as SelectorList
+			const declaration = selector.next_sibling! as Rule
 
 			// Only rules have blocks
 		})
@@ -379,7 +379,7 @@ describe('CSSNode', () => {
 			const root = parse(css)
 
 			const nodes = [...root]
-			const [media, importRule, supports, layer, fontFace, keyframes] = nodes as AtruleNode[]
+			const [media, importRule, supports, layer, fontFace, keyframes] = nodes as Atrule[]
 
 			expect(media.has_block).toBe(true)
 			expect(importRule.has_block).toBe(false) // NO block, only statement
@@ -394,7 +394,7 @@ describe('CSSNode', () => {
 		test('should return true for style rules with declarations', () => {
 			const source = 'body { color: red; margin: 0; }'
 			const root = parse(source)
-			const rule = root.first_child! as RuleNode
+			const rule = root.first_child! as Rule
 
 			expect(rule.type).toBe(STYLE_RULE)
 			expect(rule.has_declarations).toBe(true)
@@ -403,7 +403,7 @@ describe('CSSNode', () => {
 		test('should return false for empty style rules', () => {
 			const source = 'body { }'
 			const root = parse(source)
-			const rule = root.first_child! as RuleNode
+			const rule = root.first_child! as Rule
 
 			expect(rule.type).toBe(STYLE_RULE)
 			expect(rule.has_declarations).toBe(false)
@@ -412,7 +412,7 @@ describe('CSSNode', () => {
 		test('should return false for style rules with only nested rules', () => {
 			const source = 'body { .nested { color: red; } }'
 			const root = parse(source)
-			const rule = root.first_child! as RuleNode
+			const rule = root.first_child! as Rule
 
 			expect(rule.type).toBe(STYLE_RULE)
 			expect(rule.has_declarations).toBe(false)
@@ -421,7 +421,7 @@ describe('CSSNode', () => {
 		test('should return true for style rules with both declarations and nested rules', () => {
 			const source = 'body { color: blue; .nested { margin: 0; } }'
 			const root = parse(source)
-			const rule = root.first_child! as RuleNode
+			const rule = root.first_child! as Rule
 
 			expect(rule.type).toBe(STYLE_RULE)
 			expect(rule.has_declarations).toBe(true)
@@ -430,7 +430,7 @@ describe('CSSNode', () => {
 		test('should return false for at-rules', () => {
 			const source = '@media screen { body { color: red; } }'
 			const root = parse(source)
-			const media = root.first_child! as AtruleNode
+			const media = root.first_child! as Atrule
 
 			expect(media.type).toBe(AT_RULE)
 			expect(media.has_declarations).toBe(false)
@@ -456,7 +456,7 @@ describe('CSSNode', () => {
 		test('should return declaration for declarations', () => {
 			const source = 'body { color: red; }'
 			const root = parse(source)
-			const rule = root.first_child! as RuleNode
+			const rule = root.first_child! as Rule
 			const block = rule.block!
 			const decl = block.first_child!
 
@@ -571,7 +571,7 @@ describe('CSSNode', () => {
 		test('should return value_keyword for keyword values', () => {
 			const source = 'body { color: red; }'
 			const root = parse(source)
-			const rule = root.first_child! as RuleNode
+			const rule = root.first_child! as Rule
 			const block = rule.block!
 			const decl = block.first_child!
 			const value = decl.first_child!.first_child!
@@ -582,7 +582,7 @@ describe('CSSNode', () => {
 		test('should return value_number for numeric values', () => {
 			const source = 'body { opacity: 0.5; }'
 			const root = parse(source)
-			const rule = root.first_child! as RuleNode
+			const rule = root.first_child! as Rule
 			const block = rule.block!
 			const decl = block.first_child!
 			const value = decl.first_child!.first_child!
@@ -593,7 +593,7 @@ describe('CSSNode', () => {
 		test('should return value_dimension for dimension values', () => {
 			const source = 'body { width: 100px; }'
 			const root = parse(source)
-			const rule = root.first_child! as RuleNode
+			const rule = root.first_child! as Rule
 			const block = rule.block!
 			const decl = block.first_child!
 			const value = decl.first_child!.first_child!
@@ -604,7 +604,7 @@ describe('CSSNode', () => {
 		test('should return value_string for string values', () => {
 			const source = 'body { content: "hello"; }'
 			const root = parse(source)
-			const rule = root.first_child! as RuleNode
+			const rule = root.first_child! as Rule
 			const block = rule.block!
 			const decl = block.first_child!
 			const value = decl.first_child!.first_child!
@@ -615,7 +615,7 @@ describe('CSSNode', () => {
 		test('should return value_color for color values', () => {
 			const source = 'body { color: #ff0000; }'
 			const root = parse(source)
-			const rule = root.first_child! as RuleNode
+			const rule = root.first_child! as Rule
 			const block = rule.block!
 			const decl = block.first_child!
 			const value = decl.first_child!.first_child!
@@ -626,7 +626,7 @@ describe('CSSNode', () => {
 		test('should return value_function for function values', () => {
 			const source = 'body { width: calc(100% - 20px); }'
 			const root = parse(source)
-			const rule = root.first_child! as RuleNode
+			const rule = root.first_child! as Rule
 			const block = rule.block!
 			const decl = block.first_child!
 			const value = decl.first_child!.first_child!
@@ -637,7 +637,7 @@ describe('CSSNode', () => {
 		test('should return prelude_media_query for media query preludes', () => {
 			const source = '@media screen and (min-width: 768px) { body { color: red; } }'
 			const root = parse(source)
-			const media = root.first_child! as AtruleNode
+			const media = root.first_child! as Atrule
 			const preludeWrapper = media.prelude!
 			const mediaQuery = preludeWrapper.first_child!
 
@@ -649,9 +649,9 @@ describe('CSSNode', () => {
 		describe('nth_of helpers (NODE_SELECTOR_NTH_OF)', () => {
 			test('nth property returns An+B formula node', () => {
 				const result = parse_selector(':nth-child(2n+1 of .foo)')
-				const selector = result.first_child as SelectorNode | null
-				const pseudo = selector?.first_child as PseudoClassSelectorNode | null // Get pseudo-class
-				const nthOf = pseudo?.first_child as NthOfSelectorNode | null // NODE_SELECTOR_NTH_OF
+				const selector = result.first_child as Selector | null
+				const pseudo = selector?.first_child as PseudoClassSelector | null // Get pseudo-class
+				const nthOf = pseudo?.first_child as NthOfSelector | null // NODE_SELECTOR_NTH_OF
 
 				expect(nthOf?.nth).not.toBeUndefined()
 				expect(nthOf?.nth?.type).toBe(NTH_SELECTOR)
@@ -661,9 +661,9 @@ describe('CSSNode', () => {
 
 			test('selector property returns selector list', () => {
 				const result = parse_selector(':nth-child(2n of .foo, #bar)')
-				const selector = result.first_child as SelectorNode | null
-				const pseudo = selector?.first_child as PseudoClassSelectorNode | null
-				const nthOf = pseudo?.first_child as NthOfSelectorNode | null
+				const selector = result.first_child as Selector | null
+				const pseudo = selector?.first_child as PseudoClassSelector | null
+				const nthOf = pseudo?.first_child as NthOfSelector | null
 
 				expect(nthOf?.selector).not.toBeUndefined()
 				expect(nthOf?.selector?.type).toBe(SELECTOR_LIST)
@@ -672,8 +672,8 @@ describe('CSSNode', () => {
 
 			test('returns null for wrong node types', () => {
 				const result = parse_selector('.foo')
-				const selector = result.first_child as SelectorNode | null
-				const classNode = selector?.first_child as NthOfSelectorNode | null
+				const selector = result.first_child as Selector | null
+				const classNode = selector?.first_child as NthOfSelector | null
 
 				expect(classNode?.nth).toBeUndefined()
 				expect(classNode?.selector).toBeUndefined()
@@ -681,9 +681,9 @@ describe('CSSNode', () => {
 
 			test('works with :nth-last-child', () => {
 				const result = parse_selector(':nth-last-child(odd of .item)')
-				const selector = result.first_child as SelectorNode | null
-				const pseudo = selector?.first_child as PseudoClassSelectorNode | null
-				const nthOf = pseudo?.first_child as NthOfSelectorNode | null
+				const selector = result.first_child as Selector | null
+				const pseudo = selector?.first_child as PseudoClassSelector | null
+				const nthOf = pseudo?.first_child as NthOfSelector | null
 
 				expect(nthOf?.nth).not.toBeUndefined()
 				expect(nthOf?.nth?.nth_a).toBe('odd')
@@ -693,9 +693,9 @@ describe('CSSNode', () => {
 
 			test('works with :nth-of-type', () => {
 				const result = parse_selector(':nth-of-type(3n of .special)')
-				const selector = result.first_child as SelectorNode | null
-				const pseudo = selector?.first_child as PseudoClassSelectorNode | null
-				const nthOf = pseudo?.first_child as NthOfSelectorNode | null
+				const selector = result.first_child as Selector | null
+				const pseudo = selector?.first_child as PseudoClassSelector | null
+				const nthOf = pseudo?.first_child as NthOfSelector | null
 
 				expect(nthOf?.nth).not.toBeUndefined()
 				expect(nthOf?.nth?.nth_a).toBe('3n')
@@ -704,9 +704,9 @@ describe('CSSNode', () => {
 
 			test('works with :nth-last-of-type', () => {
 				const result = parse_selector(':nth-last-of-type(even of div)')
-				const selector = result.first_child as SelectorNode | null
-				const pseudo = selector?.first_child as PseudoClassSelectorNode | null
-				const nthOf = pseudo?.first_child as NthOfSelectorNode | null
+				const selector = result.first_child as Selector | null
+				const pseudo = selector?.first_child as PseudoClassSelector | null
+				const nthOf = pseudo?.first_child as NthOfSelector | null
 
 				expect(nthOf?.nth?.nth_a).toBe('even')
 				expect(nthOf?.selector?.text).toBe('div')
@@ -716,8 +716,8 @@ describe('CSSNode', () => {
 		describe('selector_list helper (NODE_SELECTOR_PSEUDO_CLASS)', () => {
 			test('returns selector list for :is()', () => {
 				const result = parse_selector(':is(.foo, #bar)')
-				const selector = result.first_child as SelectorNode | null
-				const pseudo = selector?.first_child as PseudoClassSelectorNode | null
+				const selector = result.first_child as Selector | null
+				const pseudo = selector?.first_child as PseudoClassSelector | null
 
 				expect(pseudo?.type).toBe(PSEUDO_CLASS_SELECTOR)
 				expect(pseudo?.selector_list).not.toBeUndefined()
@@ -727,8 +727,8 @@ describe('CSSNode', () => {
 
 			test('returns selector list for :nth-child(of)', () => {
 				const result = parse_selector(':nth-child(2n of .foo)')
-				const selector = result.first_child as SelectorNode | null
-				const pseudo = selector?.first_child as PseudoClassSelectorNode | null
+				const selector = result.first_child as Selector | null
+				const pseudo = selector?.first_child as PseudoClassSelector | null
 
 				expect(pseudo?.selector_list).not.toBeUndefined()
 				expect(pseudo?.selector_list?.text).toBe('.foo')
@@ -736,24 +736,24 @@ describe('CSSNode', () => {
 
 			test('returns null for pseudo-classes without selectors', () => {
 				const result = parse_selector(':hover')
-				const selector = result.first_child as SelectorNode | null
-				const pseudo = selector?.first_child as PseudoClassSelectorNode | null
+				const selector = result.first_child as Selector | null
+				const pseudo = selector?.first_child as PseudoClassSelector | null
 
 				expect(pseudo?.selector_list).toBeUndefined()
 			})
 
 			test('returns null for :nth-child without "of"', () => {
 				const result = parse_selector(':nth-child(2n)')
-				const selector = result.first_child as SelectorNode | null
-				const pseudo = selector?.first_child as PseudoClassSelectorNode | null
+				const selector = result.first_child as Selector | null
+				const pseudo = selector?.first_child as PseudoClassSelector | null
 
 				expect(pseudo?.selector_list).toBeUndefined()
 			})
 
 			test('works with :not()', () => {
 				const result = parse_selector(':not(.excluded)')
-				const selector = result.first_child as SelectorNode | null
-				const pseudo = selector?.first_child as PseudoClassSelectorNode | null
+				const selector = result.first_child as Selector | null
+				const pseudo = selector?.first_child as PseudoClassSelector | null
 
 				expect(pseudo?.selector_list).not.toBeUndefined()
 				expect(pseudo?.selector_list?.text).toBe('.excluded')
@@ -761,8 +761,8 @@ describe('CSSNode', () => {
 
 			test('works with :has()', () => {
 				const result = parse_selector(':has(> .child)')
-				const selector = result.first_child as SelectorNode | null
-				const pseudo = selector?.first_child as PseudoClassSelectorNode | null
+				const selector = result.first_child as Selector | null
+				const pseudo = selector?.first_child as PseudoClassSelector | null
 
 				expect(pseudo?.selector_list).not.toBeUndefined()
 				expect(pseudo?.selector_list?.text).toBe('> .child')
@@ -770,8 +770,8 @@ describe('CSSNode', () => {
 
 			test('works with :where()', () => {
 				const result = parse_selector(':where(article, section)')
-				const selector = result.first_child as SelectorNode | null
-				const pseudo = selector?.first_child as PseudoClassSelectorNode | null
+				const selector = result.first_child as Selector | null
+				const pseudo = selector?.first_child as PseudoClassSelector | null
 
 				expect(pseudo?.selector_list).not.toBeUndefined()
 				expect(pseudo?.selector_list?.text).toBe('article, section')
@@ -779,8 +779,8 @@ describe('CSSNode', () => {
 
 			test('complex :nth-child with multiple selectors', () => {
 				const result = parse_selector(':nth-child(3n+2 of .item, .element, #special)')
-				const selector = result.first_child as SelectorNode | null
-				const pseudo = selector?.first_child as PseudoClassSelectorNode | null
+				const selector = result.first_child as Selector | null
+				const pseudo = selector?.first_child as PseudoClassSelector | null
 
 				expect(pseudo?.selector_list).not.toBeUndefined()
 				expect(pseudo?.selector_list?.text).toBe('.item, .element, #special')
@@ -792,7 +792,7 @@ describe('CSSNode', () => {
 		describe('clone() method', () => {
 			test('creates plain object with core properties', () => {
 				const ast = parse('div { color: red; }', { parse_values: false, parse_selectors: false })
-				const rule = ast.first_child! as RuleNode
+				const rule = ast.first_child! as Rule
 				const block = rule.block!
 				const decl = block.first_child!
 
@@ -809,7 +809,7 @@ describe('CSSNode', () => {
 
 			test('shallow clone has no children array', () => {
 				const ast = parse('div { margin: 10px 20px; }')
-				const decl = (ast.first_child! as RuleNode).block!.first_child!
+				const decl = (ast.first_child! as Rule).block!.first_child!
 
 				const shallow = decl.clone({ deep: false })
 
@@ -819,7 +819,7 @@ describe('CSSNode', () => {
 
 			test('deep clone includes children as array', () => {
 				const ast = parse('div { margin: 10px 20px; }')
-				const decl = (ast.first_child! as RuleNode).block!.first_child!
+				const decl = (ast.first_child! as Rule).block!.first_child!
 
 				const deep = decl.clone()
 				const value = deep.value as PlainCSSNode
@@ -835,7 +835,7 @@ describe('CSSNode', () => {
 
 			test('collects multiple children correctly', () => {
 				const ast = parse('div { margin: 10px 20px 30px 40px; }')
-				const decl = (ast.first_child! as RuleNode).block!.first_child!
+				const decl = (ast.first_child! as Rule).block!.first_child!
 
 				const clone = decl.clone()
 				const value = clone.value as PlainCSSNode
@@ -849,7 +849,7 @@ describe('CSSNode', () => {
 
 			test('handles nested children', () => {
 				const ast = parse('div { margin: calc(10px + 20px); }')
-				const decl = (ast.first_child! as RuleNode).block!.first_child!
+				const decl = (ast.first_child! as Rule).block!.first_child!
 
 				const clone = decl.clone({ deep: true })
 				const value = clone.value as PlainCSSNode
@@ -865,7 +865,7 @@ describe('CSSNode', () => {
 		describe('Type-specific properties', () => {
 			test('extracts declaration properties', () => {
 				const ast = parse('div { color: red !important; }', { parse_values: false })
-				const decl = (ast.first_child! as RuleNode).block!.first_child!
+				const decl = (ast.first_child! as Rule).block!.first_child!
 
 				const clone = decl.clone({ deep: false })
 
@@ -892,7 +892,7 @@ describe('CSSNode', () => {
 
 			test('extracts dimension value with unit', () => {
 				const ast = parse('div { width: 100px; }')
-				const decl = (ast.first_child! as RuleNode).block!.first_child!
+				const decl = (ast.first_child! as Rule).block!.first_child!
 				const dimension = decl.first_child!.first_child!
 
 				const clone = dimension.clone({ deep: false })
@@ -905,7 +905,7 @@ describe('CSSNode', () => {
 
 			test('extracts number value', () => {
 				const ast = parse('div { opacity: 0.5; }')
-				const decl = (ast.first_child! as RuleNode).block!.first_child!
+				const decl = (ast.first_child! as Rule).block!.first_child!
 				const number = decl.first_child!.first_child!
 
 				const clone = number.clone({ deep: false })
@@ -981,7 +981,7 @@ describe('CSSNode', () => {
 		describe('Flags', () => {
 			test('includes is_important flag when true', () => {
 				const ast = parse('div { color: red !important; }', { parse_values: false })
-				const decl = (ast.first_child! as RuleNode).block!.first_child!
+				const decl = (ast.first_child! as Rule).block!.first_child!
 
 				const clone = decl.clone()
 
@@ -990,7 +990,7 @@ describe('CSSNode', () => {
 
 			test('is_important is false', () => {
 				const ast = parse('div { color: red; }')
-				const decl = (ast.first_child! as RuleNode).block!.first_child!
+				const decl = (ast.first_child! as Rule).block!.first_child!
 
 				const clone = decl.clone()
 
@@ -1008,7 +1008,7 @@ describe('CSSNode', () => {
 
 			test('includes is_vendor_prefixed flag', () => {
 				const ast = parse('div { -webkit-transform: rotate(45deg); }', { parse_values: false })
-				const decl = (ast.first_child! as RuleNode).block!.first_child!
+				const decl = (ast.first_child! as Rule).block!.first_child!
 
 				const clone = decl.clone()
 
@@ -1019,7 +1019,7 @@ describe('CSSNode', () => {
 		describe('Location information', () => {
 			test('omits location by default', () => {
 				const ast = parse('div { color: red; }', { parse_values: false })
-				const decl = (ast.first_child! as RuleNode).block!.first_child!
+				const decl = (ast.first_child! as Rule).block!.first_child!
 
 				const clone = decl.clone()
 
@@ -1032,7 +1032,7 @@ describe('CSSNode', () => {
 
 			test('includes location when requested', () => {
 				const ast = parse('div { color: red; }', { parse_values: false })
-				const decl = (ast.first_child! as RuleNode).block!.first_child!
+				const decl = (ast.first_child! as Rule).block!.first_child!
 
 				const clone = decl.clone({ locations: true })
 
@@ -1045,7 +1045,7 @@ describe('CSSNode', () => {
 
 			test('includes location in deep cloned children', () => {
 				const ast = parse('div { margin: 10px 20px; }')
-				const decl = (ast.first_child! as RuleNode).block!.first_child!
+				const decl = (ast.first_child! as Rule).block!.first_child!
 
 				const clone = decl.clone({ locations: true })
 				const value = clone.value as PlainCSSNode
@@ -1072,8 +1072,8 @@ describe('NODE_TYPES namespace', () => {
 		expect(ast.type).toBe(NODE_TYPES.STYLESHEET)
 		expect(ast.first_child!.type).toBe(NODE_TYPES.STYLE_RULE)
 		expect(ast.first_child!.first_child!.type).toBe(NODE_TYPES.SELECTOR_LIST)
-		expect((ast.first_child! as RuleNode).block!.type).toBe(NODE_TYPES.BLOCK)
-		expect((ast.first_child! as RuleNode).block!.first_child!.type).toBe(NODE_TYPES.DECLARATION)
+		expect((ast.first_child! as Rule).block!.type).toBe(NODE_TYPES.BLOCK)
+		expect((ast.first_child! as Rule).block!.first_child!.type).toBe(NODE_TYPES.DECLARATION)
 	})
 
 	test('namespace values should match individual constants', async () => {
