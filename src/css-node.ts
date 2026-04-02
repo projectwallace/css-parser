@@ -42,6 +42,7 @@ import {
 	PRELUDE_OPERATOR,
 	FEATURE_RANGE,
 	AT_RULE_PRELUDE,
+	PRELUDE_SELECTORLIST,
 	FLAG_IMPORTANT,
 	FLAG_HAS_ERROR,
 	FLAG_HAS_BLOCK,
@@ -118,6 +119,7 @@ export const TYPE_NAMES = {
 	[PRELUDE_OPERATOR]: 'Operator',
 	[FEATURE_RANGE]: 'MediaFeatureRange',
 	[AT_RULE_PRELUDE]: 'AtrulePrelude',
+	[PRELUDE_SELECTORLIST]: 'PreludeSelectorList',
 } as const
 
 export type TypeName = (typeof TYPE_NAMES)[keyof typeof TYPE_NAMES] | 'unknown'
@@ -183,6 +185,7 @@ export type CSSNodeType =
 	| typeof PRELUDE_OPERATOR
 	| typeof FEATURE_RANGE
 	| typeof AT_RULE_PRELUDE
+	| typeof PRELUDE_SELECTORLIST
 
 // Options for cloning nodes
 export interface CloneOptions {

@@ -75,7 +75,7 @@ describe('type predicates — runtime', () => {
 
 	it('is_block identifies blocks', () => {
 		const root = parse('a { color: red }')
-		const rule = root.first_child!
+		const rule = root.first_child! as RuleNode
 		expect(is_block(rule.block!)).toBe(true)
 	})
 
@@ -116,7 +116,7 @@ describe('type predicates — runtime', () => {
 	it('is_media_feature identifies media features', () => {
 		// @media (min-width: 768px): atrule > prelude(AT_RULE_PRELUDE) > MediaQuery > MediaFeature
 		const root = parse('@media (min-width: 768px) {}')
-		const atrule = root.first_child!
+		const atrule = root.first_child! as AtruleNode
 		const mediaQuery = atrule.prelude!.first_child!
 		const mediaFeature = mediaQuery.first_child!
 		expect(is_media_feature(mediaFeature)).toBe(true)
@@ -125,7 +125,7 @@ describe('type predicates — runtime', () => {
 	it('is_layer_name identifies layer name nodes', () => {
 		// @layer utilities: atrule > prelude(AT_RULE_PRELUDE) > LayerName
 		const root = parse('@layer utilities;')
-		const atrule = root.first_child!
+		const atrule = root.first_child! as AtruleNode
 		const layer = atrule.prelude!.first_child!
 		expect(is_layer_name(layer)).toBe(true)
 	})
@@ -177,7 +177,7 @@ describe('type narrowing — compile-time', () => {
 
 	it('is_block narrows is_empty to boolean', () => {
 		const root = parse('a { color: red }')
-		const rule = root.first_child!
+		const rule = root.first_child! as RuleNode
 		const block = rule.block!
 		if (is_block(block)) {
 			expectTypeOf(block).toMatchTypeOf<BlockNode>()
@@ -227,7 +227,7 @@ describe('type narrowing — compile-time', () => {
 
 	it('is_media_feature narrows property to string; omits name', () => {
 		const root = parse('@media (min-width: 768px) {}')
-		const mediaFeature = root.first_child!.prelude!.first_child!.first_child!
+		const mediaFeature = (root.first_child! as AtruleNode).prelude!.first_child!.first_child!
 		if (is_media_feature(mediaFeature)) {
 			expectTypeOf(mediaFeature).toMatchTypeOf<MediaFeatureNode>()
 			expectTypeOf(mediaFeature.property).toEqualTypeOf<string>()
@@ -237,7 +237,7 @@ describe('type narrowing — compile-time', () => {
 
 	it('is_layer_name narrows name to string', () => {
 		const root = parse('@layer utilities;')
-		const layer = root.first_child!.prelude!.first_child!
+		const layer = (root.first_child! as AtruleNode).prelude!.first_child!
 		if (is_layer_name(layer)) {
 			expectTypeOf(layer).toMatchTypeOf<LayerNameNode>()
 			expectTypeOf(layer.name).toEqualTypeOf<string>()

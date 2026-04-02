@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'vitest'
 import { parse_declaration } from './parse-declaration'
 import { DECLARATION, IDENTIFIER, DIMENSION, NUMBER, FUNCTION } from './arena'
+import type { NumberNode, DimensionNode, FunctionNode } from './node-types'
 
 describe('parse_declaration', () => {
 	describe('Location Tracking', () => {
@@ -225,15 +226,15 @@ describe('parse_declaration', () => {
 			const node = parse_declaration('opacity: 0.5')
 			expect(node.first_child!.children).toHaveLength(1)
 			expect(node.first_child!.children[0].type).toBe(NUMBER)
-			expect(node.first_child!.children[0].value).toBe(0.5)
+			expect((node.first_child!.children[0] as NumberNode).value).toBe(0.5)
 		})
 
 		test('dimension value', () => {
 			const node = parse_declaration('width: 100px')
 			expect(node.first_child!.children).toHaveLength(1)
 			expect(node.first_child!.children[0].type).toBe(DIMENSION)
-			expect(node.first_child!.children[0].value).toBe(100)
-			expect(node.first_child!.children[0].unit).toBe('px')
+			expect((node.first_child!.children[0] as DimensionNode).value).toBe(100)
+			expect((node.first_child!.children[0] as DimensionNode).unit).toBe('px')
 		})
 
 		test('multiple values', () => {
@@ -250,14 +251,14 @@ describe('parse_declaration', () => {
 			const node = parse_declaration('transform: rotate(45deg)')
 			expect(node.first_child!.children).toHaveLength(1)
 			expect(node.first_child!.children[0].type).toBe(FUNCTION)
-			expect(node.first_child!.children[0].name).toBe('rotate')
+			expect((node.first_child!.children[0] as FunctionNode).name).toBe('rotate')
 		})
 
 		test('nested functions', () => {
 			const node = parse_declaration('width: calc(100% - 20px)')
 			expect(node.first_child!.children).toHaveLength(1)
 			expect(node.first_child!.children[0].type).toBe(FUNCTION)
-			expect(node.first_child!.children[0].name).toBe('calc')
+			expect((node.first_child!.children[0] as FunctionNode).name).toBe('calc')
 			expect(node.first_child!.children[0].children.length).toBeGreaterThan(0)
 		})
 
@@ -265,14 +266,14 @@ describe('parse_declaration', () => {
 			const node = parse_declaration('background: linear-gradient(to bottom, red, blue)')
 			expect(node.first_child!.children).toHaveLength(1)
 			expect(node.first_child!.children[0].type).toBe(FUNCTION)
-			expect(node.first_child!.children[0].name).toBe('linear-gradient')
+			expect((node.first_child!.children[0] as FunctionNode).name).toBe('linear-gradient')
 		})
 
 		test('CSS variable', () => {
 			const node = parse_declaration('color: var(--primary-color)')
 			expect(node.first_child!.children).toHaveLength(1)
 			expect(node.first_child!.children[0].type).toBe(FUNCTION)
-			expect(node.first_child!.children[0].name).toBe('var')
+			expect((node.first_child!.children[0] as FunctionNode).name).toBe('var')
 		})
 	})
 

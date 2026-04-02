@@ -1,6 +1,5 @@
 // AST walker - depth-first traversal
-import type { CSSNode } from './css-node'
-import type { AnyCssNode } from './node-types'
+import type { AnyCssNode, CssNodeCommon } from './node-types'
 import { STYLE_RULE, AT_RULE } from './constants'
 
 // Control flow symbols for walk callbacks
@@ -18,7 +17,7 @@ type WalkCallback = (node: AnyCssNode, depth: number) => void | typeof SKIP | ty
  *                   Depth increments only for STYLE_RULE and AT_RULE nodes (tracks rule nesting, not tree depth).
  * @param depth - Starting depth (default: 0)
  */
-export function walk(node: CSSNode, callback: WalkCallback, depth = 0): boolean {
+export function walk(node: CssNodeCommon, callback: WalkCallback, depth = 0): boolean {
 	// Call callback for current node with current depth
 	const result = callback(node as AnyCssNode, depth)
 
@@ -39,7 +38,7 @@ export function walk(node: CSSNode, callback: WalkCallback, depth = 0): boolean 
 	}
 
 	// Recursively walk children with potentially incremented depth
-	let child = node.first_child
+	let child: CssNodeCommon | null = node.first_child
 	while (child) {
 		const should_continue = walk(child, callback, child_depth)
 		if (!should_continue) {
@@ -68,7 +67,7 @@ interface WalkEnterLeaveOptions {
  * @param options - Object with optional enter and leave callback functions
  */
 export function traverse(
-	node: CSSNode,
+	node: CssNodeCommon,
 	{ enter = NOOP, leave = NOOP }: WalkEnterLeaveOptions = {},
 ): boolean {
 	// Call enter callback before processing children
@@ -81,7 +80,7 @@ export function traverse(
 
 	// Only traverse children if SKIP was not returned
 	if (enter_result !== SKIP) {
-		let child = node.first_child
+		let child: CssNodeCommon | null = node.first_child
 		while (child) {
 			const should_continue = traverse(child, { enter, leave })
 			if (!should_continue) {

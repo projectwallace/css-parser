@@ -57,6 +57,7 @@ import {
 	SUPPORTS_QUERY,
 	LAYER_NAME,
 	PRELUDE_OPERATOR,
+	PRELUDE_SELECTORLIST,
 	FEATURE_RANGE,
 	AT_RULE_PRELUDE,
 } from './arena'
@@ -69,7 +70,7 @@ import {
 // plus more), so type predicates accepting CssNodeCommon also accept CSSNode.
 // ---------------------------------------------------------------------------
 
-interface CssNodeCommon {
+export interface CssNodeCommon {
 	readonly type: CSSNodeType
 	readonly type_name: TypeName
 	readonly text: string
@@ -187,10 +188,14 @@ export interface FunctionNode extends CssNodeCommon {
 	readonly type: typeof FUNCTION
 	/** Function name, e.g. "rgb", "calc" */
 	readonly name: string
+	/** Function arguments as raw text, e.g. "255, 0, 0" for rgb(255, 0, 0) */
+	readonly value: string | null
 }
 
 export interface OperatorNode extends CssNodeCommon {
 	readonly type: typeof OPERATOR
+	/** The operator character(s), e.g. ",", "+", "-" */
+	readonly value: string
 }
 
 export interface ParenthesisNode extends CssNodeCommon {
@@ -199,6 +204,10 @@ export interface ParenthesisNode extends CssNodeCommon {
 
 export interface UrlNode extends CssNodeCommon {
 	readonly type: typeof URL
+	/** Always "url" */
+	readonly name: string
+	/** URL content, e.g. '"image.png"' (with quotes) or 'mycursor.cur' (unquoted) */
+	readonly value: string | null
 }
 
 export interface UnicodeRangeNode extends CssNodeCommon {
@@ -262,6 +271,8 @@ export interface CombinatorNode extends CssNodeCommon {
 
 export interface UniversalSelectorNode extends CssNodeCommon {
 	readonly type: typeof UNIVERSAL_SELECTOR
+	/** Namespace qualifier (e.g. 'ns' in 'ns|*'), undefined if no namespace */
+	readonly name: string | undefined
 }
 
 export interface NestingSelectorNode extends CssNodeCommon {
@@ -306,6 +317,8 @@ export interface MediaFeatureNode extends CssNodeCommon {
 
 export interface MediaTypeNode extends CssNodeCommon {
 	readonly type: typeof MEDIA_TYPE
+	/** Media type text, e.g. "screen", "print" */
+	readonly value: string
 }
 
 export interface ContainerQueryNode extends CssNodeCommon {
@@ -314,11 +327,21 @@ export interface ContainerQueryNode extends CssNodeCommon {
 
 export interface SupportsQueryNode extends CssNodeCommon {
 	readonly type: typeof SUPPORTS_QUERY
+	/** The supports condition text, e.g. "display: flex" from "supports(display: flex)" */
+	readonly value: string
 }
 
 export interface LayerNameNode extends CssNodeCommon {
 	readonly type: typeof LAYER_NAME
 	readonly name: string
+	/** Alias for name — the layer name string, e.g. "base" from "layer(base)" */
+	readonly value: string
+}
+
+export interface PreludeSelectorListNode extends CssNodeCommon {
+	readonly type: typeof PRELUDE_SELECTORLIST
+	/** The selector text inside the parentheses, e.g. ".parent" from "(.parent)" */
+	readonly value: string
 }
 
 export interface PreludeOperatorNode extends CssNodeCommon {
@@ -327,6 +350,8 @@ export interface PreludeOperatorNode extends CssNodeCommon {
 
 export interface FeatureRangeNode extends CssNodeCommon {
 	readonly type: typeof FEATURE_RANGE
+	/** The feature name in a range comparison, e.g. "width" from "(width >= 400px)" */
+	readonly name: string
 }
 
 // ---------------------------------------------------------------------------
@@ -381,6 +406,7 @@ export type AnyCssNode =
 	| LayerNameNode
 	| PreludeOperatorNode
 	| FeatureRangeNode
+	| PreludeSelectorListNode
 
 // ---------------------------------------------------------------------------
 // Type predicate functions
@@ -512,4 +538,7 @@ export function is_prelude_operator(node: CssNodeCommon): node is PreludeOperato
 }
 export function is_feature_range(node: CssNodeCommon): node is FeatureRangeNode {
 	return node.type === FEATURE_RANGE
+}
+export function is_prelude_selectorlist(node: CssNodeCommon): node is PreludeSelectorListNode {
+	return node.type === PRELUDE_SELECTORLIST
 }
