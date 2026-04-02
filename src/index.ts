@@ -57,6 +57,7 @@ export { NODE_TYPES } from './constants'
 export {
 	type CssNodeCommon,
 	type AnyCss,
+	type ToPlain,
 	type StyleSheet,
 	type Rule,
 	type Atrule,

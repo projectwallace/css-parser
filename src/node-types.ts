@@ -91,12 +91,45 @@ export interface CssNodeCommon {
 	clone(options?: CloneOptions): PlainCSSNode
 }
 
+/**
+ * Maps a CssNodeCommon subtype interface to its plain-object equivalent,
+ * as returned by clone().
+ *
+ * The result is always a subtype of PlainCSSNode (the intersection starts
+ * with PlainCSSNode), with two additions:
+ *  - `type` is narrowed to T's specific literal (enables discriminated unions)
+ *  - subtype-specific properties (those not on CssNodeCommon) are added with
+ *    CssNodeCommon references replaced by PlainCSSNode
+ *
+ * Traversal properties (first_child, next_sibling, etc.) are excluded since
+ * they live on CssNodeCommon and are never serialised by clone().
+ *
+ *   const rule = root.first_child as Rule
+ *   rule.clone().prelude   // PlainCSSNode | null  — not PlainCSSNode | undefined
+ *   rule.clone().block     // PlainCSSNode | null
+ */
+export type ToPlain<T extends CssNodeCommon> = PlainCSSNode &
+	{ type: T['type'] } & {
+		[K in Exclude<
+			keyof T,
+			keyof CssNodeCommon | symbol | 'attr_operator' | 'attr_flags'
+		> as T[K] extends (...args: any[]) => any ? never : K]: T[K] extends
+			| CssNodeCommon
+			| null
+			| undefined
+			? PlainCSSNode | Exclude<T[K], CssNodeCommon>
+			: T[K] extends CssNodeCommon[]
+				? PlainCSSNode[]
+				: T[K]
+	}
+
 // ---------------------------------------------------------------------------
 // Structural nodes
 // ---------------------------------------------------------------------------
 
 export interface StyleSheet extends CssNodeCommon {
 	readonly type: typeof STYLESHEET
+	clone(options?: CloneOptions): ToPlain<StyleSheet>
 }
 
 export interface Rule extends CssNodeCommon {
@@ -108,6 +141,7 @@ export interface Rule extends CssNodeCommon {
 	readonly has_prelude: boolean
 	readonly has_block: boolean
 	readonly has_declarations: boolean
+	clone(options?: CloneOptions): ToPlain<Rule>
 }
 
 export interface Atrule extends CssNodeCommon {
@@ -120,6 +154,7 @@ export interface Atrule extends CssNodeCommon {
 	readonly has_prelude: boolean
 	readonly has_block: boolean
 	readonly has_declarations: boolean
+	clone(options?: CloneOptions): ToPlain<Atrule>
 }
 
 export interface Declaration extends CssNodeCommon {
@@ -130,27 +165,33 @@ export interface Declaration extends CssNodeCommon {
 	readonly value: Value | Raw | null
 	readonly is_important: boolean
 	readonly is_browserhack: boolean
+	clone(options?: CloneOptions): ToPlain<Declaration>
 }
 
 export interface Selector extends CssNodeCommon {
 	readonly type: typeof SELECTOR
+	clone(options?: CloneOptions): ToPlain<Selector>
 }
 
 export interface SelectorList extends CssNodeCommon {
 	readonly type: typeof SELECTOR_LIST
+	clone(options?: CloneOptions): ToPlain<SelectorList>
 }
 
 export interface Block extends CssNodeCommon {
 	readonly type: typeof BLOCK
 	readonly is_empty: boolean
+	clone(options?: CloneOptions): ToPlain<Block>
 }
 
 export interface Comment extends CssNodeCommon {
 	readonly type: typeof COMMENT
+	clone(options?: CloneOptions): ToPlain<Comment>
 }
 
 export interface Raw extends CssNodeCommon {
 	readonly type: typeof RAW
+	clone(options?: CloneOptions): ToPlain<Raw>
 }
 
 // ---------------------------------------------------------------------------
@@ -160,11 +201,13 @@ export interface Raw extends CssNodeCommon {
 export interface Identifier extends CssNodeCommon {
 	readonly type: typeof IDENTIFIER
 	readonly name: string
+	clone(options?: CloneOptions): ToPlain<Identifier>
 }
 
 export interface Number extends CssNodeCommon {
 	readonly type: typeof NUMBER
 	readonly value: number
+	clone(options?: CloneOptions): ToPlain<Number>
 }
 
 export interface Dimension extends CssNodeCommon {
@@ -172,14 +215,17 @@ export interface Dimension extends CssNodeCommon {
 	readonly value: number
 	/** Unit string, e.g. "px", "%" */
 	readonly unit: string
+	clone(options?: CloneOptions): ToPlain<Dimension>
 }
 
 export interface String extends CssNodeCommon {
 	readonly type: typeof STRING
+	clone(options?: CloneOptions): ToPlain<String>
 }
 
 export interface Hash extends CssNodeCommon {
 	readonly type: typeof HASH
+	clone(options?: CloneOptions): ToPlain<Hash>
 }
 
 export interface Function extends CssNodeCommon {
@@ -188,30 +234,36 @@ export interface Function extends CssNodeCommon {
 	readonly name: string
 	/** Function arguments as raw text, e.g. "255, 0, 0" for rgb(255, 0, 0) */
 	readonly value: string | null
+	clone(options?: CloneOptions): ToPlain<Function>
 }
 
 export interface Operator extends CssNodeCommon {
 	readonly type: typeof OPERATOR
 	/** The operator character(s), e.g. ",", "+", "-" */
 	readonly value: string
+	clone(options?: CloneOptions): ToPlain<Operator>
 }
 
 export interface Parenthesis extends CssNodeCommon {
 	readonly type: typeof PARENTHESIS
+	clone(options?: CloneOptions): ToPlain<Parenthesis>
 }
 
 export interface Url extends CssNodeCommon {
 	readonly type: typeof URL
 	/** URL content, e.g. '"image.png"' (with quotes) or 'mycursor.cur' (unquoted) */
 	readonly value: string | null
+	clone(options?: CloneOptions): ToPlain<Url>
 }
 
 export interface UnicodeRange extends CssNodeCommon {
 	readonly type: typeof UNICODE_RANGE
+	clone(options?: CloneOptions): ToPlain<UnicodeRange>
 }
 
 export interface Value extends CssNodeCommon {
 	readonly type: typeof VALUE
+	clone(options?: CloneOptions): ToPlain<Value>
 }
 
 // ---------------------------------------------------------------------------
@@ -222,18 +274,21 @@ export interface TypeSelector extends CssNodeCommon {
 	readonly type: typeof TYPE_SELECTOR
 	/** Element type, e.g. "div", "span" */
 	readonly name: string
+	clone(options?: CloneOptions): ToPlain<TypeSelector>
 }
 
 export interface ClassSelector extends CssNodeCommon {
 	readonly type: typeof CLASS_SELECTOR
 	/** Class name without dot, e.g. "foo" from ".foo" */
 	readonly name: string
+	clone(options?: CloneOptions): ToPlain<ClassSelector>
 }
 
 export interface IdSelector extends CssNodeCommon {
 	readonly type: typeof ID_SELECTOR
 	/** Id without hash, e.g. "bar" from "#bar" */
 	readonly name: string
+	clone(options?: CloneOptions): ToPlain<IdSelector>
 }
 
 export interface AttributeSelector extends CssNodeCommon {
@@ -244,40 +299,56 @@ export interface AttributeSelector extends CssNodeCommon {
 	readonly attr_operator: number
 	/** One of the ATTR_FLAG_* constants */
 	readonly attr_flags: number
+	clone(
+		options?: CloneOptions,
+	): PlainCSSNode & {
+		type: typeof ATTRIBUTE_SELECTOR
+		name: string
+		/** Operator as a string, e.g. "=", "~=", "|=" */
+		attr_operator: string
+		/** Flags as a string, e.g. "i", "s", or "" */
+		attr_flags: string
+	}
 }
 
 export interface PseudoClassSelector extends CssNodeCommon {
 	readonly type: typeof PSEUDO_CLASS_SELECTOR
 	/** Pseudo-class name without colon, e.g. "hover" */
 	readonly name: string
+	clone(options?: CloneOptions): ToPlain<PseudoClassSelector>
 }
 
 export interface PseudoElementSelector extends CssNodeCommon {
 	readonly type: typeof PSEUDO_ELEMENT_SELECTOR
 	/** Pseudo-element name without colons, e.g. "before" */
 	readonly name: string
+	clone(options?: CloneOptions): ToPlain<PseudoElementSelector>
 }
 
 export interface Combinator extends CssNodeCommon {
 	readonly type: typeof COMBINATOR
 	/** Combinator character(s), e.g. " ", ">", "~", "+", "||", "/deep/" */
 	readonly name: string
+	clone(options?: CloneOptions): ToPlain<Combinator>
 }
 
 export interface UniversalSelector extends CssNodeCommon {
 	readonly type: typeof UNIVERSAL_SELECTOR
-	/** Namespace qualifier (e.g. 'ns' in 'ns|*'), null if no namespace */
-	readonly name: string | null
+	/** Namespace qualifier (e.g. 'ns' in 'ns|*'), undefined if no namespace */
+	readonly name: string | undefined
+	clone(options?: CloneOptions): ToPlain<UniversalSelector>
 }
 
 export interface NestingSelector extends CssNodeCommon {
 	readonly type: typeof NESTING_SELECTOR
+	clone(options?: CloneOptions): ToPlain<NestingSelector>
 }
 
 export interface NthSelector extends CssNodeCommon {
 	readonly type: typeof NTH_SELECTOR
 	readonly nth_a: string | undefined
 	readonly nth_b: string | undefined
+	clone(options?: CloneOptions): ToPlain<NthSelector>
 }
 
 export interface NthOfSelector extends CssNodeCommon {
@@ -286,10 +357,12 @@ export interface NthOfSelector extends CssNodeCommon {
 	readonly nth: NthSelector | null
 	/** The selector list from :nth-child(An+B of <selector>) */
 	readonly selector: SelectorList | null
+	clone(options?: CloneOptions): ToPlain<NthOfSelector>
 }
 
 export interface LangSelector extends CssNodeCommon {
 	readonly type: typeof LANG_SELECTOR
+	clone(options?: CloneOptions): ToPlain<LangSelector>
 }
 
 // ---------------------------------------------------------------------------
@@ -298,32 +371,38 @@ export interface LangSelector extends CssNodeCommon {
 
 export interface AtrulePrelude extends CssNodeCommon {
 	readonly type: typeof AT_RULE_PRELUDE
+	clone(options?: CloneOptions): ToPlain<AtrulePrelude>
 }
 
 export interface MediaQuery extends CssNodeCommon {
 	readonly type: typeof MEDIA_QUERY
+	clone(options?: CloneOptions): ToPlain<MediaQuery>
 }
 
 export interface MediaFeature extends CssNodeCommon {
 	readonly type: typeof MEDIA_FEATURE
 	/** Feature name, e.g. "min-width" */
 	readonly property: string
+	clone(options?: CloneOptions): ToPlain<MediaFeature>
 }
 
 export interface MediaType extends CssNodeCommon {
 	readonly type: typeof MEDIA_TYPE
 	/** Media type text, e.g. "screen", "print" */
 	readonly value: string
+	clone(options?: CloneOptions): ToPlain<MediaType>
 }
 
 export interface ContainerQuery extends CssNodeCommon {
 	readonly type: typeof CONTAINER_QUERY
+	clone(options?: CloneOptions): ToPlain<ContainerQuery>
 }
 
 export interface SupportsQuery extends CssNodeCommon {
 	readonly type: typeof SUPPORTS_QUERY
 	/** The supports condition text, e.g. "display: flex" from "supports(display: flex)" */
 	readonly value: string
+	clone(options?: CloneOptions): ToPlain<SupportsQuery>
 }
 
 export interface LayerName extends CssNodeCommon {
@@ -331,22 +410,26 @@ export interface LayerName extends CssNodeCommon {
 	readonly name: string
 	/** Alias for name — the layer name string, e.g. "base" from "layer(base)" */
 	readonly value: string
+	clone(options?: CloneOptions): ToPlain<LayerName>
 }
 
 export interface PreludeSelectorList extends CssNodeCommon {
 	readonly type: typeof PRELUDE_SELECTORLIST
 	/** The selector text inside the parentheses, e.g. ".parent" from "(.parent)" */
 	readonly value: string
+	clone(options?: CloneOptions): ToPlain<PreludeSelectorList>
 }
 
 export interface PreludeOperator extends CssNodeCommon {
 	readonly type: typeof PRELUDE_OPERATOR
+	clone(options?: CloneOptions): ToPlain<PreludeOperator>
 }
 
 export interface FeatureRange extends CssNodeCommon {
 	readonly type: typeof FEATURE_RANGE
 	/** The feature name in a range comparison, e.g. "width" from "(width >= 400px)" */
 	readonly name: string
+	clone(options?: CloneOptions): ToPlain<FeatureRange>
 }
 
 // ---------------------------------------------------------------------------
