@@ -259,7 +259,9 @@ describe('parse_declaration', () => {
 			expect((node.first_child! as Value).children).toHaveLength(1)
 			expect((node.first_child! as Value).children[0].type).toBe(FUNCTION)
 			expect(((node.first_child! as Value).children[0] as Function).name).toBe('calc')
-			expect(((node.first_child! as Value).children[0] as Function).children.length).toBeGreaterThan(0)
+			expect(
+				((node.first_child! as Value).children[0] as Function).children.length,
+			).toBeGreaterThan(0)
 		})
 
 		test('complex value with multiple functions', () => {

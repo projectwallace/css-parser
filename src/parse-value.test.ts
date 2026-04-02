@@ -14,7 +14,18 @@ import {
 	VALUE,
 	DECLARATION,
 } from './arena'
-import type { Atrule, Block, Declaration, Dimension, Function, Number, Operator, Parenthesis, Url, Value } from './node-types'
+import type {
+	Atrule,
+	Block,
+	Declaration,
+	Dimension,
+	Function,
+	Number,
+	Operator,
+	Parenthesis,
+	Url,
+	Value,
+} from './node-types'
 
 describe('Value Node Types', () => {
 	// Helper to get first value node from a declaration
@@ -191,8 +202,9 @@ describe('Value Node Types', () => {
 		describe('PARENTHESIS', () => {
 			it('should have correct offset and length', () => {
 				const root = parse('div { width: calc((100% - 50px) / 2); }')
-				const func =
-					(root.first_child?.first_child?.next_sibling?.first_child?.first_child! as Value).children[0] as Function | undefined
+				const func = (
+					root.first_child?.first_child?.next_sibling?.first_child?.first_child! as Value
+				).children[0] as Function | undefined
 				const paren = func?.children[0]
 				expect(paren?.start).toBe(18)
 				expect(paren?.length).toBe(13)
@@ -203,8 +215,9 @@ describe('Value Node Types', () => {
 
 			it('should have correct line and column on line 2', () => {
 				const root = parse('div {\n  width: calc((100% - 50px) / 2);\n}')
-				const func =
-					(root.first_child?.first_child?.next_sibling?.first_child?.first_child! as Value).children[0] as Function | undefined
+				const func = (
+					root.first_child?.first_child?.next_sibling?.first_child?.first_child! as Value
+				).children[0] as Function | undefined
 				const paren = func?.children[0]
 				expect(paren?.start).toBe(20)
 				expect(paren?.length).toBe(13)
@@ -292,15 +305,16 @@ describe('Value Node Types', () => {
 
 		it('OPERATOR type constant', () => {
 			const root = parse('div { font-family: Arial, sans-serif; }')
-			const comma =
-				(root.first_child?.first_child?.next_sibling?.first_child?.first_child! as Value).children[1]
+			const comma = (
+				root.first_child?.first_child?.next_sibling?.first_child?.first_child! as Value
+			).children[1]
 			expect(comma?.type).toBe(OPERATOR)
 		})
 
 		it('PARENTHESIS type constant', () => {
 			const root = parse('div { width: calc((100% - 50px) / 2); }')
-			const func =
-				(root.first_child?.first_child?.next_sibling?.first_child?.first_child! as Value).children[0] as Function | undefined
+			const func = (root.first_child?.first_child?.next_sibling?.first_child?.first_child! as Value)
+				.children[0] as Function | undefined
 			const paren = func?.children[0]
 			expect(paren?.type).toBe(PARENTHESIS)
 		})
@@ -354,15 +368,16 @@ describe('Value Node Types', () => {
 
 		it('OPERATOR type_name', () => {
 			const root = parse('div { font-family: Arial, sans-serif; }')
-			const comma =
-				(root.first_child?.first_child?.next_sibling?.first_child?.first_child! as Value).children[1]
+			const comma = (
+				root.first_child?.first_child?.next_sibling?.first_child?.first_child! as Value
+			).children[1]
 			expect(comma?.type_name).toBe('Operator')
 		})
 
 		it('PARENTHESIS type_name', () => {
 			const root = parse('div { width: calc((100% - 50px) / 2); }')
-			const func =
-				(root.first_child?.first_child?.next_sibling?.first_child?.first_child! as Value).children[0] as Function | undefined
+			const func = (root.first_child?.first_child?.next_sibling?.first_child?.first_child! as Value)
+				.children[0] as Function | undefined
 			const paren = func?.children[0]
 			expect(paren?.type_name).toBe('Parentheses')
 		})
@@ -374,8 +389,9 @@ describe('Value Node Types', () => {
 
 		it('UNICODE_RANGE type_name', () => {
 			const root = parse('@font-face { unicode-range: u+0025-00ff; }')
-			const unicode_range = ((root.first_child! as Atrule).block?.first_child?.first_child as Value | null)
-				?.children[0]
+			const unicode_range = (
+				(root.first_child! as Atrule).block?.first_child?.first_child as Value | null
+			)?.children[0]
 			expect(unicode_range?.type_name).toBe('UnicodeRange')
 		})
 	})
@@ -548,12 +564,22 @@ describe('Value Node Types', () => {
 				expect((decl!.first_child! as Value).children[0].type).toBe(FUNCTION)
 				expect(((decl!.first_child! as Value).children[0] as Function).name).toBe('calc')
 				expect(((decl!.first_child! as Value).children[0] as Function).children).toHaveLength(3)
-				expect(((decl!.first_child! as Value).children[0] as Function).children[0].type).toBe(DIMENSION)
-				expect(((decl!.first_child! as Value).children[0] as Function).children[0].text).toBe('100%')
-				expect(((decl!.first_child! as Value).children[0] as Function).children[1].type).toBe(OPERATOR)
+				expect(((decl!.first_child! as Value).children[0] as Function).children[0].type).toBe(
+					DIMENSION,
+				)
+				expect(((decl!.first_child! as Value).children[0] as Function).children[0].text).toBe(
+					'100%',
+				)
+				expect(((decl!.first_child! as Value).children[0] as Function).children[1].type).toBe(
+					OPERATOR,
+				)
 				expect(((decl!.first_child! as Value).children[0] as Function).children[1].text).toBe('-')
-				expect(((decl!.first_child! as Value).children[0] as Function).children[2].type).toBe(DIMENSION)
-				expect(((decl!.first_child! as Value).children[0] as Function).children[2].text).toBe('20px')
+				expect(((decl!.first_child! as Value).children[0] as Function).children[2].type).toBe(
+					DIMENSION,
+				)
+				expect(((decl!.first_child! as Value).children[0] as Function).children[2].text).toBe(
+					'20px',
+				)
 			})
 
 			it('should parse var() function', () => {
@@ -564,8 +590,12 @@ describe('Value Node Types', () => {
 				expect((decl!.first_child! as Value).children[0].type).toBe(FUNCTION)
 				expect(((decl!.first_child! as Value).children[0] as Function).name).toBe('var')
 				expect(((decl!.first_child! as Value).children[0] as Function).children).toHaveLength(1)
-				expect(((decl!.first_child! as Value).children[0] as Function).children[0].type).toBe(IDENTIFIER)
-				expect(((decl!.first_child! as Value).children[0] as Function).children[0].text).toBe('--primary-color')
+				expect(((decl!.first_child! as Value).children[0] as Function).children[0].type).toBe(
+					IDENTIFIER,
+				)
+				expect(((decl!.first_child! as Value).children[0] as Function).children[0].text).toBe(
+					'--primary-color',
+				)
 			})
 
 			it('should provide node.value for calc()', () => {
@@ -748,8 +778,12 @@ describe('Value Node Types', () => {
 				expect((decl!.first_child! as Value).children).toHaveLength(1)
 				expect((decl!.first_child! as Value).children[0].type).toBe(URL)
 				expect(((decl!.first_child! as Value).children[0] as Function).children).toHaveLength(1)
-				expect(((decl!.first_child! as Value).children[0] as Function).children[0].type).toBe(STRING)
-				expect(((decl!.first_child! as Value).children[0] as Function).children[0].text).toBe('"image.png"')
+				expect(((decl!.first_child! as Value).children[0] as Function).children[0].type).toBe(
+					STRING,
+				)
+				expect(((decl!.first_child! as Value).children[0] as Function).children[0].text).toBe(
+					'"image.png"',
+				)
 				// URL node with quoted string returns the string value with quotes
 				expect(((decl!.first_child! as Value).children[0] as Url).value).toBe('"image.png"')
 			})
@@ -786,8 +820,12 @@ describe('Value Node Types', () => {
 				expect((decl!.first_child! as Value).children).toHaveLength(1)
 				expect((decl!.first_child! as Value).children[0].type).toBe(URL)
 				expect(((decl!.first_child! as Value).children[0] as Function).children).toHaveLength(1)
-				expect(((decl!.first_child! as Value).children[0] as Function).children[0].type).toBe(STRING)
-				expect(((decl!.first_child! as Value).children[0] as Function).children[0].text).toBe("'image.png'")
+				expect(((decl!.first_child! as Value).children[0] as Function).children[0].type).toBe(
+					STRING,
+				)
+				expect(((decl!.first_child! as Value).children[0] as Function).children[0].text).toBe(
+					"'image.png'",
+				)
 				// URL node with single-quoted string returns the string value with quotes
 				expect(((decl!.first_child! as Value).children[0] as Url).value).toBe("'image.png'")
 			})

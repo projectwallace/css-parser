@@ -1943,8 +1943,12 @@ describe('Selector Nodes', () => {
 					const nth_of = nth?.first_child
 					expect(nth_of?.text).toBe('1 /* test */ of /* test */ li')
 					expect((nth_of as unknown as WithChildren | null | undefined)?.children).toHaveLength(2)
-					expect((nth_of as unknown as WithChildren | null | undefined)?.children[0].type_name).toBe('Nth')
-					expect((nth_of as unknown as WithChildren | null | undefined)?.children[1].type_name).toBe('SelectorList')
+					expect(
+						(nth_of as unknown as WithChildren | null | undefined)?.children[0].type_name,
+					).toBe('Nth')
+					expect(
+						(nth_of as unknown as WithChildren | null | undefined)?.children[1].type_name,
+					).toBe('SelectorList')
 				})
 
 				test(':nth-child(3n OF .test)', () => {
