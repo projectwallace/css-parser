@@ -95,11 +95,11 @@ export interface CSSNode {
  * (Identifier, Number, Dimension, …) do not extend WithChildren, reflecting
  * that they never carry child nodes in a well-formed tree.
  */
-export interface WithChildren {
+export interface WithChildren<T = AnyNode> {
 	readonly has_children: boolean
 	readonly child_count: number
-	readonly children: AnyNode[]
-	[Symbol.iterator](): Iterator<AnyNode>
+	readonly children: T[]
+	[Symbol.iterator](): Iterator<T>
 }
 
 /**

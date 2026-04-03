@@ -273,7 +273,7 @@ describe('selector subtypes', () => {
 		const sel = root.first_child! // Selector
 		const pseudo = sel.first_child! // PseudoClassSelector
 		if (is_pseudo_class_selector(pseudo)) {
-			expectTypeOf(pseudo).toMatchTypeOf<PseudoClassSelector>()
+			expectTypeOf(pseudo).toExtend<PseudoClassSelector>()
 			expectTypeOf(pseudo.name).toEqualTypeOf<string>()
 			expect(pseudo.name).toBe('hover')
 		}
@@ -284,7 +284,7 @@ describe('selector subtypes', () => {
 		const sel = root.first_child!
 		const pseudo = sel.first_child!
 		if (is_pseudo_element_selector(pseudo)) {
-			expectTypeOf(pseudo).toMatchTypeOf<PseudoElementSelector>()
+			expectTypeOf(pseudo).toExtend<PseudoElementSelector>()
 			expectTypeOf(pseudo.name).toEqualTypeOf<string>()
 			expect(pseudo.name).toBe('before')
 		}
@@ -295,9 +295,9 @@ describe('selector subtypes', () => {
 		const pseudo = root.first_child!.first_child! // PseudoClassSelector
 		const nth = pseudo.first_child! // NthSelector inside
 		if (is_nth_selector(nth)) {
-			expectTypeOf(nth).toMatchTypeOf<NthSelector>()
-			expectTypeOf(nth.nth_a).toEqualTypeOf<string | undefined>()
-			expectTypeOf(nth.nth_b).toEqualTypeOf<string | undefined>()
+			expectTypeOf(nth).toExtend<NthSelector>()
+			expectTypeOf(nth.nth_a).toEqualTypeOf<string | null>()
+			expectTypeOf(nth.nth_b).toEqualTypeOf<string | null>()
 		}
 	})
 })
