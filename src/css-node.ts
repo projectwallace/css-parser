@@ -236,6 +236,23 @@ export type PlainCSSNode = {
 	end?: number
 }
 
+const nodes_with_children = new Set<number>([
+	STYLESHEET,
+	SELECTOR,
+	SELECTOR_LIST,
+	BLOCK,
+	FUNCTION,
+	PARENTHESIS,
+	VALUE,
+	PSEUDO_CLASS_SELECTOR,
+	PSEUDO_ELEMENT_SELECTOR,
+	AT_RULE_PRELUDE,
+	MEDIA_QUERY,
+	MEDIA_FEATURE,
+	CONTAINER_QUERY,
+	FEATURE_RANGE,
+])
+
 export class CSSNode {
 	private arena: CSSDataArena
 	private source: string
@@ -635,7 +652,7 @@ export class CSSNode {
 	}
 
 	/** Get all children as an array */
-	get children(): CSSNode[] {
+	get children(): CSSNode[] | undefined {
 		let result: CSSNode[] = []
 		let child = this.first_child
 		while (child) {
@@ -718,6 +735,7 @@ export class CSSNode {
 	/**
 	 * Clone this node as a mutable plain JavaScript object with children as arrays.
 	 * See API.md for examples.
+	 * Warning: this should be used sparingly because it potentially consumes a lot of memory.
 	 *
 	 * @param options - Cloning configuration
 	 * @param options.deep - Recursively clone children (default: true)
@@ -785,6 +803,9 @@ export class CSSNode {
 			plain.nth_a = this.nth_a
 			plain.nth_b = this.nth_b
 		}
+		if (type === NTH_OF_SELECTOR) {
+			plain.selector = this.selector
+		}
 
 		// 7. Include location if requested
 		if (locations) {
@@ -796,10 +817,16 @@ export class CSSNode {
 		}
 
 		// 8. Deep clone children - just push to array!
-		if (deep && type !== DECLARATION) {
+		if (deep && nodes_with_children.has(type)) {
 			plain.children = []
-			for (let child of this.children) {
-				plain.children.push(child.clone({ deep: true, locations }))
+			plain.child_count = this.child_count
+			plain.has_children = this.has_children
+
+			let children = this.children
+			if (children) {
+				for (let child of children) {
+					plain.children.push(child.clone({ deep: true, locations }))
+				}
 			}
 		}
 
