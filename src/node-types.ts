@@ -95,11 +95,11 @@ export interface CSSNode {
  * (Identifier, Number, Dimension, …) do not extend WithChildren, reflecting
  * that they never carry child nodes in a well-formed tree.
  */
-export interface WithChildren {
+export interface WithChildren<T = AnyNode> {
 	readonly has_children: boolean
 	readonly child_count: number
-	readonly children: AnyNode[]
-	[Symbol.iterator](): Iterator<AnyNode>
+	readonly children: T[]
+	[Symbol.iterator](): Iterator<T>
 }
 
 /**
@@ -189,17 +189,30 @@ export interface Declaration extends CSSNode {
 	clone(options?: CloneOptions): ToPlain<Declaration>
 }
 
-export interface Selector extends CSSNode, WithChildren {
+type SelectorNode =
+	| TypeSelector
+	| IdSelector
+	| ClassSelector
+	| NthSelector
+	| NthOfSelector
+	| LangSelector
+	| NestingSelector
+	| AttributeSelector
+	| UniversalSelector
+	| PseudoClassSelector
+	| PseudoElementSelector
+
+export interface Selector extends CSSNode, WithChildren<SelectorNode> {
 	readonly type: typeof SELECTOR
 	clone(options?: CloneOptions): ToPlain<Selector>
 }
 
-export interface SelectorList extends CSSNode, WithChildren {
+export interface SelectorList extends CSSNode, WithChildren<Selector> {
 	readonly type: typeof SELECTOR_LIST
 	clone(options?: CloneOptions): ToPlain<SelectorList>
 }
 
-export interface Block extends CSSNode, WithChildren {
+export interface Block extends CSSNode, WithChildren<Raw | Declaration | Atrule | Rule> {
 	readonly type: typeof BLOCK
 	readonly is_empty: boolean
 	clone(options?: CloneOptions): ToPlain<Block>
@@ -218,6 +231,18 @@ export interface Raw extends CSSNode {
 // ---------------------------------------------------------------------------
 // Value nodes
 // ---------------------------------------------------------------------------
+
+type ValueLike =
+	| Function
+	| Identifier
+	| Operator
+	| Parenthesis
+	| Url
+	| UnicodeRange
+	| String
+	| Hash
+	| Dimension
+	| Number
 
 export interface Identifier extends CSSNode {
 	readonly type: typeof IDENTIFIER
@@ -249,7 +274,7 @@ export interface Hash extends CSSNode {
 	clone(options?: CloneOptions): ToPlain<Hash>
 }
 
-export interface Function extends CSSNode, WithChildren {
+export interface Function extends CSSNode, WithChildren<ValueLike> {
 	readonly type: typeof FUNCTION
 	/** Function name, e.g. "rgb", "calc" */
 	readonly name: string
@@ -282,7 +307,7 @@ export interface UnicodeRange extends CSSNode {
 	clone(options?: CloneOptions): ToPlain<UnicodeRange>
 }
 
-export interface Value extends CSSNode, WithChildren {
+export interface Value extends CSSNode, WithChildren<ValueLike> {
 	readonly type: typeof VALUE
 	clone(options?: CloneOptions): ToPlain<Value>
 }
@@ -320,17 +345,19 @@ export interface AttributeSelector extends CSSNode {
 	readonly attr_operator: string | null
 	/** Flag character, e.g. "i", "s"; null if no flag */
 	readonly attr_flags: string | null
+	/** Attribute value, e.g. "external" from [rel="external"] */
+	readonly value: string | null
 	clone(options?: CloneOptions): ToPlain<AttributeSelector>
 }
 
-export interface PseudoClassSelector extends CSSNode, WithChildren {
+export interface PseudoClassSelector extends CSSNode, WithChildren<SelectorNode> {
 	readonly type: typeof PSEUDO_CLASS_SELECTOR
 	/** Pseudo-class name without colon, e.g. "hover" */
 	readonly name: string
 	clone(options?: CloneOptions): ToPlain<PseudoClassSelector>
 }
 
-export interface PseudoElementSelector extends CSSNode, WithChildren {
+export interface PseudoElementSelector extends CSSNode, WithChildren<SelectorNode> {
 	readonly type: typeof PSEUDO_ELEMENT_SELECTOR
 	/** Pseudo-element name without colons, e.g. "before" */
 	readonly name: string
@@ -346,8 +373,8 @@ export interface Combinator extends CSSNode {
 
 export interface UniversalSelector extends CSSNode {
 	readonly type: typeof UNIVERSAL_SELECTOR
-	/** Namespace qualifier (e.g. 'ns' in 'ns|*'), undefined if no namespace */
-	readonly name: string | undefined
+	/** Namespace qualifier (e.g. 'ns' in 'ns|*'), null if no namespace */
+	readonly name: string | null
 	clone(options?: CloneOptions): ToPlain<UniversalSelector>
 }
 
@@ -358,8 +385,10 @@ export interface NestingSelector extends CSSNode {
 
 export interface NthSelector extends CSSNode {
 	readonly type: typeof NTH_SELECTOR
-	readonly nth_a: string | undefined
-	readonly nth_b: string | undefined
+	/** The `An` part of the An+B formula, including keywords `odd`/`even`. Null when only a B value is present (e.g. `:nth-child(3)`). */
+	readonly nth_a: string | null
+	/** The `+B` part of the An+B formula. Null when only an A value is present (e.g. `:nth-child(2n)` or `:nth-child(odd)`). */
+	readonly nth_b: string | null
 	clone(options?: CloneOptions): ToPlain<NthSelector>
 }
 
@@ -381,12 +410,26 @@ export interface LangSelector extends CSSNode {
 // At-rule prelude nodes
 // ---------------------------------------------------------------------------
 
-export interface AtrulePrelude extends CSSNode, WithChildren {
+export interface AtrulePrelude
+	extends
+		CSSNode,
+		WithChildren<
+			| Raw
+			| MediaQuery
+			| MediaType
+			| ContainerQuery
+			| SupportsQuery
+			| LayerName
+			| PreludeOperator
+			| PreludeSelectorList
+			| Parenthesis
+		> {
 	readonly type: typeof AT_RULE_PRELUDE
 	clone(options?: CloneOptions): ToPlain<AtrulePrelude>
 }
 
-export interface MediaQuery extends CSSNode, WithChildren {
+export interface MediaQuery
+	extends CSSNode, WithChildren<MediaFeature | PreludeOperator | MediaType | FeatureRange> {
 	readonly type: typeof MEDIA_QUERY
 	clone(options?: CloneOptions): ToPlain<MediaQuery>
 }
@@ -405,7 +448,8 @@ export interface MediaType extends CSSNode {
 	clone(options?: CloneOptions): ToPlain<MediaType>
 }
 
-export interface ContainerQuery extends CSSNode, WithChildren {
+export interface ContainerQuery
+	extends CSSNode, WithChildren<Identifier | MediaFeature | Function> {
 	readonly type: typeof CONTAINER_QUERY
 	clone(options?: CloneOptions): ToPlain<ContainerQuery>
 }
@@ -452,7 +496,7 @@ export interface PreludeOperator extends CSSNode {
 	clone(options?: CloneOptions): ToPlain<PreludeOperator>
 }
 
-export interface FeatureRange extends CSSNode, WithChildren {
+export interface FeatureRange extends CSSNode, WithChildren<Dimension | Operator> {
 	readonly type: typeof FEATURE_RANGE
 	/** The feature name in a range comparison, e.g. "width" from "(width >= 400px)" */
 	readonly name: string
