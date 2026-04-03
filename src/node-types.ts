@@ -189,17 +189,30 @@ export interface Declaration extends CSSNode {
 	clone(options?: CloneOptions): ToPlain<Declaration>
 }
 
-export interface Selector extends CSSNode, WithChildren {
+type SelectorNode =
+	| TypeSelector
+	| IdSelector
+	| ClassSelector
+	| NthSelector
+	| NthOfSelector
+	| LangSelector
+	| NestingSelector
+	| AttributeSelector
+	| UniversalSelector
+	| PseudoClassSelector
+	| PseudoElementSelector
+
+export interface Selector extends CSSNode, WithChildren<SelectorNode> {
 	readonly type: typeof SELECTOR
 	clone(options?: CloneOptions): ToPlain<Selector>
 }
 
-export interface SelectorList extends CSSNode, WithChildren {
+export interface SelectorList extends CSSNode, WithChildren<Selector> {
 	readonly type: typeof SELECTOR_LIST
 	clone(options?: CloneOptions): ToPlain<SelectorList>
 }
 
-export interface Block extends CSSNode, WithChildren {
+export interface Block extends CSSNode, WithChildren<Raw | Declaration | Atrule | Rule> {
 	readonly type: typeof BLOCK
 	readonly is_empty: boolean
 	clone(options?: CloneOptions): ToPlain<Block>
@@ -325,14 +338,14 @@ export interface AttributeSelector extends CSSNode {
 	clone(options?: CloneOptions): ToPlain<AttributeSelector>
 }
 
-export interface PseudoClassSelector extends CSSNode, WithChildren {
+export interface PseudoClassSelector extends CSSNode, WithChildren<SelectorNode> {
 	readonly type: typeof PSEUDO_CLASS_SELECTOR
 	/** Pseudo-class name without colon, e.g. "hover" */
 	readonly name: string
 	clone(options?: CloneOptions): ToPlain<PseudoClassSelector>
 }
 
-export interface PseudoElementSelector extends CSSNode, WithChildren {
+export interface PseudoElementSelector extends CSSNode, WithChildren<SelectorNode> {
 	readonly type: typeof PSEUDO_ELEMENT_SELECTOR
 	/** Pseudo-element name without colons, e.g. "before" */
 	readonly name: string
@@ -385,12 +398,26 @@ export interface LangSelector extends CSSNode {
 // At-rule prelude nodes
 // ---------------------------------------------------------------------------
 
-export interface AtrulePrelude extends CSSNode, WithChildren {
+export interface AtrulePrelude
+	extends
+		CSSNode,
+		WithChildren<
+			| Raw
+			| MediaQuery
+			| MediaType
+			| ContainerQuery
+			| SupportsQuery
+			| LayerName
+			| PreludeOperator
+			| PreludeSelectorList
+			| Parenthesis
+		> {
 	readonly type: typeof AT_RULE_PRELUDE
 	clone(options?: CloneOptions): ToPlain<AtrulePrelude>
 }
 
-export interface MediaQuery extends CSSNode, WithChildren {
+export interface MediaQuery
+	extends CSSNode, WithChildren<MediaFeature | PreludeOperator | MediaType | FeatureRange> {
 	readonly type: typeof MEDIA_QUERY
 	clone(options?: CloneOptions): ToPlain<MediaQuery>
 }
@@ -409,7 +436,8 @@ export interface MediaType extends CSSNode {
 	clone(options?: CloneOptions): ToPlain<MediaType>
 }
 
-export interface ContainerQuery extends CSSNode, WithChildren {
+export interface ContainerQuery
+	extends CSSNode, WithChildren<Identifier | MediaFeature | Function> {
 	readonly type: typeof CONTAINER_QUERY
 	clone(options?: CloneOptions): ToPlain<ContainerQuery>
 }
@@ -456,7 +484,7 @@ export interface PreludeOperator extends CSSNode {
 	clone(options?: CloneOptions): ToPlain<PreludeOperator>
 }
 
-export interface FeatureRange extends CSSNode, WithChildren {
+export interface FeatureRange extends CSSNode, WithChildren<Dimension | Operator> {
 	readonly type: typeof FEATURE_RANGE
 	/** The feature name in a range comparison, e.g. "width" from "(width >= 400px)" */
 	readonly name: string

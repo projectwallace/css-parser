@@ -808,7 +808,7 @@ describe('Selector Nodes', () => {
 				const selector = root.first_child
 				const pseudo = selector?.first_child
 				const [list] = (pseudo! as PseudoClassSelector).children
-				const [a] = (list as SelectorList).children
+				const a = list.first_child!
 				expect(a.text).toBe('a')
 			})
 
@@ -817,7 +817,7 @@ describe('Selector Nodes', () => {
 				const selector = root.first_child! as Selector
 				const pseudo = selector.first_child!
 				const [list] = (pseudo as PseudoClassSelector).children
-				const [a] = (list as SelectorList).children
+				const a = list.first_child!
 				expect(a.text).toBe('a')
 			})
 
