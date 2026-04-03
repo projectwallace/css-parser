@@ -320,6 +320,8 @@ export interface AttributeSelector extends CSSNode {
 	readonly attr_operator: string | null
 	/** Flag character, e.g. "i", "s"; null if no flag */
 	readonly attr_flags: string | null
+	/** Attribute value, e.g. "external" from [rel="external"] */
+	readonly value: string | null
 	clone(options?: CloneOptions): ToPlain<AttributeSelector>
 }
 
@@ -346,8 +348,8 @@ export interface Combinator extends CSSNode {
 
 export interface UniversalSelector extends CSSNode {
 	readonly type: typeof UNIVERSAL_SELECTOR
-	/** Namespace qualifier (e.g. 'ns' in 'ns|*'), undefined if no namespace */
-	readonly name: string | undefined
+	/** Namespace qualifier (e.g. 'ns' in 'ns|*'), null if no namespace */
+	readonly name: string | null
 	clone(options?: CloneOptions): ToPlain<UniversalSelector>
 }
 
@@ -358,8 +360,10 @@ export interface NestingSelector extends CSSNode {
 
 export interface NthSelector extends CSSNode {
 	readonly type: typeof NTH_SELECTOR
-	readonly nth_a: string | undefined
-	readonly nth_b: string | undefined
+	/** The `An` part of the An+B formula, including keywords `odd`/`even`. Null when only a B value is present (e.g. `:nth-child(3)`). */
+	readonly nth_a: string | null
+	/** The `+B` part of the An+B formula. Null when only an A value is present (e.g. `:nth-child(2n)` or `:nth-child(odd)`). */
+	readonly nth_b: string | null
 	clone(options?: CloneOptions): ToPlain<NthSelector>
 }
 
