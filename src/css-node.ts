@@ -289,7 +289,7 @@ export class CSSNode {
 	}
 
 	/**
-	 * Get the value text (for declarations: "blue" in "color: blue")
+	 * Get the value text (for declarations: "1px solid blue" in "border: 1px solid blue")
 	 * For dimension/number nodes: returns the numeric value as a number
 	 * For string nodes: returns the string content without quotes
 	 * For URL nodes with quoted string: returns the string with quotes (consistent with STRING node)

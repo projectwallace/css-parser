@@ -232,6 +232,18 @@ export interface Raw extends CSSNode {
 // Value nodes
 // ---------------------------------------------------------------------------
 
+type ValueLike =
+	| Function
+	| Identifier
+	| Operator
+	| Parenthesis
+	| Url
+	| UnicodeRange
+	| String
+	| Hash
+	| Dimension
+	| Number
+
 export interface Identifier extends CSSNode {
 	readonly type: typeof IDENTIFIER
 	readonly name: string
@@ -262,7 +274,7 @@ export interface Hash extends CSSNode {
 	clone(options?: CloneOptions): ToPlain<Hash>
 }
 
-export interface Function extends CSSNode, WithChildren {
+export interface Function extends CSSNode, WithChildren<ValueLike> {
 	readonly type: typeof FUNCTION
 	/** Function name, e.g. "rgb", "calc" */
 	readonly name: string
@@ -295,7 +307,7 @@ export interface UnicodeRange extends CSSNode {
 	clone(options?: CloneOptions): ToPlain<UnicodeRange>
 }
 
-export interface Value extends CSSNode, WithChildren {
+export interface Value extends CSSNode, WithChildren<ValueLike> {
 	readonly type: typeof VALUE
 	clone(options?: CloneOptions): ToPlain<Value>
 }
