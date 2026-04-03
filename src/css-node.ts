@@ -49,16 +49,6 @@ import {
 	FLAG_HAS_DECLARATIONS,
 	FLAG_HAS_PARENS,
 	FLAG_BROWSERHACK,
-	ATTR_OPERATOR_NONE,
-	ATTR_OPERATOR_EQUAL,
-	ATTR_OPERATOR_TILDE_EQUAL,
-	ATTR_OPERATOR_PIPE_EQUAL,
-	ATTR_OPERATOR_CARET_EQUAL,
-	ATTR_OPERATOR_DOLLAR_EQUAL,
-	ATTR_OPERATOR_STAR_EQUAL,
-	ATTR_FLAG_NONE,
-	ATTR_FLAG_CASE_INSENSITIVE,
-	ATTR_FLAG_CASE_SENSITIVE,
 } from './arena'
 
 import {
@@ -123,24 +113,6 @@ export const TYPE_NAMES = {
 } as const
 
 export type TypeName = (typeof TYPE_NAMES)[keyof typeof TYPE_NAMES] | 'unknown'
-
-// Attribute operator name lookup table - maps numeric operator to CSS syntax
-export const ATTR_OPERATOR_NAMES: Record<number, string | null> = {
-	[ATTR_OPERATOR_NONE]: null,
-	[ATTR_OPERATOR_EQUAL]: '=',
-	[ATTR_OPERATOR_TILDE_EQUAL]: '~=',
-	[ATTR_OPERATOR_PIPE_EQUAL]: '|=',
-	[ATTR_OPERATOR_CARET_EQUAL]: '^=',
-	[ATTR_OPERATOR_DOLLAR_EQUAL]: '$=',
-	[ATTR_OPERATOR_STAR_EQUAL]: '*=',
-}
-
-// Attribute flag name lookup table - maps numeric flag to CSS syntax
-export const ATTR_FLAG_NAMES: Record<number, string | null> = {
-	[ATTR_FLAG_NONE]: null,
-	[ATTR_FLAG_CASE_INSENSITIVE]: 'i',
-	[ATTR_FLAG_CASE_SENSITIVE]: 's',
-}
 
 // Node type constants (numeric for performance)
 export type CSSNodeType =

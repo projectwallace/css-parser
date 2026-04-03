@@ -23,7 +23,6 @@ import type {
 	Block,
 	SelectorList,
 	Selector,
-	Value,
 	AttributeSelector,
 	PseudoClassSelector,
 	PseudoElementSelector,

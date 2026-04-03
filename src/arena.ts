@@ -102,20 +102,6 @@ export const FLAG_HAS_DECLARATIONS = 1 << 5 // Has declarations (for style rules
 export const FLAG_HAS_PARENS = 1 << 6 // Has parentheses syntax (for pseudo-class/pseudo-element functions)
 export const FLAG_BROWSERHACK = 1 << 7 // Has browser hack prefix (*property, _property, etc.)
 
-// Attribute selector operator constants (stored in 1 byte at offset 2)
-export const ATTR_OPERATOR_NONE = 0 // [attr]
-export const ATTR_OPERATOR_EQUAL = 1 // [attr=value]
-export const ATTR_OPERATOR_TILDE_EQUAL = 2 // [attr~=value]
-export const ATTR_OPERATOR_PIPE_EQUAL = 3 // [attr|=value]
-export const ATTR_OPERATOR_CARET_EQUAL = 4 // [attr^=value]
-export const ATTR_OPERATOR_DOLLAR_EQUAL = 5 // [attr$=value]
-export const ATTR_OPERATOR_STAR_EQUAL = 6 // [attr*=value]
-
-// Attribute selector flag constants (stored in 1 byte at offset 3)
-export const ATTR_FLAG_NONE = 0 // No flag
-export const ATTR_FLAG_CASE_INSENSITIVE = 1 // [attr=value i]
-export const ATTR_FLAG_CASE_SENSITIVE = 2 // [attr=value s]
-
 /** @internal */
 export class CSSDataArena {
 	private buffer: ArrayBuffer

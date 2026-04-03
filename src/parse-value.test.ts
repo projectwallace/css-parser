@@ -203,8 +203,8 @@ describe('Value Node Types', () => {
 			it('should have correct offset and length', () => {
 				const root = parse('div { width: calc((100% - 50px) / 2); }')
 				const func = (
-					root.first_child?.first_child?.next_sibling?.first_child?.first_child! as Value
-				).children[0] as Function | undefined
+					root.first_child?.first_child?.next_sibling?.first_child?.first_child as Value
+				)?.children[0] as Function | undefined
 				const paren = func?.children[0]
 				expect(paren?.start).toBe(18)
 				expect(paren?.length).toBe(13)
@@ -216,8 +216,8 @@ describe('Value Node Types', () => {
 			it('should have correct line and column on line 2', () => {
 				const root = parse('div {\n  width: calc((100% - 50px) / 2);\n}')
 				const func = (
-					root.first_child?.first_child?.next_sibling?.first_child?.first_child! as Value
-				).children[0] as Function | undefined
+					root.first_child?.first_child?.next_sibling?.first_child?.first_child as Value
+				)?.children[0] as Function | undefined
 				const paren = func?.children[0]
 				expect(paren?.start).toBe(20)
 				expect(paren?.length).toBe(13)
@@ -305,16 +305,15 @@ describe('Value Node Types', () => {
 
 		it('OPERATOR type constant', () => {
 			const root = parse('div { font-family: Arial, sans-serif; }')
-			const comma = (
-				root.first_child?.first_child?.next_sibling?.first_child?.first_child! as Value
-			).children[1]
+			const comma = (root.first_child?.first_child?.next_sibling?.first_child?.first_child as Value)
+				?.children[1]
 			expect(comma?.type).toBe(OPERATOR)
 		})
 
 		it('PARENTHESIS type constant', () => {
 			const root = parse('div { width: calc((100% - 50px) / 2); }')
-			const func = (root.first_child?.first_child?.next_sibling?.first_child?.first_child! as Value)
-				.children[0] as Function | undefined
+			const func = (root.first_child?.first_child?.next_sibling?.first_child?.first_child as Value)
+				?.children[0] as Function | undefined
 			const paren = func?.children[0]
 			expect(paren?.type).toBe(PARENTHESIS)
 		})
@@ -368,16 +367,15 @@ describe('Value Node Types', () => {
 
 		it('OPERATOR type_name', () => {
 			const root = parse('div { font-family: Arial, sans-serif; }')
-			const comma = (
-				root.first_child?.first_child?.next_sibling?.first_child?.first_child! as Value
-			).children[1]
+			const comma = (root.first_child?.first_child?.next_sibling?.first_child?.first_child as Value)
+				?.children[1]
 			expect(comma?.type_name).toBe('Operator')
 		})
 
 		it('PARENTHESIS type_name', () => {
 			const root = parse('div { width: calc((100% - 50px) / 2); }')
-			const func = (root.first_child?.first_child?.next_sibling?.first_child?.first_child! as Value)
-				.children[0] as Function | undefined
+			const func = (root.first_child?.first_child?.next_sibling?.first_child?.first_child as Value)
+				?.children[0] as Function | undefined
 			const paren = func?.children[0]
 			expect(paren?.type_name).toBe('Parentheses')
 		})
