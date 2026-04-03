@@ -652,7 +652,7 @@ describe('CSSNode', () => {
 				const result = parse_selector(':nth-child(2n+1 of .foo)')
 				const selector = result.first_child as Selector | null
 				const pseudo = selector?.first_child as PseudoClassSelector | null // Get pseudo-class
-				const nthOf = pseudo?.first_child as NthOfSelector | null // NODE_SELECTOR_NTH_OF
+				const nthOf = pseudo?.first_child as unknown as NthOfSelector | null // NODE_SELECTOR_NTH_OF
 
 				expect(nthOf?.nth).not.toBeUndefined()
 				expect(nthOf?.nth?.type).toBe(NTH_SELECTOR)
@@ -664,7 +664,7 @@ describe('CSSNode', () => {
 				const result = parse_selector(':nth-child(2n of .foo, #bar)')
 				const selector = result.first_child as Selector | null
 				const pseudo = selector?.first_child as PseudoClassSelector | null
-				const nthOf = pseudo?.first_child as NthOfSelector | null
+				const nthOf = pseudo?.first_child as unknown as NthOfSelector | null
 
 				expect(nthOf?.selector).not.toBeUndefined()
 				expect(nthOf?.selector?.type).toBe(SELECTOR_LIST)
@@ -684,7 +684,7 @@ describe('CSSNode', () => {
 				const result = parse_selector(':nth-last-child(odd of .item)')
 				const selector = result.first_child as Selector | null
 				const pseudo = selector?.first_child as PseudoClassSelector | null
-				const nthOf = pseudo?.first_child as NthOfSelector | null
+				const nthOf = pseudo?.first_child as unknown as NthOfSelector | null
 
 				expect(nthOf?.nth).not.toBeUndefined()
 				expect(nthOf?.nth?.nth_a).toBe('odd')
@@ -696,7 +696,7 @@ describe('CSSNode', () => {
 				const result = parse_selector(':nth-of-type(3n of .special)')
 				const selector = result.first_child as Selector | null
 				const pseudo = selector?.first_child as PseudoClassSelector | null
-				const nthOf = pseudo?.first_child as NthOfSelector | null
+				const nthOf = pseudo?.first_child as unknown as NthOfSelector | null
 
 				expect(nthOf?.nth).not.toBeUndefined()
 				expect(nthOf?.nth?.nth_a).toBe('3n')
@@ -707,7 +707,7 @@ describe('CSSNode', () => {
 				const result = parse_selector(':nth-last-of-type(even of div)')
 				const selector = result.first_child as Selector | null
 				const pseudo = selector?.first_child as PseudoClassSelector | null
-				const nthOf = pseudo?.first_child as NthOfSelector | null
+				const nthOf = pseudo?.first_child as unknown as NthOfSelector | null
 
 				expect(nthOf?.nth?.nth_a).toBe('even')
 				expect(nthOf?.selector?.text).toBe('div')
@@ -730,7 +730,7 @@ describe('CSSNode', () => {
 				const result = parse_selector(':nth-child(2n of .foo)')
 				const selector = result.first_child as Selector | null
 				const pseudo = selector?.first_child as PseudoClassSelector | null
-				const nthOf = pseudo?.first_child as NthOfSelector | null
+				const nthOf = pseudo?.first_child as unknown as NthOfSelector | null
 
 				expect(nthOf?.selector).not.toBeNull()
 				expect(nthOf?.selector?.text).toBe('.foo')
@@ -781,9 +781,9 @@ describe('CSSNode', () => {
 
 			test('complex :nth-child with multiple selectors', () => {
 				const result = parse_selector(':nth-child(3n+2 of .item, .element, #special)')
-				const selector = result.first_child as Selector | null
-				const pseudo = selector?.first_child as PseudoClassSelector | null
-				const nthOf = pseudo?.first_child as NthOfSelector | null
+				const selector = result.first_child as Selector
+				const pseudo = selector?.first_child as PseudoClassSelector
+				const nthOf = pseudo?.first_child as unknown as NthOfSelector
 
 				expect(nthOf?.selector).not.toBeNull()
 				expect(nthOf?.selector?.text).toBe('.item, .element, #special')

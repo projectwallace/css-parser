@@ -419,13 +419,15 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(atRule?.name).toBe('media')
 
 				// Should have prelude children
-				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
-				expect(children.length).toBeGreaterThan(0)
+				const prelude = atRule.prelude as AtrulePrelude
+				expect(prelude).not.toBeNull()
+				expect(prelude.child_count).toBeGreaterThan(0)
 
 				// First child should be a media query
-				expect(children[0].type).toBe(MEDIA_QUERY)
+				const query = prelude.first_child as MediaQuery
+				expect(query.type).toBe(MEDIA_QUERY)
 
-				const mediaType = (children[0] as ContainerQuery).first_child! as MediaType
+				const mediaType = query.first_child as MediaType
 				expect(mediaType.type).toBe(MEDIA_TYPE)
 				expect(mediaType.value).toBe('screen')
 			})
