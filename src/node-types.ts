@@ -150,30 +150,34 @@ export interface StyleSheet extends CssNodeCommon, WithChildren {
 	clone(options?: CloneOptions): ToPlain<StyleSheet>
 }
 
-export interface Rule extends CssNodeCommon {
+export type Rule = CssNodeCommon & {
 	readonly type: typeof STYLE_RULE
 	readonly name: string
-	/** SELECTOR_LIST (parse_selectors=true), RAW (parse_selectors=false), or null */
-	readonly prelude: SelectorList | Raw | null
-	readonly block: Block | null
-	readonly has_prelude: boolean
-	readonly has_block: boolean
 	readonly has_declarations: boolean
 	clone(options?: CloneOptions): ToPlain<Rule>
-}
+} & (
+	/** SELECTOR_LIST (parse_selectors=true) or RAW (parse_selectors=false) */
+	| { readonly has_prelude: true; readonly prelude: SelectorList | Raw }
+	| { readonly has_prelude: false; readonly prelude: null }
+) & (
+	| { readonly has_block: true; readonly block: Block }
+	| { readonly has_block: false; readonly block: null }
+)
 
-export interface Atrule extends CssNodeCommon {
+export type Atrule = CssNodeCommon & {
 	readonly type: typeof AT_RULE
 	/** At-rule keyword, e.g. "media", "keyframes" */
 	readonly name: string
-	/** AT_RULE_PRELUDE (parse_atrule_preludes=true) or RAW, or null */
-	readonly prelude: AtrulePrelude | Raw | null
-	readonly block: Block | null
-	readonly has_prelude: boolean
-	readonly has_block: boolean
 	readonly has_declarations: boolean
 	clone(options?: CloneOptions): ToPlain<Atrule>
-}
+} & (
+	/** AT_RULE_PRELUDE (parse_atrule_preludes=true) or RAW (parse_atrule_preludes=false) */
+	| { readonly has_prelude: true; readonly prelude: AtrulePrelude | Raw }
+	| { readonly has_prelude: false; readonly prelude: null }
+) & (
+	| { readonly has_block: true; readonly block: Block }
+	| { readonly has_block: false; readonly block: null }
+)
 
 export interface Declaration extends CssNodeCommon {
 	readonly type: typeof DECLARATION
