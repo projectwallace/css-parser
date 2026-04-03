@@ -210,6 +210,8 @@ export type PlainCSSNode = {
 
 	// Optional properties (only when meaningful)
 	children?: PlainCSSNode[]
+	child_count?: number
+	has_children?: boolean
 	name?: string
 	property?: string
 	value?: PlainCSSNode | string | number | null
