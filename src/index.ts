@@ -21,20 +21,8 @@ export {
 export { type ParserOptions } from './parse'
 
 // Types
+export { TYPE_NAMES, type CloneOptions } from './css-node'
 export type { LexerPosition, CommentInfo } from './tokenize'
-
-export {
-	ATTR_OPERATOR_NONE,
-	ATTR_OPERATOR_EQUAL,
-	ATTR_OPERATOR_TILDE_EQUAL,
-	ATTR_OPERATOR_PIPE_EQUAL,
-	ATTR_OPERATOR_CARET_EQUAL,
-	ATTR_OPERATOR_DOLLAR_EQUAL,
-	ATTR_OPERATOR_STAR_EQUAL,
-	ATTR_FLAG_NONE,
-	ATTR_FLAG_CASE_INSENSITIVE,
-	ATTR_FLAG_CASE_SENSITIVE,
-} from './arena'
 
 // Constants - imported from dedicated constants file
 // This improves tree-shaking by avoiding the parse module if only constants are needed
