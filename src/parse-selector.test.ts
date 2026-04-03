@@ -2052,6 +2052,20 @@ describe('Selector Nodes', () => {
 				expect(lang1.type).toBe(LANG_SELECTOR)
 				expect(lang1.text).toBe('"*-Latn"')
 			})
+
+			test(':lang(\\*-Latn) with escaped wildcard', () => {
+				const root = parse_selector(':lang(\\*-Latn)')
+
+				const selector = root.first_child! as Selector
+				const langPseudoClass = selector.first_child! as PseudoClassSelector
+				expect(langPseudoClass.type).toBe(PSEUDO_CLASS_SELECTOR)
+				expect(langPseudoClass.text).toBe(':lang(\\*-Latn)')
+				expect(langPseudoClass.child_count).toBe(1)
+
+				const lang1 = langPseudoClass.first_child!
+				expect(lang1.type).toBe(LANG_SELECTOR)
+				expect(lang1.text).toBe('\\*-Latn')
+			})
 		})
 
 		describe(':is() and :where() pseudo-classes', () => {
