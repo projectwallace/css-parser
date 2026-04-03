@@ -189,7 +189,7 @@ export interface Declaration extends CSSNode {
 	clone(options?: CloneOptions): ToPlain<Declaration>
 }
 
-type SelectorNode =
+export type SelectorNode =
 	| TypeSelector
 	| IdSelector
 	| ClassSelector
@@ -403,6 +403,8 @@ export interface NthOfSelector extends CSSNode {
 
 export interface LangSelector extends CSSNode {
 	readonly type: typeof LANG_SELECTOR
+	/** `"nl"`, `en-US` */
+	readonly name: string | null
 	clone(options?: CloneOptions): ToPlain<LangSelector>
 }
 

@@ -911,8 +911,6 @@ export class SelectorParser {
 		if (first_child !== null) {
 			this.arena.set_first_child(parent_node, first_child)
 		}
-		if (last_child !== null) {
-		}
 
 		// Restore parser state
 		this.selector_end = saved_selector_end

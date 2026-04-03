@@ -58,6 +58,7 @@ export {
 	type Url,
 	type UnicodeRange,
 	type Value,
+	type SelectorNode,
 	type TypeSelector,
 	type ClassSelector,
 	type IdSelector,
