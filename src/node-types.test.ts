@@ -21,7 +21,7 @@ import {
 	is_layer_name,
 } from './node-types'
 import type {
-	AnyCss,
+	AnyNode,
 	StyleSheet,
 	Rule,
 	Atrule,
@@ -244,7 +244,7 @@ describe('type narrowing — compile-time', () => {
 	it('AnyCss enables switch narrowing', () => {
 		// This test verifies the discriminated union works for switch narrowing.
 		// The function must compile without type errors.
-		function extract_name(node: AnyCss): string | undefined {
+		function extract_name(node: AnyNode): string | undefined {
 			switch (node.type) {
 				case 3: // AT_RULE
 					return node.name // must be string here
@@ -255,10 +255,10 @@ describe('type narrowing — compile-time', () => {
 			}
 		}
 		const root = parse('@media screen {}')
-		const atrule = root.first_child! as AnyCss
+		const atrule = root.first_child! as AnyNode
 		expect(extract_name(atrule)).toBe('media')
 
-		const decl = parse_declaration('color: red') as AnyCss
+		const decl = parse_declaration('color: red') as AnyNode
 		expect(extract_name(decl)).toBe('color')
 	})
 })

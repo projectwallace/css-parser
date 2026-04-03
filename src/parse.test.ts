@@ -27,7 +27,7 @@ import type {
 	AttributeSelector,
 	PseudoClassSelector,
 	PseudoElementSelector,
-	CssNodeCommon,
+	CSSNode,
 	Url,
 } from './node-types'
 
@@ -1893,7 +1893,7 @@ describe('Core Nodes', () => {
 				expect(parent.type).toBe(STYLE_RULE)
 
 				const block = (parent as Rule).block!
-				let [decl, nested_rule] = block.children as [Declaration, CssNodeCommon]
+				let [decl, nested_rule] = block.children as [Declaration, CSSNode]
 				expect(decl.type).toBe(DECLARATION)
 				expect(decl.property).toBe('color')
 
@@ -2007,9 +2007,9 @@ describe('Core Nodes', () => {
 				const block = (card as Rule).block!
 				let [decl1, title, decl2, body] = block.children as [
 					Declaration,
-					CssNodeCommon,
+					CSSNode,
 					Declaration,
-					CssNodeCommon,
+					CSSNode,
 				]
 
 				expect(decl1.type).toBe(DECLARATION)

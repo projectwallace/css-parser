@@ -11,7 +11,7 @@ import type {
 	MediaFeature,
 	FeatureRange,
 	Function,
-	CssNodeCommon,
+	CSSNode,
 	LayerName,
 	SupportsQuery,
 	Url,
@@ -718,7 +718,7 @@ describe('At-Rule Prelude Nodes', () => {
 
 				expect(children[0].type).toBe(CONTAINER_QUERY)
 
-				const [ident, fn] = (children[0] as ContainerQuery).children as [CssNodeCommon, Function]
+				const [ident, fn] = (children[0] as ContainerQuery).children as [CSSNode, Function]
 				expect(ident.type_name).toBe('Identifier')
 				expect(ident.text).toBe('mytest')
 				expect(fn.type_name).toBe('Function')
