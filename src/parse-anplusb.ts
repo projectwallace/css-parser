@@ -15,6 +15,7 @@ import {
 } from './token-types'
 import { CHAR_MINUS_HYPHEN, CHAR_PLUS, str_equals, str_index_of } from './string-utils'
 import { CSSNode } from './css-node'
+import type { NthSelector } from './node-types'
 
 /** @internal */
 export class ANplusBParser {
@@ -324,11 +325,11 @@ export class ANplusBParser {
 	}
 }
 
-export function parse_anplusb(expr: string): CSSNode | null {
+export function parse_anplusb(expr: string): NthSelector | null {
 	const arena = new CSSDataArena(64)
 	const parser = new ANplusBParser(arena, expr)
 	const nodeIndex = parser.parse_anplusb(0, expr.length)
 
 	if (nodeIndex === null) return null
-	return new CSSNode(arena, expr, nodeIndex)
+	return new CSSNode(arena, expr, nodeIndex) as NthSelector
 }

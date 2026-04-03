@@ -94,11 +94,6 @@ The `CommentInfo` object passed to `on_comment` contains:
 - `nth_a` - The 'a' coefficient from An+B expressions like `"2n"` from `:nth-child(2n+1)` (for NTH_SELECTOR)
 - `nth_b` - The 'b' coefficient from An+B expressions like `"+1"` from `:nth-child(2n+1)` (for NTH_SELECTOR)
 
-**Attribute Selector Properties:**
-
-- `attr_operator` - Attribute operator constant (for ATTRIBUTE_SELECTOR): `ATTR_OPERATOR_NONE`, `ATTR_OPERATOR_EQUAL`, etc.
-- `attr_flags` - Attribute flags constant (for ATTRIBUTE_SELECTOR): `ATTR_FLAG_NONE`, `ATTR_FLAG_CASE_INSENSITIVE`, `ATTR_FLAG_CASE_SENSITIVE`
-
 **Methods:**
 
 - `clone(options?)` - Clone node as a mutable plain object with children as arrays
@@ -900,48 +895,6 @@ console.log(pseudoClass1.has_children) // true - indicates function syntax
 const ast2 = parse_selector(':hover')
 const pseudoClass2 = ast2.first_child.first_child
 console.log(pseudoClass2.has_children) // false - no function syntax
-```
-
-## Attribute Selector Constants
-
-### Attribute Selector Operators
-
-Use these constants with the `node.attr_operator` property to identify the operator in attribute selectors:
-
-- `ATTR_OPERATOR_NONE` (0) - No operator (e.g., `[disabled]`)
-- `ATTR_OPERATOR_EQUAL` (1) - Exact match (e.g., `[type="text"]`)
-- `ATTR_OPERATOR_TILDE_EQUAL` (2) - Whitespace-separated list contains (e.g., `[class~="active"]`)
-- `ATTR_OPERATOR_PIPE_EQUAL` (3) - Starts with or is followed by hyphen (e.g., `[lang|="en"]`)
-- `ATTR_OPERATOR_CARET_EQUAL` (4) - Starts with (e.g., `[href^="https"]`)
-- `ATTR_OPERATOR_DOLLAR_EQUAL` (5) - Ends with (e.g., `[href$=".pdf"]`)
-- `ATTR_OPERATOR_STAR_EQUAL` (6) - Contains substring (e.g., `[href*="example"]`)
-
-### Attribute Selector Flags
-
-Use these constants with the `node.attr_flags` property to identify case sensitivity flags in attribute selectors:
-
-- `ATTR_FLAG_NONE` (0) - No flag specified (default case sensitivity)
-- `ATTR_FLAG_CASE_INSENSITIVE` (1) - Case-insensitive matching (e.g., `[type="text" i]`)
-- `ATTR_FLAG_CASE_SENSITIVE` (2) - Case-sensitive matching (e.g., `[type="text" s]`)
-
-#### Example
-
-```javascript
-import {
-	parse_selector,
-	ATTRIBUTE_SELECTOR,
-	ATTR_OPERATOR_EQUAL,
-	ATTR_FLAG_CASE_INSENSITIVE,
-} from '@projectwallace/css-parser'
-
-const ast = parse_selector('[type="text" i]')
-
-for (let node of ast) {
-	if (node.type === ATTRIBUTE_SELECTOR) {
-		console.log(node.attr_operator === ATTR_OPERATOR_EQUAL) // true
-		console.log(node.attr_flags === ATTR_FLAG_CASE_INSENSITIVE) // true
-	}
-}
 ```
 
 ---

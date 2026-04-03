@@ -13,6 +13,7 @@ import {
 	FLAG_HAS_DECLARATIONS,
 } from './arena'
 import { CSSNode } from './css-node'
+import type { StyleSheet } from './node-types'
 import { SelectorParser } from './parse-selector'
 import { AtRulePreludeParser } from './parse-atrule-prelude'
 import { DeclarationParser } from './parse-declaration'
@@ -124,7 +125,7 @@ export class Parser {
 	}
 
 	// Parse the entire stylesheet and return the root CSSNode
-	parse(): CSSNode {
+	parse(): StyleSheet {
 		// Start by getting the first token
 		this.next_token()
 
@@ -147,7 +148,7 @@ export class Parser {
 		this.arena.append_children(stylesheet, rules)
 
 		// Return wrapped node
-		return new CSSNode(this.arena, this.source, stylesheet)
+		return new CSSNode(this.arena, this.source, stylesheet) as StyleSheet
 	}
 
 	// Parse a rule (style rule or at-rule)
@@ -579,7 +580,7 @@ export class Parser {
  * @param options - Parser options
  * @returns The root CSSNode of the AST
  */
-export function parse(source: string, options?: ParserOptions): CSSNode {
+export function parse(source: string, options?: ParserOptions): StyleSheet {
 	const parser = new Parser(source, options)
 	return parser.parse()
 }

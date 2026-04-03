@@ -44,6 +44,7 @@ import {
 } from './string-utils'
 import { trim_boundaries, skip_whitespace_and_comments_forward } from './parse-utils'
 import { CSSNode } from './css-node'
+import type { AnyNode } from './node-types'
 
 /** @internal */
 export class AtRulePreludeParser {
@@ -488,9 +489,8 @@ export class AtRulePreludeParser {
 			if (token_type === TOKEN_IDENT) {
 				// Layer name
 				let layer = this.create_node(LAYER_NAME, this.lexer.token_start, this.lexer.token_end)
-				// Set value to the layer name text (same as the full node text)
-				this.arena.set_value_start_delta(layer, 0)
-				this.arena.set_value_length(layer, this.lexer.token_end - this.lexer.token_start)
+				this.arena.set_content_start_delta(layer, 0)
+				this.arena.set_content_length(layer, this.lexer.token_end - this.lexer.token_start)
 				nodes.push(layer)
 			} else if (token_type === TOKEN_COMMA) {
 				// Skip comma separator
@@ -688,11 +688,8 @@ export class AtRulePreludeParser {
 				if (content_length > 0) {
 					let trimmed = trim_boundaries(this.source, content_start, content_start + content_length)
 					if (trimmed) {
-						// Set both content fields (for .name) and value fields (for .value)
 						this.arena.set_content_start_delta(layer_node, trimmed[0] - layer_start)
 						this.arena.set_content_length(layer_node, trimmed[1] - trimmed[0])
-						this.arena.set_value_start_delta(layer_node, trimmed[0] - layer_start)
-						this.arena.set_value_length(layer_node, trimmed[1] - trimmed[0])
 					}
 				}
 
@@ -989,7 +986,7 @@ export class AtRulePreludeParser {
  * @param prelude - The at-rule prelude to parse (e.g., "(min-width: 768px)", "utilities")
  * @returns An array of CSSNode objects representing the parsed prelude
  */
-export function parse_atrule_prelude(at_rule_name: string, prelude: string): CSSNode[] {
+export function parse_atrule_prelude(at_rule_name: string, prelude: string): AnyNode[] {
 	// Create an arena for the prelude nodes
 	const arena = new CSSDataArena(CSSDataArena.capacity_for_source(prelude.length))
 
@@ -1000,5 +997,5 @@ export function parse_atrule_prelude(at_rule_name: string, prelude: string): CSS
 	const node_indices = prelude_parser.parse_prelude(at_rule_name, 0, prelude.length)
 
 	// Wrap each node index in a CSSNode
-	return node_indices.map((index) => new CSSNode(arena, prelude, index))
+	return node_indices.map((index) => new CSSNode(arena, prelude, index) as AnyNode)
 }

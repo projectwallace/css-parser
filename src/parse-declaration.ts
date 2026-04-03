@@ -23,6 +23,7 @@ import {
 } from './token-types'
 import { trim_boundaries } from './parse-utils'
 import { CSSNode } from './css-node'
+import type { Declaration } from './node-types'
 
 /** @internal */
 export class DeclarationParser {
@@ -289,7 +290,7 @@ export class DeclarationParser {
  * @param source - The CSS declaration to parse (e.g., "color: red", "margin: 10px !important")
  * @returns The DECLARATION CSSNode
  */
-export function parse_declaration(source: string): CSSNode {
+export function parse_declaration(source: string): Declaration {
 	// Create an arena for the declaration nodes
 	const arena = new CSSDataArena(CSSDataArena.capacity_for_source(source.length))
 
@@ -302,9 +303,9 @@ export function parse_declaration(source: string): CSSNode {
 	if (decl_index === null) {
 		// Return empty declaration node if parsing failed
 		const empty = arena.create_node(DECLARATION, 0, 0, 1, 1)
-		return new CSSNode(arena, source, empty)
+		return new CSSNode(arena, source, empty) as Declaration
 	}
 
 	// Wrap in CSSNode
-	return new CSSNode(arena, source, decl_index)
+	return new CSSNode(arena, source, decl_index) as Declaration
 }

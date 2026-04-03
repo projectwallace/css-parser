@@ -42,22 +42,13 @@ import {
 	PRELUDE_OPERATOR,
 	FEATURE_RANGE,
 	AT_RULE_PRELUDE,
+	PRELUDE_SELECTORLIST,
 	FLAG_IMPORTANT,
 	FLAG_HAS_ERROR,
 	FLAG_HAS_BLOCK,
 	FLAG_HAS_DECLARATIONS,
 	FLAG_HAS_PARENS,
 	FLAG_BROWSERHACK,
-	ATTR_OPERATOR_NONE,
-	ATTR_OPERATOR_EQUAL,
-	ATTR_OPERATOR_TILDE_EQUAL,
-	ATTR_OPERATOR_PIPE_EQUAL,
-	ATTR_OPERATOR_CARET_EQUAL,
-	ATTR_OPERATOR_DOLLAR_EQUAL,
-	ATTR_OPERATOR_STAR_EQUAL,
-	ATTR_FLAG_NONE,
-	ATTR_FLAG_CASE_INSENSITIVE,
-	ATTR_FLAG_CASE_SENSITIVE,
 } from './arena'
 
 import {
@@ -118,27 +109,10 @@ export const TYPE_NAMES = {
 	[PRELUDE_OPERATOR]: 'Operator',
 	[FEATURE_RANGE]: 'MediaFeatureRange',
 	[AT_RULE_PRELUDE]: 'AtrulePrelude',
+	[PRELUDE_SELECTORLIST]: 'PreludeSelectorList',
 } as const
 
 export type TypeName = (typeof TYPE_NAMES)[keyof typeof TYPE_NAMES] | 'unknown'
-
-// Attribute operator name lookup table - maps numeric operator to CSS syntax
-export const ATTR_OPERATOR_NAMES: Record<number, string | null> = {
-	[ATTR_OPERATOR_NONE]: null,
-	[ATTR_OPERATOR_EQUAL]: '=',
-	[ATTR_OPERATOR_TILDE_EQUAL]: '~=',
-	[ATTR_OPERATOR_PIPE_EQUAL]: '|=',
-	[ATTR_OPERATOR_CARET_EQUAL]: '^=',
-	[ATTR_OPERATOR_DOLLAR_EQUAL]: '$=',
-	[ATTR_OPERATOR_STAR_EQUAL]: '*=',
-}
-
-// Attribute flag name lookup table - maps numeric flag to CSS syntax
-export const ATTR_FLAG_NAMES: Record<number, string | null> = {
-	[ATTR_FLAG_NONE]: null,
-	[ATTR_FLAG_CASE_INSENSITIVE]: 'i',
-	[ATTR_FLAG_CASE_SENSITIVE]: 's',
-}
 
 // Node type constants (numeric for performance)
 export type CSSNodeType =
@@ -159,6 +133,7 @@ export type CSSNodeType =
 	| typeof OPERATOR
 	| typeof PARENTHESIS
 	| typeof URL
+	| typeof UNICODE_RANGE
 	| typeof VALUE
 	| typeof SELECTOR_LIST
 	| typeof TYPE_SELECTOR
@@ -182,6 +157,7 @@ export type CSSNodeType =
 	| typeof PRELUDE_OPERATOR
 	| typeof FEATURE_RANGE
 	| typeof AT_RULE_PRELUDE
+	| typeof PRELUDE_SELECTORLIST
 
 // Options for cloning nodes
 export interface CloneOptions {
@@ -206,6 +182,8 @@ export type PlainCSSNode = {
 
 	// Optional properties (only when meaningful)
 	children?: PlainCSSNode[]
+	child_count?: number
+	has_children?: boolean
 	name?: string
 	property?: string
 	value?: PlainCSSNode | string | number | null
@@ -231,6 +209,23 @@ export type PlainCSSNode = {
 	length?: number
 	end?: number
 }
+
+const nodes_with_children = new Set<number>([
+	STYLESHEET,
+	SELECTOR,
+	SELECTOR_LIST,
+	BLOCK,
+	FUNCTION,
+	PARENTHESIS,
+	VALUE,
+	PSEUDO_CLASS_SELECTOR,
+	PSEUDO_ELEMENT_SELECTOR,
+	AT_RULE_PRELUDE,
+	MEDIA_QUERY,
+	MEDIA_FEATURE,
+	CONTAINER_QUERY,
+	FEATURE_RANGE,
+])
 
 export class CSSNode {
 	private arena: CSSDataArena
@@ -344,7 +339,7 @@ export class CSSNode {
 			// For unquoted URLs, fall through to value delta logic below
 		}
 
-		if (type === OPERATOR) {
+		if (type === OPERATOR || type === LAYER_NAME) {
 			return this.get_content()
 		}
 
@@ -353,18 +348,6 @@ export class CSSNode {
 		let length = this.arena.get_value_length(this.index)
 		if (length === 0) return null
 		return this.source.substring(start, start + length)
-	}
-
-	/** Get the numeric value for NUMBER and DIMENSION nodes, or null for other node types */
-	get value_as_number(): number | null {
-		let { text, type } = this
-		if (type === NUMBER) {
-			return Number.parseFloat(text)
-		}
-		if (type === DIMENSION) {
-			return parse_dimension(text).value
-		}
-		return null
 	}
 
 	/**
@@ -643,7 +626,7 @@ export class CSSNode {
 	}
 
 	/** Get all children as an array */
-	get children(): CSSNode[] {
+	get children(): CSSNode[] | undefined {
 		let result: CSSNode[] = []
 		let child = this.first_child
 		while (child) {
@@ -721,37 +704,12 @@ export class CSSNode {
 		return first?.next_sibling ?? undefined // Second child is NODE_SELECTOR_LIST
 	}
 
-	// --- Pseudo-Class Selector List Helper ---
-
-	/**
-	 * Get selector list from pseudo-class functions
-	 * Works for :is(.a), :not(.b), :has(.c), :where(.d), :nth-child(2n of .e)
-	 */
-	get selector_list(): CSSNode | undefined {
-		if (this.type !== PSEUDO_CLASS_SELECTOR) return undefined
-
-		let child = this.first_child
-		if (!child) return undefined
-
-		// For simple cases (:is, :not, :where, :has), first_child is the selector list
-		if (child.type === SELECTOR_LIST) {
-			return child
-		}
-
-		// For :nth-child(of) cases, need to look inside NODE_SELECTOR_NTH_OF
-		if (child.type === NTH_OF_SELECTOR) {
-			// Use the convenience getter we just added
-			return child.selector
-		}
-
-		return undefined
-	}
-
 	// --- Node Cloning ---
 
 	/**
 	 * Clone this node as a mutable plain JavaScript object with children as arrays.
 	 * See API.md for examples.
+	 * Warning: this should be used sparingly because it potentially consumes a lot of memory.
 	 *
 	 * @param options - Cloning configuration
 	 * @param options.deep - Recursively clone children (default: true)
@@ -819,6 +777,9 @@ export class CSSNode {
 			plain.nth_a = this.nth_a
 			plain.nth_b = this.nth_b
 		}
+		if (type === NTH_OF_SELECTOR) {
+			plain.selector = this.selector
+		}
 
 		// 7. Include location if requested
 		if (locations) {
@@ -830,10 +791,16 @@ export class CSSNode {
 		}
 
 		// 8. Deep clone children - just push to array!
-		if (deep && type !== DECLARATION) {
+		if (deep && nodes_with_children.has(type)) {
 			plain.children = []
-			for (let child of this.children) {
-				plain.children.push(child.clone({ deep: true, locations }))
+			plain.child_count = this.child_count
+			plain.has_children = this.has_children
+
+			let children = this.children
+			if (children) {
+				for (let child of children) {
+					plain.children.push(child.clone({ deep: true, locations }))
+				}
 			}
 		}
 

@@ -1,12 +1,12 @@
 // AST walker - depth-first traversal
-import type { CSSNode } from './css-node'
+import type { AnyNode, CSSNode } from './node-types'
 import { STYLE_RULE, AT_RULE } from './constants'
 
 // Control flow symbols for walk callbacks
 export const SKIP = Symbol('SKIP')
 export const BREAK = Symbol('BREAK')
 
-type WalkCallback = (node: CSSNode, depth: number) => void | typeof SKIP | typeof BREAK
+type WalkCallback = (node: AnyNode, depth: number) => void | typeof SKIP | typeof BREAK
 
 /**
  * Walk the AST in depth-first order, calling the callback for each node.
@@ -19,7 +19,7 @@ type WalkCallback = (node: CSSNode, depth: number) => void | typeof SKIP | typeo
  */
 export function walk(node: CSSNode, callback: WalkCallback, depth = 0): boolean {
 	// Call callback for current node with current depth
-	const result = callback(node, depth)
+	const result = callback(node as AnyNode, depth)
 
 	// Check for BREAK - stop immediately
 	if (result === BREAK) {
@@ -38,7 +38,7 @@ export function walk(node: CSSNode, callback: WalkCallback, depth = 0): boolean 
 	}
 
 	// Recursively walk children with potentially incremented depth
-	let child = node.first_child
+	let child: CSSNode | null = node.first_child
 	while (child) {
 		const should_continue = walk(child, callback, child_depth)
 		if (!should_continue) {
@@ -52,7 +52,7 @@ export function walk(node: CSSNode, callback: WalkCallback, depth = 0): boolean 
 
 const NOOP = function () {}
 
-type WalkEnterLeaveCallback = (node: CSSNode) => void | typeof SKIP | typeof BREAK
+type WalkEnterLeaveCallback = (node: AnyNode) => void | typeof SKIP | typeof BREAK
 
 interface WalkEnterLeaveOptions {
 	enter?: WalkEnterLeaveCallback
@@ -71,7 +71,7 @@ export function traverse(
 	{ enter = NOOP, leave = NOOP }: WalkEnterLeaveOptions = {},
 ): boolean {
 	// Call enter callback before processing children
-	const enter_result = enter(node)
+	const enter_result = enter(node as AnyNode)
 
 	// Check for BREAK in enter - stop immediately
 	if (enter_result === BREAK) {
@@ -80,7 +80,7 @@ export function traverse(
 
 	// Only traverse children if SKIP was not returned
 	if (enter_result !== SKIP) {
-		let child = node.first_child
+		let child: CSSNode | null = node.first_child
 		while (child) {
 			const should_continue = traverse(child, { enter, leave })
 			if (!should_continue) {
@@ -92,7 +92,7 @@ export function traverse(
 
 	// Call leave callback after processing children
 	// Note: leave() is called even if children were skipped via SKIP
-	const leave_result = leave(node)
+	const leave_result = leave(node as AnyNode)
 
 	// Check for BREAK in leave
 	if (leave_result === BREAK) {

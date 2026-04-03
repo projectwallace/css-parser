@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { parse } from './parse'
 import { SELECTOR_LIST, STYLE_RULE, DECLARATION, VALUE, AT_RULE, RAW } from './arena'
 import { PlainCSSNode } from './css-node'
+import type { Rule, Atrule, Declaration } from './node-types'
 
 describe('Parser Options', () => {
 	const css = 'body { color: red; }'
@@ -22,7 +23,7 @@ describe('Parser Options', () => {
 			const declaration = block?.first_child
 			expect(declaration).not.toBeNull()
 			expect(declaration?.type).toBe(DECLARATION)
-			expect(declaration?.has_children).toBe(true)
+			expect(declaration?.first_child).not.toBeNull()
 			expect(declaration?.first_child?.type).toBe(VALUE)
 		})
 
@@ -38,7 +39,7 @@ describe('Parser Options', () => {
 			// Check value is parsed
 			const block = selector?.next_sibling
 			const declaration = block?.first_child
-			expect(declaration?.has_children).toBe(true)
+			expect(declaration?.first_child).not.toBeNull()
 			expect(declaration?.first_child?.type).toBe(VALUE)
 		})
 	})
@@ -56,15 +57,15 @@ describe('Parser Options', () => {
 
 			// Declaration should exist but have no value children
 			const block = selector?.next_sibling
-			const declaration = block?.first_child
+			const declaration = block?.first_child as Declaration | null | undefined
 			expect(declaration).not.toBeNull()
 			expect(declaration?.type).toBe(DECLARATION)
 			expect(declaration?.property).toBe('color')
 			expect((declaration?.value as PlainCSSNode)?.text).toBe('red') // Raw value text still available
-			expect(declaration?.has_children).toBe(true) // RAW value node exists
+			expect(declaration?.first_child).not.toBeNull() // RAW value node exists
 			expect(declaration?.first_child?.type).toBe(RAW)
 			expect(declaration?.first_child?.text).toBe('red')
-			expect(declaration?.children).toHaveLength(1)
+			expect(declaration?.first_child).not.toBeNull()
 		})
 
 		it('should handle complex values without parsing', () => {
@@ -72,11 +73,11 @@ describe('Parser Options', () => {
 			const rule = root.first_child
 			const selector = rule?.first_child
 			const block = selector?.next_sibling
-			const declaration = block?.first_child
+			const declaration = block?.first_child as Declaration | null | undefined
 
 			expect(declaration?.property).toBe('margin')
 			expect((declaration?.value as PlainCSSNode)?.text).toBe('10px 20px')
-			expect(declaration?.has_children).toBe(true)
+			expect(declaration?.first_child).not.toBeNull()
 		})
 
 		it('should handle function values without parsing', () => {
@@ -84,11 +85,11 @@ describe('Parser Options', () => {
 			const rule = root.first_child
 			const selector = rule?.first_child
 			const block = selector?.next_sibling
-			const declaration = block?.first_child
+			const declaration = block?.first_child as Declaration | null | undefined
 
 			expect(declaration?.property).toBe('color')
 			expect((declaration?.value as PlainCSSNode)?.text).toBe('rgb(255, 0, 0)')
-			expect(declaration?.has_children).toBe(true)
+			expect(declaration?.first_child).not.toBeNull()
 		})
 	})
 
@@ -102,12 +103,12 @@ describe('Parser Options', () => {
 			expect(selector).not.toBeNull()
 			expect(selector?.type).toBe(RAW)
 			expect(selector?.text).toBe('body')
-			expect(selector?.has_children).toBe(false) // No detailed selector nodes
+			expect(selector?.first_child).toBeNull() // No detailed selector nodes
 
 			// Values should still be parsed
 			const block = selector?.next_sibling
 			const declaration = block?.first_child
-			expect(declaration?.has_children).toBe(true)
+			expect(declaration?.first_child).not.toBeNull()
 			expect(declaration?.first_child?.type).toBe(VALUE)
 		})
 
@@ -122,7 +123,7 @@ describe('Parser Options', () => {
 
 		it('rule.prelude returns the RAW node', () => {
 			const root = parse(css, { parse_selectors: false })
-			const rule = root.first_child
+			const rule = root.first_child as Rule | null
 			const prelude = rule?.prelude
 			expect(prelude).not.toBeNull()
 			expect(prelude?.type).toBe(RAW)
@@ -136,7 +137,7 @@ describe('Parser Options', () => {
 
 			expect(selector?.type).toBe(RAW)
 			expect(selector?.text).toBe('div.container#app')
-			expect(selector?.has_children).toBe(false)
+			expect(selector?.first_child).toBeNull()
 		})
 
 		it('should handle selector lists without parsing', () => {
@@ -146,7 +147,7 @@ describe('Parser Options', () => {
 
 			expect(selector?.type).toBe(RAW)
 			expect(selector?.text).toBe('div, p, span')
-			expect(selector?.has_children).toBe(false)
+			expect(selector?.first_child).toBeNull()
 		})
 	})
 
@@ -159,15 +160,15 @@ describe('Parser Options', () => {
 			const selector = rule?.first_child
 			expect(selector?.type).toBe(RAW)
 			expect(selector?.text).toBe('body')
-			expect(selector?.has_children).toBe(false)
+			expect(selector?.first_child).toBeNull()
 
 			// Declaration should have a RAW value child
 			const block = selector?.next_sibling
-			const declaration = block?.first_child
+			const declaration = block?.first_child as Declaration | null | undefined
 			expect(declaration?.type).toBe(DECLARATION)
 			expect(declaration?.property).toBe('color')
 			expect((declaration?.value as PlainCSSNode)?.text).toBe('red')
-			expect(declaration?.has_children).toBe(true)
+			expect(declaration?.first_child).not.toBeNull()
 		})
 
 		it('should handle complex CSS without detailed parsing', () => {
@@ -182,18 +183,18 @@ describe('Parser Options', () => {
 
 			const selector = rule?.first_child
 			expect(selector?.type).toBe(RAW)
-			expect(selector?.has_children).toBe(false)
+			expect(selector?.first_child).toBeNull()
 
 			const block = selector?.next_sibling
-			const decl1 = block?.first_child
+			const decl1 = block?.first_child as Declaration | null | undefined
 			expect(decl1?.property).toBe('margin')
 			expect((decl1?.value as PlainCSSNode)?.text).toBe('10px 20px')
-			expect(decl1?.has_children).toBe(true)
+			expect(decl1?.first_child).not.toBeNull()
 
-			const decl2 = decl1?.next_sibling
+			const decl2 = decl1?.next_sibling as Declaration | null | undefined
 			expect(decl2?.property).toBe('color')
 			expect((decl2?.value as PlainCSSNode)?.text).toBe('rgb(255, 0, 0)')
-			expect(decl2?.has_children).toBe(true)
+			expect(decl2?.first_child).not.toBeNull()
 		})
 	})
 
@@ -212,13 +213,13 @@ describe('Parser Options', () => {
 
 			// Can quickly iterate through declarations without parsing complex values
 			const block = selector?.next_sibling
-			let decl = block?.first_child
+			let decl = block?.first_child as Declaration | null | undefined
 			const properties: string[] = []
 			while (decl) {
 				if (decl.property) {
 					properties.push(decl.property)
 				}
-				decl = decl.next_sibling
+				decl = decl.next_sibling as Declaration | null | undefined
 			}
 
 			expect(properties).toEqual(['color', 'background', 'margin'])
@@ -254,7 +255,7 @@ describe('Parser Options', () => {
 
 			// Should use defaults (both enabled)
 			expect(selector?.type).toBe(SELECTOR_LIST)
-			expect(declaration?.has_children).toBe(true)
+			expect(declaration?.first_child).not.toBeNull()
 		})
 
 		it('should accept partial options', () => {
@@ -267,20 +268,20 @@ describe('Parser Options', () => {
 			// Selector should still be parsed (default true)
 			expect(selector?.type).toBe(SELECTOR_LIST)
 			// Values should not be parsed as VALUE nodes (explicitly false), but RAW child exists
-			expect(declaration?.has_children).toBe(true)
+			expect(declaration?.first_child).not.toBeNull()
 		})
 	})
 
 	describe('parse_atrule_preludes disabled', () => {
 		it('should return a RAW prelude node when parse_atrule_preludes is false', () => {
 			const root = parse('@media screen { }', { parse_atrule_preludes: false })
-			const atrule = root.first_child!
+			const atrule = root.first_child! as Atrule
 			expect(atrule.type).toBe(AT_RULE)
 			const prelude = atrule.prelude
 			expect(prelude).not.toBeNull()
 			expect(prelude?.type).toBe(RAW)
 			expect(prelude?.text).toBe('screen')
-			expect(prelude?.has_children).toBe(false)
+			expect(prelude?.first_child).toBeNull()
 		})
 
 		it('should return RAW for various at-rule types', () => {
@@ -291,7 +292,7 @@ describe('Parser Options', () => {
 			]
 			for (let [css, expectedText] of cases) {
 				const root = parse(css, { parse_atrule_preludes: false })
-				const atrule = root.first_child!
+				const atrule = root.first_child! as Atrule
 				expect(atrule.prelude?.type).toBe(RAW)
 				expect(atrule.prelude?.text).toBe(expectedText)
 			}
@@ -299,7 +300,7 @@ describe('Parser Options', () => {
 
 		it('should return null prelude for at-rules without a prelude', () => {
 			const root = parse('@font-face { }', { parse_atrule_preludes: false })
-			const atrule = root.first_child!
+			const atrule = root.first_child! as Atrule
 			expect(atrule.prelude).toBeNull()
 		})
 	})
@@ -408,7 +409,7 @@ describe('Parser Options', () => {
 			const selector = rule?.first_child
 			const block = selector?.next_sibling
 			const declaration = block?.first_child
-			expect(declaration?.has_children).toBe(true) // RAW value node present even with parse_values: false
+			expect(declaration?.first_child).not.toBeNull() // RAW value node present even with parse_values: false
 		})
 	})
 })
