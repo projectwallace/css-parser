@@ -63,8 +63,6 @@ import {
 } from './arena'
 
 // ---------------------------------------------------------------------------
-// CssNodeCommon — internal base (not exported)
-//
 // Contains only properties that are present and meaningful on EVERY node type.
 // CSSNode satisfies this interface structurally (it has all these properties
 // plus more), so type predicates accepting CssNodeCommon also accept CSSNode.
@@ -155,14 +153,16 @@ export type Rule = CssNodeCommon & {
 	readonly name: string
 	readonly has_declarations: boolean
 	clone(options?: CloneOptions): ToPlain<Rule>
-} & (
+} &
 	/** SELECTOR_LIST (parse_selectors=true) or RAW (parse_selectors=false) */
-	| { readonly has_prelude: true; readonly prelude: SelectorList | Raw }
-	| { readonly has_prelude: false; readonly prelude: null }
-) & (
-	| { readonly has_block: true; readonly block: Block }
-	| { readonly has_block: false; readonly block: null }
-)
+	(
+		| { readonly has_prelude: true; readonly prelude: SelectorList | Raw }
+		| { readonly has_prelude: false; readonly prelude: null }
+	) &
+	(
+		| { readonly has_block: true; readonly block: Block }
+		| { readonly has_block: false; readonly block: null }
+	)
 
 export type Atrule = CssNodeCommon & {
 	readonly type: typeof AT_RULE
@@ -170,14 +170,16 @@ export type Atrule = CssNodeCommon & {
 	readonly name: string
 	readonly has_declarations: boolean
 	clone(options?: CloneOptions): ToPlain<Atrule>
-} & (
+} &
 	/** AT_RULE_PRELUDE (parse_atrule_preludes=true) or RAW (parse_atrule_preludes=false) */
-	| { readonly has_prelude: true; readonly prelude: AtrulePrelude | Raw }
-	| { readonly has_prelude: false; readonly prelude: null }
-) & (
-	| { readonly has_block: true; readonly block: Block }
-	| { readonly has_block: false; readonly block: null }
-)
+	(
+		| { readonly has_prelude: true; readonly prelude: AtrulePrelude | Raw }
+		| { readonly has_prelude: false; readonly prelude: null }
+	) &
+	(
+		| { readonly has_block: true; readonly block: Block }
+		| { readonly has_block: false; readonly block: null }
+	)
 
 export interface Declaration extends CssNodeCommon {
 	readonly type: typeof DECLARATION

@@ -21,15 +21,6 @@ export {
 export { type ParserOptions } from './parse'
 
 // Types
-export {
-	CSSNode,
-	type CSSNodeType,
-	TYPE_NAMES,
-	type CloneOptions,
-	type PlainCSSNode,
-	ATTR_FLAG_NAMES,
-	ATTR_OPERATOR_NAMES,
-} from './css-node'
 export type { LexerPosition, CommentInfo } from './tokenize'
 
 export {
@@ -55,7 +46,7 @@ export { NODE_TYPES } from './constants'
 
 // Node subtypes and type predicate functions
 export {
-	type CssNodeCommon,
+	type CssNodeCommon as CSSNode,
 	type WithChildren,
 	type AnyCss,
 	type ToPlain,
