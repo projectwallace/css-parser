@@ -80,7 +80,7 @@ export function traverse(
 
 	// Only traverse children if SKIP was not returned
 	if (enter_result !== SKIP) {
-		let child: CSSNode | null = node.first_child
+		let child = node.first_child
 		while (child) {
 			const should_continue = traverse(child, { enter, leave })
 			if (!should_continue) {

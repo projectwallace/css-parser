@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { parse } from './parse'
 import { SELECTOR_LIST, STYLE_RULE, DECLARATION, VALUE, AT_RULE, RAW } from './arena'
 import { PlainCSSNode } from './css-node'
-import type { Rule, Atrule, Declaration } from './node-types'
+import type { Rule, Atrule, Declaration, CSSNode } from './node-types'
 
 describe('Parser Options', () => {
 	const css = 'body { color: red; }'
@@ -235,7 +235,7 @@ describe('Parser Options', () => {
 
 			// Can quickly count rules without parsing complex selectors
 			let count = 0
-			let node = root.first_child
+			let node: CSSNode | null = root.first_child
 			while (node) {
 				count++
 				node = node.next_sibling
