@@ -1,6 +1,7 @@
 *.md
 !API.md
 !README.md
+!MIGRATION.md
 node_modules
 dist
 coverage
