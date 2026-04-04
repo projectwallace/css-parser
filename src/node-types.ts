@@ -358,7 +358,7 @@ export type AttributeSelector = CSSNode & {
 }
 
 export type PseudoClassSelector = CSSNode &
-	WithChildren<Selector> & {
+	WithChildren<Selector | NthOfSelector> & {
 		readonly type: typeof PSEUDO_CLASS_SELECTOR
 		/** Pseudo-class name without colon, e.g. "hover" */
 		readonly name: string
@@ -366,7 +366,7 @@ export type PseudoClassSelector = CSSNode &
 	}
 
 export type PseudoElementSelector = CSSNode &
-	WithChildren<Selector> & {
+	WithChildren<SelectorList> & {
 		readonly type: typeof PSEUDO_ELEMENT_SELECTOR
 		/** Pseudo-element name without colons, e.g. "before" */
 		readonly name: string
