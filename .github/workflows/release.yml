@@ -17,8 +17,6 @@ jobs:
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org/
-      - run: npm install -g npm@latest
-        continue-on-error: true
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm test
       - name: Bump version in package.json
