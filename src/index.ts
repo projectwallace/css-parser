@@ -21,7 +21,7 @@ export {
 export { type ParserOptions } from './parse'
 
 // Types
-export { TYPE_NAMES, type CloneOptions } from './css-node'
+export { TYPE_NAMES, type CloneOptions, type PlainCSSNode } from './css-node'
 export type { LexerPosition, CommentInfo } from './tokenize'
 
 // Constants - imported from dedicated constants file
