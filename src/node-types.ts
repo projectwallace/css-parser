@@ -87,21 +87,24 @@ export type CSSNode = {
 )
 
 /**
- * Produces a version of CSSNode subtype U where next_sibling is narrowed to
- * sibling union S. The conditional distributes over U (preserving each union
- * member's type discriminant) while S stays fixed as the full sibling type.
+ * A child of a WithChildren<T> parent: T intersected with a narrowed
+ * has_next / next_sibling discriminated union so that next_sibling is typed as
+ * S instead of the generic CSSNode.
+ *
+ * Uses plain intersection rather than Omit to keep instantiation shallow:
+ * Omit forces TypeScript to enumerate every key of U (triggering recursive
+ * expansion through the whole node graph), while a bare intersection is stored
+ * lazily and never causes TS2589.  The conditional is distributive in U so
+ * each union member keeps its own type discriminant.
  */
-type _ChildOf<U extends CSSNode, S extends CSSNode> = U extends CSSNode
-	? Omit<U, 'has_next' | 'next_sibling'> & (
+type _ChildOf<U, S> = U extends unknown
+	? U & (
 			| { readonly has_next: false; readonly next_sibling: null }
 			| { readonly has_next: true; readonly next_sibling: S }
 	  )
 	: never
 
-/**
- * A child of a WithChildren<T> parent: identical to T but with next_sibling
- * narrowed to T instead of the generic CSSNode.
- */
+/** A child of a WithChildren<T> parent, with next_sibling narrowed to T. */
 type ChildOf<T extends CSSNode> = _ChildOf<T, T>
 
 /**
