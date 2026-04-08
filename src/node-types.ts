@@ -87,19 +87,41 @@ export type CSSNode = {
 )
 
 /**
+ * Produces a version of CSSNode subtype U where next_sibling is narrowed to
+ * sibling union S. The conditional distributes over U (preserving each union
+ * member's type discriminant) while S stays fixed as the full sibling type.
+ */
+type _ChildOf<U extends CSSNode, S extends CSSNode> = U extends CSSNode
+	? Omit<U, 'has_next' | 'next_sibling'> & (
+			| { readonly has_next: false; readonly next_sibling: null }
+			| { readonly has_next: true; readonly next_sibling: S }
+	  )
+	: never
+
+/**
+ * A child of a WithChildren<T> parent: identical to T but with next_sibling
+ * narrowed to T instead of the generic CSSNode.
+ */
+type ChildOf<T extends CSSNode> = _ChildOf<T, T>
+
+/**
  * Mixin for node types that have child nodes.
  *
  * Only a subset of node types expose children — structural and container nodes
  * like StyleSheet, Block, SelectorList, Value, Function, etc. Leaf nodes
  * (Identifier, Number, Dimension, …) do not extend WithChildren, reflecting
  * that they never carry child nodes in a well-formed tree.
+ *
+ * Children are typed as ChildOf<T> so that next_sibling on any child is
+ * narrowed to T (the same union as the other children of this parent) rather
+ * than the generic CSSNode.
  */
-export interface WithChildren<T = AnyNode> {
+export interface WithChildren<T extends CSSNode = AnyNode> {
 	readonly has_children: boolean
 	readonly child_count: number
-	readonly children: T[]
-	readonly first_child: T
-	[Symbol.iterator](): Iterator<T>
+	readonly children: ChildOf<T>[]
+	readonly first_child: ChildOf<T>
+	[Symbol.iterator](): Iterator<ChildOf<T>>
 }
 
 /**
