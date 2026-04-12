@@ -215,10 +215,28 @@ export type SelectorList = CSSNode &
 		clone(options?: CloneOptions): ToPlain<SelectorList>
 	}
 
+/**
+ * A node that appears as a direct child of a Block.
+ *
+ * Identical to `Raw | Declaration | Atrule | Rule` except that `next_sibling`
+ * is narrowed to the same union instead of the generic `CSSNode`.  This is
+ * safe because none of these four types use WithChildren themselves, so
+ * there is no recursive type graph to trigger TS2589.
+ */
+export type BlockChild = (Raw | Declaration | Atrule | Rule) &
+	(
+		| { readonly has_next: false; readonly next_sibling: null }
+		| { readonly has_next: true; readonly next_sibling: Raw | Declaration | Atrule | Rule }
+	)
+
 export type Block = CSSNode &
 	WithChildren<Raw | Declaration | Atrule | Rule> & {
 		readonly type: typeof BLOCK
 		readonly is_empty: boolean
+		/** Block children with next_sibling narrowed to the Block child union. */
+		readonly first_child: BlockChild
+		readonly children: BlockChild[]
+		[Symbol.iterator](): Iterator<BlockChild>
 		clone(options?: CloneOptions): ToPlain<Block>
 	}
 
