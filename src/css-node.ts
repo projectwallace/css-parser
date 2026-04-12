@@ -210,6 +210,23 @@ export type PlainCSSNode = {
 	end?: number
 }
 
+const nodes_with_name = new Set<number>([
+	AT_RULE,
+	IDENTIFIER,
+	FUNCTION,
+	TYPE_SELECTOR,
+	CLASS_SELECTOR,
+	ID_SELECTOR,
+	ATTRIBUTE_SELECTOR,
+	PSEUDO_CLASS_SELECTOR,
+	PSEUDO_ELEMENT_SELECTOR,
+	COMBINATOR,
+	UNIVERSAL_SELECTOR,
+	LANG_SELECTOR,
+	LAYER_NAME,
+	FEATURE_RANGE,
+])
+
 const nodes_with_children = new Set<number>([
 	STYLESHEET,
 	SELECTOR,
@@ -226,6 +243,22 @@ const nodes_with_children = new Set<number>([
 	CONTAINER_QUERY,
 	FEATURE_RANGE,
 ])
+
+const enumerable_properties = [
+	'name',
+	'property',
+	'value',
+	'unit',
+	'attr_operator',
+	'attr_flags',
+	'nth_a',
+	'nth_b',
+	'selector',
+	'is_browserhack',
+	'is_vendor_prefixed',
+	'has_error',
+	'is_important',
+] as const
 
 export class CSSNode {
 	private arena: CSSDataArena
@@ -272,9 +305,7 @@ export class CSSNode {
 
 	/** Get the "content" text (at-rule name for at-rules, layer name for import layers) */
 	get name(): string | undefined {
-		let { type } = this
-		if (type === DECLARATION || type === OPERATOR || type === SELECTOR || type === MEDIA_FEATURE)
-			return
+		if (!nodes_with_name.has(this.type)) return
 		return this.get_content()
 	}
 
@@ -495,7 +526,9 @@ export class CSSNode {
 	}
 
 	/** Check if this style rule has declarations */
-	get has_declarations(): boolean {
+	get has_declarations(): boolean | undefined {
+		let { type } = this
+		if (type !== AT_RULE && type !== STYLE_RULE) return undefined
 		return this.arena.has_flag(this.index, FLAG_HAS_DECLARATIONS)
 	}
 
@@ -717,71 +750,21 @@ export class CSSNode {
 	 */
 	clone(options: CloneOptions = {}): PlainCSSNode {
 		const { deep = true, locations = false } = options
-		let { type, name, property, value, unit } = this
+		let { type } = this
 
-		// 1. Create plain object with base properties
 		let plain: any = {
-			type: type,
+			type,
 			type_name: this.type_name,
 			text: this.text,
 		}
 
-		// 2. Extract type-specific properties (only if meaningful)
-		if (name) {
-			plain.name = name
-		}
-		if (property) {
-			plain.property = property
-		}
-
-		// 3. Handle value types
-		if (value) {
-			plain.value = value
-
-			if (unit) {
-				plain.unit = unit
+		for (let key of enumerable_properties) {
+			let val = this[key]
+			if (val !== undefined && val !== false) {
+				plain[key] = val
 			}
 		}
 
-		// 4. At-rule preludes are now child nodes (AT_RULE_PRELUDE wrapper)
-		// They will be cloned as part of children in deep clones
-		// No special extraction needed - breaking change from string to CSSNode
-
-		// 5. Extract flags
-		if (type === DECLARATION) {
-			let { is_important, is_browserhack } = this
-			if (is_important) {
-				plain.is_important = true
-			}
-			if (is_browserhack) {
-				plain.is_browserhack = true
-			}
-		}
-
-		let { is_vendor_prefixed, has_error } = this
-
-		if (is_vendor_prefixed) {
-			plain.is_vendor_prefixed = true
-		}
-
-		if (has_error) {
-			plain.has_error = true
-		}
-
-		// 6. Extract selector-specific properties
-		if (type === ATTRIBUTE_SELECTOR) {
-			plain.attr_operator = this.attr_operator
-			plain.attr_flags = this.attr_flags
-		}
-		if (type === NTH_SELECTOR || type === NTH_OF_SELECTOR) {
-			plain.nth_a = this.nth_a
-			plain.nth_b = this.nth_b
-		}
-		if (type === NTH_OF_SELECTOR) {
-			plain.selector = this.selector
-		}
-
-		// 7. Include location if requested
 		if (locations) {
 			plain.line = this.line
 			plain.column = this.column
@@ -790,7 +773,6 @@ export class CSSNode {
 			plain.end = this.end
 		}
 
-		// 8. Deep clone children - just push to array!
 		if (deep && nodes_with_children.has(type)) {
 			plain.children = []
 			plain.child_count = this.child_count

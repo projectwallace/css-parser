@@ -148,7 +148,6 @@ export type StyleSheet = CSSNode &
 
 export type Rule = CSSNode & {
 	readonly type: typeof STYLE_RULE
-	readonly name: string
 	readonly has_declarations: boolean
 	clone(options?: CloneOptions): ToPlain<Rule>
 } &
