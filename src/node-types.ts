@@ -87,44 +87,19 @@ export type CSSNode = {
 )
 
 /**
- * A child of a WithChildren<T> parent: T intersected with a narrowed
- * has_next / next_sibling discriminated union so that next_sibling is typed as
- * S instead of the generic CSSNode.
- *
- * Uses plain intersection rather than Omit to keep instantiation shallow:
- * Omit forces TypeScript to enumerate every key of U (triggering recursive
- * expansion through the whole node graph), while a bare intersection is stored
- * lazily and never causes TS2589.  The conditional is distributive in U so
- * each union member keeps its own type discriminant.
- */
-type _ChildOf<U, S> = U extends unknown
-	? U & (
-			| { readonly has_next: false; readonly next_sibling: null }
-			| { readonly has_next: true; readonly next_sibling: S }
-	  )
-	: never
-
-/** A child of a WithChildren<T> parent, with next_sibling narrowed to T. */
-type ChildOf<T extends CSSNode> = _ChildOf<T, T>
-
-/**
  * Mixin for node types that have child nodes.
  *
  * Only a subset of node types expose children — structural and container nodes
  * like StyleSheet, Block, SelectorList, Value, Function, etc. Leaf nodes
  * (Identifier, Number, Dimension, …) do not extend WithChildren, reflecting
  * that they never carry child nodes in a well-formed tree.
- *
- * Children are typed as ChildOf<T> so that next_sibling on any child is
- * narrowed to T (the same union as the other children of this parent) rather
- * than the generic CSSNode.
  */
-export interface WithChildren<T extends CSSNode = AnyNode> {
+export interface WithChildren<T = AnyNode> {
 	readonly has_children: boolean
 	readonly child_count: number
-	readonly children: ChildOf<T>[]
-	readonly first_child: ChildOf<T>
-	[Symbol.iterator](): Iterator<ChildOf<T>>
+	readonly children: T[]
+	readonly first_child: T
+	[Symbol.iterator](): Iterator<T>
 }
 
 /**
@@ -240,10 +215,27 @@ export type SelectorList = CSSNode &
 		clone(options?: CloneOptions): ToPlain<SelectorList>
 	}
 
+/**
+ * A node that appears as a direct child of a Block.
+ *
+ * Identical to `Raw | Declaration | Atrule | Rule` except that `next_sibling`
+ * is narrowed to the same union instead of the generic `CSSNode`.  This is
+ * safe because none of these four types use WithChildren themselves, so
+ * there is no recursive type graph to trigger TS2589.
+ */
+export type BlockChild = (Raw | Declaration | Atrule | Rule) & (
+	| { readonly has_next: false; readonly next_sibling: null }
+	| { readonly has_next: true; readonly next_sibling: Raw | Declaration | Atrule | Rule }
+)
+
 export type Block = CSSNode &
 	WithChildren<Raw | Declaration | Atrule | Rule> & {
 		readonly type: typeof BLOCK
 		readonly is_empty: boolean
+		/** Block children with next_sibling narrowed to the Block child union. */
+		readonly first_child: BlockChild
+		readonly children: BlockChild[]
+		[Symbol.iterator](): Iterator<BlockChild>
 		clone(options?: CloneOptions): ToPlain<Block>
 	}
 

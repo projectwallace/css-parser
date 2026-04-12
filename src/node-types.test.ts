@@ -28,6 +28,7 @@ import type {
 	Declaration,
 	Block,
 	Block as BlockNodeAlias,
+	BlockChild,
 	SelectorList,
 	AtrulePrelude,
 	Raw,
@@ -40,7 +41,6 @@ import type {
 	NthSelector,
 	MediaFeature,
 	LayerName,
-	Selector,
 } from './node-types'
 
 // ---------------------------------------------------------------------------
@@ -242,25 +242,21 @@ describe('type narrowing — compile-time', () => {
 		}
 	})
 
-	it('next_sibling on Block children is narrowed to Block child union', () => {
+	it('Block.first_child is BlockChild with next_sibling narrowed to the Block child union', () => {
 		const root = parse('a { color: red; font-size: 1em }')
 		const rule = root.first_child! as Rule
 		const block = rule.block!
-		// first_child on Block is typed as the Block child union, not CSSNode
+		// first_child on Block returns BlockChild, not the generic CSSNode
 		const child = block.first_child
-		expectTypeOf(child).toMatchTypeOf<Raw | Declaration | Atrule | Rule>()
-		// next_sibling must also be narrowed to the same union (not CSSNode)
+		expectTypeOf(child).toMatchTypeOf<BlockChild>()
+		// next_sibling is narrowed to Raw | Declaration | Atrule | Rule, not CSSNode
 		if (child.has_next) {
 			expectTypeOf(child.next_sibling).toMatchTypeOf<Raw | Declaration | Atrule | Rule>()
 		}
-	})
-
-	it('next_sibling on SelectorList children is narrowed to Selector', () => {
-		const root = parse_selector('a, b')
-		const child = root.first_child
-		expectTypeOf(child).toMatchTypeOf<Selector>()
-		if (child.has_next) {
-			expectTypeOf(child.next_sibling).toMatchTypeOf<Selector>()
+		// children[] and for-of also yield BlockChild
+		expectTypeOf(block.children[0]).toMatchTypeOf<BlockChild>()
+		for (const c of block) {
+			expectTypeOf(c).toMatchTypeOf<BlockChild>()
 		}
 	})
 
