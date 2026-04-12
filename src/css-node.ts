@@ -304,9 +304,12 @@ export class CSSNode {
 	}
 
 	/** Get the "content" text (at-rule name for at-rules, layer name for import layers) */
-	get name(): string | undefined {
+	get name(): string | null | undefined {
 		if (!nodes_with_name.has(this.type)) return
-		return this.get_content()
+		let content = this.get_content()
+		let { type } = this
+		if ((type === UNIVERSAL_SELECTOR || type === LANG_SELECTOR) && content === '') return null
+		return content
 	}
 
 	/**
@@ -681,23 +684,23 @@ export class CSSNode {
 	// --- An+B Expression Helpers (for NODE_SELECTOR_NTH) ---
 
 	/** Get the 'a' coefficient from An+B expression (e.g., "2n" from "2n+1", "odd" from "odd") */
-	get nth_a(): string | undefined {
+	get nth_a(): string | null | undefined {
 		let { type, arena, index } = this
 		if (type !== NTH_SELECTOR && type !== NTH_OF_SELECTOR) return undefined
 
 		let len = arena.get_content_length(index)
-		if (len === 0) return undefined
+		if (len === 0) return null
 		let start = arena.get_content_start(index)
 		return this.source.substring(start, start + len)
 	}
 
 	/** Get the 'b' coefficient from An+B expression (e.g., "+1" from "2n+1") */
-	get nth_b(): string | undefined {
+	get nth_b(): string | null | undefined {
 		let { type, arena, index, source } = this
 		if (type !== NTH_SELECTOR && type !== NTH_OF_SELECTOR) return undefined
 
 		let len = arena.get_value_length(index)
-		if (len === 0) return undefined
+		if (len === 0) return null
 		let start = arena.get_value_start(index)
 		let value = source.substring(start, start + len)
 

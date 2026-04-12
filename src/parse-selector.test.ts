@@ -5,6 +5,7 @@ import type {
 	AttributeSelector,
 	ClassSelector,
 	IdSelector,
+	LangSelector,
 	NthSelector,
 	PseudoClassSelector,
 	PseudoElementSelector,
@@ -297,9 +298,10 @@ describe('Selector Nodes', () => {
 				const node = parse_selector(':lang(en)')
 				const selector = node.first_child! as Selector
 				const pseudoClass = selector.first_child!
-				const langNode = pseudoClass.first_child!
+				const langNode = pseudoClass.first_child! as LangSelector
 				expect(langNode.type).toBe(LANG_SELECTOR)
 				expect(langNode.length).toBeGreaterThan(0)
+				expect(langNode.name).toBe('en')
 			})
 		})
 	})
@@ -468,8 +470,9 @@ describe('Selector Nodes', () => {
 		test('UNIVERSAL_SELECTOR type_name', () => {
 			const node = parse_selector('*')
 			const selector = node.first_child! as Selector
-			const universalSelector = selector.first_child!
+			const universalSelector = selector.first_child! as UniversalSelector
 			expect(universalSelector.type_name).toBe('UniversalSelector')
+			expect(universalSelector.name).toBe('*')
 		})
 
 		test('NESTING_SELECTOR type_name', () => {
@@ -1742,7 +1745,7 @@ describe('Selector Nodes', () => {
 					const pseudoClass = root.first_child!.first_child!
 					const nthNode = pseudoClass.first_child! as NthSelector
 					expect(nthNode.type).toBe(NTH_SELECTOR)
-					expect(nthNode.nth_a).toBeUndefined()
+					expect(nthNode.nth_a).toBeNull()
 					expect(nthNode.nth_b).toBe('3')
 				})
 
@@ -1750,7 +1753,7 @@ describe('Selector Nodes', () => {
 					const root = parse_selector(':nth-child(-5)')
 					const pseudoClass = root.first_child!.first_child!
 					const nthNode = pseudoClass.first_child! as NthSelector
-					expect(nthNode.nth_a).toBeUndefined()
+					expect(nthNode.nth_a).toBeNull()
 					expect(nthNode.nth_b).toBe('-5')
 				})
 
@@ -1758,7 +1761,7 @@ describe('Selector Nodes', () => {
 					const root = parse_selector(':nth-child(0)')
 					const pseudoClass = root.first_child!.first_child!
 					const nthNode = pseudoClass.first_child! as NthSelector
-					expect(nthNode.nth_a).toBeUndefined()
+					expect(nthNode.nth_a).toBeNull()
 					expect(nthNode.nth_b).toBe('0')
 				})
 			})
@@ -1769,7 +1772,7 @@ describe('Selector Nodes', () => {
 					const pseudoClass = root.first_child!.first_child!
 					const nthNode = pseudoClass.first_child! as NthSelector
 					expect(nthNode.nth_a).toBe('odd')
-					expect(nthNode.nth_b).toBeUndefined()
+					expect(nthNode.nth_b).toBeNull()
 				})
 
 				test('even keyword', () => {
@@ -1777,7 +1780,7 @@ describe('Selector Nodes', () => {
 					const pseudoClass = root.first_child!.first_child!
 					const nthNode = pseudoClass.first_child! as NthSelector
 					expect(nthNode.nth_a).toBe('even')
-					expect(nthNode.nth_b).toBeUndefined()
+					expect(nthNode.nth_b).toBeNull()
 				})
 			})
 
@@ -1787,7 +1790,7 @@ describe('Selector Nodes', () => {
 					const pseudoClass = root.first_child!.first_child!
 					const nthNode = pseudoClass.first_child! as NthSelector
 					expect(nthNode.nth_a).toBe('n')
-					expect(nthNode.nth_b).toBeUndefined()
+					expect(nthNode.nth_b).toBeNull()
 				})
 
 				test('+n', () => {
@@ -1795,7 +1798,7 @@ describe('Selector Nodes', () => {
 					const pseudoClass = root.first_child!.first_child!
 					const nthNode = pseudoClass.first_child! as NthSelector
 					expect(nthNode.nth_a).toBe('+n')
-					expect(nthNode.nth_b).toBeUndefined()
+					expect(nthNode.nth_b).toBeNull()
 				})
 
 				test('-n', () => {
@@ -1803,7 +1806,7 @@ describe('Selector Nodes', () => {
 					const pseudoClass = root.first_child!.first_child!
 					const nthNode = pseudoClass.first_child! as NthSelector
 					expect(nthNode.nth_a).toBe('-n')
-					expect(nthNode.nth_b).toBeUndefined()
+					expect(nthNode.nth_b).toBeNull()
 				})
 			})
 
@@ -1813,7 +1816,7 @@ describe('Selector Nodes', () => {
 					const pseudoClass = root.first_child!.first_child!
 					const nthNode = pseudoClass.first_child! as NthSelector
 					expect(nthNode.nth_a).toBe('2n')
-					expect(nthNode.nth_b).toBeUndefined()
+					expect(nthNode.nth_b).toBeNull()
 				})
 
 				test('-3n', () => {
@@ -1821,7 +1824,7 @@ describe('Selector Nodes', () => {
 					const pseudoClass = root.first_child!.first_child!
 					const nthNode = pseudoClass.first_child! as NthSelector
 					expect(nthNode.nth_a).toBe('-3n')
-					expect(nthNode.nth_b).toBeUndefined()
+					expect(nthNode.nth_b).toBeNull()
 				})
 
 				test('+5n', () => {
@@ -1829,7 +1832,7 @@ describe('Selector Nodes', () => {
 					const pseudoClass = root.first_child!.first_child!
 					const nthNode = pseudoClass.first_child! as NthSelector
 					expect(nthNode.nth_a).toBe('+5n')
-					expect(nthNode.nth_b).toBeUndefined()
+					expect(nthNode.nth_b).toBeNull()
 				})
 			})
 
@@ -1916,7 +1919,7 @@ describe('Selector Nodes', () => {
 					const anplusb = nthOfNode.first_child! as NthSelector
 					expect(anplusb.type).toBe(NTH_SELECTOR)
 					expect(anplusb.nth_a).toBe('2n')
-					expect(anplusb.nth_b).toBeUndefined()
+					expect(anplusb.nth_b).toBeNull()
 
 					// Second child is the selector list
 					const selectorList = (nthOfNode as unknown as WithChildren).children[1]
