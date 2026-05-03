@@ -323,8 +323,8 @@ export class CSSNode {
 	 */
 	get property(): string | undefined {
 		let { type } = this
-		if (type !== DECLARATION && type !== MEDIA_FEATURE) return
-		return this.get_content()
+		if (type === DECLARATION || type === MEDIA_FEATURE) return this.get_content()
+		if (type === SUPPORTS_DECLARATION) return this.first_child?.property
 	}
 
 	/**

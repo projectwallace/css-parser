@@ -495,6 +495,8 @@ export type SupportsQuery = CSSNode &
 export type SupportsDeclaration = CSSNode &
 	WithChildren<Declaration> & {
 		readonly type: typeof SUPPORTS_DECLARATION
+		/** Property name, e.g. "-webkit-appearance" */
+		readonly property: string | undefined
 		clone(options?: CloneOptions): ToPlain<SupportsDeclaration>
 	}
 

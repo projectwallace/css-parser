@@ -22,7 +22,6 @@ import type {
 import {
 	AT_RULE,
 	BLOCK,
-	DECLARATION,
 	MEDIA_QUERY,
 	MEDIA_FEATURE,
 	MEDIA_TYPE,
@@ -869,32 +868,29 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(query.children[0].type).toBe(SUPPORTS_DECLARATION)
 			})
 
-			test('should have a Declaration with property inside SupportsDeclaration', () => {
+			test('should expose property and is_vendor_prefixed on SupportsDeclaration', () => {
 				const css = '@supports (display: flex) { }'
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
 				const children = (atRule.prelude as AtrulePrelude).children || []
 				const query = children.find((c) => c.type === SUPPORTS_QUERY) as SupportsQuery
 				const supportsDecl = query.children[0] as SupportsDeclaration
-				const decl = supportsDecl.children[0] as Declaration
 
-				expect(supportsDecl.type).toBe(SUPPORTS_DECLARATION)
-				expect(decl.type).toBe(DECLARATION)
-				expect(decl.property).toBe('display')
-				expect(decl.is_vendor_prefixed).toBe(false)
+				expect(supportsDecl.property).toBe('display')
+				expect(supportsDecl.is_vendor_prefixed).toBe(false)
 			})
 
-			test('should detect vendor-prefixed property via Declaration.is_vendor_prefixed', () => {
+			test('should detect vendor-prefixed property', () => {
 				const css = '@supports (-webkit-appearance: none) { }'
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
 				const children = (atRule.prelude as AtrulePrelude).children || []
 				const query = children.find((c) => c.type === SUPPORTS_QUERY) as SupportsQuery
 				const supportsDecl = query.children[0] as SupportsDeclaration
-				const decl = supportsDecl.children[0] as Declaration
 
-				expect(decl.property).toBe('-webkit-appearance')
-				expect(decl.is_vendor_prefixed).toBe(true)
+				expect(supportsDecl.property).toBe('-webkit-appearance')
+				const declaration = supportsDecl.first_child
+				expect(declaration.is_vendor_prefixed).toBe(true)
 			})
 
 			test('should have a Value child on the Declaration inside SupportsDeclaration', () => {
@@ -907,7 +903,8 @@ describe('At-Rule Prelude Nodes', () => {
 				const decl = supportsDecl.children[0] as Declaration
 
 				expect(decl.value).not.toBeNull()
-				expect((decl.value as CSSNode).text).toBe('flex')
+				expect(decl.value?.text).toBe('flex')
+				expect(decl.value?.is_vendor_prefixed).toBe(false)
 			})
 
 			test('should build SupportsDeclaration for each query in a multi-condition supports', () => {
