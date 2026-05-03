@@ -472,7 +472,8 @@ describe('Selector Nodes', () => {
 			const selector = node.first_child! as Selector
 			const universalSelector = selector.first_child! as UniversalSelector
 			expect(universalSelector.type_name).toBe('UniversalSelector')
-			expect(universalSelector.name).toBe('*')
+			expect(universalSelector.name).toBeNull()
+			expect(universalSelector.namespace).toBeNull()
 		})
 
 		test('NESTING_SELECTOR type_name', () => {
@@ -523,9 +524,11 @@ describe('Selector Nodes', () => {
 				const firstSelector = node.first_child as Selector | null
 				expect(firstSelector?.type).toBe(SELECTOR)
 
-				const typeNode = firstSelector?.first_child
+				const typeNode = firstSelector?.first_child as TypeSelector | null
 				expect(typeNode?.type).toBe(TYPE_SELECTOR)
 				expect(typeNode?.text).toBe('div')
+				expect(typeNode?.name).toBe('div')
+				expect(typeNode?.namespace).toBeNull()
 			})
 
 			test('should parse class selector', () => {
@@ -2291,7 +2294,8 @@ describe('Selector Nodes', () => {
 				const universal = selector?.first_child as UniversalSelector | null | undefined
 				expect(universal?.type).toBe(UNIVERSAL_SELECTOR)
 				expect(universal?.text).toBe('ns|*')
-				expect(universal?.name).toBe('ns')
+				expect(universal?.name).toBeNull()
+				expect(universal?.namespace).toBe('ns')
 			})
 
 			test('should parse ns|div (namespace with type selector)', () => {
@@ -2306,7 +2310,8 @@ describe('Selector Nodes', () => {
 				const typeSelector = selector?.first_child as TypeSelector | null | undefined
 				expect(typeSelector?.type).toBe(TYPE_SELECTOR)
 				expect(typeSelector?.text).toBe('ns|div')
-				expect(typeSelector?.name).toBe('ns')
+				expect(typeSelector?.name).toBe('div')
+				expect(typeSelector?.namespace).toBe('ns')
 			})
 
 			test('should parse *|* (any namespace with universal selector)', () => {
@@ -2319,7 +2324,8 @@ describe('Selector Nodes', () => {
 				const universal = selector?.first_child as UniversalSelector | null | undefined
 				expect(universal?.type).toBe(UNIVERSAL_SELECTOR)
 				expect(universal?.text).toBe('*|*')
-				expect(universal?.name).toBe('*')
+				expect(universal?.name).toBeNull()
+				expect(universal?.namespace).toBe('*')
 			})
 
 			test('should parse *|div (any namespace with type selector)', () => {
@@ -2332,7 +2338,8 @@ describe('Selector Nodes', () => {
 				const typeSelector = selector?.first_child as TypeSelector | null | undefined
 				expect(typeSelector?.type).toBe(TYPE_SELECTOR)
 				expect(typeSelector?.text).toBe('*|div')
-				expect(typeSelector?.name).toBe('*')
+				expect(typeSelector?.name).toBe('div')
+				expect(typeSelector?.namespace).toBe('*')
 			})
 
 			test('should parse |* (empty namespace with universal selector)', () => {
@@ -2345,8 +2352,8 @@ describe('Selector Nodes', () => {
 				const universal = selector?.first_child as UniversalSelector | null | undefined
 				expect(universal?.type).toBe(UNIVERSAL_SELECTOR)
 				expect(universal?.text).toBe('|*')
-				// Empty namespace should result in empty name
-				expect(universal?.name).toBe('|')
+				expect(universal?.name).toBeNull()
+				expect(universal?.namespace).toBe('')
 			})
 
 			test('should parse |div (empty namespace with type selector)', () => {
@@ -2359,8 +2366,8 @@ describe('Selector Nodes', () => {
 				const typeSelector = selector?.first_child as TypeSelector | null | undefined
 				expect(typeSelector?.type).toBe(TYPE_SELECTOR)
 				expect(typeSelector?.text).toBe('|div')
-				// Empty namespace should result in empty name
-				expect(typeSelector?.name).toBe('|')
+				expect(typeSelector?.name).toBe('div')
+				expect(typeSelector?.namespace).toBe('')
 			})
 
 			test('should parse namespace selector with class', () => {
@@ -2374,7 +2381,8 @@ describe('Selector Nodes', () => {
 				expect(children.length).toBe(2)
 				expect(children[0].type).toBe(TYPE_SELECTOR)
 				expect(children[0].text).toBe('ns|div')
-				expect((children[0] as TypeSelector).name).toBe('ns')
+				expect((children[0] as TypeSelector).name).toBe('div')
+				expect((children[0] as TypeSelector).namespace).toBe('ns')
 				expect(children[1].type).toBe(CLASS_SELECTOR)
 			})
 
@@ -2420,17 +2428,20 @@ describe('Selector Nodes', () => {
 				const firstType = selectors[0].first_child as TypeSelector | null
 				expect(firstType?.type).toBe(TYPE_SELECTOR)
 				expect(firstType?.text).toBe('ns|div')
-				expect(firstType?.name).toBe('ns')
+				expect(firstType?.name).toBe('div')
+				expect(firstType?.namespace).toBe('ns')
 
 				const secondType = selectors[1].first_child as TypeSelector | null
 				expect(secondType?.type).toBe(TYPE_SELECTOR)
 				expect(secondType?.text).toBe('|span')
-				expect(secondType?.name).toBe('|')
+				expect(secondType?.name).toBe('span')
+				expect(secondType?.namespace).toBe('')
 
 				const thirdType = selectors[2].first_child as TypeSelector | null
 				expect(thirdType?.type).toBe(TYPE_SELECTOR)
 				expect(thirdType?.text).toBe('*|p')
-				expect(thirdType?.name).toBe('*')
+				expect(thirdType?.name).toBe('p')
+				expect(thirdType?.namespace).toBe('*')
 			})
 
 			test('should parse namespace selector with attribute', () => {
@@ -2443,7 +2454,8 @@ describe('Selector Nodes', () => {
 				const children = (selector as Selector | null)?.children || []
 				expect(children.length).toBe(2)
 				expect(children[0].type).toBe(TYPE_SELECTOR)
-				expect((children[0] as TypeSelector).name).toBe('ns')
+				expect((children[0] as TypeSelector).name).toBe('div')
+				expect((children[0] as TypeSelector).namespace).toBe('ns')
 				expect(children[1].type).toBe(ATTRIBUTE_SELECTOR)
 			})
 
@@ -2457,7 +2469,8 @@ describe('Selector Nodes', () => {
 				const children = (selector as Selector | null)?.children || []
 				expect(children.length).toBe(2)
 				expect(children[0].type).toBe(TYPE_SELECTOR)
-				expect((children[0] as TypeSelector).name).toBe('ns')
+				expect((children[0] as TypeSelector).name).toBe('a')
+				expect((children[0] as TypeSelector).namespace).toBe('ns')
 				expect(children[1].type).toBe(PSEUDO_CLASS_SELECTOR)
 			})
 
@@ -2471,7 +2484,8 @@ describe('Selector Nodes', () => {
 				const typeSelector = selector?.first_child as TypeSelector | null | undefined
 				expect(typeSelector?.type).toBe(TYPE_SELECTOR)
 				expect(typeSelector?.text).toBe('svg|rect')
-				expect(typeSelector?.name).toBe('svg')
+				expect(typeSelector?.name).toBe('rect')
+				expect(typeSelector?.namespace).toBe('svg')
 			})
 
 			test('should parse long namespace identifier', () => {
@@ -2483,7 +2497,8 @@ describe('Selector Nodes', () => {
 				const selector = result.first_child
 				const typeSelector = selector?.first_child as TypeSelector | null | undefined
 				expect(typeSelector?.type).toBe(TYPE_SELECTOR)
-				expect(typeSelector?.name).toBe('myNamespace')
+				expect(typeSelector?.name).toBe('element')
+				expect(typeSelector?.namespace).toBe('myNamespace')
 			})
 
 			test('should handle namespace in nested pseudo-class', () => {

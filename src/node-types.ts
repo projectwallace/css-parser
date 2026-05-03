@@ -343,8 +343,10 @@ export type Value = CSSNode &
 
 export type TypeSelector = CSSNode & {
 	readonly type: typeof TYPE_SELECTOR
-	/** Element type, e.g. "div", "span" */
+	/** Local element name, e.g. "div" in both "div" and "ns|div" */
 	readonly name: string
+	/** Namespace prefix: null if no qualifier, '' for |div, 'ns' for ns|div, '*' for *|div */
+	readonly namespace: string | null
 	clone(options?: CloneOptions): ToPlain<TypeSelector>
 }
 
@@ -400,8 +402,10 @@ export type Combinator = CSSNode & {
 
 export type UniversalSelector = CSSNode & {
 	readonly type: typeof UNIVERSAL_SELECTOR
-	/** Namespace qualifier (e.g. 'ns' in 'ns|*'), null if no namespace */
-	readonly name: string | null
+	/** Always null — universal selector has no element name */
+	readonly name: null
+	/** Namespace prefix: null if no qualifier, '' for |*, 'ns' for ns|*, '*' for *|* */
+	readonly namespace: string | null
 	clone(options?: CloneOptions): ToPlain<UniversalSelector>
 }
 

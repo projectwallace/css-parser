@@ -50,6 +50,7 @@ import {
 	FLAG_HAS_DECLARATIONS,
 	FLAG_HAS_PARENS,
 	FLAG_BROWSERHACK,
+	FLAG_HAS_NAMESPACE,
 } from './arena'
 
 import {
@@ -251,6 +252,7 @@ const nodes_with_children = new Set<number>([
 
 const enumerable_properties = [
 	'name',
+	'namespace',
 	'property',
 	'value',
 	'unit',
@@ -311,10 +313,27 @@ export class CSSNode {
 	/** Get the "content" text (at-rule name for at-rules, layer name for import layers) */
 	get name(): string | null | undefined {
 		if (!nodes_with_name.has(this.type)) return
-		let content = this.get_content()
 		let { type } = this
-		if ((type === UNIVERSAL_SELECTOR || type === LANG_SELECTOR) && content === '') return null
+		if (type === UNIVERSAL_SELECTOR) return null
+		let content = this.get_content()
+		if (type === LANG_SELECTOR && content === '') return null
 		return content
+	}
+
+	/**
+	 * Namespace prefix for type and universal selectors.
+	 * - `null` — no namespace qualifier (plain `div` or `*`)
+	 * - `''` — empty namespace (`|div` or `|*`)
+	 * - `'ns'` — named namespace (`ns|div` or `ns|*`)
+	 * - `'*'` — any namespace (`*|div` or `*|*`)
+	 */
+	get namespace(): string | null | undefined {
+		let { type } = this
+		if (type !== TYPE_SELECTOR && type !== UNIVERSAL_SELECTOR) return undefined
+		if (!this.arena.has_flag(this.index, FLAG_HAS_NAMESPACE)) return null
+		let start = this.arena.get_value_start(this.index)
+		let length = this.arena.get_value_length(this.index)
+		return this.source.substring(start, start + length)
 	}
 
 	/**
