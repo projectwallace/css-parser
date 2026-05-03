@@ -6,6 +6,7 @@ import type {
 	AtrulePrelude,
 	Block,
 	ContainerQuery,
+	Declaration,
 	MediaQuery,
 	MediaType,
 	MediaFeature,
@@ -14,17 +15,20 @@ import type {
 	CSSNode,
 	LayerName,
 	SupportsQuery,
+	SupportsDeclaration,
 	Url,
 	PreludeSelectorList,
 } from './node-types'
 import {
 	AT_RULE,
 	BLOCK,
+	DECLARATION,
 	MEDIA_QUERY,
 	MEDIA_FEATURE,
 	MEDIA_TYPE,
 	CONTAINER_QUERY,
 	SUPPORTS_QUERY,
+	SUPPORTS_DECLARATION,
 	LAYER_NAME,
 	IDENTIFIER,
 	PRELUDE_OPERATOR,
@@ -833,6 +837,86 @@ describe('At-Rule Prelude Nodes', () => {
 
 				expect(queries.length).toBe(2)
 				expect(operators.length).toBe(1)
+			})
+
+			it('should have a SupportsDeclaration as direct child of SupportsQuery', () => {
+				const css = '@supports (display: flex) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const children = (atRule.prelude as AtrulePrelude).children || []
+				const query = children.find((c) => c.type === SUPPORTS_QUERY) as SupportsQuery
+
+				expect(query.has_children).toBe(true)
+				expect(query.children.length).toBe(1)
+				expect(query.children[0].type).toBe(SUPPORTS_DECLARATION)
+			})
+
+			it('should have a Declaration with property inside SupportsDeclaration', () => {
+				const css = '@supports (display: flex) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const children = (atRule.prelude as AtrulePrelude).children || []
+				const query = children.find((c) => c.type === SUPPORTS_QUERY) as SupportsQuery
+				const supportsDecl = query.children[0] as SupportsDeclaration
+				const decl = supportsDecl.children[0] as Declaration
+
+				expect(supportsDecl.type).toBe(SUPPORTS_DECLARATION)
+				expect(decl.type).toBe(DECLARATION)
+				expect(decl.property).toBe('display')
+				expect(decl.is_vendor_prefixed).toBe(false)
+			})
+
+			it('should detect vendor-prefixed property via Declaration.is_vendor_prefixed', () => {
+				const css = '@supports (-webkit-appearance: none) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const children = (atRule.prelude as AtrulePrelude).children || []
+				const query = children.find((c) => c.type === SUPPORTS_QUERY) as SupportsQuery
+				const supportsDecl = query.children[0] as SupportsDeclaration
+				const decl = supportsDecl.children[0] as Declaration
+
+				expect(decl.property).toBe('-webkit-appearance')
+				expect(decl.is_vendor_prefixed).toBe(true)
+			})
+
+			it('should have a Value child on the Declaration inside SupportsDeclaration', () => {
+				const css = '@supports (display: flex) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const children = (atRule.prelude as AtrulePrelude).children || []
+				const query = children.find((c) => c.type === SUPPORTS_QUERY) as SupportsQuery
+				const supportsDecl = query.children[0] as SupportsDeclaration
+				const decl = supportsDecl.children[0] as Declaration
+
+				expect(decl.value).not.toBeNull()
+				expect((decl.value as CSSNode).text).toBe('flex')
+			})
+
+			it('should build SupportsDeclaration for each query in a multi-condition supports', () => {
+				const css = '@supports (display: flex) and (gap: 1rem) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const children = (atRule.prelude as AtrulePrelude).children || []
+
+				expect(children.map((child) => child.type_name)).toEqual([
+					'SupportsQuery',
+					'Operator',
+					'SupportsQuery',
+				])
+
+				const queries = children.filter((c) => c.type === SUPPORTS_QUERY) as SupportsQuery[]
+
+				expect(queries.length).toBe(2)
+				for (const query of queries) {
+					expect(query.children.length).toBe(1)
+					expect(query.children[0].type).toBe(SUPPORTS_DECLARATION)
+				}
+
+				const firstDecl = (queries[0].children[0] as SupportsDeclaration).children[0] as Declaration
+				const secondDecl = (queries[1].children[0] as SupportsDeclaration)
+					.children[0] as Declaration
+				expect(firstDecl.property).toBe('display')
+				expect(secondDecl.property).toBe('gap')
 			})
 		})
 
@@ -1831,6 +1915,14 @@ describe('parse_atrule_prelude()', () => {
 			const result = parse_atrule_prelude('supports', '(display: grid) and (gap: 1rem)')
 
 			expect(result.length).toBeGreaterThan(0)
+		})
+
+		test('should recognise vendor prefix', () => {
+			const result = parse_atrule_prelude('supports', '(-webkit-text-fill-color: white)')
+			expect(result).toHaveLength(1)
+			const supports_query = result[0] as SupportsQuery
+			expect(supports_query.type_name).toBe('SupportsQuery')
+			expect(supports_query.value).toBe('-webkit-text-fill-color: white')
 		})
 	})
 
