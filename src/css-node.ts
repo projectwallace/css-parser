@@ -43,6 +43,7 @@ import {
 	FEATURE_RANGE,
 	AT_RULE_PRELUDE,
 	PRELUDE_SELECTORLIST,
+	SUPPORTS_DECLARATION,
 	FLAG_IMPORTANT,
 	FLAG_HAS_ERROR,
 	FLAG_HAS_BLOCK,
@@ -105,6 +106,7 @@ export const TYPE_NAMES = {
 	[MEDIA_TYPE]: 'MediaType',
 	[CONTAINER_QUERY]: 'ContainerQuery',
 	[SUPPORTS_QUERY]: 'SupportsQuery',
+	[SUPPORTS_DECLARATION]: 'SupportsDeclaration',
 	[LAYER_NAME]: 'Layer',
 	[PRELUDE_OPERATOR]: 'Operator',
 	[FEATURE_RANGE]: 'MediaFeatureRange',
@@ -158,6 +160,7 @@ export type CSSNodeType =
 	| typeof FEATURE_RANGE
 	| typeof AT_RULE_PRELUDE
 	| typeof PRELUDE_SELECTORLIST
+	| typeof SUPPORTS_DECLARATION
 
 // Options for cloning nodes
 export interface CloneOptions {
@@ -242,6 +245,8 @@ const nodes_with_children = new Set<number>([
 	MEDIA_FEATURE,
 	CONTAINER_QUERY,
 	FEATURE_RANGE,
+	SUPPORTS_QUERY,
+	SUPPORTS_DECLARATION,
 ])
 
 const enumerable_properties = [
