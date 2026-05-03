@@ -7,6 +7,9 @@ import {
 	MEDIA_TYPE,
 	CONTAINER_QUERY,
 	SUPPORTS_QUERY,
+	SUPPORTS_DECLARATION,
+	DECLARATION,
+	VALUE,
 	LAYER_NAME,
 	IDENTIFIER,
 	PRELUDE_OPERATOR,
@@ -456,6 +459,13 @@ export class AtRulePreludeParser {
 					if (trimmed) {
 						this.arena.set_value_start_delta(query, trimmed[0] - feature_start)
 						this.arena.set_value_length(query, trimmed[1] - trimmed[0])
+
+						// Check for simple declaration: (property: value)
+						let colon_pos = this.find_colon_at_depth_zero(trimmed[0], trimmed[1])
+						if (colon_pos !== -1) {
+							let decl_child = this.create_supports_declaration(trimmed[0], trimmed[1], colon_pos)
+							this.arena.append_children(query, [decl_child])
+						}
 					}
 
 					nodes.push(query)
@@ -473,6 +483,73 @@ export class AtRulePreludeParser {
 		}
 
 		return nodes
+	}
+
+	// Find the position of a colon that is not inside nested parentheses
+	private find_colon_at_depth_zero(start: number, end: number): number {
+		let depth = 0
+		for (let i = start; i < end; i++) {
+			let ch = this.source.charCodeAt(i)
+			if (ch === 0x28 /* ( */) {
+				depth++
+			} else if (ch === 0x29 /* ) */) {
+				depth--
+			} else if (ch === CHAR_COLON && depth === 0) {
+				return i
+			}
+		}
+		return -1
+	}
+
+	// Build SUPPORTS_DECLARATION → DECLARATION → VALUE tree for a simple (property: value) condition
+	private create_supports_declaration(
+		content_start: number,
+		content_end: number,
+		colon_pos: number,
+	): number {
+		let prop_trimmed = trim_boundaries(this.source, content_start, colon_pos)
+		let val_trimmed = trim_boundaries(this.source, colon_pos + 1, content_end)
+
+		if (!prop_trimmed) {
+			// No property name — degenerate input, return a bare SUPPORTS_DECLARATION
+			let bare = this.create_node(SUPPORTS_DECLARATION, content_start, content_end)
+			return bare
+		}
+
+		// DECLARATION spans from property start to value end (or colon if no value)
+		let decl_start = prop_trimmed[0]
+		let decl_end = val_trimmed ? val_trimmed[1] : colon_pos + 1
+		let decl = this.create_node(DECLARATION, decl_start, decl_end)
+		this.arena.set_content_start_delta(decl, 0) // property starts at node start
+		this.arena.set_content_length(decl, prop_trimmed[1] - prop_trimmed[0])
+
+		if (val_trimmed) {
+			let value_nodes = this.parse_feature_value(val_trimmed[0], val_trimmed[1])
+			let value_node: number
+			if (value_nodes.length === 0) {
+				value_node = this.arena.create_node(
+					VALUE,
+					val_trimmed[0],
+					0,
+					this.lexer.token_line,
+					this.lexer.token_column,
+				)
+			} else {
+				value_node = this.arena.create_node(
+					VALUE,
+					val_trimmed[0],
+					val_trimmed[1] - val_trimmed[0],
+					this.lexer.token_line,
+					this.lexer.token_column,
+				)
+				this.arena.append_children(value_node, value_nodes)
+			}
+			this.arena.append_children(decl, [value_node])
+		}
+
+		let supports_decl = this.create_node(SUPPORTS_DECLARATION, content_start, content_end)
+		this.arena.append_children(supports_decl, [decl])
+		return supports_decl
 	}
 
 	// Parse layer names: base, components, utilities
