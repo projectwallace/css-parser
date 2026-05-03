@@ -17,6 +17,7 @@ import {
 	LANG_SELECTOR,
 	DIMENSION,
 	FLAG_HAS_PARENS,
+	FLAG_HAS_NAMESPACE,
 } from './arena'
 import {
 	TOKEN_IDENT,
@@ -367,11 +368,12 @@ export class SelectorParser {
 	}
 
 	// Parse the local part after | in a namespace selector (E or *)
-	// Returns the node type (TYPE or UNIVERSAL) or null if invalid
+	// namespace_prefix_length: length of the namespace text before |, 0 for empty namespace (|E)
+	// Returns the node index or null if invalid
 	private parse_namespace_local_part(
 		selector_start: number,
 		namespace_start: number,
-		namespace_length: number,
+		namespace_prefix_length: number,
 	): number | null {
 		const saved = this.lexer.save_position()
 		this.lexer.next_token_fast(false)
@@ -392,10 +394,17 @@ export class SelectorParser {
 			return null
 		}
 
-		let node = this.create_node(node_type, selector_start, this.lexer.token_end)
-		// Store namespace in content fields
-		this.arena.set_content_start_delta(node, namespace_start - selector_start)
-		this.arena.set_content_length(node, namespace_length)
+		let local_start = this.lexer.token_start
+		let local_end = this.lexer.token_end
+		let node = this.create_node(node_type, selector_start, local_end)
+		// FLAG: has namespace qualifier (even if empty like |E)
+		this.arena.set_flag(node, FLAG_HAS_NAMESPACE)
+		// Content = local element name (after |)
+		this.arena.set_content_start_delta(node, local_start - selector_start)
+		this.arena.set_content_length(node, local_end - local_start)
+		// Value = namespace prefix (before |, empty string if |E form)
+		this.arena.set_value_start_delta(node, namespace_start - selector_start)
+		this.arena.set_value_length(node, namespace_prefix_length)
 		return node
 	}
 
@@ -462,8 +471,8 @@ export class SelectorParser {
 	// Parse empty namespace selector (|E or |*)
 	// Called when we've seen a | DELIM token at the start
 	private parse_empty_namespace_selector(start: number): number | null {
-		// The | character is the namespace indicator (length = 1)
-		return this.parse_namespace_local_part(start, start, 1)
+		// Namespace prefix has 0 length (empty namespace); | is just the separator
+		return this.parse_namespace_local_part(start, start, 0)
 	}
 
 	// Parse combinator (>, +, ~, or descendant space)
