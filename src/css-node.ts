@@ -347,6 +347,10 @@ export class CSSNode {
 			return first_child // VALUE node (when parse_values=true)
 		}
 
+		if (type === MEDIA_FEATURE) {
+			return first_child ?? null
+		}
+
 		if (type === DIMENSION) {
 			return parse_dimension(text).value
 		}
@@ -506,6 +510,9 @@ export class CSSNode {
 			case IDENTIFIER:
 				// Check identifier value (e.g., -webkit-sticky)
 				return is_vendor_prefixed(this.text)
+			case MEDIA_FEATURE:
+				// Check property name (e.g., -ms-high-contrast)
+				return is_vendor_prefixed(this.get_content())
 			default:
 				return false
 		}
