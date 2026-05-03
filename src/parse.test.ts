@@ -417,7 +417,7 @@ describe('Core Nodes', () => {
 						expect(nextSibling!.start).toBe(children[i + 1].start)
 					}
 
-					expect(children[children.length - 1].next_sibling).toBeNull()
+					expect(children.at(-1)?.next_sibling).toBeNull()
 				})
 
 				test('complex selectors should maintain component chains', () => {
@@ -513,7 +513,7 @@ describe('Core Nodes', () => {
 						expect(children[i].next_sibling!.start).toBe(children[i + 1].start)
 					}
 
-					expect(children[children.length - 1].next_sibling).toBeNull()
+					expect(children.at(-1)?.next_sibling).toBeNull()
 				})
 
 				test('block children should be linked via next_sibling with mixed content', () => {
@@ -551,7 +551,7 @@ describe('Core Nodes', () => {
 						expect(nextSibling!.start).toBe(children[i + 1].start)
 					}
 
-					expect(children[children.length - 1].next_sibling).toBeNull()
+					expect(children.at(-1)?.next_sibling).toBeNull()
 				})
 
 				test('block with only nested rules should have correct next_sibling chain', () => {
@@ -584,7 +584,7 @@ describe('Core Nodes', () => {
 						expect(children[i].next_sibling!.start).toBe(children[i + 1].start)
 					}
 
-					expect(children[children.length - 1].next_sibling).toBeNull()
+					expect(children.at(-1)?.next_sibling).toBeNull()
 				})
 
 				test('block with only at-rules should have correct next_sibling chain', () => {
@@ -617,7 +617,7 @@ describe('Core Nodes', () => {
 						expect(children[i].next_sibling!.start).toBe(children[i + 1].start)
 					}
 
-					expect(children[children.length - 1].next_sibling).toBeNull()
+					expect(children.at(-1)?.next_sibling).toBeNull()
 				})
 			})
 

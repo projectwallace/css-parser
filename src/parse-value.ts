@@ -75,7 +75,7 @@ export class ValueParser {
 
 		// Create VALUE wrapper node spanning all value tokens
 		let first_node_start = this.arena.get_start_offset(value_nodes[0])
-		let last_node_index = value_nodes[value_nodes.length - 1]
+		let last_node_index = value_nodes.at(-1)!
 		let last_node_end =
 			this.arena.get_start_offset(last_node_index) + this.arena.get_length(last_node_index)
 

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, test, expect } from 'vitest'
 import { parse } from './parse'
 import {
 	IDENTIFIER,
@@ -38,7 +38,7 @@ describe('Value Node Types', () => {
 
 	describe('Locations', () => {
 		describe('IDENTIFIER', () => {
-			it('should have correct offset and length', () => {
+			test('should have correct offset and length', () => {
 				const value = getValue('div { color: red; }')
 				expect(value?.start).toBe(13)
 				expect(value?.length).toBe(3)
@@ -47,7 +47,7 @@ describe('Value Node Types', () => {
 				expect(value?.column).toBe(14)
 			})
 
-			it('should have correct line and column on line 2', () => {
+			test('should have correct line and column on line 2', () => {
 				const value = getValue('div {\n  color: red;\n}')
 				expect(value?.start).toBe(15)
 				expect(value?.length).toBe(3)
@@ -58,7 +58,7 @@ describe('Value Node Types', () => {
 		})
 
 		describe('NUMBER', () => {
-			it('should have correct offset and length', () => {
+			test('should have correct offset and length', () => {
 				const value = getValue('div { opacity: 0.5; }')
 				expect(value?.start).toBe(15)
 				expect(value?.length).toBe(3)
@@ -67,7 +67,7 @@ describe('Value Node Types', () => {
 				expect(value?.column).toBe(16)
 			})
 
-			it('should have correct line and column on line 3', () => {
+			test('should have correct line and column on line 3', () => {
 				const value = getValue('div {\n  /* comment */\n  opacity: 0.5;\n}')
 				expect(value?.start).toBe(33)
 				expect(value?.length).toBe(3)
@@ -78,7 +78,7 @@ describe('Value Node Types', () => {
 		})
 
 		describe('DIMENSION', () => {
-			it('should have correct offset and length', () => {
+			test('should have correct offset and length', () => {
 				const value = getValue('div { width: 100px; }')
 				expect(value?.start).toBe(13)
 				expect(value?.length).toBe(5)
@@ -87,7 +87,7 @@ describe('Value Node Types', () => {
 				expect(value?.column).toBe(14)
 			})
 
-			it('should have correct line and column on line 2', () => {
+			test('should have correct line and column on line 2', () => {
 				const value = getValue('div {\n  width: 100px;\n}')
 				expect(value?.start).toBe(15)
 				expect(value?.length).toBe(5)
@@ -98,7 +98,7 @@ describe('Value Node Types', () => {
 		})
 
 		describe('STRING', () => {
-			it('should have correct offset and length', () => {
+			test('should have correct offset and length', () => {
 				const value = getValue('div { content: "hello"; }')
 				expect(value?.start).toBe(15)
 				expect(value?.length).toBe(7)
@@ -107,7 +107,7 @@ describe('Value Node Types', () => {
 				expect(value?.column).toBe(16)
 			})
 
-			it('should have correct line and column on line 4', () => {
+			test('should have correct line and column on line 4', () => {
 				const value = getValue('div {\n  /* line 2 */\n  /* line 3 */\n  content: "hello";\n}')
 				expect(value?.start).toBe(47)
 				expect(value?.length).toBe(7)
@@ -118,7 +118,7 @@ describe('Value Node Types', () => {
 		})
 
 		describe('HASH', () => {
-			it('should have correct offset and length', () => {
+			test('should have correct offset and length', () => {
 				const value = getValue('div { color: #ff0000; }')
 				expect(value?.start).toBe(13)
 				expect(value?.length).toBe(7)
@@ -127,7 +127,7 @@ describe('Value Node Types', () => {
 				expect(value?.column).toBe(14)
 			})
 
-			it('should have correct line and column on line 2', () => {
+			test('should have correct line and column on line 2', () => {
 				const value = getValue('div {\n  color: #ff0000;\n}')
 				expect(value?.start).toBe(15)
 				expect(value?.length).toBe(7)
@@ -138,7 +138,7 @@ describe('Value Node Types', () => {
 		})
 
 		describe('FUNCTION', () => {
-			it('should have correct offset and length', () => {
+			test('should have correct offset and length', () => {
 				const value = getValue('div { color: rgb(255, 0, 0); }')
 				expect(value?.start).toBe(13)
 				expect(value?.length).toBe(14)
@@ -147,7 +147,7 @@ describe('Value Node Types', () => {
 				expect(value?.column).toBe(14)
 			})
 
-			it('should have correct line and column on line 3', () => {
+			test('should have correct line and column on line 3', () => {
 				const value = getValue('div {\n  /* comment */\n  color: rgb(255, 0, 0);\n}')
 				expect(value?.start).toBe(31)
 				expect(value?.length).toBe(14)
@@ -156,7 +156,7 @@ describe('Value Node Types', () => {
 				expect(value?.column).toBe(10)
 			})
 
-			it('should have correct offset and length for var()', () => {
+			test('should have correct offset and length for var()', () => {
 				const value = getValue('div { color: var(--item); }')
 				expect(value?.start).toBe(13)
 				expect(value?.length).toBe(11)
@@ -165,7 +165,7 @@ describe('Value Node Types', () => {
 				expect(value?.column).toBe(14)
 			})
 
-			it('should have correct offset and length for var() with fallback', () => {
+			test('should have correct offset and length for var() with fallback', () => {
 				const value = getValue('div { color: var(--item1, var(--item2)); }')
 				expect(value?.start).toBe(13)
 				expect(value?.length).toBe(26)
@@ -176,7 +176,7 @@ describe('Value Node Types', () => {
 		})
 
 		describe('OPERATOR', () => {
-			it('should have correct offset and length', () => {
+			test('should have correct offset and length', () => {
 				const root = parse('div { font-family: Arial, sans-serif; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				const comma = (decl!.first_child! as Value).children[1]
@@ -187,7 +187,7 @@ describe('Value Node Types', () => {
 				expect(comma?.column).toBe(25)
 			})
 
-			it('should have correct line and column on line 2', () => {
+			test('should have correct line and column on line 2', () => {
 				const root = parse('div {\n  font-family: Arial, sans-serif;\n}')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				const comma = (decl!.first_child! as Value).children[1]
@@ -200,7 +200,7 @@ describe('Value Node Types', () => {
 		})
 
 		describe('PARENTHESIS', () => {
-			it('should have correct offset and length', () => {
+			test('should have correct offset and length', () => {
 				const root = parse('div { width: calc((100% - 50px) / 2); }')
 				const func = (
 					root.first_child?.first_child?.next_sibling?.first_child?.first_child as Value
@@ -213,7 +213,7 @@ describe('Value Node Types', () => {
 				expect(paren?.column).toBe(19)
 			})
 
-			it('should have correct line and column on line 2', () => {
+			test('should have correct line and column on line 2', () => {
 				const root = parse('div {\n  width: calc((100% - 50px) / 2);\n}')
 				const func = (
 					root.first_child?.first_child?.next_sibling?.first_child?.first_child as Value
@@ -228,7 +228,7 @@ describe('Value Node Types', () => {
 		})
 
 		describe('URL', () => {
-			it('should have correct offset and length', () => {
+			test('should have correct offset and length', () => {
 				const value = getValue('div { background: url("image.png"); }')
 				expect(value?.start).toBe(18)
 				expect(value?.length).toBe(16)
@@ -237,7 +237,7 @@ describe('Value Node Types', () => {
 				expect(value?.column).toBe(19)
 			})
 
-			it('should have correct line and column on line 2', () => {
+			test('should have correct line and column on line 2', () => {
 				const value = getValue('div {\n  background: url("image.png");\n}')
 				expect(value?.start).toBe(20)
 				expect(value?.length).toBe(16)
@@ -248,7 +248,7 @@ describe('Value Node Types', () => {
 		})
 
 		describe('UNICODE_RANGE', () => {
-			it('should have correct offset and length', () => {
+			test('should have correct offset and length', () => {
 				const root = parse('@font-face { unicode-range: u+0025-00ff; }')
 				const declaration = (root.first_child! as Atrule).block?.first_child
 				const value = (declaration?.first_child as Value | null)?.children[0]
@@ -259,7 +259,7 @@ describe('Value Node Types', () => {
 				expect(value?.column).toBe(29)
 			})
 
-			it('should have correct line and column on line 2', () => {
+			test('should have correct line and column on line 2', () => {
 				const root = parse('@font-face {\n  unicode-range: u+4??;\n}')
 				const declaration = (root.first_child! as Atrule).block?.first_child
 				const value = (declaration?.first_child as Value | null)?.children[0]
@@ -273,44 +273,44 @@ describe('Value Node Types', () => {
 	})
 
 	describe('Types', () => {
-		it('IDENTIFIER type constant', () => {
+		test('IDENTIFIER type constant', () => {
 			const value = getValue('div { color: red; }')
 			expect(value?.type).toBe(IDENTIFIER)
 		})
 
-		it('NUMBER type constant', () => {
+		test('NUMBER type constant', () => {
 			const value = getValue('div { opacity: 0.5; }')
 			expect(value?.type).toBe(NUMBER)
 		})
 
-		it('DIMENSION type constant', () => {
+		test('DIMENSION type constant', () => {
 			const value = getValue('div { width: 100px; }')
 			expect(value?.type).toBe(DIMENSION)
 		})
 
-		it('STRING type constant', () => {
+		test('STRING type constant', () => {
 			const value = getValue('div { content: "hello"; }')
 			expect(value?.type).toBe(STRING)
 		})
 
-		it('HASH type constant', () => {
+		test('HASH type constant', () => {
 			const value = getValue('div { color: #ff0000; }')
 			expect(value?.type).toBe(HASH)
 		})
 
-		it('FUNCTION type constant', () => {
+		test('FUNCTION type constant', () => {
 			const value = getValue('div { color: rgb(255, 0, 0); }')
 			expect(value?.type).toBe(FUNCTION)
 		})
 
-		it('OPERATOR type constant', () => {
+		test('OPERATOR type constant', () => {
 			const root = parse('div { font-family: Arial, sans-serif; }')
 			const comma = (root.first_child?.first_child?.next_sibling?.first_child?.first_child as Value)
 				?.children[1]
 			expect(comma?.type).toBe(OPERATOR)
 		})
 
-		it('PARENTHESIS type constant', () => {
+		test('PARENTHESIS type constant', () => {
 			const root = parse('div { width: calc((100% - 50px) / 2); }')
 			const func = (root.first_child?.first_child?.next_sibling?.first_child?.first_child as Value)
 				?.children[0] as Function | undefined
@@ -318,12 +318,12 @@ describe('Value Node Types', () => {
 			expect(paren?.type).toBe(PARENTHESIS)
 		})
 
-		it('URL type constant', () => {
+		test('URL type constant', () => {
 			const value = getValue('div { background: url("image.png"); }')
 			expect(value?.type).toBe(URL)
 		})
 
-		it('UNICODE_RANGE type constant', () => {
+		test('UNICODE_RANGE type constant', () => {
 			const root = parse(
 				'@font-face { unicode-range: u+0460-052f, u+1c80-1c8a, u+20b4, u+2de0-2dff, u+a640-a69f, u+fe2e-fe2f; }',
 			)
@@ -335,44 +335,44 @@ describe('Value Node Types', () => {
 	})
 
 	describe('Type Names', () => {
-		it('IDENTIFIER type_name', () => {
+		test('IDENTIFIER type_name', () => {
 			const value = getValue('div { color: red; }')
 			expect(value?.type_name).toBe('Identifier')
 		})
 
-		it('NUMBER type_name', () => {
+		test('NUMBER type_name', () => {
 			const value = getValue('div { opacity: 0.5; }')
 			expect(value?.type_name).toBe('Number')
 		})
 
-		it('DIMENSION type_name', () => {
+		test('DIMENSION type_name', () => {
 			const value = getValue('div { width: 100px; }')
 			expect(value?.type_name).toBe('Dimension')
 		})
 
-		it('STRING type_name', () => {
+		test('STRING type_name', () => {
 			const value = getValue('div { content: "hello"; }')
 			expect(value?.type_name).toBe('String')
 		})
 
-		it('HASH type_name', () => {
+		test('HASH type_name', () => {
 			const value = getValue('div { color: #ff0000; }')
 			expect(value?.type_name).toBe('Hash')
 		})
 
-		it('FUNCTION type_name', () => {
+		test('FUNCTION type_name', () => {
 			const value = getValue('div { color: rgb(255, 0, 0); }')
 			expect(value?.type_name).toBe('Function')
 		})
 
-		it('OPERATOR type_name', () => {
+		test('OPERATOR type_name', () => {
 			const root = parse('div { font-family: Arial, sans-serif; }')
 			const comma = (root.first_child?.first_child?.next_sibling?.first_child?.first_child as Value)
 				?.children[1]
 			expect(comma?.type_name).toBe('Operator')
 		})
 
-		it('PARENTHESIS type_name', () => {
+		test('PARENTHESIS type_name', () => {
 			const root = parse('div { width: calc((100% - 50px) / 2); }')
 			const func = (root.first_child?.first_child?.next_sibling?.first_child?.first_child as Value)
 				?.children[0] as Function | undefined
@@ -380,12 +380,12 @@ describe('Value Node Types', () => {
 			expect(paren?.type_name).toBe('Parentheses')
 		})
 
-		it('URL type_name', () => {
+		test('URL type_name', () => {
 			const value = getValue('div { background: url("image.png"); }')
 			expect(value?.type_name).toBe('Url')
 		})
 
-		it('UNICODE_RANGE type_name', () => {
+		test('UNICODE_RANGE type_name', () => {
 			const root = parse('@font-face { unicode-range: u+0025-00ff; }')
 			const unicode_range = (
 				(root.first_child! as Atrule).block?.first_child?.first_child as Value | null
@@ -396,7 +396,7 @@ describe('Value Node Types', () => {
 
 	describe('Value Properties', () => {
 		describe('IDENTIFIER', () => {
-			it('should parse keyword values', () => {
+			test('should parse keyword values', () => {
 				const root = parse('body { color: red; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
@@ -405,7 +405,7 @@ describe('Value Node Types', () => {
 				expect((decl!.first_child! as Value).children[0].text).toBe('red')
 			})
 
-			it('should parse multiple keywords', () => {
+			test('should parse multiple keywords', () => {
 				const root = parse('body { font-family: Arial, sans-serif; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
@@ -418,7 +418,7 @@ describe('Value Node Types', () => {
 		})
 
 		describe('NUMBER', () => {
-			it('should parse number values', () => {
+			test('should parse number values', () => {
 				const root = parse('body { opacity: 0.5; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
@@ -427,7 +427,7 @@ describe('Value Node Types', () => {
 				expect((decl!.first_child! as Value).children[0].text).toBe('0.5')
 			})
 
-			it('should handle negative numbers', () => {
+			test('should handle negative numbers', () => {
 				const root = parse('body { margin: -10px; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
@@ -436,7 +436,7 @@ describe('Value Node Types', () => {
 				expect((decl!.first_child! as Value).children[0].text).toBe('-10px')
 			})
 
-			it('should handle zero without unit', () => {
+			test('should handle zero without unit', () => {
 				const root = parse('body { margin: 0; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
@@ -447,7 +447,7 @@ describe('Value Node Types', () => {
 		})
 
 		describe('DIMENSION', () => {
-			it('should parse px dimension values', () => {
+			test('should parse px dimension values', () => {
 				const root = parse('body { width: 100px; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
@@ -458,7 +458,7 @@ describe('Value Node Types', () => {
 				expect(((decl!.first_child! as Value).children[0] as Dimension).unit).toBe('px')
 			})
 
-			it('should parse em dimension values', () => {
+			test('should parse em dimension values', () => {
 				const root = parse('body { font-size: 3em; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
@@ -469,7 +469,7 @@ describe('Value Node Types', () => {
 				expect(((decl!.first_child! as Value).children[0] as Dimension).unit).toBe('em')
 			})
 
-			it('should parse percentage values', () => {
+			test('should parse percentage values', () => {
 				const root = parse('body { width: 50%; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
@@ -478,7 +478,7 @@ describe('Value Node Types', () => {
 				expect((decl!.first_child! as Value).children[0].text).toBe('50%')
 			})
 
-			it('should handle zero with unit', () => {
+			test('should handle zero with unit', () => {
 				const root = parse('body { margin: 0px; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
@@ -487,7 +487,7 @@ describe('Value Node Types', () => {
 				expect((decl!.first_child! as Value).children[0].text).toBe('0px')
 			})
 
-			it('should parse margin shorthand', () => {
+			test('should parse margin shorthand', () => {
 				const root = parse('body { margin: 10px 20px 30px 40px; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
@@ -504,7 +504,7 @@ describe('Value Node Types', () => {
 		})
 
 		describe('STRING', () => {
-			it('should parse string values', () => {
+			test('should parse string values', () => {
 				const root = parse('body { content: "hello"; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
@@ -515,7 +515,7 @@ describe('Value Node Types', () => {
 		})
 
 		describe('HASH', () => {
-			it('should parse color values', () => {
+			test('should parse color values', () => {
 				const root = parse('body { color: #ff0000; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
@@ -526,7 +526,7 @@ describe('Value Node Types', () => {
 		})
 
 		describe('FUNCTION', () => {
-			it('should parse simple function', () => {
+			test('should parse simple function', () => {
 				const root = parse('body { color: rgb(255, 0, 0); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
@@ -536,7 +536,7 @@ describe('Value Node Types', () => {
 				expect((decl!.first_child! as Value).children[0].text).toBe('rgb(255, 0, 0)')
 			})
 
-			it('should parse function arguments', () => {
+			test('should parse function arguments', () => {
 				const root = parse('body { color: rgb(255, 0, 0); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				const func = (decl!.first_child! as Value).children[0] as Function | undefined
@@ -554,7 +554,7 @@ describe('Value Node Types', () => {
 				expect(func?.children[4].text).toBe('0')
 			})
 
-			it('should parse nested functions', () => {
+			test('should parse nested functions', () => {
 				const root = parse('body { width: calc(100% - 20px); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
@@ -580,7 +580,7 @@ describe('Value Node Types', () => {
 				)
 			})
 
-			it('should parse var() function', () => {
+			test('should parse var() function', () => {
 				const root = parse('body { color: var(--primary-color); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
@@ -596,7 +596,7 @@ describe('Value Node Types', () => {
 				)
 			})
 
-			it('should provide node.value for calc()', () => {
+			test('should provide node.value for calc()', () => {
 				const root = parse('body { width: calc(100% - 20px); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				const func = (decl!.first_child! as Value).children[0] as Function | undefined
@@ -608,7 +608,7 @@ describe('Value Node Types', () => {
 				expect(func?.has_children).toBe(true)
 			})
 
-			it('should provide node.value for var() function', () => {
+			test('should provide node.value for var() function', () => {
 				const root = parse('body { color: var(--primary-color); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				const func = (decl!.first_child! as Value).children[0] as Function | undefined
@@ -620,7 +620,7 @@ describe('Value Node Types', () => {
 				expect(func?.has_children).toBe(true)
 			})
 
-			it('should provide node.value for var() function with fallback', () => {
+			test('should provide node.value for var() function with fallback', () => {
 				const root = parse('body { color: var(--primary-color, 1); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				const func = (decl!.first_child! as Value).children[0] as Function | undefined
@@ -632,7 +632,7 @@ describe('Value Node Types', () => {
 				expect(func?.has_children).toBe(true)
 			})
 
-			it('should parse transform value', () => {
+			test('should parse transform value', () => {
 				const root = parse('body { transform: translateX(10px) rotate(45deg); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
@@ -643,7 +643,7 @@ describe('Value Node Types', () => {
 				expect(((decl!.first_child! as Value).children[1] as Function).name).toBe('rotate')
 			})
 
-			it('should parse filter value', () => {
+			test('should parse filter value', () => {
 				const root = parse('body { filter: blur(5px) brightness(1.2); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
@@ -658,7 +658,7 @@ describe('Value Node Types', () => {
 		})
 
 		describe('OPERATOR', () => {
-			it('should parse comma operator', () => {
+			test('should parse comma operator', () => {
 				const root = parse('body { font-family: Arial, sans-serif; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
@@ -667,7 +667,7 @@ describe('Value Node Types', () => {
 				expect(((decl!.first_child! as Value).children[1] as Operator).value).toBe(',')
 			})
 
-			it('should parse calc operators', () => {
+			test('should parse calc operators', () => {
 				const root = parse('body { width: calc(100% - 20px); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				const func = (decl!.first_child! as Value).children[0] as Function | undefined
@@ -677,7 +677,7 @@ describe('Value Node Types', () => {
 				expect((func!.children[1] as Operator).value).toBe('-')
 			})
 
-			it('should parse all calc operators', () => {
+			test('should parse all calc operators', () => {
 				const root = parse('body { width: calc(1px + 2px * 3px / 4px - 5px); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				const func = (decl!.first_child! as Value).children[0] as Function | undefined
@@ -698,7 +698,7 @@ describe('Value Node Types', () => {
 		})
 
 		describe('PARENTHESIS', () => {
-			it('should parse parenthesized expressions in calc()', () => {
+			test('should parse parenthesized expressions in calc()', () => {
 				const root = parse('body { width: calc((100% - 50px) / 2); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				const func = (decl!.first_child! as Value).children[0] as Function | undefined
@@ -730,7 +730,7 @@ describe('Value Node Types', () => {
 				expect(func?.children[2].text).toBe('2')
 			})
 
-			it('should parse complex nested parentheses', () => {
+			test('should parse complex nested parentheses', () => {
 				const root = parse('body { width: calc(((100% - var(--x)) / 12 * 6) + (-1 * var(--y))); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				const func = (decl!.first_child! as Value).children[0] as Function | undefined
@@ -769,7 +769,7 @@ describe('Value Node Types', () => {
 		})
 
 		describe('URL', () => {
-			it('should parse url() function with quoted string', () => {
+			test('should parse url() function with quoted string', () => {
 				const root = parse('body { background: url("image.png"); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
@@ -786,7 +786,7 @@ describe('Value Node Types', () => {
 				expect(((decl!.first_child! as Value).children[0] as Url).value).toBe('"image.png"')
 			})
 
-			it('should parse url() function with unquoted URL containing dots', () => {
+			test('should parse url() function with unquoted URL containing dots', () => {
 				const root = parse('body { cursor: url(mycursor.cur); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				const func = (decl!.first_child! as Value).children[0] as Url | undefined
@@ -799,7 +799,7 @@ describe('Value Node Types', () => {
 				expect(func?.value).toBe('mycursor.cur')
 			})
 
-			it('should parse src() function with unquoted URL', () => {
+			test('should parse src() function with unquoted URL', () => {
 				const root = parse('body { content: src(myfont.woff2); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				const func = (decl!.first_child! as Value).children[0] as Function | undefined
@@ -811,7 +811,7 @@ describe('Value Node Types', () => {
 				expect(func?.value).toBe('myfont.woff2')
 			})
 
-			it('should parse url() function with single-quoted string', () => {
+			test('should parse url() function with single-quoted string', () => {
 				const root = parse("body { background: url('image.png'); }")
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
@@ -859,7 +859,7 @@ describe('Value Node Types', () => {
 				})
 			})
 
-			it('should parse url() with inline SVG', () => {
+			test('should parse url() with inline SVG', () => {
 				const root = parse('body { background: url(data:image/svg+xml,<svg></svg>); }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				const func = (decl!.first_child! as Value).children[0] as Url | undefined
@@ -869,7 +869,7 @@ describe('Value Node Types', () => {
 				expect(func?.value).toBe('data:image/svg+xml,<svg></svg>')
 			})
 
-			it('should parse complex background value with url()', () => {
+			test('should parse complex background value with url()', () => {
 				const root = parse('body { background: url("bg.png") no-repeat center center / cover; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 				expect((decl!.first_child! as Value).children.length).toBeGreaterThan(1)
@@ -880,7 +880,7 @@ describe('Value Node Types', () => {
 		})
 
 		describe('UNICODE_RANGE', () => {
-			it('should parse simple unicode range', () => {
+			test('should parse simple unicode range', () => {
 				const root = parse('@font-face { unicode-range: u+0025-00ff; }')
 				const decl = (root.first_child! as Atrule).block?.first_child
 
@@ -889,7 +889,7 @@ describe('Value Node Types', () => {
 				expect((decl!.first_child! as Value).children[0].text).toBe('u+0025-00ff')
 			})
 
-			it('should parse single codepoint', () => {
+			test('should parse single codepoint', () => {
 				const root = parse('@font-face { unicode-range: u+26; }')
 				const decl = (root.first_child! as Atrule).block?.first_child
 
@@ -898,7 +898,7 @@ describe('Value Node Types', () => {
 				expect((decl!.first_child! as Value).children[0].text).toBe('u+26')
 			})
 
-			it('should parse wildcard pattern with question marks', () => {
+			test('should parse wildcard pattern with question marks', () => {
 				const root = parse('@font-face { unicode-range: u+4??; }')
 				const decl = (root.first_child! as Atrule).block?.first_child
 
@@ -907,7 +907,7 @@ describe('Value Node Types', () => {
 				expect((decl!.first_child! as Value).children[0].text).toBe('u+4??')
 			})
 
-			it('should parse uppercase U+', () => {
+			test('should parse uppercase U+', () => {
 				const root = parse('@font-face { unicode-range: U+0025-00FF; }')
 				const decl = (root.first_child! as Atrule).block?.first_child
 
@@ -916,7 +916,7 @@ describe('Value Node Types', () => {
 				expect((decl!.first_child! as Value).children[0].text).toBe('U+0025-00FF')
 			})
 
-			it('should parse multiple unicode ranges', () => {
+			test('should parse multiple unicode ranges', () => {
 				const root = parse('@font-face { unicode-range: u+0460-052f, u+1c80-1c8a, u+20b4; }')
 				const decl = (root.first_child! as Atrule).block?.first_child
 
@@ -932,7 +932,7 @@ describe('Value Node Types', () => {
 				expect((decl!.first_child! as Value).children[4].text).toBe('u+20b4')
 			})
 
-			it('should parse short hex values', () => {
+			test('should parse short hex values', () => {
 				const root = parse('@font-face { unicode-range: u+0; }')
 				const decl = (root.first_child! as Atrule).block?.first_child
 
@@ -940,7 +940,7 @@ describe('Value Node Types', () => {
 				expect((decl!.first_child! as Value).children[0].text).toBe('u+0')
 			})
 
-			it('should parse maximum valid unicode', () => {
+			test('should parse maximum valid unicode', () => {
 				const root = parse('@font-face { unicode-range: u+10ffff; }')
 				const decl = (root.first_child! as Atrule).block?.first_child
 
@@ -948,7 +948,7 @@ describe('Value Node Types', () => {
 				expect((decl!.first_child! as Value).children[0].text).toBe('u+10ffff')
 			})
 
-			it('should parse wildcard variations', () => {
+			test('should parse wildcard variations', () => {
 				const root = parse(
 					'@font-face { unicode-range: u+?, u+??, u+???, u+????, u+?????, u+??????; }',
 				)
@@ -966,7 +966,7 @@ describe('Value Node Types', () => {
 		})
 
 		describe('Mixed values', () => {
-			it('should parse mixed value types', () => {
+			test('should parse mixed value types', () => {
 				const root = parse('body { border: 1px solid red; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
@@ -979,7 +979,7 @@ describe('Value Node Types', () => {
 				expect((decl!.first_child! as Value).children[2].text).toBe('red')
 			})
 
-			it('should handle empty value', () => {
+			test('should handle empty value', () => {
 				const root = parse('body { color: ; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child
 
@@ -987,7 +987,7 @@ describe('Value Node Types', () => {
 				expect((decl!.first_child! as Value).children).toHaveLength(0)
 			})
 
-			it('should handle value with !important', () => {
+			test('should handle value with !important', () => {
 				const root = parse('body { color: red !important; }')
 				const decl = root.first_child?.first_child?.next_sibling?.first_child as
 					| Declaration
@@ -1004,7 +1004,7 @@ describe('Value Node Types', () => {
 	})
 
 	describe('numeric value getter', () => {
-		it('should return number for NUMBER nodes', () => {
+		test('should return number for NUMBER nodes', () => {
 			const root = parse('div { opacity: 0.5; }')
 			const decl = root.first_child?.first_child?.next_sibling?.first_child
 			const numberNode = (decl!.first_child! as Value).children[0] as Number | undefined
@@ -1013,7 +1013,7 @@ describe('Value Node Types', () => {
 			expect(numberNode?.value).toBe(0.5)
 		})
 
-		it('should return number for DIMENSION nodes', () => {
+		test('should return number for DIMENSION nodes', () => {
 			const root = parse('div { width: 100px; }')
 			const decl = root.first_child?.first_child?.next_sibling?.first_child
 			const dimNode = (decl!.first_child! as Value).children[0] as Dimension | undefined
@@ -1022,7 +1022,7 @@ describe('Value Node Types', () => {
 			expect(dimNode?.value).toBe(100)
 		})
 
-		it('should handle negative numbers', () => {
+		test('should handle negative numbers', () => {
 			const root = parse('div { margin: -10px; }')
 			const decl = root.first_child?.first_child?.next_sibling?.first_child
 			const dimNode = (decl!.first_child! as Value).children[0] as Dimension | undefined
@@ -1031,7 +1031,7 @@ describe('Value Node Types', () => {
 			expect(dimNode?.value).toBe(-10)
 		})
 
-		it('should handle zero', () => {
+		test('should handle zero', () => {
 			const root = parse('div { margin: 0; }')
 			const decl = root.first_child?.first_child?.next_sibling?.first_child
 			const numberNode = (decl!.first_child! as Value).children[0] as Number | undefined
@@ -1040,7 +1040,7 @@ describe('Value Node Types', () => {
 			expect(numberNode?.value).toBe(0)
 		})
 
-		it('should handle decimal numbers', () => {
+		test('should handle decimal numbers', () => {
 			const root = parse('div { line-height: 1.5; }')
 			const decl = root.first_child?.first_child?.next_sibling?.first_child
 			const numberNode = (decl!.first_child! as Value).children[0] as Number | undefined
@@ -1049,7 +1049,7 @@ describe('Value Node Types', () => {
 			expect(numberNode?.value).toBe(1.5)
 		})
 
-		it('should handle percentage dimensions', () => {
+		test('should handle percentage dimensions', () => {
 			const root = parse('div { width: 50%; }')
 			const decl = root.first_child?.first_child?.next_sibling?.first_child
 			const dimNode = (decl!.first_child! as Value).children[0] as Dimension | undefined
@@ -1068,50 +1068,50 @@ describe('Value Node Types', () => {
 			return (decl!.first_child! as Value).children[0]
 		}
 
-		it('should parse URL() with uppercase', () => {
+		test('should parse URL() with uppercase', () => {
 			const value = getValue('div { background: URL("image.png"); }')
 			expect(value?.type).toBe(URL)
 			expect(value?.text).toBe('URL("image.png")')
 		})
 
-		it('should parse Url() with mixed case', () => {
+		test('should parse Url() with mixed case', () => {
 			const value = getValue('div { background: Url("image.png"); }')
 			expect(value?.type).toBe(URL)
 			expect(value?.text).toBe('Url("image.png")')
 		})
 
-		it('should parse CALC() with uppercase', () => {
+		test('should parse CALC() with uppercase', () => {
 			const value = getValue('div { width: CALC(100% - 20px); }')
 			expect(value?.type).toBe(FUNCTION)
 			expect(value?.text).toBe('CALC(100% - 20px)')
 		})
 
-		it('should parse Calc() with mixed case', () => {
+		test('should parse Calc() with mixed case', () => {
 			const value = getValue('div { width: Calc(100% - 20px); }')
 			expect(value?.type).toBe(FUNCTION)
 			expect(value?.text).toBe('Calc(100% - 20px)')
 		})
 
-		it('should parse RGB() with uppercase', () => {
+		test('should parse RGB() with uppercase', () => {
 			const value = getValue('div { color: RGB(255, 0, 0); }')
 			expect(value?.type).toBe(FUNCTION)
 			expect(value?.text).toBe('RGB(255, 0, 0)')
 		})
 
-		it('should parse RGBA() with uppercase', () => {
+		test('should parse RGBA() with uppercase', () => {
 			const value = getValue('div { color: RGBA(255, 0, 0, 0.5); }')
 			expect(value?.type).toBe(FUNCTION)
 			expect(value?.text).toBe('RGBA(255, 0, 0, 0.5)')
 		})
 
-		it('should parse unquoted URL() with uppercase', () => {
+		test('should parse unquoted URL() with uppercase', () => {
 			const value = getValue('div { background: URL(image.png); }') as Url | undefined
 			expect(value?.type).toBe(URL)
 			expect(value?.text).toBe('URL(image.png)')
 			expect(value?.value).toBe('image.png')
 		})
 
-		it('should handle nested functions with uppercase', () => {
+		test('should handle nested functions with uppercase', () => {
 			const value = getValue('div { width: CALC(MAX(100%, 50px) - 20px); }')
 			expect(value?.type).toBe(FUNCTION)
 			expect((value as Function | undefined)?.children[0].type).toBe(FUNCTION)

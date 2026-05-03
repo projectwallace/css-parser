@@ -102,8 +102,8 @@ export class ANplusBParser {
 					node_start,
 					a_start,
 					a_end,
-					b !== null ? b_start : 0,
-					b !== null ? b_end : 0,
+					b === null ? 0 : b_start,
+					b === null ? 0 : b_end,
 				)
 			}
 
@@ -137,8 +137,8 @@ export class ANplusBParser {
 					node_start,
 					a_start,
 					a_end,
-					b !== null ? b_start : 0,
-					b !== null ? b_end : 0,
+					b === null ? 0 : b_start,
+					b === null ? 0 : b_end,
 				)
 			}
 
@@ -185,8 +185,8 @@ export class ANplusBParser {
 						node_start,
 						a_start,
 						a_end,
-						b !== null ? b_start : 0,
-						b !== null ? b_end : 0,
+						b === null ? 0 : b_start,
+						b === null ? 0 : b_end,
 					)
 				}
 			}

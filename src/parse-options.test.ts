@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, test, expect } from 'vitest'
 import { parse } from './parse'
 import { SELECTOR_LIST, STYLE_RULE, DECLARATION, VALUE, AT_RULE, RAW } from './arena'
 import { PlainCSSNode } from './css-node'
@@ -8,7 +8,7 @@ describe('Parser Options', () => {
 	const css = 'body { color: red; }'
 
 	describe('Default behavior (all parsing enabled)', () => {
-		it('should parse values and selectors by default', () => {
+		test('should parse values and selectors by default', () => {
 			const root = parse(css)
 			const rule = root.first_child
 
@@ -27,7 +27,7 @@ describe('Parser Options', () => {
 			expect(declaration?.first_child?.type).toBe(VALUE)
 		})
 
-		it('should parse values and selectors with explicit options', () => {
+		test('should parse values and selectors with explicit options', () => {
 			const root = parse(css, { parse_values: true, parse_selectors: true })
 			const rule = root.first_child
 
@@ -45,7 +45,7 @@ describe('Parser Options', () => {
 	})
 
 	describe('parse_values disabled', () => {
-		it('should not parse value details when parse_values is false', () => {
+		test('should not parse value details when parse_values is false', () => {
 			const root = parse(css, { parse_values: false })
 			const rule = root.first_child
 
@@ -68,7 +68,7 @@ describe('Parser Options', () => {
 			expect(declaration?.first_child).not.toBeNull()
 		})
 
-		it('should handle complex values without parsing', () => {
+		test('should handle complex values without parsing', () => {
 			const root = parse('div { margin: 10px 20px; }', { parse_values: false })
 			const rule = root.first_child
 			const selector = rule?.first_child
@@ -80,7 +80,7 @@ describe('Parser Options', () => {
 			expect(declaration?.first_child).not.toBeNull()
 		})
 
-		it('should handle function values without parsing', () => {
+		test('should handle function values without parsing', () => {
 			const root = parse('div { color: rgb(255, 0, 0); }', { parse_values: false })
 			const rule = root.first_child
 			const selector = rule?.first_child
@@ -94,7 +94,7 @@ describe('Parser Options', () => {
 	})
 
 	describe('parseSelectors disabled', () => {
-		it('should not parse selector details when parseSelectors is false', () => {
+		test('should not parse selector details when parseSelectors is false', () => {
 			const root = parse(css, { parse_selectors: false })
 			const rule = root.first_child
 
@@ -112,7 +112,7 @@ describe('Parser Options', () => {
 			expect(declaration?.first_child?.type).toBe(VALUE)
 		})
 
-		it('RAW node is attached as first child of STYLE_RULE', () => {
+		test('RAW node is attached as first child of STYLE_RULE', () => {
 			const root = parse(css, { parse_selectors: false })
 			const rule = root.first_child
 			expect(rule?.type).toBe(STYLE_RULE)
@@ -121,7 +121,7 @@ describe('Parser Options', () => {
 			expect(raw?.text).toBe('body')
 		})
 
-		it('rule.prelude returns the RAW node', () => {
+		test('rule.prelude returns the RAW node', () => {
 			const root = parse(css, { parse_selectors: false })
 			const rule = root.first_child as Rule | null
 			const prelude = rule?.prelude
@@ -130,7 +130,7 @@ describe('Parser Options', () => {
 			expect(prelude?.text).toBe('body')
 		})
 
-		it('should handle complex selectors without parsing', () => {
+		test('should handle complex selectors without parsing', () => {
 			const root = parse('div.container#app { color: red; }', { parse_selectors: false })
 			const rule = root.first_child
 			const selector = rule?.first_child
@@ -140,7 +140,7 @@ describe('Parser Options', () => {
 			expect(selector?.first_child).toBeNull()
 		})
 
-		it('should handle selector lists without parsing', () => {
+		test('should handle selector lists without parsing', () => {
 			const root = parse('div, p, span { color: red; }', { parse_selectors: false })
 			const rule = root.first_child
 			const selector = rule?.first_child
@@ -152,7 +152,7 @@ describe('Parser Options', () => {
 	})
 
 	describe('Both parse_values and parseSelectors disabled', () => {
-		it('should not parse details for values or selectors', () => {
+		test('should not parse details for values or selectors', () => {
 			const root = parse(css, { parse_values: false, parse_selectors: false })
 			const rule = root.first_child
 
@@ -171,7 +171,7 @@ describe('Parser Options', () => {
 			expect(declaration?.first_child).not.toBeNull()
 		})
 
-		it('should handle complex CSS without detailed parsing', () => {
+		test('should handle complex CSS without detailed parsing', () => {
 			const css = `
 				div.container > p:hover {
 					margin: 10px 20px;
@@ -199,7 +199,7 @@ describe('Parser Options', () => {
 	})
 
 	describe('Performance optimization use cases', () => {
-		it('should skip value parsing for fast property name extraction', () => {
+		test('should skip value parsing for fast property name extraction', () => {
 			const css = `
 				div {
 					color: red;
@@ -216,6 +216,7 @@ describe('Parser Options', () => {
 			let decl = block?.first_child as Declaration | null | undefined
 			const properties: string[] = []
 			while (decl) {
+				// oxlint-disable-next-line jest/no-conditional-in-test
 				if (decl.property) {
 					properties.push(decl.property)
 				}
@@ -225,7 +226,7 @@ describe('Parser Options', () => {
 			expect(properties).toEqual(['color', 'background', 'margin'])
 		})
 
-		it('should skip selector parsing for fast rule counting', () => {
+		test('should skip selector parsing for fast rule counting', () => {
 			const css = `
 				div.complex > p:nth-child(2n+1)::before { color: red; }
 				.another-complex[data-attr~="value"] { margin: 0; }
@@ -246,7 +247,7 @@ describe('Parser Options', () => {
 	})
 
 	describe('Options validation', () => {
-		it('should accept empty options object', () => {
+		test('should accept empty options object', () => {
 			const root = parse(css, {})
 			const rule = root.first_child
 			const selector = rule?.first_child
@@ -258,7 +259,7 @@ describe('Parser Options', () => {
 			expect(declaration?.first_child).not.toBeNull()
 		})
 
-		it('should accept partial options', () => {
+		test('should accept partial options', () => {
 			const root = parse(css, { parse_values: false })
 			const rule = root.first_child
 			const selector = rule?.first_child
@@ -273,7 +274,7 @@ describe('Parser Options', () => {
 	})
 
 	describe('parse_atrule_preludes disabled', () => {
-		it('should return a RAW prelude node when parse_atrule_preludes is false', () => {
+		test('should return a RAW prelude node when parse_atrule_preludes is false', () => {
 			const root = parse('@media screen { }', { parse_atrule_preludes: false })
 			const atrule = root.first_child! as Atrule
 			expect(atrule.type).toBe(AT_RULE)
@@ -284,7 +285,7 @@ describe('Parser Options', () => {
 			expect(prelude?.first_child).toBeNull()
 		})
 
-		it('should return RAW for various at-rule types', () => {
+		test('should return RAW for various at-rule types', () => {
 			const cases: Array<[string, string]> = [
 				['@keyframes slidein { }', 'slidein'],
 				['@layer base, components;', 'base, components'],
@@ -298,7 +299,7 @@ describe('Parser Options', () => {
 			}
 		})
 
-		it('should return null prelude for at-rules without a prelude', () => {
+		test('should return null prelude for at-rules without a prelude', () => {
 			const root = parse('@font-face { }', { parse_atrule_preludes: false })
 			const atrule = root.first_child! as Atrule
 			expect(atrule.prelude).toBeNull()
@@ -306,7 +307,7 @@ describe('Parser Options', () => {
 	})
 
 	describe('on_comment callback', () => {
-		it('should call on_comment for each comment in the CSS', () => {
+		test('should call on_comment for each comment in the CSS', () => {
 			const comments: Array<{
 				start: number
 				end: number
@@ -329,7 +330,7 @@ describe('Parser Options', () => {
 			expect(comments[0].column).toBe(1)
 		})
 
-		it('should provide correct start, end, and length for comments', () => {
+		test('should provide correct start, end, and length for comments', () => {
 			const comments: Array<{ start: number; end: number; length: number }> = []
 			const css = '/* comment */ body { color: red; }'
 
@@ -345,7 +346,7 @@ describe('Parser Options', () => {
 			expect(comments[0].length).toBe(13)
 		})
 
-		it('should provide correct line and column for multiline comments', () => {
+		test('should provide correct line and column for multiline comments', () => {
 			const comments: Array<{ start: number; end: number; line: number; column: number }> = []
 			const css = `body {
 	/* comment on line 2 */
@@ -363,7 +364,7 @@ describe('Parser Options', () => {
 			expect(comments[0].column).toBe(2)
 		})
 
-		it('should not call on_comment when no comments present', () => {
+		test('should not call on_comment when no comments present', () => {
 			let called = false
 			const css = 'body { color: red; }'
 
@@ -376,7 +377,7 @@ describe('Parser Options', () => {
 			expect(called).toBe(false)
 		})
 
-		it('should allow extracting comment text using start and end', () => {
+		test('should allow extracting comment text using start and end', () => {
 			const css = '/* first comment */ body { /* second comment */ color: red; }'
 			const commentTexts: string[] = []
 
@@ -389,7 +390,7 @@ describe('Parser Options', () => {
 			expect(commentTexts).toEqual(['/* first comment */', '/* second comment */'])
 		})
 
-		it('should work with other parsing options', () => {
+		test('should work with other parsing options', () => {
 			const comments: Array<{ start: number; length: number }> = []
 			const css = '/* test */ body { color: red; }'
 

@@ -3,7 +3,7 @@ import { Bench } from 'tinybench'
 import { parse, tokenize, walk } from '../dist/index.js'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-// @ts-expect-error
+// @ts-expect-error: no type definitions for css-tree
 import * as csstree from 'css-tree'
 import * as postcss from 'postcss'
 
@@ -63,7 +63,7 @@ bench
 	.add('Parse/walk - CSSTree - Bootstrap CSS', () => {
 		let ast = csstree.parse(bootstrapCSS, { positions: true })
 		let count = 0
-		// @ts-expect-error
+		// @ts-expect-error: no type definitions for css-tree
 		csstree.walk(ast, (node) => {
 			let type = node.type
 			let line = node.loc?.start.line
@@ -93,7 +93,7 @@ bench
 	.add('Parse/walk - CSSTree - Tailwind CSS', () => {
 		let ast = csstree.parse(tailwindCSS, { positions: true })
 		let count = 0
-		// @ts-expect-error
+		// @ts-expect-error: no type definitions for css-tree
 		csstree.walk(ast, (node) => {
 			let type = node.type
 			let line = node.loc?.start.line
@@ -140,7 +140,7 @@ console.table(
 			'File Size': getFileSize(name),
 			'ops/sec': stats?.throughput.mean.toFixed(0) ?? 'N/A',
 			'Average Time (ms)': stats?.latency.mean.toFixed(4) ?? 'N/A',
-			Margin: stats?.latency.rme != null ? `±${stats.latency.rme.toFixed(2)}%` : 'N/A',
+			Margin: stats?.latency.rme === null ? 'N/A' : `±${stats.latency.rme.toFixed(2)}%`,
 		}
 	}),
 )
