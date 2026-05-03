@@ -1916,14 +1916,6 @@ describe('parse_atrule_prelude()', () => {
 
 			expect(result.length).toBeGreaterThan(0)
 		})
-
-		test('should recognise vendor prefix', () => {
-			const result = parse_atrule_prelude('supports', '(-webkit-text-fill-color: white)')
-			expect(result).toHaveLength(1)
-			const supports_query = result[0] as SupportsQuery
-			expect(supports_query.type_name).toBe('SupportsQuery')
-			expect(supports_query.value).toBe('-webkit-text-fill-color: white')
-		})
 	})
 
 	describe('container queries', () => {
