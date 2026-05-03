@@ -55,6 +55,7 @@ import {
 	MEDIA_TYPE,
 	CONTAINER_QUERY,
 	SUPPORTS_QUERY,
+	SUPPORTS_DECLARATION,
 	LAYER_NAME,
 	PRELUDE_OPERATOR,
 	PRELUDE_SELECTORLIST,
@@ -482,12 +483,19 @@ export type ContainerQuery = CSSNode &
 		clone(options?: CloneOptions): ToPlain<ContainerQuery>
 	}
 
-export type SupportsQuery = CSSNode & {
-	readonly type: typeof SUPPORTS_QUERY
-	/** The supports condition text, e.g. "display: flex" from "supports(display: flex)" */
-	readonly value: string
-	clone(options?: CloneOptions): ToPlain<SupportsQuery>
-}
+export type SupportsQuery = CSSNode &
+	WithChildren<SupportsDeclaration> & {
+		readonly type: typeof SUPPORTS_QUERY
+		/** The supports condition text, e.g. "display: flex" from "supports(display: flex)" */
+		readonly value: string
+		clone(options?: CloneOptions): ToPlain<SupportsQuery>
+	}
+
+export type SupportsDeclaration = CSSNode &
+	WithChildren<Declaration> & {
+		readonly type: typeof SUPPORTS_DECLARATION
+		clone(options?: CloneOptions): ToPlain<SupportsDeclaration>
+	}
 
 export type LayerName = CSSNode & {
 	readonly type: typeof LAYER_NAME
@@ -581,6 +589,7 @@ export type AnyNode =
 	| MediaType
 	| ContainerQuery
 	| SupportsQuery
+	| SupportsDeclaration
 	| LayerName
 	| PreludeOperator
 	| FeatureRange
@@ -707,6 +716,9 @@ export function is_container_query(node: CSSNode): node is ContainerQuery {
 }
 export function is_supports_query(node: CSSNode): node is SupportsQuery {
 	return node.type === SUPPORTS_QUERY
+}
+export function is_supports_declaration(node: CSSNode): node is SupportsDeclaration {
+	return node.type === SUPPORTS_DECLARATION
 }
 export function is_layer_name(node: CSSNode): node is LayerName {
 	return node.type === LAYER_NAME
