@@ -355,6 +355,7 @@ export class Lexer {
 					// Hex escape: \20 or \000020
 					if (is_hex_digit(next)) {
 						this.consume_hex_escape()
+						// oxlint-disable-next-line no-negated-condition
 					} else if (!is_newline(next)) {
 						this.advance()
 					} else {

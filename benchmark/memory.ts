@@ -5,7 +5,7 @@
 import { parse, walk } from '../dist/index.js'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-// @ts-expect-error
+// @ts-expect-error: no type definitions for css-tree
 import * as csstree from 'css-tree'
 import * as postcss from 'postcss'
 

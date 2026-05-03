@@ -1,4 +1,4 @@
-import { describe, it, expect, expectTypeOf } from 'vitest'
+import { describe, test, expect, expectTypeOf } from 'vitest'
 import { parse } from './parse'
 import { parse_declaration } from './parse-declaration'
 import { parse_selector } from './parse-selector'
@@ -48,72 +48,72 @@ import type {
 // ---------------------------------------------------------------------------
 
 describe('type predicates — runtime', () => {
-	it('is_stylesheet returns true for the root node', () => {
+	test('is_stylesheet returns true for the root node', () => {
 		const root = parse('a { color: red }')
 		expect(is_stylesheet(root)).toBe(true)
 	})
 
-	it('is_stylesheet returns false for a child node', () => {
+	test('is_stylesheet returns false for a child node', () => {
 		const root = parse('a { color: red }')
 		expect(is_stylesheet(root.first_child!)).toBe(false)
 	})
 
-	it('is_rule identifies style rules', () => {
+	test('is_rule identifies style rules', () => {
 		const root = parse('a { color: red }')
 		expect(is_rule(root.first_child!)).toBe(true)
 	})
 
-	it('is_atrule identifies at-rules', () => {
+	test('is_atrule identifies at-rules', () => {
 		const root = parse('@media screen {}')
 		expect(is_atrule(root.first_child!)).toBe(true)
 	})
 
-	it('is_declaration identifies declarations', () => {
+	test('is_declaration identifies declarations', () => {
 		const decl = parse_declaration('color: red')
 		expect(is_declaration(decl)).toBe(true)
 	})
 
-	it('is_block identifies blocks', () => {
+	test('is_block identifies blocks', () => {
 		const root = parse('a { color: red }')
 		const rule = root.first_child! as Rule
 		expect(is_block(rule.block!)).toBe(true)
 	})
 
-	it('is_selector identifies selector nodes', () => {
+	test('is_selector identifies selector nodes', () => {
 		const root = parse_selector('a, b')
 		// root is SELECTOR_LIST; first child is SELECTOR
 		expect(is_selector_list(root)).toBe(true)
 		expect(is_selector(root.first_child!)).toBe(true)
 	})
 
-	it('is_dimension identifies dimension nodes', () => {
+	test('is_dimension identifies dimension nodes', () => {
 		const decl = parse_declaration('width: 100px')
 		const value_node = decl.first_child! // VALUE wrapper
 		const dim = value_node.first_child! // DIMENSION
 		expect(is_dimension(dim)).toBe(true)
 	})
 
-	it('is_number identifies number nodes', () => {
+	test('is_number identifies number nodes', () => {
 		const decl = parse_declaration('z-index: 42')
 		const value_node = decl.first_child!
 		const num = value_node.first_child!
 		expect(is_number(num)).toBe(true)
 	})
 
-	it('is_function identifies function nodes', () => {
+	test('is_function identifies function nodes', () => {
 		const decl = parse_declaration('color: rgb(0,0,0)')
 		const value_node = decl.first_child!
 		const fn = value_node.first_child!
 		expect(is_function(fn)).toBe(true)
 	})
 
-	it('is_attribute_selector identifies attribute selectors', () => {
+	test('is_attribute_selector identifies attribute selectors', () => {
 		const root = parse_selector('[href]')
 		const attr = root.first_child!.first_child! // SelectorList > Selector > AttributeSelector
 		expect(is_attribute_selector(attr)).toBe(true)
 	})
 
-	it('is_media_feature identifies media features', () => {
+	test('is_media_feature identifies media features', () => {
 		// @media (min-width: 768px): atrule > prelude(AT_RULE_PRELUDE) > MediaQuery > MediaFeature
 		const root = parse('@media (min-width: 768px) {}')
 		const atrule = root.first_child! as Atrule
@@ -122,7 +122,7 @@ describe('type predicates — runtime', () => {
 		expect(is_media_feature(mediaFeature)).toBe(true)
 	})
 
-	it('is_layer_name identifies layer name nodes', () => {
+	test('is_layer_name identifies layer name nodes', () => {
 		// @layer utilities: atrule > prelude(AT_RULE_PRELUDE) > LayerName
 		const root = parse('@layer utilities;')
 		const atrule = root.first_child! as Atrule
@@ -136,14 +136,14 @@ describe('type predicates — runtime', () => {
 // ---------------------------------------------------------------------------
 
 describe('type narrowing — compile-time', () => {
-	it('is_stylesheet narrows type field', () => {
+	test('is_stylesheet narrows type field', () => {
 		const root = parse('a {}')
 		if (is_stylesheet(root)) {
 			expectTypeOf(root).toMatchTypeOf<StyleSheet>()
 		}
 	})
 
-	it('is_rule narrows prelude and block to specific subtypes', () => {
+	test('is_rule narrows prelude and block to specific subtypes', () => {
 		const root = parse('a { color: red }')
 		const first = root.first_child!
 		if (is_rule(first)) {
@@ -153,7 +153,7 @@ describe('type narrowing — compile-time', () => {
 		}
 	})
 
-	it('is_atrule narrows name to string and prelude/block to specific subtypes', () => {
+	test('is_atrule narrows name to string and prelude/block to specific subtypes', () => {
 		const root = parse('@media screen {}')
 		const first = root.first_child!
 		if (is_atrule(first)) {
@@ -164,7 +164,7 @@ describe('type narrowing — compile-time', () => {
 		}
 	})
 
-	it('is_declaration narrows property, is_important, is_browserhack; omits inapplicable props', () => {
+	test('is_declaration narrows property, is_important, is_browserhack; omits inapplicable props', () => {
 		const decl = parse_declaration('color: red !important')
 		if (is_declaration(decl)) {
 			expectTypeOf(decl).toMatchTypeOf<Declaration>()
@@ -175,7 +175,7 @@ describe('type narrowing — compile-time', () => {
 		}
 	})
 
-	it('is_block narrows is_empty to boolean', () => {
+	test('is_block narrows is_empty to boolean', () => {
 		const root = parse('a { color: red }')
 		const rule = root.first_child! as Rule
 		const block = rule.block!
@@ -185,7 +185,7 @@ describe('type narrowing — compile-time', () => {
 		}
 	})
 
-	it('is_dimension narrows value to number and unit to string', () => {
+	test('is_dimension narrows value to number and unit to string', () => {
 		const decl = parse_declaration('width: 100px')
 		const dim = decl.first_child!.first_child!
 		if (is_dimension(dim)) {
@@ -195,7 +195,7 @@ describe('type narrowing — compile-time', () => {
 		}
 	})
 
-	it('is_number narrows value to number', () => {
+	test('is_number narrows value to number', () => {
 		const decl = parse_declaration('z-index: 42')
 		const num = decl.first_child!.first_child!
 		if (is_number(num)) {
@@ -204,7 +204,7 @@ describe('type narrowing — compile-time', () => {
 		}
 	})
 
-	it('is_function narrows name to string', () => {
+	test('is_function narrows name to string', () => {
 		const decl = parse_declaration('color: rgb(0,0,0)')
 		const fn = decl.first_child!.first_child!
 		if (is_function(fn)) {
@@ -213,7 +213,7 @@ describe('type narrowing — compile-time', () => {
 		}
 	})
 
-	it('is_attribute_selector narrows attr_operator and attr_flags to string | null', () => {
+	test('is_attribute_selector narrows attr_operator and attr_flags to string | null', () => {
 		const root = parse_selector('[href]')
 		const attr = root.first_child!.first_child!
 		if (is_attribute_selector(attr)) {
@@ -223,7 +223,7 @@ describe('type narrowing — compile-time', () => {
 		}
 	})
 
-	it('is_media_feature narrows property to string; omits name', () => {
+	test('is_media_feature narrows property to string; omits name', () => {
 		const root = parse('@media (min-width: 768px) {}')
 		const mediaFeature = (root.first_child! as Atrule).prelude!.first_child!.first_child!
 		if (is_media_feature(mediaFeature)) {
@@ -233,7 +233,7 @@ describe('type narrowing — compile-time', () => {
 		}
 	})
 
-	it('is_layer_name narrows name to string', () => {
+	test('is_layer_name narrows name to string', () => {
 		const root = parse('@layer utilities;')
 		const layer = (root.first_child! as Atrule).prelude!.first_child!
 		if (is_layer_name(layer)) {
@@ -242,7 +242,7 @@ describe('type narrowing — compile-time', () => {
 		}
 	})
 
-	it('Block.first_child is BlockChild with next_sibling narrowed to the Block child union', () => {
+	test('Block.first_child is BlockChild with next_sibling narrowed to the Block child union', () => {
 		const root = parse('a { color: red; font-size: 1em }')
 		const rule = root.first_child! as Rule
 		const block = rule.block!
@@ -260,7 +260,7 @@ describe('type narrowing — compile-time', () => {
 		}
 	})
 
-	it('AnyCss enables switch narrowing', () => {
+	test('AnyCss enables switch narrowing', () => {
 		// This test verifies the discriminated union works for switch narrowing.
 		// The function must compile without type errors.
 		function extract_name(node: AnyNode): string | undefined {
@@ -287,10 +287,10 @@ describe('type narrowing — compile-time', () => {
 // ---------------------------------------------------------------------------
 
 describe('selector subtypes', () => {
-	it('is_pseudo_class_selector narrows name to string', () => {
+	test('is_pseudo_class_selector narrows name to string', () => {
 		const root = parse_selector(':hover')
-		const sel = root.first_child! // Selector
-		const pseudo = sel.first_child! // PseudoClassSelector
+		const sel = root.first_child // Selector
+		const pseudo = sel.first_child // PseudoClassSelector
 		if (is_pseudo_class_selector(pseudo)) {
 			expectTypeOf(pseudo).toExtend<PseudoClassSelector>()
 			expectTypeOf(pseudo.name).toEqualTypeOf<string>()
@@ -298,7 +298,7 @@ describe('selector subtypes', () => {
 		}
 	})
 
-	it('is_pseudo_element_selector narrows name to string', () => {
+	test('is_pseudo_element_selector narrows name to string', () => {
 		const root = parse_selector('::before')
 		const sel = root.first_child!
 		const pseudo = sel.first_child!
@@ -309,7 +309,7 @@ describe('selector subtypes', () => {
 		}
 	})
 
-	it('is_nth_selector preserves nth_a and nth_b types', () => {
+	test('is_nth_selector preserves nth_a and nth_b types', () => {
 		const root = parse_selector(':nth-child(2n+1)')
 		const pseudo = root.first_child!.first_child! // PseudoClassSelector
 		const nth = pseudo.first_child! // NthSelector inside

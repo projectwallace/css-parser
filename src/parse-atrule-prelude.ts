@@ -300,7 +300,14 @@ export class AtRulePreludeParser {
 			j++
 		}
 
-		if (colon_pos !== -1) {
+		if (colon_pos === -1) {
+			// Boolean feature: (hover), (color)
+			let trimmed = trim_boundaries(this.source, content_start, content_end)
+			if (trimmed) {
+				this.arena.set_content_start_delta(feature, trimmed[0] - feature_start)
+				this.arena.set_content_length(feature, trimmed[1] - trimmed[0])
+			}
+		} else {
 			// Standard feature: (name: value)
 			let name_trimmed = trim_boundaries(this.source, content_start, colon_pos)
 			if (name_trimmed) {
@@ -315,13 +322,6 @@ export class AtRulePreludeParser {
 				if (value_nodes.length > 0) {
 					this.arena.append_children(feature, value_nodes)
 				}
-			}
-		} else {
-			// Boolean feature: (hover), (color)
-			let trimmed = trim_boundaries(this.source, content_start, content_end)
-			if (trimmed) {
-				this.arena.set_content_start_delta(feature, trimmed[0] - feature_start)
-				this.arena.set_content_length(feature, trimmed[1] - trimmed[0])
 			}
 		}
 
@@ -641,11 +641,11 @@ export class AtRulePreludeParser {
 		if (this.lexer.pos >= this.prelude_end) return []
 
 		let url_node = this.parse_import_url()
-		if (url_node !== null) {
-			nodes.push(url_node)
-		} else {
+		if (url_node === null) {
 			return [] // URL is required, fail if not found
 		}
+
+		nodes.push(url_node)
 
 		// 2. Parse optional layer
 		this.skip_whitespace()

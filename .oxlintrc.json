@@ -1,10 +1,25 @@
 {
 	"$schema": "./node_modules/oxlint/configuration_schema.json",
-	"extends": ["@projectwallace/preset-oxlint"],
+	"extends": ["./node_modules/@projectwallace/preset-oxlint/index.json"],
 	"env": {
 		"node": true,
 		"browser": true
 	},
-	"rules": {},
-	"ignorePatterns": ["node_modules"]
+	"rules": {
+		"no-null": "off", // AST's need null
+		"jest/no-conditional-in-test": "off",
+		"vitest/no-conditional-in-test": "off",
+		"jest/no-conditional-expect": "off",
+		"vitest/no-conditional-expect": "off",
+		"max-depth": ["warn", { "max": 6 }]
+	},
+	"ignorePatterns": ["node_modules"],
+	"overrides": [
+		{
+			"files": ["benchmark/**/*.ts"],
+			"rules": {
+				"no-console": "off"
+			}
+		}
+	]
 }

@@ -1,8 +1,8 @@
-import { it, expect, describe } from 'vitest'
+import { test, expect, describe } from 'vitest'
 import { parse_dimension } from './parse-dimension'
 
 describe('unit casing matrix', () => {
-	it.each([
+	test.each([
 		['1px', 'px'],
 		['1PX', 'PX'],
 		['1Px', 'Px'],
@@ -33,7 +33,7 @@ describe('unit casing matrix', () => {
 })
 
 describe('plain numbers', () => {
-	it.each([
+	test.each([
 		['1', 1],
 		['42', 42],
 		['100', 100],
@@ -46,7 +46,7 @@ describe('plain numbers', () => {
 })
 
 describe('decimals', () => {
-	it.each([
+	test.each([
 		['.5', 0.5, ''],
 		['.5em', 0.5, 'em'],
 		['0.5', 0.5, ''],
@@ -62,7 +62,7 @@ describe('decimals', () => {
 })
 
 describe('zero values', () => {
-	it.each([
+	test.each([
 		['0', 0, ''],
 		['0px', 0, 'px'],
 		['0em', 0, 'em'],
@@ -79,7 +79,7 @@ describe('zero values', () => {
 })
 
 describe('negative numbers', () => {
-	it.each([
+	test.each([
 		['-1', -1, ''],
 		['-10rem', -10, 'rem'],
 		['-100', -100, ''],
@@ -94,7 +94,7 @@ describe('negative numbers', () => {
 })
 
 describe('percentage cases', () => {
-	it.each([
+	test.each([
 		['1%', 1, '%'],
 		['50%', 50, '%'],
 		['100%', 100, '%'],
@@ -109,7 +109,7 @@ describe('percentage cases', () => {
 })
 
 describe('scientific notation', () => {
-	it.each([
+	test.each([
 		['1e2px', 100, 'px'],
 		['1e+2px', 100, 'px'],
 		['1E2px', 100, 'px'],
@@ -124,7 +124,7 @@ describe('scientific notation', () => {
 })
 
 describe('negative scientific notation', () => {
-	it.each([
+	test.each([
 		['-1e2px', -100, 'px'],
 		['-2.5e3em', -2500, 'em'],
 		['-1E2', -100, ''],
@@ -136,7 +136,7 @@ describe('negative scientific notation', () => {
 })
 
 describe('scientific notation with negative exponent', () => {
-	it.each([
+	test.each([
 		['1e-2px', 0.01, 'px'],
 		['5e-3em', 0.005, 'em'],
 		['2.5E-2rem', 0.025, 'rem'],
@@ -150,7 +150,7 @@ describe('scientific notation with negative exponent', () => {
 })
 
 describe('syntactical errors', () => {
-	it.each([
+	test.each([
 		['', 0, ''],
 		['abc', 0, 'abc'],
 		['px100', 0, 'px100'],

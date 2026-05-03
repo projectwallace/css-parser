@@ -136,11 +136,11 @@ export class Parser {
 		let rules: number[] = []
 		while (!this.is_eof()) {
 			let rule = this.parse_rule()
-			if (rule !== null) {
-				rules.push(rule)
-			} else {
+			if (rule === null) {
 				// Skip unknown tokens
 				this.next_token()
+			} else {
+				rules.push(rule)
 			}
 		}
 
@@ -216,10 +216,10 @@ export class Parser {
 			// Check for nested at-rule
 			if (token_type === TOKEN_AT_KEYWORD) {
 				let nested_at_rule = this.parse_atrule()
-				if (nested_at_rule !== null) {
-					block_children.push(nested_at_rule)
-				} else {
+				if (nested_at_rule === null) {
 					this.next_token()
+				} else {
+					block_children.push(nested_at_rule)
 				}
 				continue
 			}
@@ -234,11 +234,11 @@ export class Parser {
 
 			// If not a declaration, try parsing as nested style rule
 			let nested_rule = this.parse_style_rule()
-			if (nested_rule !== null) {
-				block_children.push(nested_rule)
-			} else {
+			if (nested_rule === null) {
 				// Skip unknown tokens
 				this.next_token()
+			} else {
+				block_children.push(nested_rule)
 			}
 		}
 
@@ -480,10 +480,10 @@ export class Parser {
 					if (token_type === TOKEN_RIGHT_BRACE) break
 
 					let declaration = this.parse_declaration()
-					if (declaration !== null) {
-						block_children.push(declaration)
-					} else {
+					if (declaration === null) {
 						this.next_token()
+					} else {
+						block_children.push(declaration)
 					}
 				}
 			} else {
@@ -495,10 +495,10 @@ export class Parser {
 					// Check for nested at-rule
 					if (token_type === TOKEN_AT_KEYWORD) {
 						let nested_at_rule = this.parse_atrule()
-						if (nested_at_rule !== null) {
-							block_children.push(nested_at_rule)
-						} else {
+						if (nested_at_rule === null) {
 							this.next_token()
+						} else {
+							block_children.push(nested_at_rule)
 						}
 						continue
 					}
@@ -512,11 +512,11 @@ export class Parser {
 
 					// If not a declaration, try parsing as nested style rule
 					let nested_rule = this.parse_style_rule()
-					if (nested_rule !== null) {
-						block_children.push(nested_rule)
-					} else {
+					if (nested_rule === null) {
 						// Skip unknown tokens
 						this.next_token()
+					} else {
+						block_children.push(nested_rule)
 					}
 				}
 			}
@@ -547,18 +547,13 @@ export class Parser {
 			// Set at-rule length and link children
 			this.arena.set_length(at_rule, last_end - at_rule_start)
 			this.arena.append_children(at_rule, at_rule_children)
-		} else if (this.peek_type() === TOKEN_SEMICOLON) {
-			// Statement at-rule (like @import, @namespace)
-			last_end = this.lexer.token_end
-			this.next_token() // consume ';'
-
-			// Set at-rule length and link children (prelude wrapper only, no block)
-			this.arena.set_length(at_rule, last_end - at_rule_start)
-			if (prelude_wrapper !== null) {
-				this.arena.append_children(at_rule, [prelude_wrapper])
-			}
 		} else {
-			// No block or semicolon (error recovery)
+			if (this.peek_type() === TOKEN_SEMICOLON) {
+				// Statement at-rule (like @import, @namespace)
+				last_end = this.lexer.token_end
+				this.next_token() // consume ';'
+			}
+			// else: no block or semicolon (error recovery)
 			this.arena.set_length(at_rule, last_end - at_rule_start)
 			if (prelude_wrapper !== null) {
 				this.arena.append_children(at_rule, [prelude_wrapper])

@@ -156,7 +156,7 @@ export class SelectorParser {
 		}
 
 		// Always wrap in selector list node, even for single selectors
-		if (selectors.length >= 1) {
+		if (selectors.length > 0) {
 			let list_node = this.arena.create_node(
 				SELECTOR_LIST,
 				list_start,
@@ -218,11 +218,10 @@ export class SelectorParser {
 		while (this.lexer.pos < this.selector_end) {
 			// Parse compound selector first
 			let compound = this.parse_compound_selector()
-			if (compound !== null) {
-				components.push(compound)
-			} else {
+			if (compound === null) {
 				break
 			}
+			components.push(compound)
 
 			// After a compound selector, check if there's a combinator
 			let combinator = this.try_parse_combinator()
@@ -286,13 +285,12 @@ export class SelectorParser {
 			if (token_type === TOKEN_EOF) break
 
 			let part = this.parse_simple_selector()
-			if (part !== null) {
-				parts.push(part)
-			} else {
+			if (part === null) {
 				// Not a simple selector part, restore lexer state and break
 				this.lexer.restore_position(saved)
 				break
 			}
+			parts.push(part)
 		}
 
 		if (parts.length === 0) return null
@@ -322,7 +320,7 @@ export class SelectorParser {
 				// ID selector: #id
 				return this.create_node(ID_SELECTOR, start, end)
 
-			case TOKEN_DELIM:
+			case TOKEN_DELIM: {
 				// Could be: . (class), * (universal), & (nesting), | (namespace)
 				let ch = this.source.charCodeAt(start)
 				if (ch === CHAR_PERIOD) {
@@ -340,6 +338,7 @@ export class SelectorParser {
 				}
 				// Other delimiters signal end of selector
 				return null
+			}
 
 			case TOKEN_LEFT_BRACKET:
 				// Attribute selector: [attr], [attr=value]
@@ -427,12 +426,9 @@ export class SelectorParser {
 			this.lexer.pos++ // skip |
 			let node = this.parse_namespace_local_part(start, start, end - start)
 			if (node !== null) return node
-			// Invalid - restore and treat as regular type selector
-			this.lexer.restore_position(saved)
-		} else {
-			// No pipe found, restore position
-			this.lexer.restore_position(saved)
 		}
+		// Invalid or no pipe found - restore position
+		this.lexer.restore_position(saved)
 
 		// Regular type selector (no namespace)
 		return this.create_node(TYPE_SELECTOR, start, end)
@@ -455,12 +451,9 @@ export class SelectorParser {
 			this.lexer.pos++ // skip |
 			let node = this.parse_namespace_local_part(start, start, end - start)
 			if (node !== null) return node
-			// Invalid - restore and treat as regular universal selector
-			this.lexer.restore_position(saved)
-		} else {
-			// No pipe found, restore position
-			this.lexer.restore_position(saved)
 		}
+		// Invalid or no pipe found - restore position
+		this.lexer.restore_position(saved)
 
 		// Regular universal selector (no namespace)
 		return this.create_node(UNIVERSAL_SELECTOR, start, end)
@@ -678,7 +671,6 @@ export class SelectorParser {
 					pos++
 				}
 			}
-			value_end = pos
 		} else {
 			// Unquoted identifier
 			while (pos < end) {
@@ -688,8 +680,8 @@ export class SelectorParser {
 				}
 				pos++
 			}
-			value_end = pos
 		}
+		value_end = pos
 
 		// Store value in value fields
 		if (value_end > value_start) {
@@ -924,46 +916,46 @@ export class SelectorParser {
 		// e.g., "2n+1 of .active, .disabled"
 		let of_index = this.find_of_keyword(start, end)
 
-		if (of_index !== -1) {
-			// Parse An+B part before "of"
-			let anplusb_parser = new ANplusBParser(this.arena, this.source)
-			let anplusb_node = anplusb_parser.parse_anplusb(start, of_index, this.lexer.line)
+		let anplusb_parser = new ANplusBParser(this.arena, this.source)
 
-			// Parse selector list after "of"
-			let selector_start = of_index + 2 // skip "of"
-			// Skip whitespace
-			selector_start = skip_whitespace_forward(this.source, selector_start, end)
-
-			// Save current state
-			let saved_selector_end = this.selector_end
-			const saved = this.lexer.save_position()
-
-			// Parse selector list
-			this.selector_end = end
-			this.lexer.pos = selector_start
-			let selector_list = this.parse_selector_list()
-
-			// Restore state
-			this.selector_end = saved_selector_end
-			this.lexer.restore_position(saved)
-
-			// Create NTH_OF wrapper
-			let of_node = this.arena.create_node(NTH_OF_SELECTOR, start, end - start, this.lexer.line, 1)
-
-			// Link An+B and selector list
-			if (anplusb_node !== null && selector_list !== null) {
-				this.arena.set_first_child(of_node, anplusb_node)
-				this.arena.set_next_sibling(anplusb_node, selector_list)
-			} else if (anplusb_node !== null) {
-				this.arena.set_first_child(of_node, anplusb_node)
-			}
-
-			return of_node
-		} else {
+		if (of_index === -1) {
 			// Just An+B, no "of" clause
-			let anplusb_parser = new ANplusBParser(this.arena, this.source)
 			return anplusb_parser.parse_anplusb(start, end, this.lexer.line)
 		}
+
+		// Parse An+B part before "of"
+		let anplusb_node = anplusb_parser.parse_anplusb(start, of_index, this.lexer.line)
+
+		// Parse selector list after "of"
+		let selector_start = of_index + 2 // skip "of"
+		// Skip whitespace
+		selector_start = skip_whitespace_forward(this.source, selector_start, end)
+
+		// Save current state
+		let saved_selector_end = this.selector_end
+		const saved = this.lexer.save_position()
+
+		// Parse selector list
+		this.selector_end = end
+		this.lexer.pos = selector_start
+		let selector_list = this.parse_selector_list()
+
+		// Restore state
+		this.selector_end = saved_selector_end
+		this.lexer.restore_position(saved)
+
+		// Create NTH_OF wrapper
+		let of_node = this.arena.create_node(NTH_OF_SELECTOR, start, end - start, this.lexer.line, 1)
+
+		// Link An+B and selector list
+		if (anplusb_node !== null && selector_list !== null) {
+			this.arena.set_first_child(of_node, anplusb_node)
+			this.arena.set_next_sibling(anplusb_node, selector_list)
+		} else if (anplusb_node !== null) {
+			this.arena.set_first_child(of_node, anplusb_node)
+		}
+
+		return of_node
 	}
 
 	// Find the position of standalone "of" keyword (case-insensitive)

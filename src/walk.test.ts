@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, test, expect } from 'vitest'
 import { parse } from './parse'
 import {
 	STYLESHEET,
@@ -17,7 +17,7 @@ import {
 import { walk, traverse, SKIP, BREAK } from './walk'
 
 describe('walk', () => {
-	it('should visit single node', () => {
+	test('should visit single node', () => {
 		const root = parse('', { parse_selectors: false, parse_values: false })
 		const visited: number[] = []
 
@@ -28,7 +28,7 @@ describe('walk', () => {
 		expect(visited).toEqual([STYLESHEET])
 	})
 
-	it('should visit all nodes in simple rule', () => {
+	test('should visit all nodes in simple rule', () => {
 		const root = parse('body { color: red; }', { parse_selectors: false, parse_values: true })
 		const visited: number[] = []
 
@@ -47,7 +47,7 @@ describe('walk', () => {
 		])
 	})
 
-	it('should visit nodes in depth-first order', () => {
+	test('should visit nodes in depth-first order', () => {
 		const root = parse('body { color: red; margin: 0; } div { padding: 1rem; }', {
 			parse_selectors: false,
 			parse_values: true,
@@ -78,7 +78,7 @@ describe('walk', () => {
 		])
 	})
 
-	it('should visit nested rules', () => {
+	test('should visit nested rules', () => {
 		const root = parse('.parent { color: red; .child { color: blue; } }', {
 			parse_selectors: false,
 			parse_values: false,
@@ -104,7 +104,7 @@ describe('walk', () => {
 		])
 	})
 
-	it('should visit at-rule nodes', () => {
+	test('should visit at-rule nodes', () => {
 		const root = parse('@media (min-width: 768px) { body { color: red; } }', {
 			parse_selectors: false,
 			parse_values: false,
@@ -129,7 +129,7 @@ describe('walk', () => {
 		])
 	})
 
-	it('should allow collecting node data', () => {
+	test('should allow collecting node data', () => {
 		const root = parse('body { color: red; } .btn { margin: 0; }', { parse_values: false })
 		const selectors: string[] = []
 
@@ -142,7 +142,7 @@ describe('walk', () => {
 		expect(selectors).toEqual(['body', '.btn'])
 	})
 
-	it('should allow collecting property names', () => {
+	test('should allow collecting property names', () => {
 		const root = parse('body { color: red; margin: 0; padding: 1rem; }', {
 			parse_selectors: false,
 			parse_values: false,
@@ -159,7 +159,7 @@ describe('walk', () => {
 		expect(properties).toEqual(['color', 'margin', 'padding'])
 	})
 
-	it('should allow counting nodes by type', () => {
+	test('should allow counting nodes by type', () => {
 		const root = parse(
 			`
 			body { color: red; }
@@ -180,7 +180,7 @@ describe('walk', () => {
 		expect.soft(counts[AT_RULE]).toBe(1)
 	})
 
-	it('should work with deeply nested structures', () => {
+	test('should work with deeply nested structures', () => {
 		const root = parse('.a { .b { .c { color: red; } } }')
 		const rules: number[] = []
 
@@ -193,7 +193,7 @@ describe('walk', () => {
 		expect(rules.length).toBe(3) // .a, .b, .c
 	})
 
-	it('should track depth correctly', () => {
+	test('should track depth correctly', () => {
 		const root = parse('body { color: red; }', { parse_selectors: false, parse_values: true })
 		const depths: number[] = []
 
@@ -206,7 +206,7 @@ describe('walk', () => {
 		expect(depths).toEqual([0, 0, 1, 1, 1, 1, 1])
 	})
 
-	it('should track depth in nested structures', () => {
+	test('should track depth in nested structures', () => {
 		const root = parse('.a { .b { .c { color: red; } } }', {
 			parse_selectors: false,
 			parse_values: true,
@@ -222,7 +222,7 @@ describe('walk', () => {
 		expect(ruleDepths).toEqual([0, 1, 2]) // .a at depth 0 (top-level), .b at depth 1 (nested in .a), .c at depth 2 (nested in .b)
 	})
 
-	it('should track depth with at-rules', () => {
+	test('should track depth with at-rules', () => {
 		const root = parse('@media screen { body { color: red; } }', {
 			parse_selectors: false,
 			parse_values: false,
@@ -247,7 +247,7 @@ describe('walk', () => {
 		])
 	})
 
-	it('should track depth with consecutive at-rules', () => {
+	test('should track depth with consecutive at-rules', () => {
 		const root = parse(
 			`
 			@media screen {
@@ -305,7 +305,7 @@ describe('walk', () => {
 })
 
 describe('walk with SKIP and BREAK', () => {
-	it('should skip children when SKIP is returned', () => {
+	test('should skip children when SKIP is returned', () => {
 		const root = parse('body { color: red; margin: 0; } div { padding: 1rem; }', {
 			parse_selectors: false,
 			parse_values: true,
@@ -324,7 +324,7 @@ describe('walk with SKIP and BREAK', () => {
 		expect(visited).toEqual([STYLESHEET, STYLE_RULE, STYLE_RULE])
 	})
 
-	it('should skip AT_RULE children when SKIP is returned', () => {
+	test('should skip AT_RULE children when SKIP is returned', () => {
 		const root = parse('@media screen { body { color: red; } }', {
 			parse_selectors: false,
 			parse_values: false,
@@ -343,7 +343,7 @@ describe('walk with SKIP and BREAK', () => {
 		expect(visited).toEqual([STYLESHEET, AT_RULE])
 	})
 
-	it('should allow SKIP on leaf node (no effect)', () => {
+	test('should allow SKIP on leaf node (no effect)', () => {
 		const root = parse('body { color: red; }', { parse_selectors: false, parse_values: true })
 		const visited: number[] = []
 
@@ -359,7 +359,7 @@ describe('walk with SKIP and BREAK', () => {
 		expect(visited).toEqual([STYLESHEET, STYLE_RULE, RAW, BLOCK, DECLARATION, VALUE, IDENTIFIER])
 	})
 
-	it('should stop traversal when BREAK is returned', () => {
+	test('should stop traversal when BREAK is returned', () => {
 		const root = parse('body { color: red; } div { padding: 1rem; }', {
 			parse_selectors: false,
 			parse_values: false,
@@ -378,7 +378,7 @@ describe('walk with SKIP and BREAK', () => {
 		expect(visited).toEqual([STYLESHEET, STYLE_RULE])
 	})
 
-	it('should stop traversal on DECLARATION', () => {
+	test('should stop traversal on DECLARATION', () => {
 		const root = parse('body { color: red; margin: 0; } div { padding: 1rem; }', {
 			parse_selectors: false,
 			parse_values: false,
@@ -397,7 +397,7 @@ describe('walk with SKIP and BREAK', () => {
 		expect(visited).toEqual([STYLESHEET, STYLE_RULE, RAW, BLOCK, DECLARATION])
 	})
 
-	it('should propagate BREAK from deep in tree', () => {
+	test('should propagate BREAK from deep in tree', () => {
 		const root = parse('.a { .b { .c { color: red; } } } .d { margin: 0; }', {
 			parse_selectors: false,
 			parse_values: false,
@@ -428,7 +428,7 @@ describe('walk with SKIP and BREAK', () => {
 		])
 	})
 
-	it('should maintain backward compatibility (no return value)', () => {
+	test('should maintain backward compatibility (no return value)', () => {
 		const root = parse('body { color: red; }', { parse_selectors: false, parse_values: true })
 		const visited: number[] = []
 
@@ -440,7 +440,7 @@ describe('walk with SKIP and BREAK', () => {
 		expect(visited).toEqual([STYLESHEET, STYLE_RULE, RAW, BLOCK, DECLARATION, VALUE, IDENTIFIER])
 	})
 
-	it('should find first declaration with specific property using BREAK', () => {
+	test('should find first declaration with specific property using BREAK', () => {
 		const root = parse('body { color: red; margin: 0; } div { margin: 1rem; }', {
 			parse_selectors: false,
 			parse_values: false,
@@ -457,7 +457,7 @@ describe('walk with SKIP and BREAK', () => {
 		expect(found).toBe('margin')
 	})
 
-	it('should skip media query contents using SKIP', () => {
+	test('should skip media query contents using SKIP', () => {
 		const root = parse('@media screen { body { color: red; } } div { margin: 0; }', {
 			parse_selectors: false,
 			parse_values: false,
@@ -480,7 +480,7 @@ describe('walk with SKIP and BREAK', () => {
 		expect(ruleCount.style).toBe(1)
 	})
 
-	it('should track depth correctly with SKIP', () => {
+	test('should track depth correctly with SKIP', () => {
 		const root = parse('body { color: red; } div { margin: 0; }', {
 			parse_selectors: false,
 			parse_values: true,
@@ -593,7 +593,7 @@ describe('walk enter/leave', () => {
 })
 
 describe('traverse with SKIP and BREAK', () => {
-	it('should skip children but call leave when SKIP is returned from enter', () => {
+	test('should skip children but call leave when SKIP is returned from enter', () => {
 		const root = parse('@media screen { body { color: red; } }', {
 			parse_selectors: false,
 			parse_values: false,
@@ -620,7 +620,7 @@ describe('traverse with SKIP and BREAK', () => {
 		expect(leave).toEqual([AT_RULE, STYLESHEET])
 	})
 
-	it('should allow SKIP in leave (no effect)', () => {
+	test('should allow SKIP in leave (no effect)', () => {
 		const root = parse('body { color: red; }', {
 			parse_selectors: false,
 			parse_values: false,
@@ -645,7 +645,7 @@ describe('traverse with SKIP and BREAK', () => {
 		expect(leave).toEqual([RAW, RAW, DECLARATION, BLOCK, STYLE_RULE, STYLESHEET])
 	})
 
-	it('should stop traversal and not call leave when BREAK is returned from enter', () => {
+	test('should stop traversal and not call leave when BREAK is returned from enter', () => {
 		const root = parse('@media screen { body { color: red; } }', {
 			parse_selectors: false,
 			parse_values: false,
@@ -672,7 +672,7 @@ describe('traverse with SKIP and BREAK', () => {
 		expect(leave).toEqual([])
 	})
 
-	it('should stop traversal when BREAK is returned from leave', () => {
+	test('should stop traversal when BREAK is returned from leave', () => {
 		const root = parse('body { color: red; } div { margin: 0; }', {
 			parse_selectors: false,
 			parse_values: false,
@@ -698,7 +698,7 @@ describe('traverse with SKIP and BREAK', () => {
 		expect(leave).toEqual([RAW, RAW, DECLARATION])
 	})
 
-	it('should handle SKIP in enter with normal leave', () => {
+	test('should handle SKIP in enter with normal leave', () => {
 		const root = parse('.a { .b { color: red; } }', {
 			parse_selectors: false,
 			parse_values: false,
@@ -724,7 +724,7 @@ describe('traverse with SKIP and BREAK', () => {
 		expect(leave).toEqual([RAW, STYLE_RULE, BLOCK, STYLE_RULE, STYLESHEET])
 	})
 
-	it('should verify enter/leave call counts match when using SKIP', () => {
+	test('should verify enter/leave call counts match when using SKIP', () => {
 		const root = parse('@media screen { body { color: red; } } div { margin: 0; }', {
 			parse_selectors: false,
 			parse_values: false,
@@ -754,7 +754,7 @@ describe('traverse with SKIP and BREAK', () => {
 		expect(leaveCount[STYLE_RULE]).toBe(1)
 	})
 
-	it('should stop when BREAK is returned from nested enter', () => {
+	test('should stop when BREAK is returned from nested enter', () => {
 		const root = parse('.a { .b { .c { color: red; } } }', {
 			parse_selectors: false,
 			parse_values: false,
@@ -792,7 +792,7 @@ describe('traverse with SKIP and BREAK', () => {
 		expect(leave).toEqual([RAW, RAW, RAW])
 	})
 
-	it('should maintain backward compatibility with traverse', () => {
+	test('should maintain backward compatibility with traverse', () => {
 		const root = parse('body { color: red; }', {
 			parse_selectors: false,
 			parse_values: false,

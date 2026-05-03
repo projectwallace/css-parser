@@ -363,9 +363,8 @@ describe('CSSNode', () => {
 			const root = parse(source)
 			const rule = root.first_child! as Rule
 			const selector = rule.first_child! as SelectorList
-			const _declaration = selector.next_sibling! as Rule
 
-			// Only rules have blocks
+			expect((selector as CSSNode).has_prelude).toBe(false)
 		})
 
 		test('should be accurate for all at-rule types', () => {
