@@ -462,13 +462,14 @@ export type MediaQuery = CSSNode &
 		clone(options?: CloneOptions): ToPlain<MediaQuery>
 	}
 
-export type MediaFeature = CSSNode &
-	WithChildren & {
-		readonly type: typeof MEDIA_FEATURE
-		/** Feature name, e.g. "min-width" */
-		readonly property: string
-		clone(options?: CloneOptions): ToPlain<MediaFeature>
-	}
+export type MediaFeature = CSSNode & {
+	readonly type: typeof MEDIA_FEATURE
+	/** Feature name, e.g. "min-width" */
+	readonly property: string
+	/** Feature value node, or null for boolean features like (hover) */
+	readonly value: CSSNode | null
+	clone(options?: CloneOptions): ToPlain<MediaFeature>
+}
 
 export type MediaType = CSSNode & {
 	readonly type: typeof MEDIA_TYPE

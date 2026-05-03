@@ -515,8 +515,7 @@ describe('At-Rule Prelude Nodes', () => {
 					| undefined
 
 				expect(feature?.property).toBe('orientation')
-				expect(feature?.children.length).toBe(1)
-				expect(feature?.children[0].type).toBe(IDENTIFIER)
+				expect(feature?.value?.type).toBe(IDENTIFIER)
 			})
 
 			test('should extract feature name from boolean feature', () => {
@@ -533,7 +532,7 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(feature?.property).toBe('hover')
 			})
 
-			test('should parse feature values as typed children', () => {
+			test('should parse feature value as typed node', () => {
 				const css = '@media (min-width: 768px) { }'
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
@@ -545,34 +544,53 @@ describe('At-Rule Prelude Nodes', () => {
 					| undefined
 
 				expect(feature?.property).toBe('min-width')
-				expect(feature?.children.length).toBe(1)
-				expect(feature?.children[0].type).toBe(DIMENSION)
+				expect(feature?.value?.type).toBe(DIMENSION)
 			})
 
-			test('should parse identifier value as child', () => {
+			test('should parse identifier value', () => {
 				const css = '@media (orientation: portrait) { }'
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
 				const queryChildren =
 					((atRule.prelude as AtrulePrelude | null)?.children[0] as MediaQuery | undefined)
 						?.children || []
-				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE)
+				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE) as
+					| MediaFeature
+					| undefined
 
-				expect(feature?.children.length).toBe(1)
-				expect(feature?.children[0].type).toBe(IDENTIFIER)
-				expect(feature?.children[0].text).toBe('portrait')
+				expect(feature?.value?.type).toBe(IDENTIFIER)
+				expect(feature?.value?.text).toBe('portrait')
 			})
 
-			test('should have no children for boolean features', () => {
+			test('should have null value for boolean features', () => {
 				const css = '@media (hover) { }'
 				const ast = parse(css)
 				const atRule = ast.first_child! as Atrule
 				const queryChildren =
 					((atRule.prelude as AtrulePrelude | null)?.children[0] as MediaQuery | undefined)
 						?.children || []
-				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE)
+				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE) as
+					| MediaFeature
+					| undefined
 
-				expect(feature?.children.length).toBe(0)
+				expect(feature?.value).toBeNull()
+			})
+
+			test('should parse vendor-prefixed media feature (-ms-high-contrast: active)', () => {
+				const css = '@media (-ms-high-contrast: active) {}'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const queryChildren =
+					((atRule.prelude as AtrulePrelude | null)?.children[0] as MediaQuery | undefined)
+						?.children || []
+				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE) as
+					| MediaFeature
+					| undefined
+
+				expect(feature?.property).toBe('-ms-high-contrast')
+				expect(feature?.is_vendor_prefixed).toBe(true)
+				expect(feature?.value?.type).toBe(IDENTIFIER)
+				expect(feature?.value?.text).toBe('active')
 			})
 
 			test('should parse range syntax with single comparison', () => {
