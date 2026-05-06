@@ -143,7 +143,7 @@ describe('type narrowing — compile-time', () => {
 	test('is_stylesheet narrows type field', () => {
 		const root = parse('a {}')
 		if (is_stylesheet(root)) {
-			expectTypeOf(root).toMatchTypeOf<StyleSheet>()
+			expectTypeOf(root).toExtend<StyleSheet>()
 		}
 	})
 
@@ -151,9 +151,9 @@ describe('type narrowing — compile-time', () => {
 		const root = parse('a { color: red }')
 		const first = root.first_child!
 		if (is_rule(first)) {
-			expectTypeOf(first).toMatchTypeOf<Rule>()
-			expectTypeOf(first.prelude).toMatchTypeOf<SelectorList | Raw | null>()
-			expectTypeOf(first.block).toMatchTypeOf<BlockNodeAlias | null>()
+			expectTypeOf(first).toExtend<Rule>()
+			expectTypeOf(first.prelude).toExtend<SelectorList | Raw | null>()
+			expectTypeOf(first.block).toExtend<BlockNodeAlias | null>()
 		}
 	})
 
@@ -161,17 +161,17 @@ describe('type narrowing — compile-time', () => {
 		const root = parse('@media screen {}')
 		const first = root.first_child!
 		if (is_atrule(first)) {
-			expectTypeOf(first).toMatchTypeOf<Atrule>()
+			expectTypeOf(first).toExtend<Atrule>()
 			expectTypeOf(first.name).toEqualTypeOf<string>()
-			expectTypeOf(first.prelude).toMatchTypeOf<AtrulePrelude | Raw | null>()
-			expectTypeOf(first.block).toMatchTypeOf<BlockNodeAlias | null>()
+			expectTypeOf(first.prelude).toExtend<AtrulePrelude | Raw | null>()
+			expectTypeOf(first.block).toExtend<BlockNodeAlias | null>()
 		}
 	})
 
 	test('is_declaration narrows property, is_important, is_browserhack; omits inapplicable props', () => {
 		const decl = parse_declaration('color: red !important')
 		if (is_declaration(decl)) {
-			expectTypeOf(decl).toMatchTypeOf<Declaration>()
+			expectTypeOf(decl).toExtend<Declaration>()
 			expectTypeOf(decl.property).toEqualTypeOf<string>()
 			expectTypeOf(decl.is_important).toEqualTypeOf<boolean>()
 			expectTypeOf(decl.is_browserhack).toEqualTypeOf<boolean>()
@@ -184,7 +184,7 @@ describe('type narrowing — compile-time', () => {
 		const rule = root.first_child! as Rule
 		const block = rule.block!
 		if (is_block(block)) {
-			expectTypeOf(block).toMatchTypeOf<Block>()
+			expectTypeOf(block).toExtend<Block>()
 			expectTypeOf(block.is_empty).toEqualTypeOf<boolean>()
 		}
 	})
@@ -193,9 +193,9 @@ describe('type narrowing — compile-time', () => {
 		const decl = parse_declaration('width: 100px')
 		const dim = decl.first_child!.first_child!
 		if (is_dimension(dim)) {
-			expectTypeOf(dim).toMatchTypeOf<Dimension>()
-			expectTypeOf(dim.value).toMatchTypeOf<number>()
-			expectTypeOf(dim.unit).toMatchTypeOf<string>()
+			expectTypeOf(dim).toExtend<Dimension>()
+			expectTypeOf(dim.value).toExtend<number>()
+			expectTypeOf(dim.unit).toExtend<string>()
 		}
 	})
 
@@ -203,8 +203,8 @@ describe('type narrowing — compile-time', () => {
 		const decl = parse_declaration('z-index: 42')
 		const num = decl.first_child!.first_child!
 		if (is_number(num)) {
-			expectTypeOf(num).toMatchTypeOf<Number>()
-			expectTypeOf(num.value).toMatchTypeOf<number>()
+			expectTypeOf(num).toExtend<Number>()
+			expectTypeOf(num.value).toExtend<number>()
 		}
 	})
 
@@ -212,7 +212,7 @@ describe('type narrowing — compile-time', () => {
 		const decl = parse_declaration('color: rgb(0,0,0)')
 		const fn = decl.first_child!.first_child!
 		if (is_function(fn)) {
-			expectTypeOf(fn).toMatchTypeOf<Function>()
+			expectTypeOf(fn).toExtend<Function>()
 			expectTypeOf(fn.name).toEqualTypeOf<string>()
 		}
 	})
@@ -221,7 +221,7 @@ describe('type narrowing — compile-time', () => {
 		const root = parse_selector('[href]')
 		const attr = root.first_child!.first_child!
 		if (is_attribute_selector(attr)) {
-			expectTypeOf(attr).toMatchTypeOf<AttributeSelector>()
+			expectTypeOf(attr).toExtend<AttributeSelector>()
 			expectTypeOf(attr.attr_operator).toEqualTypeOf<string | null>()
 			expectTypeOf(attr.attr_flags).toEqualTypeOf<string | null>()
 		}
@@ -231,7 +231,7 @@ describe('type narrowing — compile-time', () => {
 		const root = parse('@media (min-width: 768px) {}')
 		const mediaFeature = (root.first_child! as Atrule).prelude!.first_child!.first_child!
 		if (is_media_feature(mediaFeature)) {
-			expectTypeOf(mediaFeature).toMatchTypeOf<MediaFeature>()
+			expectTypeOf(mediaFeature).toExtend<MediaFeature>()
 			expectTypeOf(mediaFeature.property).toEqualTypeOf<string>()
 			// `name` is absent on MediaFeature — verified by tsc
 		}
@@ -241,7 +241,7 @@ describe('type narrowing — compile-time', () => {
 		const root = parse('@layer utilities;')
 		const layer = (root.first_child! as Atrule).prelude!.first_child!
 		if (is_layer_name(layer)) {
-			expectTypeOf(layer).toMatchTypeOf<LayerName>()
+			expectTypeOf(layer).toExtend<LayerName>()
 			expectTypeOf(layer.name).toEqualTypeOf<string>()
 		}
 	})
@@ -252,15 +252,15 @@ describe('type narrowing — compile-time', () => {
 		const block = rule.block!
 		// first_child on Block returns BlockChild, not the generic CSSNode
 		const child = block.first_child
-		expectTypeOf(child).toMatchTypeOf<BlockChild>()
+		expectTypeOf(child).toExtend<BlockChild>()
 		// next_sibling is narrowed to Raw | Declaration | Atrule | Rule, not CSSNode
 		if (child.has_next) {
-			expectTypeOf(child.next_sibling).toMatchTypeOf<Raw | Declaration | Atrule | Rule>()
+			expectTypeOf(child.next_sibling).toExtend<Raw | Declaration | Atrule | Rule>()
 		}
 		// children[] and for-of also yield BlockChild
-		expectTypeOf(block.children[0]).toMatchTypeOf<BlockChild>()
+		expectTypeOf(block.children[0]).toExtend<BlockChild>()
 		for (const c of block) {
-			expectTypeOf(c).toMatchTypeOf<BlockChild>()
+			expectTypeOf(c).toExtend<BlockChild>()
 		}
 	})
 
