@@ -2,6 +2,7 @@
 
 - `parse`
 - `parse_selector`
+- `parse_selector_list`
 - `parse_atrule_prelude`
 - `walk`
 - `tokenize`
@@ -356,7 +357,7 @@ import { parse_selector, SELECTOR_LIST, NTH_SELECTOR } from '@projectwallace/css
 
 // Simple pseudo-classes with selectors
 const isSelector = parse_selector(':is(.foo, #bar)')
-const pseudo = isSelector.first_child?.first_child
+const pseudo = isSelector.first_child
 
 // Direct access to selector list
 console.log(pseudo.selector_list.text) // ".foo, #bar"
@@ -364,7 +365,7 @@ console.log(pseudo.selector_list.type === SELECTOR_LIST) // true
 
 // Complex pseudo-classes with An+B notation
 const nthSelector = parse_selector(':nth-child(2n+1 of .foo)')
-const nthPseudo = nthSelector.first_child?.first_child
+const nthPseudo = nthSelector.first_child
 const nthOf = nthPseudo.first_child // NTH_OF_SELECTOR
 
 // Direct access to formula
@@ -471,10 +472,10 @@ clone.children.push({ type: 99, text: 'test', children: [] })
 
 ## `parse_selector(source)`
 
-Parse a CSS selector string into a detailed AST.
+Parse a single CSS selector string into a detailed AST. Returns the first selector directly (skipping the list wrapper). If the source contains multiple comma-separated selectors, only the first is returned.
 
 ```typescript
-function parse_selector(source: string): CSSNode
+function parse_selector(source: string): Selector
 ```
 
 **Example:**
@@ -484,9 +485,9 @@ import { parse_selector } from '@projectwallace/css-parser'
 
 const selector = parse_selector('div.class > p#id::before')
 
-console.log(selector.type) // SELECTOR_LIST
+console.log(selector.type) // SELECTOR
 // Iterate over selector components
-for (const part of selector.first_child) {
+for (const part of selector.children) {
 	console.log(part.type, part.text)
 }
 // TYPE_SELECTOR "div"
@@ -495,6 +496,29 @@ for (const part of selector.first_child) {
 // TYPE_SELECTOR "p"
 // ID_SELECTOR "#id"
 // PSEUDO_ELEMENT_SELECTOR "::before"
+```
+
+---
+
+## `parse_selector_list(source)`
+
+Parse a CSS selector string into a detailed AST, returning the full `SelectorList` node. Use this when the source may contain multiple comma-separated selectors.
+
+```typescript
+function parse_selector_list(source: string): SelectorList
+```
+
+**Example:**
+
+```typescript
+import { parse_selector_list } from '@projectwallace/css-parser'
+
+const list = parse_selector_list('h1, h2, h3')
+
+console.log(list.type) // SELECTOR_LIST
+for (const selector of list.children) {
+	console.log(selector.text) // "h1", "h2", "h3"
+}
 ```
 
 ---
@@ -888,12 +912,12 @@ import { parse_selector } from '@projectwallace/css-parser'
 
 // Function syntax (with parentheses) - even if empty
 const ast1 = parse_selector(':lang()')
-const pseudoClass1 = ast1.first_child.first_child
+const pseudoClass1 = ast1.first_child
 console.log(pseudoClass1.has_children) // true - indicates function syntax
 
 // Regular pseudo-class (no parentheses)
 const ast2 = parse_selector(':hover')
-const pseudoClass2 = ast2.first_child.first_child
+const pseudoClass2 = ast2.first_child
 console.log(pseudoClass2.has_children) // false - no function syntax
 ```
 
