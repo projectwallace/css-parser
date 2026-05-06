@@ -41,6 +41,10 @@ import type {
 	NthSelector,
 	MediaFeature,
 	LayerName,
+	Combinator,
+	Identifier,
+	Operator,
+	PreludeOperator,
 } from './node-types'
 
 // ---------------------------------------------------------------------------
@@ -257,6 +261,72 @@ describe('type narrowing — compile-time', () => {
 		expectTypeOf(block.children[0]).toMatchTypeOf<BlockChild>()
 		for (const c of block) {
 			expectTypeOf(c).toMatchTypeOf<BlockChild>()
+		}
+	})
+
+	test('type_name "Combinator" narrows to Combinator', () => {
+		// SelectorList > Selector > TypeSelector > Combinator (next sibling)
+		const combinator = parse_selector('a > b').first_child.first_child!.next_sibling! as AnyNode
+		if (combinator.type_name === 'Combinator') {
+			expectTypeOf(combinator).toExtend<Combinator>()
+			expectTypeOf(combinator.name).toEqualTypeOf<string>()
+		}
+	})
+
+	test('type_name "Identifier" narrows to Identifier', () => {
+		// Declaration > Value > Identifier
+		const ident = parse_declaration('display: block').first_child!.first_child! as AnyNode
+		if (ident.type_name === 'Identifier') {
+			expectTypeOf(ident).toExtend<Identifier>()
+			expectTypeOf(ident.name).toEqualTypeOf<string>()
+		}
+	})
+
+	test('type_name "Operator" narrows to Operator | PreludeOperator (shared type_name)', () => {
+		// Declaration > Value > Operator (the comma between values)
+		const op = parse_declaration('background: red, blue').first_child!.first_child!
+			.next_sibling! as AnyNode
+		if (op.type_name === 'Operator') {
+			expectTypeOf(op).toExtend<Operator | PreludeOperator>()
+		}
+	})
+
+	test('type_name "Declaration" narrows to Declaration', () => {
+		const decl = parse_declaration('color: red') as AnyNode
+		if (decl.type_name === 'Declaration') {
+			expectTypeOf(decl).toExtend<Declaration>()
+			expectTypeOf(decl.property).toEqualTypeOf<string>()
+		}
+	})
+
+	test('type_name "Rule" narrows to Rule', () => {
+		const first = parse('a { color: red }').first_child! as AnyNode
+		if (first.type_name === 'Rule') {
+			expectTypeOf(first).toExtend<Rule>()
+		}
+	})
+
+	test('type_name "Atrule" narrows to Atrule', () => {
+		const first = parse('@media screen {}').first_child! as AnyNode
+		if (first.type_name === 'Atrule') {
+			expectTypeOf(first).toExtend<Atrule>()
+			expectTypeOf(first.name).toEqualTypeOf<string>()
+		}
+	})
+
+	test('type_name "StyleSheet" narrows to StyleSheet', () => {
+		const root = parse('a {}') as AnyNode
+		if (root.type_name === 'StyleSheet') {
+			expectTypeOf(root).toExtend<StyleSheet>()
+		}
+	})
+
+	test('type_name "MediaFeatureRange" narrows to FeatureRange', () => {
+		const atrule = parse('@media (width >= 400px) {}').first_child! as Atrule
+		// AtrulePrelude > MediaQuery > FeatureRange
+		const range = atrule.prelude!.first_child!.first_child! as AnyNode
+		if (range.type_name === 'MediaFeatureRange') {
+			expectTypeOf(range.name).toEqualTypeOf<string>()
 		}
 	})
 
