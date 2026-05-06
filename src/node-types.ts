@@ -144,11 +144,13 @@ export type ToPlain<T extends CSSNode> = PlainCSSNode & { type: T['type'] } & {
 export type StyleSheet = CSSNode &
 	WithChildren & {
 		readonly type: typeof STYLESHEET
+		readonly type_name: 'StyleSheet'
 		clone(options?: CloneOptions): ToPlain<StyleSheet>
 	}
 
 export type Rule = CSSNode & {
 	readonly type: typeof STYLE_RULE
+	readonly type_name: 'Rule'
 	readonly has_declarations: boolean
 	clone(options?: CloneOptions): ToPlain<Rule>
 } &
@@ -164,6 +166,7 @@ export type Rule = CSSNode & {
 
 export type Atrule = CSSNode & {
 	readonly type: typeof AT_RULE
+	readonly type_name: 'Atrule'
 	/** At-rule keyword, e.g. "media", "keyframes" */
 	readonly name: string
 	readonly has_declarations: boolean
@@ -181,6 +184,7 @@ export type Atrule = CSSNode & {
 
 export type Declaration = CSSNode & {
 	readonly type: typeof DECLARATION
+	readonly type_name: 'Declaration'
 	/** Property name, e.g. "color" */
 	readonly property: string
 	/** VALUE node (parse_values=true), RAW node (parse_values=false), or null */
@@ -206,12 +210,14 @@ export type SelectorNode =
 export type Selector = CSSNode &
 	WithChildren<SelectorNode> & {
 		readonly type: typeof SELECTOR
+		readonly type_name: 'Selector'
 		clone(options?: CloneOptions): ToPlain<Selector>
 	}
 
 export type SelectorList = CSSNode &
 	WithChildren<Selector> & {
 		readonly type: typeof SELECTOR_LIST
+		readonly type_name: 'SelectorList'
 		clone(options?: CloneOptions): ToPlain<SelectorList>
 	}
 
@@ -232,6 +238,7 @@ export type BlockChild = (Raw | Declaration | Atrule | Rule) &
 export type Block = CSSNode &
 	WithChildren<Raw | Declaration | Atrule | Rule> & {
 		readonly type: typeof BLOCK
+		readonly type_name: 'Block'
 		readonly is_empty: boolean
 		/** Block children with next_sibling narrowed to the Block child union. */
 		readonly first_child: BlockChild
@@ -242,11 +249,13 @@ export type Block = CSSNode &
 
 export type Comment = CSSNode & {
 	readonly type: typeof COMMENT
+	readonly type_name: 'Comment'
 	clone(options?: CloneOptions): ToPlain<Comment>
 }
 
 export type Raw = CSSNode & {
 	readonly type: typeof RAW
+	readonly type_name: 'Raw'
 	clone(options?: CloneOptions): ToPlain<Raw>
 }
 
@@ -268,18 +277,21 @@ type ValueLike =
 
 export type Identifier = CSSNode & {
 	readonly type: typeof IDENTIFIER
+	readonly type_name: 'Identifier'
 	readonly name: string
 	clone(options?: CloneOptions): ToPlain<Identifier>
 }
 
 export type Number = CSSNode & {
 	readonly type: typeof NUMBER
+	readonly type_name: 'Number'
 	readonly value: number
 	clone(options?: CloneOptions): ToPlain<Number>
 }
 
 export type Dimension = CSSNode & {
 	readonly type: typeof DIMENSION
+	readonly type_name: 'Dimension'
 	readonly value: number
 	/** Unit string, e.g. "px", "%" */
 	readonly unit: string
@@ -288,17 +300,20 @@ export type Dimension = CSSNode & {
 
 export type String = CSSNode & {
 	readonly type: typeof STRING
+	readonly type_name: 'String'
 	clone(options?: CloneOptions): ToPlain<String>
 }
 
 export type Hash = CSSNode & {
 	readonly type: typeof HASH
+	readonly type_name: 'Hash'
 	clone(options?: CloneOptions): ToPlain<Hash>
 }
 
 export type Function = CSSNode &
 	WithChildren<ValueLike> & {
 		readonly type: typeof FUNCTION
+		readonly type_name: 'Function'
 		/** Function name, e.g. "rgb", "calc" */
 		readonly name: string
 		/** Function arguments as raw text, e.g. "255, 0, 0" for rgb(255, 0, 0) */
@@ -308,6 +323,7 @@ export type Function = CSSNode &
 
 export type Operator = CSSNode & {
 	readonly type: typeof OPERATOR
+	readonly type_name: 'Operator'
 	/** The operator character(s), e.g. ",", "+", "-" */
 	readonly value: string
 	clone(options?: CloneOptions): ToPlain<Operator>
@@ -316,11 +332,13 @@ export type Operator = CSSNode & {
 export type Parenthesis = CSSNode &
 	WithChildren & {
 		readonly type: typeof PARENTHESIS
+		readonly type_name: 'Parentheses'
 		clone(options?: CloneOptions): ToPlain<Parenthesis>
 	}
 
 export type Url = CSSNode & {
 	readonly type: typeof URL
+	readonly type_name: 'Url'
 	/** URL content, e.g. '"image.png"' (with quotes) or 'mycursor.cur' (unquoted) */
 	readonly value: string | null
 	clone(options?: CloneOptions): ToPlain<Url>
@@ -328,12 +346,14 @@ export type Url = CSSNode & {
 
 export type UnicodeRange = CSSNode & {
 	readonly type: typeof UNICODE_RANGE
+	readonly type_name: 'UnicodeRange'
 	clone(options?: CloneOptions): ToPlain<UnicodeRange>
 }
 
 export type Value = CSSNode &
 	WithChildren<ValueLike> & {
 		readonly type: typeof VALUE
+		readonly type_name: 'Value'
 		clone(options?: CloneOptions): ToPlain<Value>
 	}
 
@@ -343,6 +363,7 @@ export type Value = CSSNode &
 
 export type TypeSelector = CSSNode & {
 	readonly type: typeof TYPE_SELECTOR
+	readonly type_name: 'TypeSelector'
 	/** Local element name, e.g. "div" in both "div" and "ns|div" */
 	readonly name: string
 	/** Namespace prefix: null if no qualifier, '' for |div, 'ns' for ns|div, '*' for *|div */
@@ -352,6 +373,7 @@ export type TypeSelector = CSSNode & {
 
 export type ClassSelector = CSSNode & {
 	readonly type: typeof CLASS_SELECTOR
+	readonly type_name: 'ClassSelector'
 	/** Class name without dot, e.g. "foo" from ".foo" */
 	readonly name: string
 	clone(options?: CloneOptions): ToPlain<ClassSelector>
@@ -359,6 +381,7 @@ export type ClassSelector = CSSNode & {
 
 export type IdSelector = CSSNode & {
 	readonly type: typeof ID_SELECTOR
+	readonly type_name: 'IdSelector'
 	/** Id without hash, e.g. "bar" from "#bar" */
 	readonly name: string
 	clone(options?: CloneOptions): ToPlain<IdSelector>
@@ -366,6 +389,7 @@ export type IdSelector = CSSNode & {
 
 export type AttributeSelector = CSSNode & {
 	readonly type: typeof ATTRIBUTE_SELECTOR
+	readonly type_name: 'AttributeSelector'
 	/** Attribute name, e.g. "href" from "[href]" */
 	readonly name: string
 	/** Operator string, e.g. "=", "~=", "|="; null if no operator ([attr] form) */
@@ -380,6 +404,7 @@ export type AttributeSelector = CSSNode & {
 export type PseudoClassSelector = CSSNode &
 	WithChildren<Selector | NthOfSelector> & {
 		readonly type: typeof PSEUDO_CLASS_SELECTOR
+		readonly type_name: 'PseudoClassSelector'
 		/** Pseudo-class name without colon, e.g. "hover" */
 		readonly name: string
 		clone(options?: CloneOptions): ToPlain<PseudoClassSelector>
@@ -388,6 +413,7 @@ export type PseudoClassSelector = CSSNode &
 export type PseudoElementSelector = CSSNode &
 	WithChildren<SelectorList> & {
 		readonly type: typeof PSEUDO_ELEMENT_SELECTOR
+		readonly type_name: 'PseudoElementSelector'
 		/** Pseudo-element name without colons, e.g. "before" */
 		readonly name: string
 		clone(options?: CloneOptions): ToPlain<PseudoElementSelector>
@@ -395,6 +421,7 @@ export type PseudoElementSelector = CSSNode &
 
 export type Combinator = CSSNode & {
 	readonly type: typeof COMBINATOR
+	readonly type_name: 'Combinator'
 	/** Combinator character(s), e.g. " ", ">", "~", "+", "||", "/deep/" */
 	readonly name: string
 	clone(options?: CloneOptions): ToPlain<Combinator>
@@ -402,6 +429,7 @@ export type Combinator = CSSNode & {
 
 export type UniversalSelector = CSSNode & {
 	readonly type: typeof UNIVERSAL_SELECTOR
+	readonly type_name: 'UniversalSelector'
 	/** Always null — universal selector has no element name */
 	readonly name: null
 	/** Namespace prefix: null if no qualifier, '' for |*, 'ns' for ns|*, '*' for *|* */
@@ -411,11 +439,13 @@ export type UniversalSelector = CSSNode & {
 
 export type NestingSelector = CSSNode & {
 	readonly type: typeof NESTING_SELECTOR
+	readonly type_name: 'NestingSelector'
 	clone(options?: CloneOptions): ToPlain<NestingSelector>
 }
 
 export type NthSelector = CSSNode & {
 	readonly type: typeof NTH_SELECTOR
+	readonly type_name: 'Nth'
 	/** The `An` part of the An+B formula, including keywords `odd`/`even`. Null when only a B value is present (e.g. `:nth-child(3)`). */
 	readonly nth_a: string | null
 	/** The `+B` part of the An+B formula. Null when only an A value is present (e.g. `:nth-child(2n)` or `:nth-child(odd)`). */
@@ -425,6 +455,7 @@ export type NthSelector = CSSNode & {
 
 export type NthOfSelector = CSSNode & {
 	readonly type: typeof NTH_OF_SELECTOR
+	readonly type_name: 'NthOf'
 	/** The An+B formula node */
 	readonly nth: NthSelector | null
 	/** The selector list from :nth-child(An+B of <selector>) */
@@ -434,6 +465,7 @@ export type NthOfSelector = CSSNode & {
 
 export type LangSelector = CSSNode & {
 	readonly type: typeof LANG_SELECTOR
+	readonly type_name: 'Lang'
 	/** `"nl"`, `en-US` */
 	readonly name: string | null
 	clone(options?: CloneOptions): ToPlain<LangSelector>
@@ -457,17 +489,20 @@ export type AtrulePrelude = CSSNode &
 		| Url
 	> & {
 		readonly type: typeof AT_RULE_PRELUDE
+		readonly type_name: 'AtrulePrelude'
 		clone(options?: CloneOptions): ToPlain<AtrulePrelude>
 	}
 
 export type MediaQuery = CSSNode &
 	WithChildren<MediaFeature | PreludeOperator | MediaType | FeatureRange> & {
 		readonly type: typeof MEDIA_QUERY
+		readonly type_name: 'MediaQuery'
 		clone(options?: CloneOptions): ToPlain<MediaQuery>
 	}
 
 export type MediaFeature = CSSNode & {
 	readonly type: typeof MEDIA_FEATURE
+	readonly type_name: 'Feature'
 	/** Feature name, e.g. "min-width" */
 	readonly property: string
 	/** Feature value node, or null for boolean features like (hover) */
@@ -477,6 +512,7 @@ export type MediaFeature = CSSNode & {
 
 export type MediaType = CSSNode & {
 	readonly type: typeof MEDIA_TYPE
+	readonly type_name: 'MediaType'
 	/** Media type text, e.g. "screen", "print" */
 	readonly value: string
 	clone(options?: CloneOptions): ToPlain<MediaType>
@@ -485,12 +521,14 @@ export type MediaType = CSSNode & {
 export type ContainerQuery = CSSNode &
 	WithChildren<Identifier | MediaFeature | Function> & {
 		readonly type: typeof CONTAINER_QUERY
+		readonly type_name: 'ContainerQuery'
 		clone(options?: CloneOptions): ToPlain<ContainerQuery>
 	}
 
 export type SupportsQuery = CSSNode &
 	WithChildren<SupportsDeclaration> & {
 		readonly type: typeof SUPPORTS_QUERY
+		readonly type_name: 'SupportsQuery'
 		/** The supports condition text, e.g. "display: flex" from "supports(display: flex)" */
 		readonly value: string
 		clone(options?: CloneOptions): ToPlain<SupportsQuery>
@@ -499,11 +537,13 @@ export type SupportsQuery = CSSNode &
 export type SupportsDeclaration = CSSNode &
 	WithChildren<Declaration> & {
 		readonly type: typeof SUPPORTS_DECLARATION
+		readonly type_name: 'SupportsDeclaration'
 		clone(options?: CloneOptions): ToPlain<SupportsDeclaration>
 	}
 
 export type LayerName = CSSNode & {
 	readonly type: typeof LAYER_NAME
+	readonly type_name: 'Layer'
 	readonly name: string
 	/** Alias for name — the layer name string, e.g. "base" from "layer(base)" */
 	readonly value: string
@@ -528,18 +568,21 @@ export type LayerName = CSSNode & {
  */
 export type PreludeSelectorList = CSSNode & {
 	readonly type: typeof PRELUDE_SELECTORLIST
+	readonly type_name: 'PreludeSelectorList'
 	readonly value: string
 	clone(options?: CloneOptions): ToPlain<PreludeSelectorList>
 }
 
 export type PreludeOperator = CSSNode & {
 	readonly type: typeof PRELUDE_OPERATOR
+	readonly type_name: 'Operator'
 	clone(options?: CloneOptions): ToPlain<PreludeOperator>
 }
 
 export type FeatureRange = CSSNode &
 	WithChildren<Dimension | Operator> & {
 		readonly type: typeof FEATURE_RANGE
+		readonly type_name: 'MediaFeatureRange'
 		/** The feature name in a range comparison, e.g. "width" from "(width >= 400px)" */
 		readonly name: string
 		clone(options?: CloneOptions): ToPlain<FeatureRange>
