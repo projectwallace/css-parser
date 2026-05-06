@@ -1,7 +1,7 @@
 import { describe, test, expect, expectTypeOf } from 'vitest'
 import { parse } from './parse'
 import { parse_declaration } from './parse-declaration'
-import { parse_selector } from './parse-selector'
+import { parse_selector_list } from './parse-selector'
 import {
 	is_stylesheet,
 	is_rule,
@@ -84,7 +84,7 @@ describe('type predicates — runtime', () => {
 	})
 
 	test('is_selector identifies selector nodes', () => {
-		const root = parse_selector('a, b')
+		const root = parse_selector_list('a, b')
 		// root is SELECTOR_LIST; first child is SELECTOR
 		expect(is_selector_list(root)).toBe(true)
 		expect(is_selector(root.first_child!)).toBe(true)
@@ -112,7 +112,7 @@ describe('type predicates — runtime', () => {
 	})
 
 	test('is_attribute_selector identifies attribute selectors', () => {
-		const root = parse_selector('[href]')
+		const root = parse_selector_list('[href]')
 		const attr = root.first_child!.first_child! // SelectorList > Selector > AttributeSelector
 		expect(is_attribute_selector(attr)).toBe(true)
 	})
@@ -218,7 +218,7 @@ describe('type narrowing — compile-time', () => {
 	})
 
 	test('is_attribute_selector narrows attr_operator and attr_flags to string | null', () => {
-		const root = parse_selector('[href]')
+		const root = parse_selector_list('[href]')
 		const attr = root.first_child!.first_child!
 		if (is_attribute_selector(attr)) {
 			expectTypeOf(attr).toExtend<AttributeSelector>()
@@ -266,7 +266,8 @@ describe('type narrowing — compile-time', () => {
 
 	test('type_name "Combinator" narrows to Combinator', () => {
 		// SelectorList > Selector > TypeSelector > Combinator (next sibling)
-		const combinator = parse_selector('a > b').first_child.first_child!.next_sibling! as AnyNode
+		const combinator = parse_selector_list('a > b').first_child.first_child!
+			.next_sibling! as AnyNode
 		if (combinator.type_name === 'Combinator') {
 			expectTypeOf(combinator).toExtend<Combinator>()
 			expectTypeOf(combinator.name).toEqualTypeOf<string>()
@@ -358,7 +359,7 @@ describe('type narrowing — compile-time', () => {
 
 describe('selector subtypes', () => {
 	test('is_pseudo_class_selector narrows name to string', () => {
-		const root = parse_selector(':hover')
+		const root = parse_selector_list(':hover')
 		const sel = root.first_child // Selector
 		const pseudo = sel.first_child // PseudoClassSelector
 		if (is_pseudo_class_selector(pseudo)) {
@@ -369,7 +370,7 @@ describe('selector subtypes', () => {
 	})
 
 	test('is_pseudo_element_selector narrows name to string', () => {
-		const root = parse_selector('::before')
+		const root = parse_selector_list('::before')
 		const sel = root.first_child!
 		const pseudo = sel.first_child!
 		if (is_pseudo_element_selector(pseudo)) {
@@ -380,7 +381,7 @@ describe('selector subtypes', () => {
 	})
 
 	test('is_nth_selector preserves nth_a and nth_b types', () => {
-		const root = parse_selector(':nth-child(2n+1)')
+		const root = parse_selector_list(':nth-child(2n+1)')
 		const pseudo = root.first_child!.first_child! // PseudoClassSelector
 		const nth = pseudo.first_child! // NthSelector inside
 		if (is_nth_selector(nth)) {

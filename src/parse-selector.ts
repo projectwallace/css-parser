@@ -63,7 +63,7 @@ import {
 } from './string-utils'
 import { ANplusBParser } from './parse-anplusb'
 import { CSSNode } from './css-node'
-import type { SelectorList } from './node-types'
+import type { Selector, SelectorList } from './node-types'
 
 /** @internal */
 export class SelectorParser {
@@ -1055,27 +1055,19 @@ export class SelectorParser {
 	}
 }
 
-/**
- * Parse a CSS selector string and return an AST
- * @param source - The CSS selector to parse (e.g., "div.class > p#id")
- * @returns The root CSSNode of the selector AST
- */
-export function parse_selector(source: string): SelectorList {
-	// Create an arena for the selector nodes
+export function parse_selector_list(source: string): SelectorList {
 	const arena = new CSSDataArena(CSSDataArena.capacity_for_source(source.length))
-
-	// Create selector parser
 	const selector_parser = new SelectorParser(arena, source)
-
-	// Parse the entire source as a selector
 	const selector_index = selector_parser.parse_selector(0, source.length)
 
 	if (selector_index === null) {
-		// Return empty selector list node if parsing failed
 		const empty = arena.create_node(SELECTOR_LIST, 0, 0, 1, 1)
 		return new CSSNode(arena, source, empty) as SelectorList
 	}
 
-	// Wrap in CSSNode
 	return new CSSNode(arena, source, selector_index) as SelectorList
+}
+
+export function parse_selector(source: string): Selector {
+	return parse_selector_list(source).first_child as Selector
 }

@@ -2,7 +2,7 @@
 
 // Function-based API (recommended)
 export { parse } from './parse'
-export { parse_selector } from './parse-selector'
+export { parse_selector, parse_selector_list } from './parse-selector'
 export { parse_atrule_prelude } from './parse-atrule-prelude'
 export { parse_declaration } from './parse-declaration'
 export { parse_value } from './parse-value'

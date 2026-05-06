@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { parse } from './parse'
-import { parse_selector } from './parse-selector'
+import { parse_selector_list } from './parse-selector'
 import {
 	DECLARATION,
 	STYLE_RULE,
@@ -648,7 +648,7 @@ describe('CSSNode', () => {
 	describe('Pseudo-class convenience properties', () => {
 		describe('nth_of helpers (NODE_SELECTOR_NTH_OF)', () => {
 			test('nth property returns An+B formula node', () => {
-				const result = parse_selector(':nth-child(2n+1 of .foo)')
+				const result = parse_selector_list(':nth-child(2n+1 of .foo)')
 				const selector = result.first_child as Selector | null
 				const pseudo = selector?.first_child as PseudoClassSelector | null // Get pseudo-class
 				const nthOf = pseudo?.first_child as unknown as NthOfSelector | null // NODE_SELECTOR_NTH_OF
@@ -660,7 +660,7 @@ describe('CSSNode', () => {
 			})
 
 			test('selector property returns selector list', () => {
-				const result = parse_selector(':nth-child(2n of .foo, #bar)')
+				const result = parse_selector_list(':nth-child(2n of .foo, #bar)')
 				const selector = result.first_child as Selector | null
 				const pseudo = selector?.first_child as PseudoClassSelector | null
 				const nthOf = pseudo?.first_child as unknown as NthOfSelector | null
@@ -671,7 +671,7 @@ describe('CSSNode', () => {
 			})
 
 			test('returns null for wrong node types', () => {
-				const result = parse_selector('.foo')
+				const result = parse_selector_list('.foo')
 				const selector = result.first_child as Selector | null
 				const classNode = selector?.first_child as NthOfSelector | null
 
@@ -680,7 +680,7 @@ describe('CSSNode', () => {
 			})
 
 			test('works with :nth-last-child', () => {
-				const result = parse_selector(':nth-last-child(odd of .item)')
+				const result = parse_selector_list(':nth-last-child(odd of .item)')
 				const selector = result.first_child as Selector | null
 				const pseudo = selector?.first_child as PseudoClassSelector | null
 				const nthOf = pseudo?.first_child as unknown as NthOfSelector | null
@@ -692,7 +692,7 @@ describe('CSSNode', () => {
 			})
 
 			test('works with :nth-of-type', () => {
-				const result = parse_selector(':nth-of-type(3n of .special)')
+				const result = parse_selector_list(':nth-of-type(3n of .special)')
 				const selector = result.first_child as Selector | null
 				const pseudo = selector?.first_child as PseudoClassSelector | null
 				const nthOf = pseudo?.first_child as unknown as NthOfSelector | null
@@ -703,7 +703,7 @@ describe('CSSNode', () => {
 			})
 
 			test('works with :nth-last-of-type', () => {
-				const result = parse_selector(':nth-last-of-type(even of div)')
+				const result = parse_selector_list(':nth-last-of-type(even of div)')
 				const selector = result.first_child as Selector | null
 				const pseudo = selector?.first_child as PseudoClassSelector | null
 				const nthOf = pseudo?.first_child as unknown as NthOfSelector | null
@@ -715,7 +715,7 @@ describe('CSSNode', () => {
 
 		describe('functional pseudo-class children', () => {
 			test('first_child is selector list for :is()', () => {
-				const result = parse_selector(':is(.foo, #bar)')
+				const result = parse_selector_list(':is(.foo, #bar)')
 				const selector = result.first_child as Selector | null
 				const pseudo = selector?.first_child as PseudoClassSelector | null
 
@@ -726,7 +726,7 @@ describe('CSSNode', () => {
 			})
 
 			test('first_child is NthOfSelector for :nth-child(of)', () => {
-				const result = parse_selector(':nth-child(2n of .foo)')
+				const result = parse_selector_list(':nth-child(2n of .foo)')
 				const selector = result.first_child as Selector | null
 				const pseudo = selector?.first_child as PseudoClassSelector | null
 				const nthOf = pseudo?.first_child as unknown as NthOfSelector | null
@@ -736,7 +736,7 @@ describe('CSSNode', () => {
 			})
 
 			test('first_child is null for pseudo-classes without selectors', () => {
-				const result = parse_selector(':hover')
+				const result = parse_selector_list(':hover')
 				const selector = result.first_child as Selector | null
 				const pseudo = selector?.first_child as PseudoClassSelector | null
 
@@ -744,7 +744,7 @@ describe('CSSNode', () => {
 			})
 
 			test('first_child is NthSelector (no NthOfSelector) for :nth-child without "of"', () => {
-				const result = parse_selector(':nth-child(2n)')
+				const result = parse_selector_list(':nth-child(2n)')
 				const selector = result.first_child as Selector | null
 				const pseudo = selector?.first_child as PseudoClassSelector | null
 
@@ -752,7 +752,7 @@ describe('CSSNode', () => {
 			})
 
 			test('works with :not()', () => {
-				const result = parse_selector(':not(.excluded)')
+				const result = parse_selector_list(':not(.excluded)')
 				const selector = result.first_child as Selector | null
 				const pseudo = selector?.first_child as PseudoClassSelector | null
 
@@ -761,7 +761,7 @@ describe('CSSNode', () => {
 			})
 
 			test('works with :has()', () => {
-				const result = parse_selector(':has(> .child)')
+				const result = parse_selector_list(':has(> .child)')
 				const selector = result.first_child as Selector | null
 				const pseudo = selector?.first_child as PseudoClassSelector | null
 
@@ -770,7 +770,7 @@ describe('CSSNode', () => {
 			})
 
 			test('works with :where()', () => {
-				const result = parse_selector(':where(article, section)')
+				const result = parse_selector_list(':where(article, section)')
 				const selector = result.first_child as Selector | null
 				const pseudo = selector?.first_child as PseudoClassSelector | null
 
@@ -779,7 +779,7 @@ describe('CSSNode', () => {
 			})
 
 			test('complex :nth-child with multiple selectors', () => {
-				const result = parse_selector(':nth-child(3n+2 of .item, .element, #special)')
+				const result = parse_selector_list(':nth-child(3n+2 of .item, .element, #special)')
 				const selector = result.first_child as Selector
 				const pseudo = selector?.first_child as PseudoClassSelector
 				const nthOf = pseudo?.first_child as unknown as NthOfSelector
@@ -918,7 +918,7 @@ describe('CSSNode', () => {
 			})
 
 			test('extracts selector attribute properties', () => {
-				const ast = parse_selector('[data-foo="bar"]')
+				const ast = parse_selector_list('[data-foo="bar"]')
 				const selector = ast.first_child!
 				const attribute = selector.first_child!
 
@@ -942,7 +942,7 @@ describe('CSSNode', () => {
 				]
 
 				for (const { selector, expected } of operators) {
-					const ast = parse_selector(selector)
+					const ast = parse_selector_list(selector)
 					const attribute = ast.first_child!.first_child!
 					const clone = attribute.clone({ deep: false })
 
@@ -958,7 +958,7 @@ describe('CSSNode', () => {
 				]
 
 				for (const { selector, expected } of flags) {
-					const ast = parse_selector(selector)
+					const ast = parse_selector_list(selector)
 					const attribute = ast.first_child!.first_child!
 					const clone = attribute.clone({ deep: false })
 
@@ -967,7 +967,7 @@ describe('CSSNode', () => {
 			})
 
 			test('extracts nth selector properties', () => {
-				const ast = parse_selector(':nth-child(2n+1)')
+				const ast = parse_selector_list(':nth-child(2n+1)')
 				const selector = ast.first_child!
 				const pseudo = selector.first_child!
 				const nth = pseudo.first_child!
