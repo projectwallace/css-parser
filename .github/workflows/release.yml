@@ -5,29 +5,37 @@ on:
     types: [created]
 
 permissions:
-  id-token: write # Required for OIDC
+  id-token: write # Required for OIDC provenance attestations
   contents: write # Required to push version bump commit
 
 jobs:
   publish-npm:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: 24
-      - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: npm test
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm test
       - name: Bump version in package.json
+        env:
+          TAG_NAME: ${{ github.event.release.tag_name }}
         run: |
-          VERSION="${{ github.event.release.tag_name }}"
-          npm version "${VERSION#v}" --no-git-tag-version
+          VERSION="${TAG_NAME#v}"
+          pnpm version "$VERSION" --no-git-tag-version
       - name: Commit and push version bump
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          TAG_NAME: ${{ github.event.release.tag_name }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json
-          git commit -m "chore: bump version to ${{ github.event.release.tag_name }}"
-          git push origin HEAD:main
-      - run: npm run build
-      - run: npm publish --access public
+          git add package.json pnpm-lock.yaml
+          git commit -m "chore: bump version to $TAG_NAME"
+          git push origin HEAD:$DEFAULT_BRANCH
+      - run: pnpm run build
+      - run: pnpm publish --no-git-checks
