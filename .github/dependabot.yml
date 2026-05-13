@@ -3,10 +3,10 @@
 
 version: 2
 updates:
-  - package-ecosystem: 'npm'
+  - package-ecosystem: 'npm' # pnpm is detected automatically via pnpm-lock.yaml
     directory: '/'
     schedule:
-      interval: 'weekly'
+      interval: 'monthly'
     ignore:
       - dependency-name: 'bootstrap'
       - dependency-name: 'tailwindcss'
@@ -22,4 +22,4 @@ updates:
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
-      interval: 'weekly'
+      interval: 'monthly'
