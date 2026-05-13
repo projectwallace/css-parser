@@ -11,14 +11,14 @@ updates:
       - dependency-name: 'bootstrap'
       - dependency-name: 'tailwindcss'
     groups:
-      vite:
+      projectwallace:
         patterns:
-          - '@vitest/coverage-v8'
-          - 'vitest'
-      oxc:
+          - '@projectwallace/*'
+      npm-all:
         patterns:
-          - 'oxlint'
-          - 'oxfmt'
+          - '*'
+        exclude-patterns:
+          - '@projectwallace/*'
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
