@@ -32,9 +32,13 @@ import {
 	TOKEN_RIGHT_BRACKET,
 	TOKEN_COMMA,
 	TOKEN_COLON,
-	TOKEN_FUNCTION,
 } from './token-types'
-import { trim_boundaries } from './parse-utils'
+import {
+	trim_boundaries,
+	scan_to_open_brace,
+	scan_to_block_or_semi,
+	skip_whitespace_and_comments_backward,
+} from './parse-utils'
 import {
 	CHAR_PERIOD,
 	CHAR_GREATER_THAN,
@@ -275,12 +279,22 @@ export class Parser {
 		let selector_line = this.lexer.token_line
 		let selector_column = this.lexer.token_column
 
-		// Consume tokens until we hit '{'
-		let last_end = this.lexer.token_end
-		while (!this.is_eof() && this.peek_type() !== TOKEN_LEFT_BRACE) {
-			last_end = this.lexer.token_end
-			this.next_token()
-		}
+		// Raw scan to find '{' without tokenizing the selector range.
+		// SelectorParser will be the sole tokenizer of this range.
+		let [brace_pos, brace_line, brace_line_offset] = scan_to_open_brace(
+			this.source,
+			selector_start,
+			selector_line,
+			selector_start - selector_column + 1,
+		)
+
+		// Trim trailing whitespace/comments before '{' to get the true selector end,
+		// matching what the old token-scan loop produced via next_token_fast(true).
+		let last_end = skip_whitespace_and_comments_backward(this.source, brace_pos, selector_start)
+
+		// Reposition main lexer at '{' and read it as a token
+		this.lexer.seek(brace_pos, brace_line, brace_pos - brace_line_offset + 1)
+		this.lexer.next_token_fast(false)
 
 		// If detailed selector parsing is enabled, use SelectorParser
 		if (this.parse_selectors_enabled && this.selector_parser) {
@@ -297,14 +311,13 @@ export class Parser {
 
 		// Create node: RAW when parsing disabled, SELECTOR_LIST as error fallback
 		let node_type = this.parse_selectors_enabled ? SELECTOR_LIST : RAW
-		let selector_node = this.arena.create_node(
+		return this.arena.create_node(
 			node_type,
 			selector_start,
 			last_end - selector_start,
 			selector_line,
 			selector_column,
 		)
-		return selector_node
 	}
 
 	// Parse a declaration: property: value;
@@ -383,28 +396,28 @@ export class Parser {
 
 		// Track prelude start and end
 		let prelude_start = this.lexer.token_start
-		let prelude_end = prelude_start
-		// Track parenthesis depth to handle semicolons inside functions (e.g., url(data:image/png;base64,...))
-		// NOTE: Same pattern exists in parse-declaration.ts for value parsing - keep in sync
-		let paren_depth = 0
+		let prelude_line = this.lexer.token_line
+		let prelude_column = this.lexer.token_column
 
-		// Parse prelude (everything before '{' or ';')
-		while (!this.is_eof()) {
-			let token_type = this.peek_type()
+		// Raw scan to find '{' or ';' without tokenizing the prelude range.
+		// AtRulePreludeParser will be the sole tokenizer of this range.
+		// Paren depth is tracked to correctly skip semicolons inside url(...).
+		let [boundary_pos, boundary_line, boundary_line_offset] = scan_to_block_or_semi(
+			this.source,
+			prelude_start,
+			prelude_line,
+			prelude_start - prelude_column + 1,
+		)
+		// Trim trailing whitespace/comments before the boundary to match the old loop
+		let prelude_end = skip_whitespace_and_comments_backward(
+			this.source,
+			boundary_pos,
+			prelude_start,
+		)
 
-			// Track parenthesis depth
-			if (token_type === TOKEN_LEFT_PAREN || token_type === TOKEN_FUNCTION) {
-				paren_depth++
-			} else if (token_type === TOKEN_RIGHT_PAREN) {
-				paren_depth--
-			}
-
-			// Only break on '{' or ';' when outside all parentheses
-			if (token_type === TOKEN_LEFT_BRACE && paren_depth === 0) break
-			if (token_type === TOKEN_SEMICOLON && paren_depth === 0) break
-			prelude_end = this.lexer.token_end
-			this.next_token()
-		}
+		// Reposition main lexer at '{' or ';' and read it as a token
+		this.lexer.seek(boundary_pos, boundary_line, boundary_pos - boundary_line_offset + 1)
+		this.lexer.next_token_fast(false)
 
 		// Store prelude position (trimmed)
 		let trimmed = trim_boundaries(this.source, prelude_start, prelude_end)

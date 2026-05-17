@@ -1,4 +1,17 @@
-import { CHAR_ASTERISK, CHAR_FORWARD_SLASH, is_whitespace } from './string-utils'
+import {
+	CHAR_ASTERISK,
+	CHAR_BACKSLASH,
+	CHAR_CARRIAGE_RETURN,
+	CHAR_DOUBLE_QUOTE,
+	CHAR_FORWARD_SLASH,
+	CHAR_LEFT_BRACE,
+	CHAR_LEFT_PAREN,
+	CHAR_NEWLINE,
+	CHAR_RIGHT_PAREN,
+	CHAR_SEMICOLON,
+	CHAR_SINGLE_QUOTE,
+	is_whitespace,
+} from './string-utils'
 
 /**
  * Skip whitespace forward from a position
@@ -133,4 +146,221 @@ export function trim_boundaries(
 
 	if (start >= end) return null
 	return [start, end]
+}
+
+/**
+ * Raw character scan to locate the opening `{` of a CSS block, without full
+ * tokenization. Handles strings and comments to avoid false matches, and
+ * tracks newlines so the caller can reposition a Lexer accurately afterward.
+ *
+ * Returns `[pos, line, line_offset]` where `pos` is the position of `{`
+ * (or `source.length` if not found), and `line`/`line_offset` are the
+ * line-tracking state at that position.
+ * @internal
+ */
+export function scan_to_open_brace(
+	source: string,
+	pos: number,
+	line: number,
+	line_offset: number,
+): [number, number, number] {
+	const len = source.length
+	let i = pos
+
+	while (i < len) {
+		const ch = source.charCodeAt(i)
+
+		if (ch === CHAR_LEFT_BRACE) return [i, line, line_offset]
+
+		// Comments: /* ... */
+		if (ch === CHAR_FORWARD_SLASH && i + 1 < len && source.charCodeAt(i + 1) === CHAR_ASTERISK) {
+			i += 2
+			while (i < len) {
+				const c = source.charCodeAt(i)
+				if (c === CHAR_ASTERISK && i + 1 < len && source.charCodeAt(i + 1) === CHAR_FORWARD_SLASH) {
+					i += 2
+					break
+				}
+				if (c === CHAR_NEWLINE) {
+					line++
+					line_offset = i + 1
+				} else if (c === CHAR_CARRIAGE_RETURN) {
+					line++
+					if (i + 1 < len && source.charCodeAt(i + 1) === CHAR_NEWLINE) i++
+					line_offset = i + 1
+				}
+				i++
+			}
+			continue
+		}
+
+		// Strings: '...' or "..."
+		if (ch === CHAR_SINGLE_QUOTE || ch === CHAR_DOUBLE_QUOTE) {
+			const quote = ch
+			i++
+			while (i < len) {
+				const c = source.charCodeAt(i)
+				if (c === quote) {
+					i++
+					break
+				}
+				if (c === CHAR_BACKSLASH) {
+					i++ // skip escaped char
+				} else if (c === CHAR_NEWLINE) {
+					line++
+					line_offset = i + 1
+				} else if (c === CHAR_CARRIAGE_RETURN) {
+					line++
+					if (i + 1 < len && source.charCodeAt(i + 1) === CHAR_NEWLINE) i++
+					line_offset = i + 1
+				}
+				i++
+			}
+			continue
+		}
+
+		// Backslash escape outside strings (e.g. \{ in a selector)
+		if (ch === CHAR_BACKSLASH && i + 1 < len) {
+			i++
+			const next = source.charCodeAt(i)
+			if (next === CHAR_NEWLINE) {
+				line++
+				line_offset = i + 1
+			} else if (next === CHAR_CARRIAGE_RETURN) {
+				line++
+				if (i + 1 < len && source.charCodeAt(i + 1) === CHAR_NEWLINE) i++
+				line_offset = i + 1
+			}
+			i++
+			continue
+		}
+
+		if (ch === CHAR_NEWLINE) {
+			line++
+			line_offset = i + 1
+		} else if (ch === CHAR_CARRIAGE_RETURN) {
+			line++
+			if (i + 1 < len && source.charCodeAt(i + 1) === CHAR_NEWLINE) i++
+			line_offset = i + 1
+		}
+
+		i++
+	}
+
+	return [i, line, line_offset]
+}
+
+/**
+ * Raw character scan to locate the end of an at-rule prelude: `{` or `;`
+ * (whichever comes first at parenthesis depth 0). Handles strings, comments,
+ * paren depth (so semicolons inside `url(data:...;...)` are skipped), and
+ * tracks newlines so the caller can reposition a Lexer accurately afterward.
+ *
+ * Returns `[pos, line, line_offset]` at the position of the boundary character.
+ * @internal
+ */
+export function scan_to_block_or_semi(
+	source: string,
+	pos: number,
+	line: number,
+	line_offset: number,
+): [number, number, number] {
+	const len = source.length
+	let i = pos
+	let depth = 0
+
+	while (i < len) {
+		const ch = source.charCodeAt(i)
+
+		if (depth === 0 && (ch === CHAR_LEFT_BRACE || ch === CHAR_SEMICOLON)) {
+			return [i, line, line_offset]
+		}
+
+		if (ch === CHAR_LEFT_PAREN) {
+			depth++
+			i++
+			continue
+		}
+		if (ch === CHAR_RIGHT_PAREN) {
+			if (depth > 0) depth--
+			i++
+			continue
+		}
+
+		// Comments
+		if (ch === CHAR_FORWARD_SLASH && i + 1 < len && source.charCodeAt(i + 1) === CHAR_ASTERISK) {
+			i += 2
+			while (i < len) {
+				const c = source.charCodeAt(i)
+				if (c === CHAR_ASTERISK && i + 1 < len && source.charCodeAt(i + 1) === CHAR_FORWARD_SLASH) {
+					i += 2
+					break
+				}
+				if (c === CHAR_NEWLINE) {
+					line++
+					line_offset = i + 1
+				} else if (c === CHAR_CARRIAGE_RETURN) {
+					line++
+					if (i + 1 < len && source.charCodeAt(i + 1) === CHAR_NEWLINE) i++
+					line_offset = i + 1
+				}
+				i++
+			}
+			continue
+		}
+
+		// Strings
+		if (ch === CHAR_SINGLE_QUOTE || ch === CHAR_DOUBLE_QUOTE) {
+			const quote = ch
+			i++
+			while (i < len) {
+				const c = source.charCodeAt(i)
+				if (c === quote) {
+					i++
+					break
+				}
+				if (c === CHAR_BACKSLASH) {
+					i++
+				} else if (c === CHAR_NEWLINE) {
+					line++
+					line_offset = i + 1
+				} else if (c === CHAR_CARRIAGE_RETURN) {
+					line++
+					if (i + 1 < len && source.charCodeAt(i + 1) === CHAR_NEWLINE) i++
+					line_offset = i + 1
+				}
+				i++
+			}
+			continue
+		}
+
+		// Backslash escape
+		if (ch === CHAR_BACKSLASH && i + 1 < len) {
+			i++
+			const next = source.charCodeAt(i)
+			if (next === CHAR_NEWLINE) {
+				line++
+				line_offset = i + 1
+			} else if (next === CHAR_CARRIAGE_RETURN) {
+				line++
+				if (i + 1 < len && source.charCodeAt(i + 1) === CHAR_NEWLINE) i++
+				line_offset = i + 1
+			}
+			i++
+			continue
+		}
+
+		if (ch === CHAR_NEWLINE) {
+			line++
+			line_offset = i + 1
+		} else if (ch === CHAR_CARRIAGE_RETURN) {
+			line++
+			if (i + 1 < len && source.charCodeAt(i + 1) === CHAR_NEWLINE) i++
+			line_offset = i + 1
+		}
+
+		i++
+	}
+
+	return [i, line, line_offset]
 }
