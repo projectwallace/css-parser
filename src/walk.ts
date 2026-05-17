@@ -1,5 +1,7 @@
 // AST walker - depth-first traversal
 import type { AnyNode, CSSNode } from './node-types'
+import { CSSNode as CSSNodeImpl } from './css-node'
+import type { CSSDataArena } from './arena'
 import { STYLE_RULE, AT_RULE } from './constants'
 
 // Control flow symbols for walk callbacks
@@ -18,33 +20,48 @@ type WalkCallback = (node: AnyNode, depth: number) => void | typeof SKIP | typeo
  * @param depth - Starting depth (default: 0)
  */
 export function walk(node: CSSNode, callback: WalkCallback, depth = 0): boolean {
-	// Call callback for current node with current depth
 	const result = callback(node as AnyNode, depth)
 
-	// Check for BREAK - stop immediately
-	if (result === BREAK) {
-		return false
+	if (result === BREAK) return false
+	if (result === SKIP) return true
+
+	const impl = node as unknown as CSSNodeImpl
+	const arena = impl.__get_arena()
+	const source = impl.__get_source()
+	const index = impl.__get_index()
+
+	const type = arena.get_type(index)
+	const child_depth = type === STYLE_RULE || type === AT_RULE ? depth + 1 : depth
+
+	let child = arena.get_first_child(index)
+	while (child !== 0) {
+		if (!_walk(arena, source, child, callback, child_depth)) return false
+		child = arena.get_next_sibling(child)
 	}
 
-	// Check for SKIP - don't traverse children
-	if (result === SKIP) {
-		return true
-	}
+	return true
+}
 
-	// Increment depth for children if this is a rule or at-rule (tracks nesting depth)
-	let child_depth = depth
-	if (node.type === STYLE_RULE || node.type === AT_RULE) {
-		child_depth = depth + 1
-	}
+function _walk(
+	arena: CSSDataArena,
+	source: string,
+	index: number,
+	callback: WalkCallback,
+	depth: number,
+): boolean {
+	const node = new CSSNodeImpl(arena, source, index) as unknown as AnyNode
+	const result = callback(node, depth)
 
-	// Recursively walk children with potentially incremented depth
-	let child: CSSNode | null = node.first_child
-	while (child) {
-		const should_continue = walk(child, callback, child_depth)
-		if (!should_continue) {
-			return false
-		}
-		child = child.next_sibling
+	if (result === BREAK) return false
+	if (result === SKIP) return true
+
+	const type = arena.get_type(index)
+	const child_depth = type === STYLE_RULE || type === AT_RULE ? depth + 1 : depth
+
+	let child = arena.get_first_child(index)
+	while (child !== 0) {
+		if (!_walk(arena, source, child, callback, child_depth)) return false
+		child = arena.get_next_sibling(child)
 	}
 
 	return true
@@ -70,34 +87,51 @@ export function traverse(
 	node: CSSNode,
 	{ enter = NOOP, leave = NOOP }: WalkEnterLeaveOptions = {},
 ): boolean {
-	// Call enter callback before processing children
 	const enter_result = enter(node as AnyNode)
 
-	// Check for BREAK in enter - stop immediately
-	if (enter_result === BREAK) {
-		return false
-	}
+	if (enter_result === BREAK) return false
 
-	// Only traverse children if SKIP was not returned
 	if (enter_result !== SKIP) {
-		let child = node.first_child
-		while (child) {
-			const should_continue = traverse(child, { enter, leave })
-			if (!should_continue) {
-				return false
-			}
-			child = child.next_sibling
+		const impl = node as unknown as CSSNodeImpl
+		const arena = impl.__get_arena()
+		const source = impl.__get_source()
+		const index = impl.__get_index()
+
+		let child = arena.get_first_child(index)
+		while (child !== 0) {
+			if (!_traverse(arena, source, child, enter, leave)) return false
+			child = arena.get_next_sibling(child)
 		}
 	}
 
-	// Call leave callback after processing children
-	// Note: leave() is called even if children were skipped via SKIP
 	const leave_result = leave(node as AnyNode)
+	if (leave_result === BREAK) return false
 
-	// Check for BREAK in leave
-	if (leave_result === BREAK) {
-		return false
+	return true
+}
+
+function _traverse(
+	arena: CSSDataArena,
+	source: string,
+	index: number,
+	enter: WalkEnterLeaveCallback,
+	leave: WalkEnterLeaveCallback,
+): boolean {
+	const node = new CSSNodeImpl(arena, source, index) as unknown as AnyNode
+	const enter_result = enter(node)
+
+	if (enter_result === BREAK) return false
+
+	if (enter_result !== SKIP) {
+		let child = arena.get_first_child(index)
+		while (child !== 0) {
+			if (!_traverse(arena, source, child, enter, leave)) return false
+			child = arena.get_next_sibling(child)
+		}
 	}
+
+	const leave_result = leave(node)
+	if (leave_result === BREAK) return false
 
 	return true
 }
