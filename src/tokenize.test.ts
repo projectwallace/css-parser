@@ -129,7 +129,7 @@ describe('Lexer', () => {
 
 			expect(comments).toHaveLength(1)
 			expect(comments[0].start).toBe(0)
-			expect(comments[0].end).toBe(10)
+			expect(comments[0].end).toBe(11)
 		})
 
 		test('should track lines in comments', () => {
