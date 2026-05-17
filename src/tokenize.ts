@@ -1,6 +1,7 @@
 import {
 	is_hex_digit,
 	is_ident_start,
+	is_whitespace,
 	char_types,
 	CHAR_DIGIT,
 	CHAR_WHITESPACE,
@@ -8,9 +9,7 @@ import {
 	CHAR_IDENT,
 } from './char-types'
 
-// Bit mask for hex digits — mirrors the unexported CHAR_HEX in char-types.ts
-const CHAR_HEX_MASK = 1 << 2 // 4
-
+// Local inline version for hot paths that still need it
 function is_newline(ch: number): boolean {
 	return ch < 128 && (char_types[ch] & CHAR_NEWLINE) !== 0
 }
@@ -43,34 +42,38 @@ import {
 	type TokenType,
 } from './token-types'
 
-const CHAR_LEFT_BRACE = 0x7b
-const CHAR_RIGHT_BRACE = 0x7d
-const CHAR_COLON = 0x3a
-const CHAR_SEMICOLON = 0x3b
-const CHAR_COMMA = 0x2c
-const CHAR_LEFT_BRACKET = 0x5b
-const CHAR_RIGHT_BRACKET = 0x5d
-const CHAR_LEFT_PAREN = 0x28
-const CHAR_RIGHT_PAREN = 0x29
-const CHAR_FORWARD_SLASH = 0x2f
-const CHAR_ASTERISK = 0x2a
-const CHAR_DOUBLE_QUOTE = 0x22
-const CHAR_SINGLE_QUOTE = 0x27
-const CHAR_DOT = 0x2e
-const CHAR_LESS_THAN = 0x3c
-const CHAR_EXCLAMATION = 0x21
-const CHAR_HYPHEN = 0x2d
-const CHAR_GREATER_THAN = 0x3e
-const CHAR_AT_SIGN = 0x40
-const CHAR_HASH = 0x23
-const CHAR_BACKSLASH = 0x5c
-const CHAR_PLUS = 0x2b
-const CHAR_PERCENT = 0x25
-const CHAR_LOWERCASE_E = 0x65
-const CHAR_UPPERCASE_E = 0x45
-const CHAR_LOWERCASE_U = 0x75
-const CHAR_UPPERCASE_U = 0x55
-const CHAR_QUESTION_MARK = 0x3f
+// Character code constants for lexer
+const CHAR_LEFT_BRACE = 0x7b // {
+const CHAR_RIGHT_BRACE = 0x7d // }
+const CHAR_COLON = 0x3a // :
+const CHAR_SEMICOLON = 0x3b // ;
+const CHAR_COMMA = 0x2c // ,
+const CHAR_LEFT_BRACKET = 0x5b // [
+const CHAR_RIGHT_BRACKET = 0x5d // ]
+const CHAR_LEFT_PAREN = 0x28 // (
+const CHAR_RIGHT_PAREN = 0x29 // )
+const CHAR_FORWARD_SLASH = 0x2f // /
+const CHAR_ASTERISK = 0x2a // *
+const CHAR_DOUBLE_QUOTE = 0x22 // "
+const CHAR_SINGLE_QUOTE = 0x27 // '
+const CHAR_DOT = 0x2e // .
+const CHAR_LESS_THAN = 0x3c // <
+const CHAR_EXCLAMATION = 0x21 // !
+const CHAR_HYPHEN = 0x2d // -
+const CHAR_GREATER_THAN = 0x3e // >
+const CHAR_AT_SIGN = 0x40 // @
+const CHAR_HASH = 0x23 // #
+const CHAR_BACKSLASH = 0x5c // \
+const CHAR_PLUS = 0x2b // +
+const CHAR_PERCENT = 0x25 // %
+const CHAR_LOWERCASE_E = 0x65 // e
+const CHAR_UPPERCASE_E = 0x45 // E
+const CHAR_LOWERCASE_U = 0x75 // u
+const CHAR_UPPERCASE_U = 0x55 // U
+const CHAR_QUESTION_MARK = 0x3f // ?
+const CHAR_CARRIAGE_RETURN = 0x0d // \r
+const CHAR_LINE_FEED = 0x0a // \n
+const CHAR_FORM_FEED = 0x0c // \f
 
 export interface LexerPosition {
 	pos: number
@@ -95,24 +98,11 @@ export interface CommentInfo {
 /** @internal */
 export class Lexer {
 	source: string
-	// Uint8Array view of the source: ASCII chars stored as-is (0–127),
-	// non-ASCII stored as sentinel 128. Typed-array indexing is faster than
-	// charCodeAt() in tight loops because it avoids method-call overhead and
-	// allows the JIT to emit direct memory reads.
-	private _src: Uint8Array
-	// Sorted list of source positions that are the first character *after*
-	// each newline (or after a \r\n pair). Built once in the constructor so
-	// hot-path loops never branch on newlines at all; line/column are resolved
-	// by binary search in make_token() instead.
-	private _nl: Int32Array
-	private _nl_count: number
-	// Monotonic hint for the binary search: because tokens are consumed
-	// left-to-right, the next search result is always >= the last one.
-	// The hint lets us skip the already-known prefix, making the amortized
-	// cost nearly O(1) per token during sequential parsing.
-	private _nl_hint: number
 	pos: number
+	private _line: number
+	private _line_offset: number
 	on_comment: ((info: CommentInfo) => void) | undefined
+	// Current token properties (avoiding object allocation)
 	token_type: TokenType
 	token_start: number
 	token_end: number
@@ -122,463 +112,541 @@ export class Lexer {
 	constructor(source: string, on_comment?: (info: CommentInfo) => void) {
 		this.source = source
 		this.pos = 0
+		this._line = 1
+		this._line_offset = 0
 		this.on_comment = on_comment
 		this.token_type = TOKEN_EOF
 		this.token_start = 0
 		this.token_end = 0
 		this.token_line = 1
 		this.token_column = 1
-		this._nl_hint = 0
-
-		const n = source.length
-		const src = new Uint8Array(n)
-		const nl: number[] = []
-
-		// Single pass: fill the byte buffer and collect newline offsets.
-		// Non-ASCII characters are stored as 128 (sentinel). All existing
-		// guards of the form `ch >= 128 || ...` or `ch < 0x80 && ...` remain
-		// correct because 128 >= 128 is true, so those paths treat sentinel
-		// as non-ASCII — exactly the same as the original charCodeAt logic.
-		for (let i = 0; i < n; i++) {
-			const c = source.charCodeAt(i)
-			src[i] = c > 127 ? 128 : c
-			if (c === 0x0a || c === 0x0c) {
-				nl.push(i + 1)
-			} else if (c === 0x0d) {
-				// Treat \r\n as one newline; fill the \n slot manually since
-				// we skip that loop iteration.
-				if (i + 1 < n && source.charCodeAt(i + 1) === 0x0a) {
-					i++
-					src[i] = 0x0a
-					nl.push(i + 1)
-				} else {
-					nl.push(i + 1)
-				}
-			}
-		}
-
-		this._src = src
-		this._nl = new Int32Array(nl)
-		this._nl_count = nl.length
 	}
 
 	get line(): number {
-		return this._line_at(this.pos)
+		return this._line
 	}
 
 	get column(): number {
-		return this._col_at(this.pos)
+		return this.pos - this._line_offset + 1
 	}
 
-	private _bsearch(pos: number): number {
-		const nl = this._nl
-		const nl_count = this._nl_count
-		// Use the monotonic hint to skip the prefix already known to be ≤ pos.
-		// Fall back to 0 on backtracking (hint too large).
-		let lo = this._nl_hint < nl_count && nl[this._nl_hint] <= pos ? this._nl_hint : 0
-		let hi = nl_count
-		while (lo < hi) {
-			const mid = (lo + hi) >>> 1
-			if (nl[mid] <= pos) lo = mid + 1
-			else hi = mid
-		}
-		return lo
-	}
-
-	private _line_at(pos: number): number {
-		const nl = this._nl
-		let lo = 0,
-			hi = this._nl_count
-		while (lo < hi) {
-			const mid = (lo + hi) >>> 1
-			if (nl[mid] <= pos) lo = mid + 1
-			else hi = mid
-		}
-		return lo + 1
-	}
-
-	private _col_at(pos: number): number {
-		const nl = this._nl
-		let lo = 0,
-			hi = this._nl_count
-		while (lo < hi) {
-			const mid = (lo + hi) >>> 1
-			if (nl[mid] <= pos) lo = mid + 1
-			else hi = mid
-		}
-		return pos - (lo > 0 ? nl[lo - 1] : 0) + 1
-	}
-
-	seek(pos: number, _line?: number, _column?: number): void {
-		// line/column args are ignored: they are now derived from pos on demand.
+	seek(pos: number, line: number, column: number = 1): void {
 		this.pos = pos
+		this._line = line
+		this._line_offset = pos - column + 1
 	}
 
+	// Fast token advancing without object allocation (for internal parser use)
 	next_token_fast(skip_whitespace: boolean = false): TokenType {
-		const src = this._src
 		const source = this.source
-		const n = src.length
+		const source_length = source.length
 
+		// Outer loop replaces comment recursion: after consuming a comment, continue
+		// to find the actual next token instead of making a recursive call.
 		while (true) {
-			// Skip whitespace — no newline tracking needed; line/col resolved at
-			// token boundaries via make_token's binary search.
+			// Inline whitespace skip — avoids method call + duplicate charCodeAt per char
 			if (skip_whitespace) {
-				while (this.pos < n) {
-					const ch = src[this.pos]
+				while (this.pos < source_length) {
+					let ch = source.charCodeAt(this.pos)
 					if (ch >= 128 || (char_types[ch] & (CHAR_WHITESPACE | CHAR_NEWLINE)) === 0) break
 					this.pos++
+					if ((char_types[ch] & CHAR_NEWLINE) !== 0) {
+						if (
+							ch === CHAR_CARRIAGE_RETURN &&
+							this.pos < source_length &&
+							source.charCodeAt(this.pos) === CHAR_LINE_FEED
+						) {
+							this.pos++
+						}
+						this._line++
+						this._line_offset = this.pos
+					}
 				}
 			}
 
-			if (this.pos >= n) {
+			if (this.pos >= source_length) {
 				return this.make_token(TOKEN_EOF, this.pos, this.pos)
 			}
 
-			const ch = src[this.pos]
-			const start = this.pos
+			let ch = source.charCodeAt(this.pos)
+			let start = this.pos
+			let start_line = this._line
+			let start_column = this.pos - this._line_offset + 1
 
+			// Fast path for single-character tokens — pos++ safe (none are newlines)
 			switch (ch) {
 				case CHAR_LEFT_BRACE:
 					this.pos++
-					return this.make_token(TOKEN_LEFT_BRACE, start, this.pos)
+					return this.make_token(TOKEN_LEFT_BRACE, start, this.pos, start_line, start_column)
 				case CHAR_RIGHT_BRACE:
 					this.pos++
-					return this.make_token(TOKEN_RIGHT_BRACE, start, this.pos)
+					return this.make_token(TOKEN_RIGHT_BRACE, start, this.pos, start_line, start_column)
 				case CHAR_COLON:
 					this.pos++
-					return this.make_token(TOKEN_COLON, start, this.pos)
+					return this.make_token(TOKEN_COLON, start, this.pos, start_line, start_column)
 				case CHAR_SEMICOLON:
 					this.pos++
-					return this.make_token(TOKEN_SEMICOLON, start, this.pos)
+					return this.make_token(TOKEN_SEMICOLON, start, this.pos, start_line, start_column)
 				case CHAR_COMMA:
 					this.pos++
-					return this.make_token(TOKEN_COMMA, start, this.pos)
+					return this.make_token(TOKEN_COMMA, start, this.pos, start_line, start_column)
 				case CHAR_LEFT_BRACKET:
 					this.pos++
-					return this.make_token(TOKEN_LEFT_BRACKET, start, this.pos)
+					return this.make_token(TOKEN_LEFT_BRACKET, start, this.pos, start_line, start_column)
 				case CHAR_RIGHT_BRACKET:
 					this.pos++
-					return this.make_token(TOKEN_RIGHT_BRACKET, start, this.pos)
+					return this.make_token(TOKEN_RIGHT_BRACKET, start, this.pos, start_line, start_column)
 				case CHAR_LEFT_PAREN:
 					this.pos++
-					return this.make_token(TOKEN_LEFT_PAREN, start, this.pos)
+					return this.make_token(TOKEN_LEFT_PAREN, start, this.pos, start_line, start_column)
 				case CHAR_RIGHT_PAREN:
 					this.pos++
-					return this.make_token(TOKEN_RIGHT_PAREN, start, this.pos)
+					return this.make_token(TOKEN_RIGHT_PAREN, start, this.pos, start_line, start_column)
 			}
 
+			// Whitespace
 			if (ch < 128 && (char_types[ch] & (CHAR_WHITESPACE | CHAR_NEWLINE)) !== 0) {
-				return this.consume_whitespace(start)
+				return this.consume_whitespace(start_line, start_column)
 			}
 
-			// Comments — find */ with native string search (SIMD in V8), then
-			// advance pos directly. No need to count newlines in the body;
-			// make_token's binary search handles line/col for the next token.
+			// Comments: /* */
+			// Inline peek(1) check avoids an extra method call on the hot path
 			if (
 				ch === CHAR_FORWARD_SLASH &&
-				this.pos + 1 < n &&
-				src[this.pos + 1] === CHAR_ASTERISK
+				this.pos + 1 < source_length &&
+				source.charCodeAt(this.pos + 1) === CHAR_ASTERISK
 			) {
-				const comment_start = start
+				let comment_start = start
+				let comment_line = start_line
+				let comment_column = start_column
+
+				// Neither / nor * are newlines — safe to skip without newline tracking
 				this.pos += 2
-				const end_idx = source.indexOf('*/', this.pos)
-				this.pos = end_idx < 0 ? n : end_idx + 2
+
+				// Use native string search to find */ — dramatically faster than a JS loop
+				// for typical comment bodies (SIMD-accelerated in V8).
+				let end_idx = source.indexOf('*/', this.pos)
+				if (end_idx < 0) {
+					// Unterminated comment: scan tail for newlines, advance to EOF
+					this._scan_newlines(this.pos, source_length)
+					this.pos = source_length
+				} else {
+					this._scan_newlines(this.pos, end_idx)
+					this.pos = end_idx + 2
+				}
+
 				if (this.on_comment) {
 					this.on_comment({
 						start: comment_start,
 						end: this.pos,
 						length: this.pos - comment_start,
-						line: this._line_at(comment_start),
-						column: this._col_at(comment_start),
+						line: comment_line,
+						column: comment_column,
 					})
 				}
-				continue // loop instead of recurse
+
+				// Loop instead of recursing — eliminates stack frame overhead
+				continue
 			}
 
+			// Strings: " or '
 			if (ch === CHAR_DOUBLE_QUOTE || ch === CHAR_SINGLE_QUOTE) {
-				return this.consume_string(ch, start)
+				return this.consume_string(ch, start_line, start_column)
 			}
 
+			// Numbers: digit or . followed by digit
 			if (ch < 128 && (char_types[ch] & CHAR_DIGIT) !== 0) {
-				return this.consume_number(start)
+				return this.consume_number(start_line, start_column)
 			}
 
 			if (ch === CHAR_DOT) {
-				const next = this.pos + 1 < n ? src[this.pos + 1] : 0
+				let next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
 				if (next < 128 && (char_types[next] & CHAR_DIGIT) !== 0) {
-					return this.consume_number(start)
+					return this.consume_number(start_line, start_column)
 				}
 			}
 
 			// CDO: <!--
-			if (ch === CHAR_LESS_THAN && this.pos + 3 < n) {
+			if (ch === CHAR_LESS_THAN && this.pos + 3 < source_length) {
 				if (
-					src[this.pos + 1] === CHAR_EXCLAMATION &&
-					src[this.pos + 2] === CHAR_HYPHEN &&
-					src[this.pos + 3] === CHAR_HYPHEN
+					source.charCodeAt(this.pos + 1) === CHAR_EXCLAMATION &&
+					source.charCodeAt(this.pos + 2) === CHAR_HYPHEN &&
+					source.charCodeAt(this.pos + 3) === CHAR_HYPHEN
 				) {
+					// <!-- contains no newlines
 					this.pos += 4
-					return this.make_token(TOKEN_CDO, start, this.pos)
+					return this.make_token(TOKEN_CDO, start, this.pos, start_line, start_column)
 				}
 			}
 
 			// CDC: -->
-			if (ch === CHAR_HYPHEN && this.pos + 2 < n) {
-				if (src[this.pos + 1] === CHAR_HYPHEN && src[this.pos + 2] === CHAR_GREATER_THAN) {
+			if (ch === CHAR_HYPHEN && this.pos + 2 < source_length) {
+				if (
+					source.charCodeAt(this.pos + 1) === CHAR_HYPHEN &&
+					source.charCodeAt(this.pos + 2) === CHAR_GREATER_THAN
+				) {
+					// --> contains no newlines
 					this.pos += 3
-					return this.make_token(TOKEN_CDC, start, this.pos)
+					return this.make_token(TOKEN_CDC, start, this.pos, start_line, start_column)
 				}
 			}
 
+			// At-keyword: @media, @keyframes, etc
 			if (ch === CHAR_AT_SIGN) {
-				return this.consume_at_keyword(start)
+				return this.consume_at_keyword(start_line, start_column)
 			}
 
+			// Hash: #id or #fff
 			if (ch === CHAR_HASH) {
-				return this.consume_hash(start)
+				return this.consume_hash(start_line, start_column)
 			}
 
+			// Identifier or function
 			if (is_ident_start(ch)) {
-				return this.consume_ident_or_function(start)
+				return this.consume_ident_or_function(start_line, start_column)
 			}
 			if (ch === CHAR_HYPHEN) {
-				const next = this.pos + 1 < n ? src[this.pos + 1] : 0
+				let next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
 				if (is_ident_start(next) || next === CHAR_HYPHEN) {
-					return this.consume_ident_or_function(start)
+					return this.consume_ident_or_function(start_line, start_column)
 				}
 			}
 
+			// Backslash: escape sequence starting an identifier
 			if (ch === CHAR_BACKSLASH) {
-				const next = this.pos + 1 < n ? src[this.pos + 1] : 0
+				let next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
 				if (next !== 0 && !is_newline(next)) {
-					return this.consume_ident_or_function(start)
+					return this.consume_ident_or_function(start_line, start_column)
 				}
 			}
 
+			// Hyphen/Plus: could be signed number like -5 or +5
 			if (ch === CHAR_HYPHEN || ch === CHAR_PLUS) {
-				const next = this.pos + 1 < n ? src[this.pos + 1] : 0
-				if (next < 128 && (char_types[next] & CHAR_DIGIT) !== 0) {
-					return this.consume_number(start)
+				let next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
+				let is_next_digit = next < 128 && (char_types[next] & CHAR_DIGIT) !== 0
+				if (is_next_digit) {
+					return this.consume_number(start_line, start_column)
 				}
 				if (next === CHAR_DOT) {
-					const next2 = this.pos + 2 < n ? src[this.pos + 2] : 0
+					let next2 = this.pos + 2 < source_length ? source.charCodeAt(this.pos + 2) : 0
 					if (next2 < 128 && (char_types[next2] & CHAR_DIGIT) !== 0) {
-						return this.consume_number(start)
+						return this.consume_number(start_line, start_column)
 					}
 				}
 			}
 
+			// Default: delimiter
 			this.pos++
-			return this.make_token(TOKEN_DELIM, start, this.pos)
+			return this.make_token(TOKEN_DELIM, start, this.pos, start_line, start_column)
 		}
 	}
 
-	consume_whitespace(start: number): TokenType {
-		const src = this._src
-		const n = src.length
-		while (this.pos < n) {
-			const ch = src[this.pos]
+	// Count newlines in source[from..to) and update _line/_line_offset.
+	// Used only for comment body scanning; kept private.
+	private _scan_newlines(from: number, to: number): void {
+		const source = this.source
+		for (let i = from; i < to; i++) {
+			let c = source.charCodeAt(i)
+			if (c === CHAR_LINE_FEED) {
+				this._line++
+				this._line_offset = i + 1
+			} else if (c === CHAR_CARRIAGE_RETURN) {
+				this._line++
+				if (i + 1 < to && source.charCodeAt(i + 1) === CHAR_LINE_FEED) {
+					i++ // treat \r\n as one newline
+				}
+				this._line_offset = i + 1
+			} else if (c === CHAR_FORM_FEED) {
+				this._line++
+				this._line_offset = i + 1
+			}
+		}
+	}
+
+	consume_whitespace(start_line: number, start_column: number): TokenType {
+		const source = this.source
+		const source_length = source.length
+		let start = this.pos
+		// Inline advance: read ch once, pos++, then track newlines with already-read value
+		while (this.pos < source_length) {
+			let ch = source.charCodeAt(this.pos)
 			if (ch >= 128 || (char_types[ch] & (CHAR_WHITESPACE | CHAR_NEWLINE)) === 0) break
 			this.pos++
+			if ((char_types[ch] & CHAR_NEWLINE) !== 0) {
+				if (
+					ch === CHAR_CARRIAGE_RETURN &&
+					this.pos < source_length &&
+					source.charCodeAt(this.pos) === CHAR_LINE_FEED
+				) {
+					this.pos++
+				}
+				this._line++
+				this._line_offset = this.pos
+			}
 		}
-		return this.make_token(TOKEN_WHITESPACE, start, this.pos)
+		return this.make_token(TOKEN_WHITESPACE, start, this.pos, start_line, start_column)
 	}
 
-	consume_string(quote: number, start: number): TokenType {
-		const src = this._src
-		const n = src.length
-		this.pos++ // skip opening quote
+	consume_string(quote: number, start_line: number, start_column: number): TokenType {
+		const source = this.source
+		const source_length = source.length
+		let start = this.pos
+		this.pos++ // Skip opening quote — quote chars are never newlines
 
-		while (this.pos < n) {
-			const ch = src[this.pos]
+		while (this.pos < source_length) {
+			let ch = source.charCodeAt(this.pos)
 
+			// Closing quote
 			if (ch === quote) {
 				this.pos++
-				return this.make_token(TOKEN_STRING, start, this.pos)
+				return this.make_token(TOKEN_STRING, start, this.pos, start_line, start_column)
 			}
 
+			// Newline: unclosed string
 			if (ch < 128 && (char_types[ch] & CHAR_NEWLINE) !== 0) {
-				return this.make_token(TOKEN_BAD_STRING, start, this.pos)
+				return this.make_token(TOKEN_BAD_STRING, start, this.pos, start_line, start_column)
 			}
 
+			// Escape sequence
 			if (ch === CHAR_BACKSLASH) {
-				this.pos++
-				if (this.pos < n) {
-					const next = src[this.pos]
-					if (next < 128 && (char_types[next] & CHAR_HEX_MASK) !== 0) {
+				this.pos++ // \ is never a newline
+				if (this.pos < source_length) {
+					let next = source.charCodeAt(this.pos)
+					if (is_hex_digit(next)) {
 						this.consume_hex_escape()
+					} else if (next < 128 && (char_types[next] & CHAR_NEWLINE) !== 0) {
+						// Escaped newline: track line but continue string
+						this.pos++
+						if (
+							next === CHAR_CARRIAGE_RETURN &&
+							this.pos < source_length &&
+							source.charCodeAt(this.pos) === CHAR_LINE_FEED
+						) {
+							this.pos++
+						}
+						this._line++
+						this._line_offset = this.pos
 					} else {
-						// Escaped newline or any other char — just skip.
-						// Newline tracking is not needed: make_token resolves
-						// line/col from position via binary search.
+						// Any other char (including non-ASCII) — not a newline
 						this.pos++
 					}
 				}
 				continue
 			}
 
+			// Regular string character — not a newline (handled above), safe to pos++
 			this.pos++
 		}
 
-		return this.make_token(TOKEN_BAD_STRING, start, this.pos)
+		// EOF: unclosed string
+		return this.make_token(TOKEN_BAD_STRING, start, this.pos, start_line, start_column)
 	}
 
 	consume_hex_escape(): void {
-		const src = this._src
-		const n = src.length
+		const source = this.source
+		const source_length = source.length
+		// Consume up to 6 hex digits — hex digits are never newlines, use pos++
 		let count = 0
-		while (count < 6 && this.pos < n) {
-			const ch = src[this.pos]
-			if (ch >= 128 || (char_types[ch] & CHAR_HEX_MASK) === 0) break
-			this.pos++
+		while (count < 6 && this.pos < source_length) {
+			let ch = source.charCodeAt(this.pos)
+			if (!is_hex_digit(ch)) break
+			this.pos++ // hex digits: 0-9, a-f, A-F — never newlines
 			count++
 		}
-		// Optional trailing whitespace (including newlines — no tracking needed)
-		if (this.pos < n) {
-			const ch = src[this.pos]
+		// Optional whitespace after hex escape (may be a newline — inline advance)
+		if (this.pos < source_length) {
+			let ch = source.charCodeAt(this.pos)
 			if (ch < 128 && (char_types[ch] & (CHAR_WHITESPACE | CHAR_NEWLINE)) !== 0) {
 				this.pos++
+				if ((char_types[ch] & CHAR_NEWLINE) !== 0) {
+					if (
+						ch === CHAR_CARRIAGE_RETURN &&
+						this.pos < source_length &&
+						source.charCodeAt(this.pos) === CHAR_LINE_FEED
+					) {
+						this.pos++
+					}
+					this._line++
+					this._line_offset = this.pos
+				}
 			}
 		}
 	}
 
-	consume_number(start: number): TokenType {
-		const src = this._src
-		const n = src.length
+	consume_number(start_line: number, start_column: number): TokenType {
+		const source = this.source
+		const source_length = source.length
+		let start = this.pos
 
-		// Optional sign
-		const first = src[this.pos]
-		if (first === CHAR_PLUS || first === CHAR_HYPHEN) this.pos++
+		// Optional sign — + and - are never newlines
+		let ch = source.charCodeAt(this.pos)
+		if (ch === CHAR_PLUS || ch === CHAR_HYPHEN) {
+			this.pos++
+		}
 
-		// Integer digits
-		while (this.pos < n) {
-			const ch = src[this.pos]
+		// Integer part — digits are never newlines, use pos++
+		while (this.pos < source_length) {
+			let ch = source.charCodeAt(this.pos)
 			if (ch >= 128 || (char_types[ch] & CHAR_DIGIT) === 0) break
 			this.pos++
 		}
 
 		// Decimal part
-		if (this.pos < n && src[this.pos] === CHAR_DOT && this.pos + 1 < n) {
-			const next = src[this.pos + 1]
+		if (
+			this.pos < source_length &&
+			source.charCodeAt(this.pos) === CHAR_DOT &&
+			this.pos + 1 < source_length
+		) {
+			let next = source.charCodeAt(this.pos + 1)
 			if (next < 128 && (char_types[next] & CHAR_DIGIT) !== 0) {
-				this.pos++ // consume .
-				while (this.pos < n) {
-					const ch = src[this.pos]
+				this.pos++ // . is never a newline
+				while (this.pos < source_length) {
+					let ch = source.charCodeAt(this.pos)
 					if (ch >= 128 || (char_types[ch] & CHAR_DIGIT) === 0) break
-					this.pos++
+					this.pos++ // digits: never newlines
 				}
 			}
 		}
 
-		// Exponent
-		if (this.pos < n) {
-			const ch = src[this.pos]
+		// Exponent: e or E
+		if (this.pos < source_length) {
+			let ch = source.charCodeAt(this.pos)
 			if (ch === CHAR_LOWERCASE_E || ch === CHAR_UPPERCASE_E) {
-				const next = this.pos + 1 < n ? src[this.pos + 1] : 0
-				const next2 = this.pos + 2 < n ? src[this.pos + 2] : 0
-				const next_digit = next < 128 && (char_types[next] & CHAR_DIGIT) !== 0
-				const next2_digit = next2 < 128 && (char_types[next2] & CHAR_DIGIT) !== 0
-				if (next_digit || ((next === CHAR_PLUS || next === CHAR_HYPHEN) && next2_digit)) {
-					this.pos++ // e/E
-					const sign = src[this.pos]
-					if (sign === CHAR_PLUS || sign === CHAR_HYPHEN) this.pos++
-					while (this.pos < n) {
-						const ch = src[this.pos]
+				let next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
+				let is_next_digit = next < 128 && (char_types[next] & CHAR_DIGIT) !== 0
+				let next2 = this.pos + 2 < source_length ? source.charCodeAt(this.pos + 2) : 0
+				let is_next2_digit = next2 < 128 && (char_types[next2] & CHAR_DIGIT) !== 0
+				if (is_next_digit || ((next === CHAR_PLUS || next === CHAR_HYPHEN) && is_next2_digit)) {
+					this.pos++ // e/E — never a newline
+					if (this.pos < source_length) {
+						let sign = source.charCodeAt(this.pos)
+						if (sign === CHAR_PLUS || sign === CHAR_HYPHEN) {
+							this.pos++ // +/- — never a newline
+						}
+					}
+					while (this.pos < source_length) {
+						let ch = source.charCodeAt(this.pos)
 						if (ch >= 128 || (char_types[ch] & CHAR_DIGIT) === 0) break
-						this.pos++
+						this.pos++ // digits: never newlines
 					}
 				}
 			}
 		}
 
-		// Percentage or dimension unit
-		if (this.pos < n) {
-			const ch = src[this.pos]
+		// Check for unit (dimension) or percentage
+		if (this.pos < source_length) {
+			let ch = source.charCodeAt(this.pos)
 			if (ch === CHAR_PERCENT) {
-				this.pos++
-				return this.make_token(TOKEN_PERCENTAGE, start, this.pos)
+				this.pos++ // % is never a newline
+				return this.make_token(TOKEN_PERCENTAGE, start, this.pos, start_line, start_column)
 			}
-			const next = this.pos + 1 < n ? src[this.pos + 1] : 0
-			if (is_ident_start(ch) || (ch === CHAR_HYPHEN && is_ident_start(next))) {
-				while (this.pos < n) {
-					const c = src[this.pos]
-					if (c < 0x80 && (char_types[c] & CHAR_IDENT) === 0) break
+			if (is_ident_start(ch) || (ch === CHAR_HYPHEN && is_ident_start(this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0))) {
+				// Unit: px, em, rem, etc — ident chars and non-ASCII are never newlines
+				while (this.pos < source_length) {
+					let ch = source.charCodeAt(this.pos)
+					if (ch < 0x80 && (char_types[ch] & CHAR_IDENT) === 0) break
 					this.pos++
 				}
-				return this.make_token(TOKEN_DIMENSION, start, this.pos)
+				return this.make_token(TOKEN_DIMENSION, start, this.pos, start_line, start_column)
 			}
 		}
 
-		return this.make_token(TOKEN_NUMBER, start, this.pos)
+		return this.make_token(TOKEN_NUMBER, start, this.pos, start_line, start_column)
 	}
 
-	consume_ident_or_function(start: number): TokenType {
-		const src = this._src
-		const n = src.length
+	consume_ident_or_function(start_line: number, start_column: number): TokenType {
+		const source = this.source
+		const source_length = source.length
+		let start = this.pos
 
-		while (this.pos < n) {
-			const ch = src[this.pos]
+		// Consume identifier (with escape sequence support)
+		while (this.pos < source_length) {
+			let ch = source.charCodeAt(this.pos)
 
+			// Handle escape sequences: \ followed by hex digits or any character
 			if (ch === CHAR_BACKSLASH) {
-				if (this.pos + 1 >= n) break
-				const next = src[this.pos + 1]
+				if (this.pos + 1 >= source_length) break
+
+				let next = source.charCodeAt(this.pos + 1)
+
 				if (is_newline(next)) break
-				this.pos++ // consume \
-				if (next < 128 && (char_types[next] & CHAR_HEX_MASK) !== 0) {
-					this.pos++ // first hex digit
-					for (let i = 0; i < 5 && this.pos < n; i++) {
-						if ((src[this.pos] & 0x80) !== 0 || (char_types[src[this.pos]] & CHAR_HEX_MASK) === 0)
-							break
-						this.pos++
+
+				this.pos++ // consume \ — backslash is never a newline
+
+				if (is_hex_digit(next)) {
+					this.pos++ // consume first hex digit — hex digits: never newlines
+					// Consume up to 5 more hex digits (total 6)
+					for (let i = 0; i < 5 && this.pos < source_length; i++) {
+						if (!is_hex_digit(source.charCodeAt(this.pos))) break
+						this.pos++ // hex digits: never newlines
 					}
-					// Optional trailing whitespace
-					if (this.pos < n) {
-						const ws = src[this.pos]
+					// Consume optional whitespace after hex escape (may be newline)
+					if (this.pos < source_length) {
+						let ws = source.charCodeAt(this.pos)
 						if (ws < 128 && (char_types[ws] & (CHAR_WHITESPACE | CHAR_NEWLINE)) !== 0) {
 							this.pos++
+							if ((char_types[ws] & CHAR_NEWLINE) !== 0) {
+								if (
+									ws === CHAR_CARRIAGE_RETURN &&
+									this.pos < source_length &&
+									source.charCodeAt(this.pos) === CHAR_LINE_FEED
+								) {
+									this.pos++
+								}
+								this._line++
+								this._line_offset = this.pos
+							}
 						}
 					}
 				} else {
-					this.pos++ // any non-newline char
+					// Escape any other character (not newline, already checked)
+					// Non-newline chars: safe to pos++
+					this.pos++
 				}
 			} else if (ch >= 0x80 || (char_types[ch] & CHAR_IDENT) !== 0) {
+				// Normal identifier character — ident chars (a-z,A-Z,0-9,-,_) and
+				// non-ASCII code units are never newlines (newlines are 0x0A/0x0D/0x0C)
 				this.pos++
 			} else {
 				break
 			}
 		}
 
-		// u+ or U+ → unicode-range
+		// Check for unicode-range: u+ or U+
 		if (this.pos - start === 1) {
-			const first_ch = src[start]
+			let first_ch = source.charCodeAt(start)
 			if (
 				(first_ch === CHAR_LOWERCASE_U || first_ch === CHAR_UPPERCASE_U) &&
-				this.pos < n &&
-				src[this.pos] === CHAR_PLUS
+				this.pos < source_length &&
+				source.charCodeAt(this.pos) === CHAR_PLUS
 			) {
-				return this.consume_unicode_range(start)
+				return this.consume_unicode_range(start, start_line, start_column)
 			}
 		}
 
-		if (this.pos < n && src[this.pos] === CHAR_LEFT_PAREN) {
-			this.pos++
-			return this.make_token(TOKEN_FUNCTION, start, this.pos)
+		// Check for function: ident(
+		if (this.pos < source_length && source.charCodeAt(this.pos) === CHAR_LEFT_PAREN) {
+			this.pos++ // ( is never a newline
+			return this.make_token(TOKEN_FUNCTION, start, this.pos, start_line, start_column)
 		}
 
-		return this.make_token(TOKEN_IDENT, start, this.pos)
+		return this.make_token(TOKEN_IDENT, start, this.pos, start_line, start_column)
 	}
 
-	consume_unicode_range(start: number): TokenType {
-		const src = this._src
-		const n = src.length
-		this.pos++ // consume +
+	consume_unicode_range(start: number, start_line: number, start_column: number): TokenType {
+		const source = this.source
+		const source_length = source.length
+		// We're positioned after 'u' or 'U', at the '+'
+		this.pos++ // consume '+' — never a newline
 
 		let hex_digits = 0
 		let has_question = false
 
-		while (this.pos < n && hex_digits < 6) {
-			const ch = src[this.pos]
-			if (ch < 128 && (char_types[ch] & CHAR_HEX_MASK) !== 0) {
+		// Consume hex digits and/or question marks (up to 6 total)
+		// Hex digits and ? are never newlines — use pos++
+		while (this.pos < source_length && hex_digits < 6) {
+			let ch = source.charCodeAt(this.pos)
+			if (is_hex_digit(ch)) {
 				if (has_question) break
 				this.pos++
 				hex_digits++
@@ -592,78 +660,132 @@ export class Lexer {
 		}
 
 		if (has_question) {
-			return this.make_token(TOKEN_UNICODE_RANGE, start, this.pos)
+			return this.make_token(TOKEN_UNICODE_RANGE, start, this.pos, start_line, start_column)
 		}
 
-		if (this.pos < n && src[this.pos] === CHAR_HYPHEN) {
-			if (this.pos + 1 < n && (src[this.pos + 1] & 0x80) === 0 && (char_types[src[this.pos + 1]] & CHAR_HEX_MASK) !== 0) {
-				this.pos++ // consume -
-				let end_hex = 0
-				while (this.pos < n && end_hex < 6) {
-					const ch = src[this.pos]
-					if (ch >= 128 || (char_types[ch] & CHAR_HEX_MASK) === 0) break
-					this.pos++
-					end_hex++
+		// Check for range syntax: -HHHHHH
+		if (this.pos < source_length && source.charCodeAt(this.pos) === CHAR_HYPHEN) {
+			if (this.pos + 1 < source_length && is_hex_digit(source.charCodeAt(this.pos + 1))) {
+				this.pos++ // consume '-' — never a newline
+
+				let end_hex_digits = 0
+				while (this.pos < source_length && end_hex_digits < 6) {
+					let ch = source.charCodeAt(this.pos)
+					if (is_hex_digit(ch)) {
+						this.pos++ // hex digits: never newlines
+						end_hex_digits++
+					} else {
+						break
+					}
 				}
 			}
 		}
 
-		return this.make_token(TOKEN_UNICODE_RANGE, start, this.pos)
+		return this.make_token(TOKEN_UNICODE_RANGE, start, this.pos, start_line, start_column)
 	}
 
-	consume_at_keyword(start: number): TokenType {
-		const src = this._src
-		const n = src.length
-		this.pos++ // skip @
-		while (this.pos < n) {
-			const ch = src[this.pos]
+	consume_at_keyword(start_line: number, start_column: number): TokenType {
+		const source = this.source
+		const source_length = source.length
+		let start = this.pos
+		this.pos++ // Skip @ — never a newline
+
+		// Ident chars (a-z,A-Z,0-9,-,_) and non-ASCII are never newlines — use pos++
+		while (this.pos < source_length) {
+			let ch = source.charCodeAt(this.pos)
 			if (ch < 0x80 && (char_types[ch] & CHAR_IDENT) === 0) break
 			this.pos++
 		}
-		return this.make_token(TOKEN_AT_KEYWORD, start, this.pos)
+
+		return this.make_token(TOKEN_AT_KEYWORD, start, this.pos, start_line, start_column)
 	}
 
-	consume_hash(start: number): TokenType {
-		const src = this._src
-		const n = src.length
-		this.pos++ // skip #
-		while (this.pos < n) {
-			const ch = src[this.pos]
+	consume_hash(start_line: number, start_column: number): TokenType {
+		const source = this.source
+		const source_length = source.length
+		let start = this.pos
+		this.pos++ // Skip # — never a newline
+
+		// Ident chars and non-ASCII are never newlines — use pos++
+		while (this.pos < source_length) {
+			let ch = source.charCodeAt(this.pos)
 			if (ch < 0x80 && (char_types[ch] & CHAR_IDENT) === 0) break
 			this.pos++
 		}
-		return this.make_token(TOKEN_HASH, start, this.pos)
+
+		return this.make_token(TOKEN_HASH, start, this.pos, start_line, start_column)
 	}
 
 	advance(count: number = 1): void {
-		// Line tracking is now handled by the pre-scanned _nl array and
-		// binary search in make_token; advance() is a simple cursor move.
-		this.pos = Math.min(this.pos + count, this._src.length)
+		// Fast path for advance(1) - most common case
+		if (count === 1) {
+			if (this.pos >= this.source.length) return
+
+			let ch = this.source.charCodeAt(this.pos)
+			this.pos++
+
+			// Inline newline check - only update on newline
+			if (ch < 128 && (char_types[ch] & CHAR_NEWLINE) !== 0) {
+				// Handle \r\n as single newline
+				if (
+					ch === CHAR_CARRIAGE_RETURN &&
+					this.pos < this.source.length &&
+					this.source.charCodeAt(this.pos) === CHAR_LINE_FEED
+				) {
+					this.pos++
+				}
+				this._line++
+				this._line_offset = this.pos
+			}
+			return
+		}
+
+		// General case for count > 1
+		for (let i = 0; i < count; i++) {
+			if (this.pos >= this.source.length) break
+
+			let ch = this.source.charCodeAt(this.pos)
+			this.pos++
+
+			// Inline newline check - only update on newline
+			if (ch < 128 && (char_types[ch] & CHAR_NEWLINE) !== 0) {
+				// Handle \r\n as single newline
+				if (
+					ch === CHAR_CARRIAGE_RETURN &&
+					this.pos < this.source.length &&
+					this.source.charCodeAt(this.pos) === CHAR_LINE_FEED
+				) {
+					this.pos++
+					i++ // Count \r\n as 2 characters for advance(count)
+				}
+				this._line++
+				this._line_offset = this.pos
+			}
+		}
 	}
 
 	peek(offset: number = 1): number {
-		const i = this.pos + offset
-		return i < this._src.length ? this._src[i] : 0
+		let index = this.pos + offset
+		if (index >= this.source.length) return 0
+		return this.source.charCodeAt(index)
 	}
 
 	make_token(
 		type: TokenType,
 		start: number,
 		end: number,
-		_line?: number,
-		_column?: number,
+		line: number = this._line,
+		column: number = this.pos - this._line_offset + 1,
 	): TokenType {
 		this.token_type = type
 		this.token_start = start
 		this.token_end = end
-		// Binary search with monotonic hint: amortized O(1) for sequential parsing.
-		const lo = this._bsearch(start)
-		this._nl_hint = lo
-		this.token_line = lo + 1
-		this.token_column = start - (lo > 0 ? this._nl[lo - 1] : 0) + 1
+		this.token_line = line
+		this.token_column = column
 		return type
 	}
 
+	// Public API: returns Token object for backwards compatibility
 	next_token(skip_whitespace: boolean = false): Token | null {
 		this.next_token_fast(skip_whitespace)
 		return {
@@ -675,12 +797,16 @@ export class Lexer {
 		}
 	}
 
+	/**
+	 * Save complete lexer state for backtracking
+	 * @returns Object containing all lexer state
+	 */
 	save_position(): LexerPosition {
 		return {
 			pos: this.pos,
-			line: this._line_at(this.pos),
-			column: this._col_at(this.pos),
-			_line_offset: 0, // no longer maintained; kept for interface compat
+			line: this._line,
+			column: this.pos - this._line_offset + 1,
+			_line_offset: this._line_offset,
 			token_type: this.token_type,
 			token_start: this.token_start,
 			token_end: this.token_end,
@@ -689,57 +815,80 @@ export class Lexer {
 		}
 	}
 
+	/**
+	 * Restore lexer state from saved position
+	 * @param saved The saved position to restore
+	 */
 	restore_position(saved: LexerPosition): void {
 		this.pos = saved.pos
+		this._line = saved.line
+		this._line_offset = saved._line_offset
 		this.token_type = saved.token_type
 		this.token_start = saved.token_start
 		this.token_end = saved.token_end
 		this.token_line = saved.token_line
 		this.token_column = saved.token_column
-		// Reset hint: pos may have moved backwards (backtracking)
-		this._nl_hint = 0
 	}
 
+	/**
+	 * Skip whitespace and comments within a range, maintaining line/column tracking
+	 * @param end The end boundary (exclusive)
+	 */
 	skip_whitespace_in_range(end: number): void {
-		const src = this._src
 		while (this.pos < end) {
-			const ch = src[this.pos]
-			if (ch < 128 && (char_types[ch] & (CHAR_WHITESPACE | CHAR_NEWLINE)) !== 0) {
-				this.pos++
+			let ch = this.source.charCodeAt(this.pos)
+
+			// Skip whitespace
+			if (is_whitespace(ch)) {
+				this.advance()
 				continue
 			}
+
+			// Skip comments /*...*/
 			if (
 				ch === CHAR_FORWARD_SLASH &&
 				this.pos + 1 < end &&
-				src[this.pos + 1] === CHAR_ASTERISK
+				this.source.charCodeAt(this.pos + 1) === CHAR_ASTERISK
 			) {
-				this.pos += 2
+				this.advance() // skip /
+				this.advance() // skip *
 				while (this.pos < end) {
 					if (
-						src[this.pos] === CHAR_ASTERISK &&
+						this.source.charCodeAt(this.pos) === CHAR_ASTERISK &&
 						this.pos + 1 < end &&
-						src[this.pos + 1] === CHAR_FORWARD_SLASH
+						this.source.charCodeAt(this.pos + 1) === CHAR_FORWARD_SLASH
 					) {
-						this.pos += 2
+						this.advance() // skip *
+						this.advance() // skip /
 						break
 					}
-					this.pos++
+					this.advance()
 				}
 				continue
 			}
-			break
+
+			break // Found non-whitespace, non-comment
 		}
 	}
 }
 
+/**
+ * Tokenize CSS source code
+ * @param source - The CSS source code to tokenize
+ * @param on_comment - Optional callback for comment tokens
+ * @yields CSS tokens
+ */
 export function* tokenize(
 	source: string,
 	on_comment?: (info: CommentInfo) => void,
 ): Generator<Token, void, undefined> {
 	const lexer = new Lexer(source, on_comment)
+
 	while (true) {
 		const token = lexer.next_token()
-		if (!token || token.type === TOKEN_EOF) break
+		if (!token || token.type === TOKEN_EOF) {
+			break
+		}
 		yield token
 	}
 }
