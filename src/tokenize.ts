@@ -540,7 +540,11 @@ export class Lexer {
 				this.pos++ // % is never a newline
 				return this.make_token(TOKEN_PERCENTAGE, start, this.pos, start_line, start_column)
 			}
-			if (is_ident_start(ch) || (ch === CHAR_HYPHEN && is_ident_start(this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0))) {
+			if (
+				is_ident_start(ch) ||
+				(ch === CHAR_HYPHEN &&
+					is_ident_start(this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0))
+			) {
 				// Unit: px, em, rem, etc — ident chars and non-ASCII are never newlines
 				while (this.pos < source_length) {
 					let ch = source.charCodeAt(this.pos)
@@ -584,18 +588,7 @@ export class Lexer {
 					if (this.pos < source_length) {
 						let ws = source.charCodeAt(this.pos)
 						if (ws < 128 && (char_types[ws] & (CHAR_WHITESPACE | CHAR_NEWLINE)) !== 0) {
-							this.pos++
-							if ((char_types[ws] & CHAR_NEWLINE) !== 0) {
-								if (
-									ws === CHAR_CARRIAGE_RETURN &&
-									this.pos < source_length &&
-									source.charCodeAt(this.pos) === CHAR_LINE_FEED
-								) {
-									this.pos++
-								}
-								this._line++
-								this._line_offset = this.pos
-							}
+							this.advance()
 						}
 					}
 				} else {

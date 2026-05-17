@@ -11,7 +11,7 @@
 		"vitest/no-conditional-in-test": "off",
 		"jest/no-conditional-expect": "off",
 		"vitest/no-conditional-expect": "off",
-		"max-depth": ["warn", { "max": 6 }]
+		"max-depth": ["warn", { "max": 8 }]
 	},
 	"ignorePatterns": ["node_modules"],
 	"overrides": [
