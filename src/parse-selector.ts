@@ -71,13 +71,14 @@ export class SelectorParser {
 	private arena: CSSDataArena
 	private source: string
 	private selector_end: number
+	private anplusb_parser: ANplusBParser
 
 	constructor(arena: CSSDataArena, source: string) {
 		this.arena = arena
 		this.source = source
-		// Create a lexer instance for selector parsing
 		this.lexer = new Lexer(source)
 		this.selector_end = 0
+		this.anplusb_parser = new ANplusBParser(arena, source)
 	}
 
 	// Parse a selector range into selector nodes (standalone use)
@@ -858,14 +859,10 @@ export class SelectorParser {
 	// Parse :lang() content - comma-separated language identifiers
 	// Accepts both quoted strings: :lang("en", "fr") and unquoted: :lang(en, fr)
 	private parse_lang_identifiers(start: number, end: number, parent_node: number): void {
-		// Use a temporary lexer for this range to avoid corrupting main lexer position state
-		let temp_lexer = new Lexer(this.source)
-		temp_lexer.seek(start, this.lexer.line, this.lexer.column)
+		const saved_position = this.lexer.save_position()
+		this.lexer.seek(start, this.lexer.line, this.lexer.column)
 
-		// Save current parser state
 		let saved_selector_end = this.selector_end
-		let saved_lexer = this.lexer
-		this.lexer = temp_lexer
 		this.selector_end = end
 
 		let first_child: number | null = null
@@ -913,9 +910,8 @@ export class SelectorParser {
 			this.arena.set_first_child(parent_node, first_child)
 		}
 
-		// Restore parser state
 		this.selector_end = saved_selector_end
-		this.lexer = saved_lexer
+		this.lexer.restore_position(saved_position)
 	}
 
 	// Parse An+B expression for nth-* pseudo-classes
@@ -925,7 +921,7 @@ export class SelectorParser {
 		// e.g., "2n+1 of .active, .disabled"
 		let of_index = this.find_of_keyword(start, end)
 
-		let anplusb_parser = new ANplusBParser(this.arena, this.source)
+		let anplusb_parser = this.anplusb_parser
 
 		if (of_index === -1) {
 			// Just An+B, no "of" clause
