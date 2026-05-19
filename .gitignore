@@ -5,3 +5,4 @@ node_modules
 dist
 coverage
 .claude/settings.local.json
+package-lock.json
