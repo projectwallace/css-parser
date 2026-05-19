@@ -1,4 +1,4 @@
 {
 	"ignore": ["/benchmark/**"],
-	"ignoreDependencies": ["@projectwallace/preset-oxlint", "bootstrap", "tailwindcss"]
+	"ignoreDependencies": ["@projectwallace/preset-oxlint", "bootstrap", "css-tree", "postcss", "tailwindcss", "tinybench"]
 }
