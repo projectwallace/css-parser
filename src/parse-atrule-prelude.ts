@@ -877,13 +877,10 @@ export class AtRulePreludeParser {
 
 	// Helper: Parse feature value portion into typed nodes
 	private parse_feature_value(start: number, end: number): number[] {
-		// Use a temporary lexer for this range to avoid corrupting main lexer position state
-		let temp_lexer = new Lexer(this.source)
-		temp_lexer.seek(start, this.lexer.line, this.lexer.column)
+		const saved_position = this.lexer.save_position()
+		this.lexer.seek(start, this.lexer.line, this.lexer.column)
 
 		let nodes: number[] = []
-		let saved_lexer = this.lexer
-		this.lexer = temp_lexer
 
 		while (this.lexer.pos < end) {
 			this.lexer.next_token_fast(false)
@@ -904,7 +901,7 @@ export class AtRulePreludeParser {
 			if (node !== null) nodes.push(node)
 		}
 
-		this.lexer = saved_lexer
+		this.lexer.restore_position(saved_position)
 		return nodes
 	}
 

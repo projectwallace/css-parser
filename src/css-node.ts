@@ -286,6 +286,16 @@ export class CSSNode {
 		return this.arena
 	}
 
+	/** @internal */
+	__get_source(): string {
+		return this.source
+	}
+
+	/** @internal */
+	__get_index(): number {
+		return this.index
+	}
+
 	private get_content(): string {
 		let start = this.arena.get_content_start(this.index)
 		let length = this.arena.get_content_length(this.index)
