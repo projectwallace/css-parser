@@ -24,6 +24,8 @@ import {
 	TOKEN_FUNCTION,
 	TOKEN_DELIM,
 	TOKEN_COMMA,
+	TOKEN_COLON,
+	TOKEN_SEMICOLON,
 	TOKEN_EOF,
 	TOKEN_LEFT_PAREN,
 	TOKEN_RIGHT_PAREN,
@@ -166,6 +168,8 @@ export class ValueParser {
 				return this.parse_operator_node(start, end)
 
 			case TOKEN_COMMA:
+			case TOKEN_COLON:
+			case TOKEN_SEMICOLON:
 				return this.create_node(OPERATOR, start, end)
 
 			case TOKEN_LEFT_PAREN:
