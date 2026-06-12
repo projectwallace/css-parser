@@ -12,6 +12,7 @@ import {
 	PARENTHESIS,
 	URL,
 	UNICODE_RANGE,
+	IF_BRANCH,
 	VALUE,
 } from './arena'
 import {
@@ -221,6 +222,11 @@ export class ValueParser {
 		// Get function name to check for special handling
 		let func_name_substr = this.source.substring(start, name_end)
 
+		// Dispatch to dedicated parser for if()
+		if (str_equals('if', func_name_substr)) {
+			return this.parse_if_function_node(start, end)
+		}
+
 		// Create URL or function node based on function name (length will be set later)
 		let node = this.arena.create_node(
 			str_equals('url', func_name_substr) ? URL : FUNCTION,
@@ -342,6 +348,149 @@ export class ValueParser {
 
 		// Link arguments as children
 		this.arena.append_children(node, args)
+
+		return node
+	}
+
+	/**
+	 * Parse an if() inline conditional function.
+	 *
+	 * Spec grammar (CSS Values Level 5):
+	 *   if( <if-branch>+ )
+	 *   <if-branch>   = <if-condition> : <declaration-value>? ;?
+	 *   <if-condition> = style(…) | media(…) | supports(…) | else
+	 *
+	 * Each branch becomes an IF_BRANCH child of the FUNCTION("if") node.
+	 * The colon and semicolons are structural separators and do not become
+	 * OPERATOR nodes — structure is carried by the IF_BRANCH nodes.
+	 *
+	 * IF_BRANCH arena fields:
+	 *   content (contentStartDelta / contentLength) → condition text
+	 *   value   (valueStartDelta  / valueLength)    → value text
+	 *   children → condition node (Function|Identifier) then value nodes
+	 */
+	private parse_if_function_node(start: number, end: number): number {
+		let name_end = end - 1 // exclude '('
+		let save_line = this.lexer.token_line
+		let save_col = this.lexer.token_column
+
+		let node = this.arena.create_node(FUNCTION, start, 0, save_line, save_col)
+		this.arena.set_content_start_delta(node, 0)
+		this.arena.set_content_length(node, name_end - start) // length of "if"
+
+		let branches: number[] = []
+		let func_end = end
+		let content_start = end // right after 'if('
+		let content_end = end
+		let if_closed = false
+
+		while (this.lexer.pos < this.value_end && !if_closed) {
+			this.lexer.next_token_fast(false)
+			let tt = this.lexer.token_type
+
+			if (tt === TOKEN_EOF) break
+			if (this.lexer.token_start >= this.value_end) break
+
+			if (tt === TOKEN_RIGHT_PAREN) {
+				content_end = this.lexer.token_start
+				func_end = this.lexer.token_end
+				break
+			}
+
+			// Skip whitespace and any stray separators between branches
+			if (this.is_whitespace_inline() || tt === TOKEN_SEMICOLON || tt === TOKEN_COLON) continue
+
+			// ── Condition ──────────────────────────────────────────────────────
+			let branch_start = this.lexer.token_start
+			let branch_line = this.lexer.token_line
+			let branch_col = this.lexer.token_column
+
+			// parse_value_node() handles TOKEN_FUNCTION (recursive) and TOKEN_IDENT
+			let condition_node = this.parse_value_node()
+			if (condition_node === null) continue
+
+			let condition_end_pos =
+				this.arena.get_start_offset(condition_node) + this.arena.get_length(condition_node)
+
+			// ── Find the ':' separator ─────────────────────────────────────────
+			let colon_found = false
+			while (this.lexer.pos < this.value_end) {
+				this.lexer.next_token_fast(false)
+				let t = this.lexer.token_type
+				if (t === TOKEN_EOF) break
+				if (this.lexer.token_start >= this.value_end) break
+				if (this.is_whitespace_inline()) continue
+				if (t === TOKEN_COLON) {
+					colon_found = true
+					break
+				}
+				if (t === TOKEN_RIGHT_PAREN) {
+					// Condition with no colon — malformed; still record branch, close if()
+					content_end = this.lexer.token_start
+					func_end = this.lexer.token_end
+					if_closed = true
+					break
+				}
+				// Skip other unexpected tokens
+			}
+
+			// ── Value tokens until ';' or end of if() ────────────────────────
+			let value_tokens: number[] = []
+			let value_start = -1
+			let value_last_end = condition_end_pos
+
+			if (colon_found && !if_closed) {
+				while (this.lexer.pos < this.value_end) {
+					this.lexer.next_token_fast(false)
+					let t = this.lexer.token_type
+					if (t === TOKEN_EOF) break
+					if (this.lexer.token_start >= this.value_end) break
+					if (this.is_whitespace_inline()) continue
+
+					if (t === TOKEN_SEMICOLON) break // end of this branch
+
+					if (t === TOKEN_RIGHT_PAREN) {
+						content_end = this.lexer.token_start
+						func_end = this.lexer.token_end
+						if_closed = true
+						break
+					}
+
+					let vnode = this.parse_value_node()
+					if (vnode !== null) {
+						let ns = this.arena.get_start_offset(vnode)
+						if (value_start === -1) value_start = ns
+						value_tokens.push(vnode)
+						value_last_end = ns + this.arena.get_length(vnode)
+					}
+				}
+			}
+
+			// ── Create IF_BRANCH node ──────────────────────────────────────────
+			let branch_end = value_last_end
+			let branch_node = this.arena.create_node(
+				IF_BRANCH,
+				branch_start,
+				branch_end - branch_start,
+				branch_line,
+				branch_col,
+			)
+			this.arena.set_content_start_delta(branch_node, 0)
+			this.arena.set_content_length(branch_node, condition_end_pos - branch_start)
+
+			if (value_start !== -1) {
+				this.arena.set_value_start_delta(branch_node, value_start - branch_start)
+				this.arena.set_value_length(branch_node, value_last_end - value_start)
+			}
+
+			this.arena.append_children(branch_node, [condition_node, ...value_tokens])
+			branches.push(branch_node)
+		}
+
+		this.arena.set_length(node, func_end - start)
+		this.arena.set_value_start_delta(node, content_start - start)
+		this.arena.set_value_length(node, content_end - content_start)
+		this.arena.append_children(node, branches)
 
 		return node
 	}

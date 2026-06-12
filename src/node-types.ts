@@ -36,6 +36,7 @@ import {
 	PARENTHESIS,
 	URL,
 	UNICODE_RANGE,
+	IF_BRANCH,
 	VALUE,
 	SELECTOR_LIST,
 	TYPE_SELECTOR,
@@ -265,6 +266,7 @@ export type Raw = CSSNode & {
 
 type ValueLike =
 	| Function
+	| IfBranch
 	| Identifier
 	| Operator
 	| Parenthesis
@@ -355,6 +357,31 @@ export type Value = CSSNode &
 		readonly type: typeof VALUE
 		readonly type_name: 'Value'
 		clone(options?: CloneOptions): ToPlain<Value>
+	}
+
+/**
+ * One branch inside a CSS `if()` inline conditional function.
+ *
+ * Each branch corresponds to a `<condition>: <value>` pair in:
+ *   `if( <condition>: <value>; … else: <fallback> )`
+ *
+ * - `condition` — the condition text, e.g. `"style(--x: 1)"` or `"else"`
+ * - `value`     — the value text, e.g. `"green"`; `null` when omitted
+ * - `is_else`   — `true` for the `else` branch
+ * - `first_child` — the parsed condition node (Function or Identifier)
+ * - `children`    — condition node followed by parsed value nodes
+ */
+export type IfBranch = CSSNode &
+	WithChildren<ValueLike> & {
+		readonly type: typeof IF_BRANCH
+		readonly type_name: 'IfBranch'
+		/** Condition text, e.g. "style(--active: 1)" or "else" */
+		readonly condition: string
+		/** Value text between the colon and the next semicolon/close-paren, or null if empty */
+		readonly value: string | null
+		/** True when this is the else branch */
+		readonly is_else: boolean
+		clone(options?: CloneOptions): ToPlain<IfBranch>
 	}
 
 // ---------------------------------------------------------------------------
@@ -618,6 +645,7 @@ export type AnyNode =
 	| Parenthesis
 	| Url
 	| UnicodeRange
+	| IfBranch
 	| Value
 	| TypeSelector
 	| ClassSelector
@@ -707,6 +735,9 @@ export function is_url(node: CSSNode): node is Url {
 }
 export function is_unicode_range(node: CSSNode): node is UnicodeRange {
 	return node.type === UNICODE_RANGE
+}
+export function is_if_branch(node: CSSNode): node is IfBranch {
+	return node.type === IF_BRANCH
 }
 export function is_value(node: CSSNode): node is Value {
 	return node.type === VALUE
