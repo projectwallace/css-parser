@@ -391,6 +391,11 @@ export class CSSNode {
 			return first_child ?? null
 		}
 
+		if (type === IF_BRANCH) {
+			// First child is the condition node; second child (if any) is the VALUE wrapper
+			return first_child?.next_sibling ?? null
+		}
+
 		if (type === DIMENSION) {
 			return parse_dimension(text).value
 		}

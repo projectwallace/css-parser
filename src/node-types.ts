@@ -372,13 +372,13 @@ export type Value = CSSNode &
  * - `children`    — condition node followed by parsed value nodes
  */
 export type IfBranch = CSSNode &
-	WithChildren<ValueLike> & {
+	WithChildren<Function | Identifier | Value> & {
 		readonly type: typeof IF_BRANCH
 		readonly type_name: 'IfBranch'
 		/** Condition text, e.g. "style(--active: 1)" or "else" */
 		readonly condition: string
-		/** Value text between the colon and the next semicolon/close-paren, or null if empty */
-		readonly value: string | null
+		/** The parsed value as a VALUE node, or null when the branch value is empty */
+		readonly value: Value | null
 		/** True when this is the else branch */
 		readonly is_else: boolean
 		clone(options?: CloneOptions): ToPlain<IfBranch>
