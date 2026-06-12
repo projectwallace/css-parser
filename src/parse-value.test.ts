@@ -1117,4 +1117,175 @@ describe('Value Node Types', () => {
 			expect((value as Function | undefined)?.children[0].type).toBe(FUNCTION)
 		})
 	})
+
+	describe('FUNCTION if()', () => {
+		const getFunc = (css: string) => {
+			const root = parse(css)
+			const decl = root.first_child?.first_child?.next_sibling?.first_child
+			return (decl!.first_child! as Value).children[0] as Function | undefined
+		}
+
+		test('should parse if() as a FUNCTION node', () => {
+			const func = getFunc('div { color: if(style(--active: 1): green; else: red) }')
+			expect(func?.type).toBe(FUNCTION)
+			expect(func?.name).toBe('if')
+		})
+
+		test('should expose full text and inner value', () => {
+			const func = getFunc('div { color: if(style(--active: 1): green; else: red) }')
+			expect(func?.text).toBe('if(style(--active: 1): green; else: red)')
+			expect(func?.value).toBe('style(--active: 1): green; else: red')
+		})
+
+		test('should preserve : and ; as OPERATOR children', () => {
+			const func = getFunc('div { color: if(style(--active: 1): green; else: red) }')
+			// children: style(), :, green, ;, else, :, red
+			expect(func?.children).toHaveLength(7)
+			expect(func?.children[0].type).toBe(FUNCTION)
+			expect(func?.children[1].type).toBe(OPERATOR)
+			expect(func?.children[1].text).toBe(':')
+			expect(func?.children[2].type).toBe(IDENTIFIER)
+			expect(func?.children[2].text).toBe('green')
+			expect(func?.children[3].type).toBe(OPERATOR)
+			expect(func?.children[3].text).toBe(';')
+			expect(func?.children[4].type).toBe(IDENTIFIER)
+			expect(func?.children[4].text).toBe('else')
+			expect(func?.children[5].type).toBe(OPERATOR)
+			expect(func?.children[5].text).toBe(':')
+			expect(func?.children[6].type).toBe(IDENTIFIER)
+			expect(func?.children[6].text).toBe('red')
+		})
+
+		test('should parse style() condition with : operator preserved', () => {
+			const func = getFunc('div { color: if(style(--active: 1): green; else: red) }')
+			const styleFunc = func?.children[0] as Function | undefined
+			expect(styleFunc?.type).toBe(FUNCTION)
+			expect(styleFunc?.name).toBe('style')
+			// children: --active, :, 1
+			expect(styleFunc?.children).toHaveLength(3)
+			expect(styleFunc?.children[0].type).toBe(IDENTIFIER)
+			expect(styleFunc?.children[0].text).toBe('--active')
+			expect(styleFunc?.children[1].type).toBe(OPERATOR)
+			expect(styleFunc?.children[1].text).toBe(':')
+			expect(styleFunc?.children[2].type).toBe(NUMBER)
+			expect(styleFunc?.children[2].text).toBe('1')
+		})
+
+		test('should parse if() with supports() condition', () => {
+			const func = getFunc('div { display: if(supports(display: grid): grid; else: block) }')
+			expect(func?.type).toBe(FUNCTION)
+			expect(func?.name).toBe('if')
+			expect(func?.children).toHaveLength(7)
+
+			const supportsFunc = func?.children[0] as Function | undefined
+			expect(supportsFunc?.type).toBe(FUNCTION)
+			expect(supportsFunc?.name).toBe('supports')
+			expect(supportsFunc?.children).toHaveLength(3)
+			expect(supportsFunc?.children[0].text).toBe('display')
+			expect(supportsFunc?.children[1].text).toBe(':')
+			expect(supportsFunc?.children[2].text).toBe('grid')
+
+			expect(func?.children[2].text).toBe('grid')
+			expect(func?.children[4].text).toBe('else')
+			expect(func?.children[6].text).toBe('block')
+		})
+
+		test('should parse if() with media() condition', () => {
+			const func = getFunc('div { color: if(media(min-width: 600px): blue; else: red) }')
+			expect(func?.type).toBe(FUNCTION)
+			expect(func?.name).toBe('if')
+
+			const mediaFunc = func?.children[0] as Function | undefined
+			expect(mediaFunc?.type).toBe(FUNCTION)
+			expect(mediaFunc?.name).toBe('media')
+
+			expect(func?.children[2].text).toBe('blue')
+			expect(func?.children[6].text).toBe('red')
+		})
+
+		test('should parse if() with multiple conditions', () => {
+			// if(style(--large: 1): 2rem; style(--medium: 1): 1.5rem; else: 1rem)
+			const func = getFunc(
+				'div { font-size: if(style(--large: 1): 2rem; style(--medium: 1): 1.5rem; else: 1rem) }',
+			)
+			expect(func?.type).toBe(FUNCTION)
+			expect(func?.name).toBe('if')
+			// children: style(), :, 2rem, ;, style(), :, 1.5rem, ;, else, :, 1rem
+			expect(func?.children).toHaveLength(11)
+
+			expect(func?.children[0].type).toBe(FUNCTION)
+			expect((func?.children[0] as Function).name).toBe('style')
+			expect(func?.children[1].text).toBe(':')
+			expect(func?.children[2].text).toBe('2rem')
+			expect(func?.children[3].text).toBe(';')
+			expect(func?.children[4].type).toBe(FUNCTION)
+			expect((func?.children[4] as Function).name).toBe('style')
+			expect(func?.children[5].text).toBe(':')
+			expect(func?.children[6].text).toBe('1.5rem')
+			expect(func?.children[7].text).toBe(';')
+			expect(func?.children[8].text).toBe('else')
+			expect(func?.children[9].text).toBe(':')
+			expect(func?.children[10].text).toBe('1rem')
+		})
+
+		test('should parse nested if() functions', () => {
+			const func = getFunc(
+				'div { color: if(style(--a: 1): if(style(--b: 1): blue; else: green); else: red) }',
+			)
+			expect(func?.type).toBe(FUNCTION)
+			expect(func?.name).toBe('if')
+
+			// children: style(--a: 1), :, if(...), ;, else, :, red
+			expect(func?.children).toHaveLength(7)
+			expect(func?.children[2].type).toBe(FUNCTION)
+			expect((func?.children[2] as Function).name).toBe('if')
+		})
+
+		test('should parse if() with dimension value', () => {
+			const func = getFunc('div { width: if(style(--wide: 1): 100%; else: 50%) }')
+			expect(func?.type).toBe(FUNCTION)
+			expect(func?.children[2].type).toBe(DIMENSION)
+			expect(func?.children[2].text).toBe('100%')
+			expect(func?.children[6].type).toBe(DIMENSION)
+			expect(func?.children[6].text).toBe('50%')
+		})
+
+		test('should parse if() with color value', () => {
+			const func = getFunc('div { color: if(style(--dark: 1): #000; else: #fff) }')
+			expect(func?.type).toBe(FUNCTION)
+			expect(func?.children[2].type).toBe(HASH)
+			expect(func?.children[2].text).toBe('#000')
+			expect(func?.children[6].type).toBe(HASH)
+			expect(func?.children[6].text).toBe('#fff')
+		})
+
+		test('should parse if() with function value', () => {
+			const func = getFunc(
+				'div { color: if(supports(color: oklch(0 0 0)): oklch(0.5 0.2 240); else: blue) }',
+			)
+			expect(func?.type).toBe(FUNCTION)
+			// value after colon is a function
+			expect(func?.children[2].type).toBe(FUNCTION)
+			expect((func?.children[2] as Function).name).toBe('oklch')
+		})
+
+		test('should correctly parse declaration following if()', () => {
+			const root = parse('div { color: if(style(--x: 1): red; else: blue); font-size: 1em }')
+			const block = root.first_child?.first_child?.next_sibling
+			const children = (block as import('./node-types').Block | null | undefined)?.children
+			expect(children).toHaveLength(2)
+			expect(children?.[0].type).toBe(DECLARATION)
+			expect(children?.[1].type).toBe(DECLARATION)
+		})
+
+		test('should have correct location for if() function', () => {
+			const func = getFunc('div { color: if(style(--x: 1): red; else: blue) }')
+			expect(func?.start).toBe(13)
+			expect(func?.text).toBe('if(style(--x: 1): red; else: blue)')
+			expect(func?.length).toBe(34)
+			expect(func?.end).toBe(47)
+			expect(func?.line).toBe(1)
+			expect(func?.column).toBe(14)
+		})
+	})
 })
