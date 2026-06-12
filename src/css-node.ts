@@ -45,6 +45,7 @@ import {
 	PRELUDE_SELECTORLIST,
 	SUPPORTS_DECLARATION,
 	RATIO,
+	IF_BRANCH,
 	FLAG_IMPORTANT,
 	FLAG_HAS_ERROR,
 	FLAG_HAS_BLOCK,
@@ -66,6 +67,7 @@ import {
 	is_whitespace,
 	is_vendor_prefixed,
 	str_starts_with,
+	str_equals,
 } from './string-utils'
 import { parse_dimension } from './parse-dimension'
 
@@ -115,6 +117,7 @@ export const TYPE_NAMES = {
 	[AT_RULE_PRELUDE]: 'AtrulePrelude',
 	[PRELUDE_SELECTORLIST]: 'PreludeSelectorList',
 	[RATIO]: 'Ratio',
+	[IF_BRANCH]: 'IfBranch',
 } as const
 
 export type TypeName = (typeof TYPE_NAMES)[keyof typeof TYPE_NAMES] | 'unknown'
@@ -165,6 +168,7 @@ export type CSSNodeType =
 	| typeof PRELUDE_SELECTORLIST
 	| typeof SUPPORTS_DECLARATION
 	| typeof RATIO
+	| typeof IF_BRANCH
 
 // Options for cloning nodes
 export interface CloneOptions {
@@ -198,6 +202,10 @@ export type PlainCSSNode = {
 	prelude?: PlainCSSNode | null
 	left?: PlainCSSNode
 	right?: PlainCSSNode
+
+	// IfBranch-specific
+	condition?: string
+	is_else?: boolean
 
 	// Flags (only when true)
 	is_important?: boolean
@@ -253,6 +261,7 @@ const nodes_with_children = new Set<number>([
 	FEATURE_RANGE,
 	SUPPORTS_QUERY,
 	SUPPORTS_DECLARATION,
+	IF_BRANCH,
 ])
 
 const enumerable_properties = [
@@ -266,6 +275,8 @@ const enumerable_properties = [
 	'nth_a',
 	'nth_b',
 	'selector',
+	'condition',
+	'is_else',
 	'is_browserhack',
 	'is_vendor_prefixed',
 	'has_error',
@@ -516,6 +527,18 @@ export class CSSNode {
 	get right(): CSSNode | undefined {
 		if (this.type !== RATIO) return undefined
 		return this.first_child?.next_sibling ?? undefined
+	}
+
+	/** Get the condition text of an if() branch, e.g. "style(--active: 1)" or "else" */
+	get condition(): string | undefined {
+		if (this.type !== IF_BRANCH) return undefined
+		return this.get_content()
+	}
+
+	/** True when this is the else branch of an if() function */
+	get is_else(): boolean | undefined {
+		if (this.type !== IF_BRANCH) return undefined
+		return str_equals('else', this.get_content())
 	}
 
 	/** Check if this declaration has !important */
