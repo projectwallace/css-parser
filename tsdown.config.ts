@@ -1,5 +1,4 @@
 import { defineConfig } from 'tsdown'
-import { codecovRollupPlugin } from '@codecov/rollup-plugin'
 
 export default defineConfig({
 	entry: [
@@ -18,11 +17,4 @@ export default defineConfig({
 	platform: 'neutral',
 	dts: true,
 	publint: true,
-	plugins: [
-		codecovRollupPlugin({
-			enableBundleAnalysis: process.env.CODECOV_TOKEN !== undefined,
-			bundleName: '@projectwallace/css-parser',
-			uploadToken: process.env.CODECOV_TOKEN,
-		}),
-	],
 })
