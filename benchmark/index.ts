@@ -7,9 +7,21 @@ import * as path from 'node:path'
 // @ts-expect-error: no type definitions for css-tree
 import * as csstree from 'css-tree'
 import * as postcss from 'postcss'
-import { ensureTailwindFixtures } from '../vitest.setup.ts'
 
-await ensureTailwindFixtures()
+const TAILWIND_VERSION = '2.2.19'
+const TAILWIND_DIST = path.resolve('node_modules/tailwindcss/dist')
+const TAILWIND_FILES = ['tailwind.css', 'tailwind.min.css']
+
+fs.mkdirSync(TAILWIND_DIST, { recursive: true })
+await Promise.all(
+	TAILWIND_FILES.map(async (file) => {
+		const dest = path.resolve(TAILWIND_DIST, file)
+		if (fs.existsSync(dest)) return
+		const res = await fetch(`https://unpkg.com/tailwindcss@${TAILWIND_VERSION}/dist/${file}`)
+		if (!res.ok) throw new Error(`Failed to download ${file}: ${res.status}`)
+		fs.writeFileSync(dest, await res.text(), 'utf-8')
+	}),
+)
 
 const largeCSS = fs.readFileSync(path.resolve('benchmark/medium.css'), 'utf-8')
 const bootstrapCSS = fs.readFileSync(
