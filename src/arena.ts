@@ -352,8 +352,13 @@ export class CSSDataArena {
 		}
 	}
 
-	// Shrink the buffer to exactly the number of live nodes, releasing wasted capacity.
-	// Call once after parsing is complete. Safe to call multiple times (no-op if already tight).
+	/**
+	 * Shrink the buffer to exactly the number of live nodes, releasing wasted capacity.
+	 * Call once after parsing is complete. Safe to call multiple times (no-op if already tight).
+	 *
+	 * @see https://doc.rust-lang.org/std/vec/struct.Vec.html#method.shrink_to_fit
+	 * @see https://en.cppreference.com/w/cpp/container/vector/shrink_to_fit
+	 */
 	trim(): void {
 		if (this.count === this.capacity) return
 		let byte_count = this.count * BYTES_PER_NODE
