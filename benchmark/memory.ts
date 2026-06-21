@@ -14,10 +14,7 @@ import * as csstree from 'css-tree'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import * as postcss from 'postcss'
-import { fileURLToPath } from 'node:url'
 import { parse, walk } from '../dist/index.js'
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -31,7 +28,7 @@ const BYTES_PER_NODE = 32
 // ── CSS files ─────────────────────────────────────────────────────────────────
 
 function read(rel: string): string {
-	return fs.readFileSync(path.join(__dirname, rel), 'utf-8')
+	return fs.readFileSync(path.join(import.meta.dirname, rel), 'utf-8')
 }
 
 const CSS_FILES: Record<string, string> = {
@@ -290,8 +287,8 @@ console.table(
 
 // ── Save results ──────────────────────────────────────────────────────────────
 
-const results_path = path.join(__dirname, 'memory-results.json')
-const baseline_path = path.join(__dirname, 'memory-baseline.json')
+const results_path = path.join(import.meta.dirname, 'memory-results.json')
+const baseline_path = path.join(import.meta.dirname, 'memory-baseline.json')
 
 const snapshot_data = {
 	timestamp: new Date().toISOString(),
