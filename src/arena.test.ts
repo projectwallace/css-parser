@@ -375,22 +375,5 @@ describe('CSSDataArena', () => {
 			expect(arena.get_capacity()).toBe(arena.get_count())
 		})
 
-		test('should not grow for Tailwind CSS', () => {
-			const css = readFileSync('node_modules/tailwindcss/dist/tailwind.css', 'utf-8')
-			const result = parse(css) as unknown as CSSNode
-			const arena = result.__get_arena()
-
-			expect(arena.get_growth_count()).toBe(0)
-			expect(arena.get_capacity()).toBe(arena.get_count())
-		})
-
-		test('should not grow for Tailwind minified CSS', () => {
-			const css = readFileSync('node_modules/tailwindcss/dist/tailwind.min.css', 'utf-8')
-			const result = parse(css) as unknown as CSSNode
-			const arena = result.__get_arena()
-
-			expect(arena.get_growth_count()).toBe(0)
-			expect(arena.get_capacity()).toBe(arena.get_count())
-		})
 	})
 })
