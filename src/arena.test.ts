@@ -374,6 +374,5 @@ describe('CSSDataArena', () => {
 			expect(arena.get_growth_count()).toBe(0)
 			expect(arena.get_capacity()).toBe(arena.get_count())
 		})
-
 	})
 })
