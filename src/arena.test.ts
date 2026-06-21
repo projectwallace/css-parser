@@ -321,16 +321,49 @@ describe('CSSDataArena', () => {
 		})
 	})
 
+	describe('trim', () => {
+		test('should set capacity equal to count', () => {
+			const arena = new CSSDataArena(100)
+			arena.create_node(STYLESHEET, 0, 0, 1, 1)
+			arena.create_node(DECLARATION, 0, 0, 1, 1)
+			expect(arena.get_capacity()).toBe(100)
+			arena.trim()
+			expect(arena.get_capacity()).toBe(arena.get_count())
+		})
+
+		test('should preserve all node data after trim', () => {
+			const arena = new CSSDataArena(100)
+			const n1 = arena.create_node(STYLESHEET, 10, 500, 1, 1)
+			const n2 = arena.create_node(DECLARATION, 20, 30, 2, 5)
+			arena.set_flag(n2, FLAG_IMPORTANT)
+			arena.trim()
+
+			expect(arena.get_type(n1)).toBe(STYLESHEET)
+			expect(arena.get_start_offset(n1)).toBe(10)
+			expect(arena.get_type(n2)).toBe(DECLARATION)
+			expect(arena.get_start_offset(n2)).toBe(20)
+			expect(arena.has_flag(n2, FLAG_IMPORTANT)).toBe(true)
+		})
+
+		test('should be a no-op when already tight', () => {
+			const arena = new CSSDataArena(2)
+			arena.create_node(STYLESHEET, 0, 0, 1, 1) // count = 2, triggers grow to capacity 3
+			arena.create_node(STYLESHEET, 0, 0, 1, 1) // count = 3 = capacity
+			expect(arena.get_count()).toBe(arena.get_capacity())
+			arena.trim() // should not throw or corrupt
+			expect(arena.get_count()).toBe(arena.get_capacity())
+		})
+	})
+
 	describe('real-world CSS frameworks', () => {
 		test('should not grow for Bootstrap CSS', () => {
 			const css = readFileSync('node_modules/bootstrap/dist/css/bootstrap.css', 'utf-8')
 			const result = parse(css) as unknown as CSSNode
+			const arena = result.__get_arena()
 
-			expect(result.__get_arena().get_growth_count()).toBe(0)
-			const utilization =
-				(result.__get_arena().get_count() / result.__get_arena().get_capacity()) * 100
-			expect(utilization).toBeLessThan(85)
-			expect(utilization).toBeGreaterThan(30)
+			expect(arena.get_growth_count()).toBe(0)
+			// parse() calls trim(), so capacity must equal count
+			expect(arena.get_capacity()).toBe(arena.get_count())
 		})
 
 		test('should not grow for Bootstrap minified CSS', () => {
@@ -339,9 +372,7 @@ describe('CSSDataArena', () => {
 			const arena = result.__get_arena()
 
 			expect(arena.get_growth_count()).toBe(0)
-			const utilization = (arena.get_count() / arena.get_capacity()) * 100
-			expect(utilization).toBeLessThan(85)
-			expect(utilization).toBeGreaterThan(30)
+			expect(arena.get_capacity()).toBe(arena.get_count())
 		})
 
 		test('should not grow for Tailwind CSS', () => {
@@ -350,20 +381,16 @@ describe('CSSDataArena', () => {
 			const arena = result.__get_arena()
 
 			expect(arena.get_growth_count()).toBe(0)
-			const utilization = (arena.get_count() / arena.get_capacity()) * 100
-			expect(utilization).toBeLessThan(85)
-			expect(utilization).toBeGreaterThan(30)
+			expect(arena.get_capacity()).toBe(arena.get_count())
 		})
 
 		test('should not grow for Tailwind minified CSS', () => {
 			const css = readFileSync('node_modules/tailwindcss/dist/tailwind.min.css', 'utf-8')
 			const result = parse(css) as unknown as CSSNode
+			const arena = result.__get_arena()
 
-			expect(result.__get_arena().get_growth_count()).toBe(0)
-			const utilization =
-				(result.__get_arena().get_count() / result.__get_arena().get_capacity()) * 100
-			expect(utilization).toBeLessThan(85)
-			expect(utilization).toBeGreaterThan(30)
+			expect(arena.get_growth_count()).toBe(0)
+			expect(arena.get_capacity()).toBe(arena.get_count())
 		})
 	})
 })

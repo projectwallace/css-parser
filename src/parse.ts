@@ -147,6 +147,9 @@ export class Parser {
 		// Link all rules as children
 		this.arena.append_children(stylesheet, rules)
 
+		// Release wasted pre-allocated capacity now that node count is final
+		this.arena.trim()
+
 		// Return wrapped node
 		return new CSSNode(this.arena, this.source, stylesheet) as StyleSheet
 	}

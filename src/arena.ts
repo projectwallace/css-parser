@@ -116,13 +116,15 @@ export class CSSDataArena {
 	// Growth multiplier when capacity is exceeded
 	private static readonly GROWTH_FACTOR = 1.3
 
-	// Estimated nodes per KB of CSS (based on real-world data)
-	// Increased from 270 to 325 to account for VALUE wrapper nodes
-	// (~20% of nodes are declarations, +1 VALUE node per declaration = +20% nodes)
-	private static readonly NODES_PER_KB = 325
+	// Estimated nodes per KB of CSS.
+	// Measured across real-world files (unminified and minified):
+	//   bootstrap.css 137 | bootstrap.min 166 | tailwind.css 157 | tailwind.min 195 | small 198
+	// 210 keeps ~16% headroom above the observed ceiling of 198 nodes/KB.
+	private static readonly NODES_PER_KB = 210
 
-	// Buffer to avoid frequent growth (15%)
-	private static readonly CAPACITY_BUFFER = 1.2
+	// Safety buffer on top of NODES_PER_KB to absorb variance without a grow.
+	// Combined with the constant above: effective ceiling = 210 × 1.1 = 231 nodes/KB.
+	private static readonly CAPACITY_BUFFER = 1.1
 
 	constructor(initial_capacity: number = 1024) {
 		this.capacity = initial_capacity
@@ -348,6 +350,23 @@ export class CSSDataArena {
 		for (let i = 0; i < children.length - 1; i++) {
 			this.set_next_sibling(children[i], children[i + 1])
 		}
+	}
+
+	/**
+	 * Shrink the buffer to exactly the number of live nodes, releasing wasted capacity.
+	 * Call once after parsing is complete. Safe to call multiple times (no-op if already tight).
+	 *
+	 * @see https://doc.rust-lang.org/std/vec/struct.Vec.html#method.shrink_to_fit
+	 * @see https://en.cppreference.com/w/cpp/container/vector/shrink_to_fit
+	 */
+	trim(): void {
+		if (this.count === this.capacity) return
+		let byte_count = this.count * BYTES_PER_NODE
+		let new_buffer = new ArrayBuffer(byte_count)
+		new Uint8Array(new_buffer).set(new Uint8Array(this.buffer, 0, byte_count))
+		this.buffer = new_buffer
+		this.view = new DataView(new_buffer)
+		this.capacity = this.count
 	}
 
 	// Check if a node has any children
