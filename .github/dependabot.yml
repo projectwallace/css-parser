@@ -9,7 +9,6 @@ updates:
       interval: 'monthly'
     ignore:
       - dependency-name: 'bootstrap'
-      - dependency-name: 'tailwindcss'
     groups:
       projectwallace:
         patterns:
