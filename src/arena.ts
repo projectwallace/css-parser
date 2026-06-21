@@ -350,6 +350,18 @@ export class CSSDataArena {
 		}
 	}
 
+	// Shrink the buffer to exactly the number of live nodes, releasing wasted capacity.
+	// Call once after parsing is complete. Safe to call multiple times (no-op if already tight).
+	trim(): void {
+		if (this.count === this.capacity) return
+		let byte_count = this.count * BYTES_PER_NODE
+		let new_buffer = new ArrayBuffer(byte_count)
+		new Uint8Array(new_buffer).set(new Uint8Array(this.buffer, 0, byte_count))
+		this.buffer = new_buffer
+		this.view = new DataView(new_buffer)
+		this.capacity = this.count
+	}
+
 	// Check if a node has any children
 	has_children(node_index: number): boolean {
 		return this.get_first_child(node_index) !== 0

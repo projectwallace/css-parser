@@ -43,6 +43,11 @@ const CSS_FILES: Record<string, string> = {
 
 // ── GC / snapshot ─────────────────────────────────────────────────────────────
 
+// Module-level sink: assigning here prevents V8 from treating fn()'s return
+// value as dead before force_gc() runs. A local `void result` is not enough
+// because the JIT may determine it's a no-op and shorten the variable's lifetime.
+let _measurement_sink: unknown = null
+
 const _gc = (globalThis as { gc?: () => void }).gc
 
 if (!_gc) {
@@ -75,14 +80,25 @@ function diff(before: Mem, after: Mem): Mem {
 	}
 }
 
-/** Run fn ITERATIONS times, return the median Mem delta. */
-function measure(fn: () => void): Mem {
+/**
+ * Run fn ITERATIONS times, return the median retained-memory delta.
+ *
+ * fn must return the primary result object (the parse tree / root node).
+ * We store it in _measurement_sink (module scope) so V8 cannot shorten its
+ * lifetime before the post-operation GC runs. That GC collects dead
+ * temporaries (e.g. the pre-trim arena buffer) without collecting the live
+ * result. We clear the sink before the next iteration so the next baseline
+ * snapshot starts clean.
+ */
+function measure(fn: () => unknown): Mem {
 	const deltas: Mem[] = []
 	for (let i = 0; i < ITERATIONS; i++) {
 		force_gc()
 		const before = snap()
-		fn()
+		_measurement_sink = fn()
+		force_gc() // collect dead temporaries; _measurement_sink keeps result alive
 		const after = snap()
+		_measurement_sink = null // release before next iteration's baseline GC
 		deltas.push(diff(before, after))
 	}
 	deltas.sort((a, b) => a.total - b.total)
@@ -152,23 +168,18 @@ for (const [name, css] of Object.entries(CSS_FILES)) {
 	process.stdout.write(`Measuring ${name}...`)
 
 	// Parse-only
-	const w_parse = measure(() => {
-		parse(css)
-	})
-	const c_parse = measure(() => {
-		csstree.parse(css, { positions: true })
-	})
-	const p_parse = measure(() => {
-		postcss.parse(css)
-	})
+	const w_parse = measure(() => parse(css))
+	const c_parse = measure(() => csstree.parse(css, { positions: true }))
+	const p_parse = measure(() => postcss.parse(css))
 
-	// Parse+Walk
+	// Parse+Walk — return the AST so the arena stays alive through the post-GC
 	const w_parse_walk = measure(() => {
 		const ast = parse(css)
 		walk(ast, (node) => {
 			void node.type
 			void node.line
 		})
+		return ast
 	})
 	const c_parse_walk = measure(() => {
 		const ast = csstree.parse(css, { positions: true })
@@ -176,6 +187,7 @@ for (const [name, css] of Object.entries(CSS_FILES)) {
 			void node.type
 			void node.loc?.start.line
 		})
+		return ast
 	})
 	const p_parse_walk = measure(() => {
 		const root = postcss.parse(css)
@@ -183,6 +195,7 @@ for (const [name, css] of Object.entries(CSS_FILES)) {
 			void node.type
 			void node.source?.start?.line
 		})
+		return root
 	})
 
 	// Arena stats (single parse, outside measurement window)
