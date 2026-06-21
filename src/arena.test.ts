@@ -1,5 +1,4 @@
 import { describe, test, expect } from 'vitest'
-import { readFileSync } from 'fs'
 import {
 	CSSDataArena,
 	STYLESHEET,
@@ -356,36 +355,8 @@ describe('CSSDataArena', () => {
 	})
 
 	describe('real-world CSS frameworks', () => {
-		test('should not grow for Bootstrap CSS', () => {
-			const css = readFileSync('node_modules/bootstrap/dist/css/bootstrap.css', 'utf-8')
-			const result = parse(css) as unknown as CSSNode
-			const arena = result.__get_arena()
-
-			expect(arena.get_growth_count()).toBe(0)
-			// parse() calls trim(), so capacity must equal count
-			expect(arena.get_capacity()).toBe(arena.get_count())
-		})
-
-		test('should not grow for Bootstrap minified CSS', () => {
-			const css = readFileSync('node_modules/bootstrap/dist/css/bootstrap.min.css', 'utf-8')
-			const result = parse(css) as unknown as CSSNode
-			const arena = result.__get_arena()
-
-			expect(arena.get_growth_count()).toBe(0)
-			expect(arena.get_capacity()).toBe(arena.get_count())
-		})
-
-		test('should not grow for Tailwind CSS', () => {
-			const css = readFileSync('node_modules/tailwindcss/dist/tailwind.css', 'utf-8')
-			const result = parse(css) as unknown as CSSNode
-			const arena = result.__get_arena()
-
-			expect(arena.get_growth_count()).toBe(0)
-			expect(arena.get_capacity()).toBe(arena.get_count())
-		})
-
-		test('should not grow for Tailwind minified CSS', () => {
-			const css = readFileSync('node_modules/tailwindcss/dist/tailwind.min.css', 'utf-8')
+		test('should not grow for a large synthetic utility-first stylesheet', () => {
+			const css = generateUtilityCSS()
 			const result = parse(css) as unknown as CSSNode
 			const arena = result.__get_arena()
 
@@ -394,3 +365,78 @@ describe('CSSDataArena', () => {
 		})
 	})
 })
+
+function generateUtilityCSS(): string {
+	const selectors = ['text', 'bg', 'border', 'p', 'm', 'flex', 'grid', 'w', 'h', 'opacity']
+	const properties = [
+		'color',
+		'background-color',
+		'border-color',
+		'padding',
+		'margin',
+		'display',
+		'grid-template-columns',
+		'width',
+		'height',
+		'opacity',
+	]
+	const values = ['red', 'blue', 'green', '1rem', '2rem', 'flex', 'block', '100%', '50%', '0.5']
+	const pseudos = ['hover', 'focus', 'active', 'disabled', 'visited']
+	const breakpoints: Array<[string, string]> = [
+		['sm', '640px'],
+		['md', '768px'],
+		['lg', '1024px'],
+		['xl', '1280px'],
+		['2xl', '1536px'],
+	]
+
+	const parts: string[] = []
+
+	// Base utilities — all selector/property/value combinations
+	for (let s = 0; s < selectors.length; s++) {
+		for (let p = 0; p < properties.length; p++) {
+			for (let v = 0; v < values.length; v++) {
+				parts.push(`.${selectors[s]}-${p}-${v} { ${properties[p]}: ${values[v]}; }`)
+			}
+		}
+	}
+
+	// Pseudo-class variants
+	for (const pseudo of pseudos) {
+		for (let s = 0; s < selectors.length; s++) {
+			for (let p = 0; p < properties.length; p++) {
+				for (let v = 0; v < values.length; v++) {
+					parts.push(
+						`.${pseudo}\\:${selectors[s]}-${p}-${v}:${pseudo} { ${properties[p]}: ${values[v]}; }`,
+					)
+				}
+			}
+		}
+	}
+
+	// Responsive breakpoints — base + pseudo inside each @media
+	for (const [prefix, minWidth] of breakpoints) {
+		const inner: string[] = []
+		for (let s = 0; s < selectors.length; s++) {
+			for (let p = 0; p < properties.length; p++) {
+				for (let v = 0; v < values.length; v++) {
+					inner.push(`\t.${prefix}\\:${selectors[s]}-${p}-${v} { ${properties[p]}: ${values[v]}; }`)
+				}
+			}
+		}
+		for (const pseudo of pseudos) {
+			for (let s = 0; s < selectors.length; s++) {
+				for (let p = 0; p < properties.length; p++) {
+					for (let v = 0; v < values.length; v++) {
+						inner.push(
+							`\t.${prefix}\\:${pseudo}\\:${selectors[s]}-${p}-${v}:${pseudo} { ${properties[p]}: ${values[v]}; }`,
+						)
+					}
+				}
+			}
+		}
+		parts.push(`@media (min-width: ${minWidth}) {\n${inner.join('\n')}\n}`)
+	}
+
+	return parts.join('\n')
+}

@@ -8,6 +8,41 @@ import * as path from 'node:path'
 import * as csstree from 'css-tree'
 import * as postcss from 'postcss'
 
+const TAILWIND_VERSION = '2.2.19'
+const TAILWIND_DIST = path.resolve('node_modules/tailwindcss/dist')
+const TAILWIND_FILES = ['tailwind.css', 'tailwind.min.css']
+
+const BOOTSTRAP_VERSION = '5.3.8'
+const BOOTSTRAP_DIST = path.resolve('node_modules/bootstrap/dist/css')
+const BOOTSTRAP_FILES = ['bootstrap.css']
+
+async function ensureFixture(dir: string, file: string, url: string): Promise<void> {
+	const dest = path.resolve(dir, file)
+	if (fs.existsSync(dest)) return
+	const res = await fetch(url)
+	if (!res.ok) throw new Error(`Failed to download ${file}: ${res.status}`)
+	fs.writeFileSync(dest, await res.text(), 'utf-8')
+}
+
+fs.mkdirSync(TAILWIND_DIST, { recursive: true })
+fs.mkdirSync(BOOTSTRAP_DIST, { recursive: true })
+await Promise.all([
+	...TAILWIND_FILES.map((file) =>
+		ensureFixture(
+			TAILWIND_DIST,
+			file,
+			`https://unpkg.com/tailwindcss@${TAILWIND_VERSION}/dist/${file}`,
+		),
+	),
+	...BOOTSTRAP_FILES.map((file) =>
+		ensureFixture(
+			BOOTSTRAP_DIST,
+			file,
+			`https://unpkg.com/bootstrap@${BOOTSTRAP_VERSION}/dist/css/${file}`,
+		),
+	),
+])
+
 const largeCSS = fs.readFileSync(path.resolve('benchmark/medium.css'), 'utf-8')
 const bootstrapCSS = fs.readFileSync(
 	path.resolve('node_modules/bootstrap/dist/css/bootstrap.css'),
