@@ -355,7 +355,6 @@ describe('CSSDataArena', () => {
 	})
 
 	describe('real-world CSS frameworks', () => {
-
 		test('should not grow for a large synthetic utility-first stylesheet', () => {
 			const css = generateUtilityCSS()
 			const result = parse(css) as unknown as CSSNode
