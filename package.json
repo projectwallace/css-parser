@@ -86,7 +86,7 @@
 		"precommit": "pnpm run test -- --run; pnpm run lint; pnpm run check"
 	},
 	"devDependencies": {
-		"@projectwallace/preset-oxlint": "^0.0.10",
+		"@projectwallace/preset-oxlint": "^0.0.11",
 		"@types/node": "^24.10.1",
 		"@vitest/coverage-v8": "^4.1.5",
 		"bootstrap": "^5.3.8",
