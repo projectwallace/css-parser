@@ -5,7 +5,6 @@
 		"bootstrap",
 		"css-tree",
 		"postcss",
-		"tailwindcss",
 		"tinybench"
 	]
 }

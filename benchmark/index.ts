@@ -7,30 +7,41 @@ import * as path from 'node:path'
 // @ts-expect-error: no type definitions for css-tree
 import * as csstree from 'css-tree'
 import * as postcss from 'postcss'
+import { ensureTailwindFixtures } from '../vitest.setup.ts'
+
+await ensureTailwindFixtures()
 
 const largeCSS = fs.readFileSync(path.resolve('benchmark/medium.css'), 'utf-8')
 const bootstrapCSS = fs.readFileSync(
 	path.resolve('node_modules/bootstrap/dist/css/bootstrap.css'),
 	'utf-8',
 )
-type CSSFile = 'Large' | 'Bootstrap'
+const tailwindCSS = fs.readFileSync(
+	path.resolve('node_modules/tailwindcss/dist/tailwind.css'),
+	'utf-8',
+)
 
-const files: CSSFile[] = ['Large', 'Bootstrap']
+type CSSFile = 'Large' | 'Bootstrap' | 'Tailwind'
+
+const files: CSSFile[] = ['Large', 'Bootstrap', 'Tailwind']
 
 const cssMap: Record<CSSFile, string> = {
 	Large: largeCSS,
 	Bootstrap: bootstrapCSS,
+	Tailwind: tailwindCSS,
 }
 
 const fileSizes: Record<CSSFile, number> = {
 	Large: largeCSS.length,
 	Bootstrap: bootstrapCSS.length,
+	Tailwind: tailwindCSS.length,
 }
 
 // Pre-parse once for walk-only benchmarks so parse time doesn't pollute walk timings
 const parsedMap = {
 	Large: parse(largeCSS),
 	Bootstrap: parse(bootstrapCSS),
+	Tailwind: parse(tailwindCSS),
 }
 
 const quick = process.argv.includes('--quick')

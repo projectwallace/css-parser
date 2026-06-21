@@ -375,8 +375,8 @@ describe('CSSDataArena', () => {
 			expect(arena.get_capacity()).toBe(arena.get_count())
 		})
 
-		test('should not grow for Bootstrap utilities CSS', () => {
-			const css = readFileSync('node_modules/bootstrap/dist/css/bootstrap-utilities.css', 'utf-8')
+		test('should not grow for Tailwind CSS', () => {
+			const css = readFileSync('node_modules/tailwindcss/dist/tailwind.css', 'utf-8')
 			const result = parse(css) as unknown as CSSNode
 			const arena = result.__get_arena()
 
@@ -384,8 +384,8 @@ describe('CSSDataArena', () => {
 			expect(arena.get_capacity()).toBe(arena.get_count())
 		})
 
-		test('should not grow for Bootstrap utilities minified CSS', () => {
-			const css = readFileSync('node_modules/bootstrap/dist/css/bootstrap-utilities.min.css', 'utf-8')
+		test('should not grow for Tailwind minified CSS', () => {
+			const css = readFileSync('node_modules/tailwindcss/dist/tailwind.min.css', 'utf-8')
 			const result = parse(css) as unknown as CSSNode
 			const arena = result.__get_arena()
 
