@@ -6,3 +6,4 @@ dist
 coverage
 .claude/settings.local.json
 package-lock.json
+benchmark/memory-results.json

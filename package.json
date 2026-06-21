@@ -80,6 +80,8 @@
 		"test-build": "pnpm run build && vitest run --config vitest.config.build.ts",
 		"build": "tsdown",
 		"benchmark": "pnpm run build && node --expose-gc benchmark/index.ts",
+		"benchmark:memory": "pnpm run build && node --expose-gc benchmark/memory.ts",
+		"benchmark:memory:baseline": "pnpm run build && node --expose-gc benchmark/memory.ts --save-baseline",
 		"lint": "oxlint --config .oxlintrc.json && oxfmt --check",
 		"check": "tsc --noEmit",
 		"knip": "knip",
