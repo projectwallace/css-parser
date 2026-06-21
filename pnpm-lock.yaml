@@ -17,9 +17,6 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^4.1.9
         version: 4.1.9(vitest@4.1.9)
-      bootstrap:
-        specifier: ^5.3.8
-        version: 5.3.8(@popperjs/core@2.11.8)
       css-tree:
         specifier: ^3.1.0
         version: 3.2.1
@@ -620,9 +617,6 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@popperjs/core@2.11.8':
-    resolution: {integrity: sha512-P1st0aksCrn9sGZhp8GMYwBnQsbvAWsZAX44oXNNvLHGqAOcoVxmjZiohstwQ7SqKnbR47akdNi+uleWD8+g6A==}
-
   '@projectwallace/preset-oxlint@0.0.10':
     resolution: {integrity: sha512-mlkJ9g8ljpK4238cvRRpZWbL/+MHeBX876m038nu7A/HwznLCfjhK0Lu31ElL1eWOmEyXVitINei64GDXiwvog==}
     peerDependencies:
@@ -904,11 +898,6 @@ packages:
 
   birpc@4.0.0:
     resolution: {integrity: sha512-LShSxJP0KTmd101b6DRyGBj57LZxSDYWKitQNW/mi8GRMvZb078Uf9+pveax1DrVL89vm7mWe+TovdI/UDOuPw==}
-
-  bootstrap@5.3.8:
-    resolution: {integrity: sha512-HP1SZDqaLDPwsNiqRqi5NcP0SSXciX2s9E+RyqJIIqGo+vJeN5AJVM98CXmW/Wux0nQ5L7jeWUdplCEf0Ee+tg==}
-    peerDependencies:
-      '@popperjs/core': ^2.11.8
 
   cac@7.0.0:
     resolution: {integrity: sha512-tixWYgm5ZoOD+3g6UTea91eow5z6AAHaho3g0V9CNSNb45gM8SmflpAc+GRd1InC4AqN/07Unrgp56Y94N9hJQ==}
@@ -1772,8 +1761,6 @@ snapshots:
   '@oxlint/binding-win32-x64-msvc@1.64.0':
     optional: true
 
-  '@popperjs/core@2.11.8': {}
-
   '@projectwallace/preset-oxlint@0.0.10(oxlint@1.64.0)':
     dependencies:
       oxlint: 1.64.0
@@ -1978,10 +1965,6 @@ snapshots:
       js-tokens: 10.0.0
 
   birpc@4.0.0: {}
-
-  bootstrap@5.3.8(@popperjs/core@2.11.8):
-    dependencies:
-      '@popperjs/core': 2.11.8
 
   cac@7.0.0: {}
 

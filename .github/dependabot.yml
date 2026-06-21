@@ -7,8 +7,6 @@ updates:
     directory: '/'
     schedule:
       interval: 'monthly'
-    ignore:
-      - dependency-name: 'bootstrap'
     groups:
       projectwallace:
         patterns:
