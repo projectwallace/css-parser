@@ -116,13 +116,15 @@ export class CSSDataArena {
 	// Growth multiplier when capacity is exceeded
 	private static readonly GROWTH_FACTOR = 1.3
 
-	// Estimated nodes per KB of CSS (based on real-world data)
-	// Increased from 270 to 325 to account for VALUE wrapper nodes
-	// (~20% of nodes are declarations, +1 VALUE node per declaration = +20% nodes)
-	private static readonly NODES_PER_KB = 325
+	// Estimated nodes per KB of CSS.
+	// Measured across real-world files (unminified and minified):
+	//   bootstrap.css 137 | bootstrap.min 166 | tailwind.css 157 | tailwind.min 195 | small 198
+	// 210 keeps ~16% headroom above the observed ceiling of 198 nodes/KB.
+	private static readonly NODES_PER_KB = 210
 
-	// Buffer to avoid frequent growth (15%)
-	private static readonly CAPACITY_BUFFER = 1.2
+	// Safety buffer on top of NODES_PER_KB to absorb variance without a grow.
+	// Combined with the constant above: effective ceiling = 210 × 1.1 = 231 nodes/KB.
+	private static readonly CAPACITY_BUFFER = 1.1
 
 	constructor(initial_capacity: number = 1024) {
 		this.capacity = initial_capacity
