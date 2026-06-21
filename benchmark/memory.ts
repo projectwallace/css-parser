@@ -231,12 +231,14 @@ console.table(
 		'P heap': fmt_kb(r.postcss.parse.heap),
 		'P ext': fmt_kb(r.postcss.parse.external),
 		'P total': fmt_mb(r.postcss.parse.total),
-		'W vs C': r.csstree.parse.total > 0
-			? `${(r.csstree.parse.total / r.wallace.parse.total).toFixed(2)}x`
-			: 'N/A',
-		'W vs P': r.postcss.parse.total > 0
-			? `${(r.postcss.parse.total / r.wallace.parse.total).toFixed(2)}x`
-			: 'N/A',
+		'W vs C':
+			r.csstree.parse.total > 0
+				? `${(r.csstree.parse.total / r.wallace.parse.total).toFixed(2)}x`
+				: 'N/A',
+		'W vs P':
+			r.postcss.parse.total > 0
+				? `${(r.postcss.parse.total / r.wallace.parse.total).toFixed(2)}x`
+				: 'N/A',
 	})),
 )
 
@@ -256,12 +258,14 @@ console.table(
 		'P heap': fmt_kb(r.postcss.parse_walk.heap),
 		'P ext': fmt_kb(r.postcss.parse_walk.external),
 		'P total': fmt_mb(r.postcss.parse_walk.total),
-		'W vs C': r.csstree.parse_walk.total > 0
-			? `${(r.csstree.parse_walk.total / r.wallace.parse_walk.total).toFixed(2)}x`
-			: 'N/A',
-		'W vs P': r.postcss.parse_walk.total > 0
-			? `${(r.postcss.parse_walk.total / r.wallace.parse_walk.total).toFixed(2)}x`
-			: 'N/A',
+		'W vs C':
+			r.csstree.parse_walk.total > 0
+				? `${(r.csstree.parse_walk.total / r.wallace.parse_walk.total).toFixed(2)}x`
+				: 'N/A',
+		'W vs P':
+			r.postcss.parse_walk.total > 0
+				? `${(r.postcss.parse_walk.total / r.wallace.parse_walk.total).toFixed(2)}x`
+				: 'N/A',
 	})),
 )
 
@@ -274,8 +278,8 @@ console.table(
 		return {
 			File: name,
 			'Nodes used': a.node_count.toLocaleString(),
-			'Capacity': a.capacity.toLocaleString(),
-			'Growths': a.growth_count,
+			Capacity: a.capacity.toLocaleString(),
+			Growths: a.growth_count,
 			'Arena used': fmt_kb(a.used_kb * 1024),
 			'Arena total': fmt_kb(a.total_kb * 1024),
 			'Waste %': `${a.waste_pct.toFixed(1)}%`,
@@ -354,5 +358,7 @@ if (process.argv.includes('--save-baseline')) {
 		console.log('✅ No regressions detected.')
 	}
 } else {
-	console.log(`\nNo baseline found. Run with --save-baseline on your main branch to enable regression detection.`)
+	console.log(
+		`\nNo baseline found. Run with --save-baseline on your main branch to enable regression detection.`,
+	)
 }
