@@ -3,19 +3,18 @@
 > [!WARNING]
 > This is a very experimental CSS parser. Expect several bugs and inconveniences!
 
-**High-performance CSS parser optimized for static analysis and formatting**
+**High-performance CSS parser built for static analysis and tooling**
 
-Built for speed and efficiency, this parser handles large CSS files with minimal memory overhead and blazing-fast parse times. Designed with a data-oriented architecture using a single contiguous memory arena for zero allocations during parsing.
+Parses large CSS files in microseconds with a fixed-size memory arena — no garbage collection pressure, no per-node allocations, no surprises. If you're building a formatter, linter, or analysis tool and need raw speed with precise source locations, this is built for that.
 
-This parser was heavily influenced by [CSSTree](https://github.com/csstree/csstree), one of the most robust CSS parsers available. Some of the parsing mechanics are taken from CSSTree, as well as some of the performance mechanics, but a lot of things are very different which is why this isn't a direct fork and there is very little overlap in API's.
+Heavily influenced by [CSSTree](https://github.com/csstree/csstree). Some parsing mechanics are shared, but the memory model, architecture, and API are fundamentally different — not a fork.
 
 ## Features
 
-- **Modern CSS support** - CSS Nesting, `:is()`, `:where()`, `:has()`, `@layer`, `@container`
-- **Error recovery** - Continues parsing on malformed CSS
-- **Location tracking** - Line, column, offset, and length for all nodes
-- **Performance** - Low memory usage and excellent parsing speed
-- **Small bundle size** - Fast download and installation in any environment
+- **Full modern CSS** — CSS Nesting, `:is()`, `:where()`, `:has()`, `@layer`, `@container`
+- **Error-tolerant** — keeps parsing through malformed input; one bad rule won't kill the file
+- **Precise source locations** — line, column, offset, and length on every node
+- **Tiny footprint** — tree-shakeable subparsers; as small as 278 bytes gzipped, < 16 kB kB worst case
 
 ## Installation
 
@@ -59,20 +58,36 @@ for (const rule of ast) {
 
 ## Performance
 
-- **Small install size** (~200kB)
-- **Zero allocations during parsing** - all memory allocated upfront based on real world heuristics, which also helps prevent garbage collection running often
-- **Cache-friendly data layout** - contiguous memory for sequential access powered by concepts of Data Oriented Design
-- **First-class comment and location support** - while still being performant because analysis requires constant access to lines and columns
-- **No syntax validation** - focusing only on the raw data we can skip expensive syntax files and MDN data syncs
+- **Zero allocations during parsing** — memory is reserved upfront using real-world heuristics; the GC never runs mid-parse
+- **Cache-friendly layout** — all nodes live in a single contiguous arena, making sequential access fast
+- **Location tracking with no penalty** — full line, column, and offset data without slowing the parser down
+- **No syntax validation** — skipping spec checks and MDN data means nothing gets in the way of speed
+
+### Bundle sizes
+
+All sizes are minified and bundled with dependencies. Import only what you need — bundlers will tree-shake the rest.
+
+| Import                                            | Description                  | Minified | Gzip    |
+| ------------------------------------------------- | ---------------------------- | -------- | ------- |
+| `@projectwallace/css-parser`                      | Full parser (all subparsers) | 68.9 kB  | 15.5 kB |
+| `@projectwallace/css-parser/parse`                | CSS stylesheet parser        | 62.2 kB  | 13.3 kB |
+| `@projectwallace/css-parser/parse-atrule-prelude` | At-rule prelude parser       | 35.4 kB  | 8.4 kB  |
+| `@projectwallace/css-parser/parse-selector`       | Selector parser              | 37.7 kB  | 8.9 kB  |
+| `@projectwallace/css-parser/parse-anplusb`        | An+B syntax parser           | 26.1 kB  | 6.6 kB  |
+| `@projectwallace/css-parser/parse-declaration`    | Declaration parser           | 28.3 kB  | 7.3 kB  |
+| `@projectwallace/css-parser/parse-value`          | Value parser                 | 25.2 kB  | 6.6 kB  |
+| `@projectwallace/css-parser/parse-dimension`      | Dimension parser             | 0.4 kB   | 0.3 kB  |
+| `@projectwallace/css-parser/tokenizer`            | Tokenizer                    | 9.8 kB   | 2.4 kB  |
 
 ## Documentation
 
-See [API.md](./API.md) for complete documentation of all parser functions and options.
+See [API.md](./API.md) for complete documentation of all parser functions and nodes.
 
 ## Non-goals
 
-- **No syntax validation** - this parser does not try to validate your CSS structure. Everything can be anything
-- **No custom syntax support** - we're leaving the era of CSS preprocessors so we only focus on CSS
+- **No syntax validation** — CSS structure is your responsibility; the parser accepts anything valid or not
+- **No preprocessor syntax** — Sass, Less, and Stylus are out of scope; this parser targets plain CSS only
+- **Tree operations** - Manipulating the AST is not within scope of this library
 
 ## License
 
