@@ -64,7 +64,9 @@ function fmt(bytes: number): string {
 const pkg_name: string = pkg.name
 
 console.log('| Import | Description | Minified | Gzip |')
-console.log('| ------------------------------------------------- | ---------------------------- | -------- | ------- |')
+console.log(
+	'| ------------------------------------------------- | ---------------------------- | -------- | ------- |',
+)
 
 for (const { export_path, minified, gzipped } of results) {
 	const import_path = export_path === '.' ? pkg_name : `${pkg_name}${export_path.slice(1)}`

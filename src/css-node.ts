@@ -385,7 +385,7 @@ export class CSSNode {
 		}
 
 		if (type === NUMBER) {
-			return Number.parseFloat(text)
+			return Number(text)
 		}
 
 		// Special handling for URL nodes
