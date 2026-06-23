@@ -989,8 +989,10 @@ export class AtRulePreludeParser {
 		this.next_token()
 		if (this.lexer.token_type !== TOKEN_IDENT) return []
 
-		nodes.push(this.create_node(IDENTIFIER, this.lexer.token_start, this.lexer.token_end))
-		nodes.push(...this.parse_media_query_list())
+		nodes.push(
+			this.create_node(IDENTIFIER, this.lexer.token_start, this.lexer.token_end),
+			...this.parse_media_query_list(),
+		)
 
 		return nodes
 	}

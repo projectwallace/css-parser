@@ -52,7 +52,8 @@ export function parse_dimension(text: string): { value: number; unit: string } {
 
 	let num_str = text.substring(0, num_end)
 	let unit = text.substring(num_end)
-	let value = num_str ? parseFloat(num_str) : 0
+	// oxlint-disable-next-line prefer-number-coercion
+	let value = num_str ? Number.parseFloat(num_str) : 0
 
 	return { value, unit }
 }

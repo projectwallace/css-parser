@@ -88,26 +88,24 @@
 	"devDependencies": {
 		"@projectwallace/preset-oxlint": "^0.0.10",
 		"@types/node": "^24.10.1",
-		"@vitest/coverage-v8": "^4.1.5",
+		"@vitest/coverage-v8": "^4.1.9",
 		"bootstrap": "^5.3.8",
 		"css-tree": "^3.1.0",
-		"knip": "^6.11.0",
-		"oxfmt": "^0.49.0",
-		"oxlint": "^1.62.0",
-		"postcss": "^8.5.6",
-		"publint": "^0.3.18",
+		"knip": "^6.18.0",
+		"oxfmt": "^0.56.0",
+		"oxlint": "^1.71.0",
+		"postcss": "^8.5.15",
+		"publint": "^0.3.21",
 		"tailwindcss": "^2.2.8",
-		"tinybench": "^6.0.1",
-		"tsdown": "^0.22.0",
+		"tinybench": "^6.0.2",
+		"tsdown": "^0.22.3",
 		"typescript": "^6.0.3",
-		"vitest": "^4.1.5"
+		"vite": "^8.0.16",
+		"vitest": "^4.1.9"
 	},
 	"engines": {
 		"pnpm": ">=11.0.0"
 	},
 	"packageManager": "pnpm@11.1.1",
-	"pnpm": {
-		"onlyBuiltDependencies": []
-	},
 	"issues": "https://github.com/projectwallace/css-parser/issues"
 }

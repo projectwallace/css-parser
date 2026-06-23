@@ -1,5 +1,5 @@
 {
-	"ignore": ["/benchmark/**"],
+	"ignore": ["/benchmark/**", "test/build/**"],
 	"ignoreDependencies": [
 		"@projectwallace/preset-oxlint",
 		"bootstrap",
