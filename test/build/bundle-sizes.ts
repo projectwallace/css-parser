@@ -1,3 +1,4 @@
+// oxlint-disable no-console
 /// <reference types="node" />
 // Run: node test/build/bundle-sizes.ts
 // Prints a markdown table of minified + gzip sizes for all package exports.
@@ -5,10 +6,9 @@
 import { build } from 'esbuild'
 import { gzipSync } from 'node:zlib'
 import { readFileSync } from 'node:fs'
-import { resolve, dirname } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { resolve } from 'node:path'
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
+const root = resolve(import.meta.dirname, '../..')
 const pkg = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'))
 
 // Exports that don't follow the ./name → src/name.ts convention
