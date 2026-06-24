@@ -415,7 +415,18 @@ export class CSSNode {
 			return this.get_content()
 		}
 
-		// For other nodes, return as string
+		// Only these types store a value in the arena value_start/value_length field.
+		// Every other node type has no value concept and must return undefined.
+		if (
+			type !== DECLARATION &&
+			type !== FUNCTION &&
+			type !== ATTRIBUTE_SELECTOR &&
+			type !== SUPPORTS_QUERY &&
+			type !== PRELUDE_SELECTORLIST
+		) {
+			return undefined
+		}
+
 		let start = this.arena.get_value_start(this.index)
 		let length = this.arena.get_value_length(this.index)
 		if (length === 0) return null
