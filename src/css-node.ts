@@ -44,6 +44,7 @@ import {
 	AT_RULE_PRELUDE,
 	PRELUDE_SELECTORLIST,
 	SUPPORTS_DECLARATION,
+	IF_BRANCH,
 	FLAG_IMPORTANT,
 	FLAG_HAS_ERROR,
 	FLAG_HAS_BLOCK,
@@ -65,6 +66,7 @@ import {
 	is_whitespace,
 	is_vendor_prefixed,
 	str_starts_with,
+	str_equals,
 } from './string-utils'
 import { parse_dimension } from './parse-dimension'
 
@@ -113,6 +115,7 @@ export const TYPE_NAMES = {
 	[FEATURE_RANGE]: 'MediaFeatureRange',
 	[AT_RULE_PRELUDE]: 'AtrulePrelude',
 	[PRELUDE_SELECTORLIST]: 'PreludeSelectorList',
+	[IF_BRANCH]: 'IfBranch',
 } as const
 
 export type TypeName = (typeof TYPE_NAMES)[keyof typeof TYPE_NAMES] | 'unknown'
@@ -162,6 +165,7 @@ export type CSSNodeType =
 	| typeof AT_RULE_PRELUDE
 	| typeof PRELUDE_SELECTORLIST
 	| typeof SUPPORTS_DECLARATION
+	| typeof IF_BRANCH
 
 // Options for cloning nodes
 export interface CloneOptions {
@@ -193,6 +197,10 @@ export type PlainCSSNode = {
 	value?: PlainCSSNode | string | number | null
 	unit?: string
 	prelude?: PlainCSSNode | null
+
+	// IfBranch-specific
+	condition?: string
+	is_else?: boolean
 
 	// Flags (only when true)
 	is_important?: boolean
@@ -248,6 +256,7 @@ const nodes_with_children = new Set<number>([
 	FEATURE_RANGE,
 	SUPPORTS_QUERY,
 	SUPPORTS_DECLARATION,
+	IF_BRANCH,
 ])
 
 const enumerable_properties = [
@@ -261,6 +270,8 @@ const enumerable_properties = [
 	'nth_a',
 	'nth_b',
 	'selector',
+	'condition',
+	'is_else',
 	'is_browserhack',
 	'is_vendor_prefixed',
 	'has_error',
@@ -378,6 +389,11 @@ export class CSSNode {
 
 		if (type === MEDIA_FEATURE) {
 			return first_child ?? null
+		}
+
+		if (type === IF_BRANCH) {
+			// First child is the condition node; second child (if any) is the VALUE wrapper
+			return first_child?.next_sibling ?? null
 		}
 
 		if (type === DIMENSION) {
@@ -506,6 +522,18 @@ export class CSSNode {
 	get unit(): string | undefined {
 		if (this.type !== DIMENSION) return undefined
 		return parse_dimension(this.text).unit
+	}
+
+	/** Get the condition text of an if() branch, e.g. "style(--active: 1)" or "else" */
+	get condition(): string | undefined {
+		if (this.type !== IF_BRANCH) return undefined
+		return this.get_content()
+	}
+
+	/** True when this is the else branch of an if() function */
+	get is_else(): boolean | undefined {
+		if (this.type !== IF_BRANCH) return undefined
+		return str_equals('else', this.get_content())
 	}
 
 	/** Check if this declaration has !important */
