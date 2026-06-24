@@ -1045,6 +1045,168 @@ describe('CSSNode', () => {
 	})
 })
 
+describe('value property - undefined for nodes without a value concept', () => {
+	// Regression: these node types were incorrectly returning null instead of undefined.
+	// null means "has a value, but it is absent"; undefined means "value is not a property of this node type".
+
+	test('StyleSheet.value is undefined', () => {
+		const root = parse('div { color: red; }')
+		expect(root.value).toBeUndefined()
+	})
+
+	test('Rule.value is undefined', () => {
+		const root = parse('div { color: red; }')
+		const rule = root.first_child!
+		expect(rule.value).toBeUndefined()
+	})
+
+	test('SelectorList.value is undefined', () => {
+		const root = parse('div { color: red; }')
+		const rule = root.first_child!
+		const selectorList = rule.first_child!
+		expect(selectorList.type_name).toBe('SelectorList')
+		expect(selectorList.value).toBeUndefined()
+	})
+
+	test('Selector.value is undefined', () => {
+		const root = parse('div { color: red; }')
+		const selector = root.first_child!.first_child!.first_child!
+		expect(selector.type_name).toBe('Selector')
+		expect(selector.value).toBeUndefined()
+	})
+
+	test('TypeSelector.value is undefined', () => {
+		const root = parse('div { color: red; }')
+		const typeSelector = root.first_child!.first_child!.first_child!.first_child!
+		expect(typeSelector.type_name).toBe('TypeSelector')
+		expect(typeSelector.value).toBeUndefined()
+	})
+
+	test('ClassSelector.value is undefined', () => {
+		const root = parse('.foo { color: red; }')
+		const classSelector = root.first_child!.first_child!.first_child!.first_child!
+		expect(classSelector.type_name).toBe('ClassSelector')
+		expect(classSelector.value).toBeUndefined()
+	})
+
+	test('IdSelector.value is undefined', () => {
+		const root = parse('#bar { color: red; }')
+		const idSelector = root.first_child!.first_child!.first_child!.first_child!
+		expect(idSelector.type_name).toBe('IdSelector')
+		expect(idSelector.value).toBeUndefined()
+	})
+
+	test('PseudoClassSelector.value is undefined', () => {
+		const root = parse('a:hover { color: red; }')
+		const selector = root.first_child!.first_child!.first_child!
+		const pseudo = selector.first_child!.next_sibling!
+		expect(pseudo.type_name).toBe('PseudoClassSelector')
+		expect(pseudo.value).toBeUndefined()
+	})
+
+	test('PseudoElementSelector.value is undefined', () => {
+		const root = parse('p::before { content: ""; }')
+		const selector = root.first_child!.first_child!.first_child!
+		const pseudo = selector.first_child!.next_sibling!
+		expect(pseudo.type_name).toBe('PseudoElementSelector')
+		expect(pseudo.value).toBeUndefined()
+	})
+
+	test('Combinator.value is undefined', () => {
+		const root = parse('div > span { color: red; }')
+		const selector = root.first_child!.first_child!.first_child!
+		const combinator = selector.first_child!.next_sibling!
+		expect(combinator.type_name).toBe('Combinator')
+		expect(combinator.value).toBeUndefined()
+	})
+
+	test('UniversalSelector.value is undefined', () => {
+		const root = parse('* { color: red; }')
+		const universal = root.first_child!.first_child!.first_child!.first_child!
+		expect(universal.type_name).toBe('UniversalSelector')
+		expect(universal.value).toBeUndefined()
+	})
+
+	test('NthSelector.value is undefined', () => {
+		const root = parse('li:nth-child(2n+1) { color: red; }')
+		const selector = root.first_child!.first_child!.first_child!
+		const pseudo = selector.first_child!.next_sibling!
+		const nth = pseudo.first_child!
+		expect(nth.type_name).toBe('Nth')
+		expect(nth.value).toBeUndefined()
+	})
+
+	test('Block.value is undefined', () => {
+		const root = parse('div { color: red; }')
+		const block = (root.first_child! as Rule).block!
+		expect(block.value).toBeUndefined()
+	})
+
+	test('Value node.value is undefined', () => {
+		const root = parse('div { color: red; }')
+		const block = (root.first_child! as Rule).block!
+		const decl = block.first_child! as Declaration
+		const valueNode = decl.value!
+		expect(valueNode.type_name).toBe('Value')
+		expect(valueNode.value).toBeUndefined()
+	})
+
+	test('Identifier.value is undefined', () => {
+		const root = parse('div { color: red; }')
+		const block = (root.first_child! as Rule).block!
+		const decl = block.first_child! as Declaration
+		const identifier = decl.value!.first_child!
+		expect(identifier.type_name).toBe('Identifier')
+		expect(identifier.value).toBeUndefined()
+	})
+
+	test('Hash.value is undefined', () => {
+		const root = parse('div { color: #fff; }')
+		const block = (root.first_child! as Rule).block!
+		const decl = block.first_child! as Declaration
+		const hash = decl.value!.first_child!
+		expect(hash.type_name).toBe('Hash')
+		expect(hash.value).toBeUndefined()
+	})
+
+	test('String.value is undefined', () => {
+		const root = parse('p::before { content: "hello"; }')
+		const block = (root.first_child! as Rule).block!
+		const decl = block.first_child! as Declaration
+		const str = decl.value!.first_child!
+		expect(str.type_name).toBe('String')
+		expect(str.value).toBeUndefined()
+	})
+
+	test('Atrule.value is undefined', () => {
+		const root = parse('@media screen { div { color: red; } }', {
+			parse_atrule_preludes: false,
+		})
+		const atrule = root.first_child!
+		expect(atrule.type_name).toBe('Atrule')
+		expect(atrule.value).toBeUndefined()
+	})
+
+	test('MediaQuery.value is undefined', () => {
+		const root = parse('@media screen and (min-width: 600px) { div { color: red; } }')
+		const prelude = root.first_child!.first_child!
+		const mediaQuery = prelude.first_child!
+		expect(mediaQuery.type_name).toBe('MediaQuery')
+		expect(mediaQuery.value).toBeUndefined()
+	})
+
+	test('Raw.value is undefined', () => {
+		const root = parse('div { color: red; }', {
+			parse_selectors: false,
+			parse_values: false,
+		})
+		const rule = root.first_child!
+		const raw = rule.first_child!
+		expect(raw.type_name).toBe('Raw')
+		expect(raw.value).toBeUndefined()
+	})
+})
+
 describe('NODE_TYPES namespace', () => {
 	test('should work as alternative to individual imports', async () => {
 		// Import namespace object
