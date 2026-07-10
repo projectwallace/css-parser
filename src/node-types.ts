@@ -87,6 +87,29 @@ export type CSSNode = {
 	| { readonly has_next: true; readonly next_sibling: CSSNode }
 )
 
+// ---------------------------------------------------------------------------
+// Shared builders — every node type below is assembled from these instead of
+// hand-rolling `CSSNode & { type, type_name, clone(): ToPlain<Self> }` each
+// time. They compile away entirely (types only); their only cost is here,
+// once, rather than repeated on every one of the ~40 node types below.
+// ---------------------------------------------------------------------------
+
+/**
+ * A boolean discriminant paired with the value it gates, e.g. `has_prelude` /
+ * `prelude`: `T` when the flag is true, `null` when it's false.
+ */
+type Toggle<HasKey extends string, ValueKey extends string, T> =
+	| ({ readonly [K in HasKey]: true } & { readonly [K in ValueKey]: T })
+	| ({ readonly [K in HasKey]: false } & { readonly [K in ValueKey]: null })
+
+/** Adds a `clone()` whose return type is `ToPlain<T>` for this exact T. */
+type WithClone<T extends CSSNode> = T & { clone(options?: CloneOptions): ToPlain<T> }
+
+/** A node with no children: CSSNode + a literal type tag + any extra fields. */
+type Leaf<Type extends CSSNodeType, Name extends TypeName, Extra = {}> = WithClone<
+	CSSNode & Extra & { readonly type: Type; readonly type_name: Name }
+>
+
 /**
  * Mixin for node types that have child nodes.
  *
@@ -141,58 +164,46 @@ export type ToPlain<T extends CSSNode> = PlainCSSNode & { type: T['type'] } & {
 // Structural nodes
 // ---------------------------------------------------------------------------
 
-export type StyleSheet = CSSNode &
-	WithChildren & {
-		readonly type: typeof STYLESHEET
-		readonly type_name: 'StyleSheet'
-		clone(options?: CloneOptions): ToPlain<StyleSheet>
+export type StyleSheet = WithClone<
+	CSSNode & WithChildren & { readonly type: typeof STYLESHEET; readonly type_name: 'StyleSheet' }
+>
+
+export type Rule = WithClone<
+	CSSNode &
+		/** SELECTOR_LIST (parse_selectors=true) or RAW (parse_selectors=false) */
+		Toggle<'has_prelude', 'prelude', SelectorList | Raw> &
+		Toggle<'has_block', 'block', Block> & {
+			readonly type: typeof STYLE_RULE
+			readonly type_name: 'Rule'
+			readonly has_declarations: boolean
+		}
+>
+
+export type Atrule = WithClone<
+	CSSNode &
+		/** AT_RULE_PRELUDE (parse_atrule_preludes=true) or RAW (parse_atrule_preludes=false) */
+		Toggle<'has_prelude', 'prelude', AtrulePrelude | Raw> &
+		Toggle<'has_block', 'block', Block> & {
+			readonly type: typeof AT_RULE
+			readonly type_name: 'Atrule'
+			/** At-rule keyword, e.g. "media", "keyframes" */
+			readonly name: string
+			readonly has_declarations: boolean
+		}
+>
+
+export type Declaration = Leaf<
+	typeof DECLARATION,
+	'Declaration',
+	{
+		/** Property name, e.g. "color" */
+		readonly property: string
+		/** VALUE node (parse_values=true), RAW node (parse_values=false), or null */
+		readonly value: Value | Raw | null
+		readonly is_important: boolean
+		readonly is_browserhack: boolean
 	}
-
-export type Rule = CSSNode & {
-	readonly type: typeof STYLE_RULE
-	readonly type_name: 'Rule'
-	readonly has_declarations: boolean
-	clone(options?: CloneOptions): ToPlain<Rule>
-} &
-	/** SELECTOR_LIST (parse_selectors=true) or RAW (parse_selectors=false) */
-	(
-		| { readonly has_prelude: true; readonly prelude: SelectorList | Raw }
-		| { readonly has_prelude: false; readonly prelude: null }
-	) &
-	(
-		| { readonly has_block: true; readonly block: Block }
-		| { readonly has_block: false; readonly block: null }
-	)
-
-export type Atrule = CSSNode & {
-	readonly type: typeof AT_RULE
-	readonly type_name: 'Atrule'
-	/** At-rule keyword, e.g. "media", "keyframes" */
-	readonly name: string
-	readonly has_declarations: boolean
-	clone(options?: CloneOptions): ToPlain<Atrule>
-} &
-	/** AT_RULE_PRELUDE (parse_atrule_preludes=true) or RAW (parse_atrule_preludes=false) */
-	(
-		| { readonly has_prelude: true; readonly prelude: AtrulePrelude | Raw }
-		| { readonly has_prelude: false; readonly prelude: null }
-	) &
-	(
-		| { readonly has_block: true; readonly block: Block }
-		| { readonly has_block: false; readonly block: null }
-	)
-
-export type Declaration = CSSNode & {
-	readonly type: typeof DECLARATION
-	readonly type_name: 'Declaration'
-	/** Property name, e.g. "color" */
-	readonly property: string
-	/** VALUE node (parse_values=true), RAW node (parse_values=false), or null */
-	readonly value: Value | Raw | null
-	readonly is_important: boolean
-	readonly is_browserhack: boolean
-	clone(options?: CloneOptions): ToPlain<Declaration>
-}
+>
 
 export type SelectorNode =
 	| TypeSelector
@@ -207,19 +218,13 @@ export type SelectorNode =
 	| PseudoClassSelector
 	| PseudoElementSelector
 
-export type Selector = CSSNode &
-	WithChildren<SelectorNode> & {
-		readonly type: typeof SELECTOR
-		readonly type_name: 'Selector'
-		clone(options?: CloneOptions): ToPlain<Selector>
-	}
+export type Selector = WithClone<
+	CSSNode & WithChildren<SelectorNode> & { readonly type: typeof SELECTOR; readonly type_name: 'Selector' }
+>
 
-export type SelectorList = CSSNode &
-	WithChildren<Selector> & {
-		readonly type: typeof SELECTOR_LIST
-		readonly type_name: 'SelectorList'
-		clone(options?: CloneOptions): ToPlain<SelectorList>
-	}
+export type SelectorList = WithClone<
+	CSSNode & WithChildren<Selector> & { readonly type: typeof SELECTOR_LIST; readonly type_name: 'SelectorList' }
+>
 
 /**
  * A node that appears as a direct child of a Block.
@@ -230,34 +235,24 @@ export type SelectorList = CSSNode &
  * there is no recursive type graph to trigger TS2589.
  */
 export type BlockChild = (Raw | Declaration | Atrule | Rule) &
-	(
-		| { readonly has_next: false; readonly next_sibling: null }
-		| { readonly has_next: true; readonly next_sibling: Raw | Declaration | Atrule | Rule }
-	)
+	Toggle<'has_next', 'next_sibling', Raw | Declaration | Atrule | Rule>
 
-export type Block = CSSNode &
-	WithChildren<Raw | Declaration | Atrule | Rule> & {
-		readonly type: typeof BLOCK
-		readonly type_name: 'Block'
-		readonly is_empty: boolean
-		/** Block children with next_sibling narrowed to the Block child union. */
-		readonly first_child: BlockChild
-		readonly children: BlockChild[]
-		[Symbol.iterator](): Iterator<BlockChild>
-		clone(options?: CloneOptions): ToPlain<Block>
-	}
+export type Block = WithClone<
+	CSSNode &
+		WithChildren<Raw | Declaration | Atrule | Rule> & {
+			readonly type: typeof BLOCK
+			readonly type_name: 'Block'
+			readonly is_empty: boolean
+			/** Block children with next_sibling narrowed to the Block child union. */
+			readonly first_child: BlockChild
+			readonly children: BlockChild[]
+			[Symbol.iterator](): Iterator<BlockChild>
+		}
+>
 
-export type Comment = CSSNode & {
-	readonly type: typeof COMMENT
-	readonly type_name: 'Comment'
-	clone(options?: CloneOptions): ToPlain<Comment>
-}
+export type Comment = Leaf<typeof COMMENT, 'Comment'>
 
-export type Raw = CSSNode & {
-	readonly type: typeof RAW
-	readonly type_name: 'Raw'
-	clone(options?: CloneOptions): ToPlain<Raw>
-}
+export type Raw = Leaf<typeof RAW, 'Raw'>
 
 // ---------------------------------------------------------------------------
 // Value nodes
@@ -275,280 +270,268 @@ type ValueLike =
 	| Dimension
 	| Number
 
-export type Identifier = CSSNode & {
-	readonly type: typeof IDENTIFIER
-	readonly type_name: 'Identifier'
-	readonly name: string
-	clone(options?: CloneOptions): ToPlain<Identifier>
-}
+export type Identifier = Leaf<typeof IDENTIFIER, 'Identifier', { readonly name: string }>
 
-export type Number = CSSNode & {
-	readonly type: typeof NUMBER
-	readonly type_name: 'Number'
-	readonly value: number
-	clone(options?: CloneOptions): ToPlain<Number>
-}
+export type Number = Leaf<typeof NUMBER, 'Number', { readonly value: number }>
 
-export type Dimension = CSSNode & {
-	readonly type: typeof DIMENSION
-	readonly type_name: 'Dimension'
-	readonly value: number
-	/** Unit string, e.g. "px", "%" */
-	readonly unit: string
-	clone(options?: CloneOptions): ToPlain<Dimension>
-}
+export type Dimension = Leaf<
+	typeof DIMENSION,
+	'Dimension',
+	{
+		readonly value: number
+		/** Unit string, e.g. "px", "%" */
+		readonly unit: string
+	}
+>
 
-export type String = CSSNode & {
-	readonly type: typeof STRING
-	readonly type_name: 'String'
-	clone(options?: CloneOptions): ToPlain<String>
-}
+export type String = Leaf<typeof STRING, 'String'>
 
-export type Hash = CSSNode & {
-	readonly type: typeof HASH
-	readonly type_name: 'Hash'
-	clone(options?: CloneOptions): ToPlain<Hash>
-}
+export type Hash = Leaf<typeof HASH, 'Hash'>
 
-export type Function = CSSNode &
-	WithChildren<ValueLike> & {
-		readonly type: typeof FUNCTION
-		readonly type_name: 'Function'
-		/** Function name, e.g. "rgb", "calc" */
-		readonly name: string
-		/** Function arguments as raw text, e.g. "255, 0, 0" for rgb(255, 0, 0) */
+export type Function = WithClone<
+	CSSNode &
+		WithChildren<ValueLike> & {
+			readonly type: typeof FUNCTION
+			readonly type_name: 'Function'
+			/** Function name, e.g. "rgb", "calc" */
+			readonly name: string
+			/** Function arguments as raw text, e.g. "255, 0, 0" for rgb(255, 0, 0) */
+			readonly value: string | null
+		}
+>
+
+export type Operator = Leaf<
+	typeof OPERATOR,
+	'Operator',
+	{
+		/** The operator character(s), e.g. ",", "+", "-" */
+		readonly value: string
+	}
+>
+
+export type Parenthesis = WithClone<
+	CSSNode & WithChildren & { readonly type: typeof PARENTHESIS; readonly type_name: 'Parentheses' }
+>
+
+export type Url = Leaf<
+	typeof URL,
+	'Url',
+	{
+		/** URL content, e.g. '"image.png"' (with quotes) or 'mycursor.cur' (unquoted) */
 		readonly value: string | null
-		clone(options?: CloneOptions): ToPlain<Function>
 	}
+>
 
-export type Operator = CSSNode & {
-	readonly type: typeof OPERATOR
-	readonly type_name: 'Operator'
-	/** The operator character(s), e.g. ",", "+", "-" */
-	readonly value: string
-	clone(options?: CloneOptions): ToPlain<Operator>
-}
+export type UnicodeRange = Leaf<typeof UNICODE_RANGE, 'UnicodeRange'>
 
-export type Parenthesis = CSSNode &
-	WithChildren & {
-		readonly type: typeof PARENTHESIS
-		readonly type_name: 'Parentheses'
-		clone(options?: CloneOptions): ToPlain<Parenthesis>
-	}
-
-export type Url = CSSNode & {
-	readonly type: typeof URL
-	readonly type_name: 'Url'
-	/** URL content, e.g. '"image.png"' (with quotes) or 'mycursor.cur' (unquoted) */
-	readonly value: string | null
-	clone(options?: CloneOptions): ToPlain<Url>
-}
-
-export type UnicodeRange = CSSNode & {
-	readonly type: typeof UNICODE_RANGE
-	readonly type_name: 'UnicodeRange'
-	clone(options?: CloneOptions): ToPlain<UnicodeRange>
-}
-
-export type Value = CSSNode &
-	WithChildren<ValueLike> & {
-		readonly type: typeof VALUE
-		readonly type_name: 'Value'
-		clone(options?: CloneOptions): ToPlain<Value>
-	}
+export type Value = WithClone<
+	CSSNode & WithChildren<ValueLike> & { readonly type: typeof VALUE; readonly type_name: 'Value' }
+>
 
 // ---------------------------------------------------------------------------
 // Selector nodes
 // ---------------------------------------------------------------------------
 
-export type TypeSelector = CSSNode & {
-	readonly type: typeof TYPE_SELECTOR
-	readonly type_name: 'TypeSelector'
-	/** Local element name, e.g. "div" in both "div" and "ns|div" */
-	readonly name: string
-	/** Namespace prefix: null if no qualifier, '' for |div, 'ns' for ns|div, '*' for *|div */
-	readonly namespace: string | null
-	clone(options?: CloneOptions): ToPlain<TypeSelector>
-}
-
-export type ClassSelector = CSSNode & {
-	readonly type: typeof CLASS_SELECTOR
-	readonly type_name: 'ClassSelector'
-	/** Class name without dot, e.g. "foo" from ".foo" */
-	readonly name: string
-	clone(options?: CloneOptions): ToPlain<ClassSelector>
-}
-
-export type IdSelector = CSSNode & {
-	readonly type: typeof ID_SELECTOR
-	readonly type_name: 'IdSelector'
-	/** Id without hash, e.g. "bar" from "#bar" */
-	readonly name: string
-	clone(options?: CloneOptions): ToPlain<IdSelector>
-}
-
-export type AttributeSelector = CSSNode & {
-	readonly type: typeof ATTRIBUTE_SELECTOR
-	readonly type_name: 'AttributeSelector'
-	/** Attribute name, e.g. "href" from "[href]" */
-	readonly name: string
-	/** Operator string, e.g. "=", "~=", "|="; null if no operator ([attr] form) */
-	readonly attr_operator: string | null
-	/** Flag character, e.g. "i", "s"; null if no flag */
-	readonly attr_flags: string | null
-	/** Attribute value, e.g. "external" from [rel="external"] */
-	readonly value: string | null
-	clone(options?: CloneOptions): ToPlain<AttributeSelector>
-}
-
-export type PseudoClassSelector = CSSNode &
-	WithChildren<Selector | NthOfSelector> & {
-		readonly type: typeof PSEUDO_CLASS_SELECTOR
-		readonly type_name: 'PseudoClassSelector'
-		/** Pseudo-class name without colon, e.g. "hover" */
+export type TypeSelector = Leaf<
+	typeof TYPE_SELECTOR,
+	'TypeSelector',
+	{
+		/** Local element name, e.g. "div" in both "div" and "ns|div" */
 		readonly name: string
-		clone(options?: CloneOptions): ToPlain<PseudoClassSelector>
+		/** Namespace prefix: null if no qualifier, '' for |div, 'ns' for ns|div, '*' for *|div */
+		readonly namespace: string | null
 	}
+>
 
-export type PseudoElementSelector = CSSNode &
-	WithChildren<SelectorList> & {
-		readonly type: typeof PSEUDO_ELEMENT_SELECTOR
-		readonly type_name: 'PseudoElementSelector'
-		/** Pseudo-element name without colons, e.g. "before" */
+export type ClassSelector = Leaf<
+	typeof CLASS_SELECTOR,
+	'ClassSelector',
+	{
+		/** Class name without dot, e.g. "foo" from ".foo" */
 		readonly name: string
-		clone(options?: CloneOptions): ToPlain<PseudoElementSelector>
 	}
+>
 
-export type Combinator = CSSNode & {
-	readonly type: typeof COMBINATOR
-	readonly type_name: 'Combinator'
-	/** Combinator character(s), e.g. " ", ">", "~", "+", "||", "/deep/" */
-	readonly name: string
-	clone(options?: CloneOptions): ToPlain<Combinator>
-}
+export type IdSelector = Leaf<
+	typeof ID_SELECTOR,
+	'IdSelector',
+	{
+		/** Id without hash, e.g. "bar" from "#bar" */
+		readonly name: string
+	}
+>
 
-export type UniversalSelector = CSSNode & {
-	readonly type: typeof UNIVERSAL_SELECTOR
-	readonly type_name: 'UniversalSelector'
-	/** Always null — universal selector has no element name */
-	readonly name: null
-	/** Namespace prefix: null if no qualifier, '' for |*, 'ns' for ns|*, '*' for *|* */
-	readonly namespace: string | null
-	clone(options?: CloneOptions): ToPlain<UniversalSelector>
-}
+export type AttributeSelector = Leaf<
+	typeof ATTRIBUTE_SELECTOR,
+	'AttributeSelector',
+	{
+		/** Attribute name, e.g. "href" from "[href]" */
+		readonly name: string
+		/** Operator string, e.g. "=", "~=", "|="; null if no operator ([attr] form) */
+		readonly attr_operator: string | null
+		/** Flag character, e.g. "i", "s"; null if no flag */
+		readonly attr_flags: string | null
+		/** Attribute value, e.g. "external" from [rel="external"] */
+		readonly value: string | null
+	}
+>
 
-export type NestingSelector = CSSNode & {
-	readonly type: typeof NESTING_SELECTOR
-	readonly type_name: 'NestingSelector'
-	clone(options?: CloneOptions): ToPlain<NestingSelector>
-}
+export type PseudoClassSelector = WithClone<
+	CSSNode &
+		WithChildren<Selector | NthOfSelector> & {
+			readonly type: typeof PSEUDO_CLASS_SELECTOR
+			readonly type_name: 'PseudoClassSelector'
+			/** Pseudo-class name without colon, e.g. "hover" */
+			readonly name: string
+		}
+>
 
-export type NthSelector = CSSNode & {
-	readonly type: typeof NTH_SELECTOR
-	readonly type_name: 'Nth'
-	/** The `An` part of the An+B formula, including keywords `odd`/`even`. Null when only a B value is present (e.g. `:nth-child(3)`). */
-	readonly nth_a: string | null
-	/** The `+B` part of the An+B formula. Null when only an A value is present (e.g. `:nth-child(2n)` or `:nth-child(odd)`). */
-	readonly nth_b: string | null
-	clone(options?: CloneOptions): ToPlain<NthSelector>
-}
+export type PseudoElementSelector = WithClone<
+	CSSNode &
+		WithChildren<SelectorList> & {
+			readonly type: typeof PSEUDO_ELEMENT_SELECTOR
+			readonly type_name: 'PseudoElementSelector'
+			/** Pseudo-element name without colons, e.g. "before" */
+			readonly name: string
+		}
+>
 
-export type NthOfSelector = CSSNode & {
-	readonly type: typeof NTH_OF_SELECTOR
-	readonly type_name: 'NthOf'
-	/** The An+B formula node */
-	readonly nth: NthSelector | null
-	/** The selector list from :nth-child(An+B of <selector>) */
-	readonly selector: SelectorList | null
-	clone(options?: CloneOptions): ToPlain<NthOfSelector>
-}
+export type Combinator = Leaf<
+	typeof COMBINATOR,
+	'Combinator',
+	{
+		/** Combinator character(s), e.g. " ", ">", "~", "+", "||", "/deep/" */
+		readonly name: string
+	}
+>
 
-export type LangSelector = CSSNode & {
-	readonly type: typeof LANG_SELECTOR
-	readonly type_name: 'Lang'
-	/** `"nl"`, `en-US` */
-	readonly name: string | null
-	clone(options?: CloneOptions): ToPlain<LangSelector>
-}
+export type UniversalSelector = Leaf<
+	typeof UNIVERSAL_SELECTOR,
+	'UniversalSelector',
+	{
+		/** Always null — universal selector has no element name */
+		readonly name: null
+		/** Namespace prefix: null if no qualifier, '' for |*, 'ns' for ns|*, '*' for *|* */
+		readonly namespace: string | null
+	}
+>
+
+export type NestingSelector = Leaf<typeof NESTING_SELECTOR, 'NestingSelector'>
+
+export type NthSelector = Leaf<
+	typeof NTH_SELECTOR,
+	'Nth',
+	{
+		/** The `An` part of the An+B formula, including keywords `odd`/`even`. Null when only a B value is present (e.g. `:nth-child(3)`). */
+		readonly nth_a: string | null
+		/** The `+B` part of the An+B formula. Null when only an A value is present (e.g. `:nth-child(2n)` or `:nth-child(odd)`). */
+		readonly nth_b: string | null
+	}
+>
+
+export type NthOfSelector = Leaf<
+	typeof NTH_OF_SELECTOR,
+	'NthOf',
+	{
+		/** The An+B formula node */
+		readonly nth: NthSelector | null
+		/** The selector list from :nth-child(An+B of <selector>) */
+		readonly selector: SelectorList | null
+	}
+>
+
+export type LangSelector = Leaf<
+	typeof LANG_SELECTOR,
+	'Lang',
+	{
+		/** `"nl"`, `en-US` */
+		readonly name: string | null
+	}
+>
 
 // ---------------------------------------------------------------------------
 // At-rule prelude nodes
 // ---------------------------------------------------------------------------
 
-export type AtrulePrelude = CSSNode &
-	WithChildren<
-		| Raw
-		| MediaQuery
-		| MediaType
-		| ContainerQuery
-		| SupportsQuery
-		| LayerName
-		| PreludeOperator
-		| PreludeSelectorList
-		| Parenthesis
-		| Url
-	> & {
-		readonly type: typeof AT_RULE_PRELUDE
-		readonly type_name: 'AtrulePrelude'
-		clone(options?: CloneOptions): ToPlain<AtrulePrelude>
+export type AtrulePrelude = WithClone<
+	CSSNode &
+		WithChildren<
+			| Raw
+			| MediaQuery
+			| MediaType
+			| ContainerQuery
+			| SupportsQuery
+			| LayerName
+			| PreludeOperator
+			| PreludeSelectorList
+			| Parenthesis
+			| Url
+		> & { readonly type: typeof AT_RULE_PRELUDE; readonly type_name: 'AtrulePrelude' }
+>
+
+export type MediaQuery = WithClone<
+	CSSNode &
+		WithChildren<MediaFeature | PreludeOperator | MediaType | FeatureRange> & {
+			readonly type: typeof MEDIA_QUERY
+			readonly type_name: 'MediaQuery'
+		}
+>
+
+export type MediaFeature = Leaf<
+	typeof MEDIA_FEATURE,
+	'Feature',
+	{
+		/** Feature name, e.g. "min-width" */
+		readonly property: string
+		/** Feature value node, or null for boolean features like (hover) */
+		readonly value: CSSNode | null
 	}
+>
 
-export type MediaQuery = CSSNode &
-	WithChildren<MediaFeature | PreludeOperator | MediaType | FeatureRange> & {
-		readonly type: typeof MEDIA_QUERY
-		readonly type_name: 'MediaQuery'
-		clone(options?: CloneOptions): ToPlain<MediaQuery>
-	}
-
-export type MediaFeature = CSSNode & {
-	readonly type: typeof MEDIA_FEATURE
-	readonly type_name: 'Feature'
-	/** Feature name, e.g. "min-width" */
-	readonly property: string
-	/** Feature value node, or null for boolean features like (hover) */
-	readonly value: CSSNode | null
-	clone(options?: CloneOptions): ToPlain<MediaFeature>
-}
-
-export type MediaType = CSSNode & {
-	readonly type: typeof MEDIA_TYPE
-	readonly type_name: 'MediaType'
-	/** Media type text, e.g. "screen", "print" */
-	readonly value: string
-	clone(options?: CloneOptions): ToPlain<MediaType>
-}
-
-export type ContainerQuery = CSSNode &
-	WithChildren<Identifier | MediaFeature | Function> & {
-		readonly type: typeof CONTAINER_QUERY
-		readonly type_name: 'ContainerQuery'
-		clone(options?: CloneOptions): ToPlain<ContainerQuery>
-	}
-
-export type SupportsQuery = CSSNode &
-	WithChildren<SupportsDeclaration> & {
-		readonly type: typeof SUPPORTS_QUERY
-		readonly type_name: 'SupportsQuery'
-		/** The supports condition text, e.g. "display: flex" from "supports(display: flex)" */
+export type MediaType = Leaf<
+	typeof MEDIA_TYPE,
+	'MediaType',
+	{
+		/** Media type text, e.g. "screen", "print" */
 		readonly value: string
-		clone(options?: CloneOptions): ToPlain<SupportsQuery>
 	}
+>
 
-export type SupportsDeclaration = CSSNode &
-	WithChildren<Declaration> & {
-		readonly type: typeof SUPPORTS_DECLARATION
-		readonly type_name: 'SupportsDeclaration'
-		clone(options?: CloneOptions): ToPlain<SupportsDeclaration>
+export type ContainerQuery = WithClone<
+	CSSNode &
+		WithChildren<Identifier | MediaFeature | Function> & {
+			readonly type: typeof CONTAINER_QUERY
+			readonly type_name: 'ContainerQuery'
+		}
+>
+
+export type SupportsQuery = WithClone<
+	CSSNode &
+		WithChildren<SupportsDeclaration> & {
+			readonly type: typeof SUPPORTS_QUERY
+			readonly type_name: 'SupportsQuery'
+			/** The supports condition text, e.g. "display: flex" from "supports(display: flex)" */
+			readonly value: string
+		}
+>
+
+export type SupportsDeclaration = WithClone<
+	CSSNode &
+		WithChildren<Declaration> & {
+			readonly type: typeof SUPPORTS_DECLARATION
+			readonly type_name: 'SupportsDeclaration'
+		}
+>
+
+export type LayerName = Leaf<
+	typeof LAYER_NAME,
+	'Layer',
+	{
+		readonly name: string
+		/** Alias for name — the layer name string, e.g. "base" from "layer(base)" */
+		readonly value: string
 	}
-
-export type LayerName = CSSNode & {
-	readonly type: typeof LAYER_NAME
-	readonly type_name: 'Layer'
-	readonly name: string
-	/** Alias for name — the layer name string, e.g. "base" from "layer(base)" */
-	readonly value: string
-	clone(options?: CloneOptions): ToPlain<LayerName>
-}
+>
 
 /**
  * A parenthesised selector argument in an at-rule prelude.
@@ -566,27 +549,19 @@ export type LayerName = CSSNode & {
  * `value` is the raw selector text inside the parentheses, trimmed of
  * whitespace: ".parent" from "(.parent)".
  */
-export type PreludeSelectorList = CSSNode & {
-	readonly type: typeof PRELUDE_SELECTORLIST
-	readonly type_name: 'PreludeSelectorList'
-	readonly value: string
-	clone(options?: CloneOptions): ToPlain<PreludeSelectorList>
-}
+export type PreludeSelectorList = Leaf<typeof PRELUDE_SELECTORLIST, 'PreludeSelectorList', { readonly value: string }>
 
-export type PreludeOperator = CSSNode & {
-	readonly type: typeof PRELUDE_OPERATOR
-	readonly type_name: 'Operator'
-	clone(options?: CloneOptions): ToPlain<PreludeOperator>
-}
+export type PreludeOperator = Leaf<typeof PRELUDE_OPERATOR, 'Operator'>
 
-export type FeatureRange = CSSNode &
-	WithChildren<Dimension | Operator> & {
-		readonly type: typeof FEATURE_RANGE
-		readonly type_name: 'MediaFeatureRange'
-		/** The feature name in a range comparison, e.g. "width" from "(width >= 400px)" */
-		readonly name: string
-		clone(options?: CloneOptions): ToPlain<FeatureRange>
-	}
+export type FeatureRange = WithClone<
+	CSSNode &
+		WithChildren<Dimension | Operator> & {
+			readonly type: typeof FEATURE_RANGE
+			readonly type_name: 'MediaFeatureRange'
+			/** The feature name in a range comparison, e.g. "width" from "(width >= 400px)" */
+			readonly name: string
+		}
+>
 
 // ---------------------------------------------------------------------------
 // AnyCss — discriminated union of all known subtypes
