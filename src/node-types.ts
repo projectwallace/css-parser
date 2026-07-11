@@ -219,11 +219,16 @@ export type SelectorNode =
 	| PseudoElementSelector
 
 export type Selector = WithClone<
-	CSSNode & WithChildren<SelectorNode> & { readonly type: typeof SELECTOR; readonly type_name: 'Selector' }
+	CSSNode &
+		WithChildren<SelectorNode> & { readonly type: typeof SELECTOR; readonly type_name: 'Selector' }
 >
 
 export type SelectorList = WithClone<
-	CSSNode & WithChildren<Selector> & { readonly type: typeof SELECTOR_LIST; readonly type_name: 'SelectorList' }
+	CSSNode &
+		WithChildren<Selector> & {
+			readonly type: typeof SELECTOR_LIST
+			readonly type_name: 'SelectorList'
+		}
 >
 
 /**
@@ -549,7 +554,11 @@ export type LayerName = Leaf<
  * `value` is the raw selector text inside the parentheses, trimmed of
  * whitespace: ".parent" from "(.parent)".
  */
-export type PreludeSelectorList = Leaf<typeof PRELUDE_SELECTORLIST, 'PreludeSelectorList', { readonly value: string }>
+export type PreludeSelectorList = Leaf<
+	typeof PRELUDE_SELECTORLIST,
+	'PreludeSelectorList',
+	{ readonly value: string }
+>
 
 export type PreludeOperator = Leaf<typeof PRELUDE_OPERATOR, 'Operator'>
 
