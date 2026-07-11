@@ -580,7 +580,7 @@ export type PreludeOperator = CSSNode & {
 }
 
 export type FeatureRange = CSSNode &
-	WithChildren<Dimension | Operator> & {
+	WithChildren<Dimension | Operator | Function> & {
 		readonly type: typeof FEATURE_RANGE
 		readonly type_name: 'MediaFeatureRange'
 		/** The feature name in a range comparison, e.g. "width" from "(width >= 400px)" */

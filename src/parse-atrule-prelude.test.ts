@@ -36,6 +36,9 @@ import {
 	URL,
 	DIMENSION,
 	FEATURE_RANGE,
+	FUNCTION,
+	NUMBER,
+	OPERATOR,
 } from './arena'
 
 describe('At-Rule Prelude Nodes', () => {
@@ -593,6 +596,49 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(feature?.value?.text).toBe('active')
 			})
 
+			test('should parse calc() as a function node in feature value', () => {
+				const css = '@media (min-width: calc(1px * 1)) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const queryChildren =
+					((atRule.prelude as AtrulePrelude | null)?.children[0] as MediaQuery | undefined)
+						?.children || []
+				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE) as
+					| MediaFeature
+					| undefined
+
+				expect(feature?.property).toBe('min-width')
+				expect(feature?.text).toBe('(min-width: calc(1px * 1))')
+
+				const value = feature?.value as Function | null
+				expect(value?.type).toBe(FUNCTION)
+				expect(value?.text).toBe('calc(1px * 1)')
+				expect(value?.children.map((c) => c.type)).toEqual([DIMENSION, OPERATOR, NUMBER])
+				expect(value?.children[0].text).toBe('1px')
+				expect(value?.children[1].text).toBe('*')
+				expect(value?.children[2].text).toBe('1')
+			})
+
+			test('should parse env() as a function node in feature value', () => {
+				const css = '@media (min-width: env(safe-area-inset-top)) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const queryChildren =
+					((atRule.prelude as AtrulePrelude | null)?.children[0] as MediaQuery | undefined)
+						?.children || []
+				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE) as
+					| MediaFeature
+					| undefined
+
+				expect(feature?.text).toBe('(min-width: env(safe-area-inset-top))')
+
+				const value = feature?.value as Function | null
+				expect(value?.type).toBe(FUNCTION)
+				expect(value?.text).toBe('env(safe-area-inset-top)')
+				expect(value?.children[0].type).toBe(IDENTIFIER)
+				expect(value?.children[0].text).toBe('safe-area-inset-top')
+			})
+
 			test('should parse range syntax with single comparison', () => {
 				const css = '@media (width >= 400px) { }'
 				const ast = parse(css)
@@ -673,6 +719,29 @@ describe('At-Rule Prelude Nodes', () => {
 				// Verify child types
 				expect(range?.children[0].type).toBe(PRELUDE_OPERATOR) // =
 				expect(range?.children[1].type).toBe(DIMENSION) // 500px
+			})
+
+			test('should parse calc() values in range syntax', () => {
+				const css = '@media (calc(100px) <= width <= calc(200px)) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const queryChildren =
+					((atRule.prelude as AtrulePrelude | null)?.children[0] as MediaQuery | undefined)
+						?.children || []
+				const range = queryChildren.find((c) => c.type === FEATURE_RANGE) as
+					| FeatureRange
+					| undefined
+
+				expect(range?.text).toBe('(calc(100px) <= width <= calc(200px))')
+				expect(range?.name).toBe('width')
+				expect(range?.children.length).toBe(4) // func, op, op, func
+
+				expect(range?.children[0].type).toBe(FUNCTION)
+				expect(range?.children[0].text).toBe('calc(100px)')
+				expect(range?.children[1].type).toBe(PRELUDE_OPERATOR) // <=
+				expect(range?.children[2].type).toBe(PRELUDE_OPERATOR) // <=
+				expect(range?.children[3].type).toBe(FUNCTION)
+				expect(range?.children[3].text).toBe('calc(200px)')
 			})
 
 			test('should parse comma-separated media queries', () => {

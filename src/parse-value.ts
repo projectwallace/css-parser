@@ -55,16 +55,25 @@ export class ValueParser {
 		this.value_end = 0
 	}
 
-	// Parse a declaration value range into a VALUE wrapper node
-	// Returns single VALUE node index
-	parse_value(start: number, end: number, start_line: number, start_column: number): number {
+	// Parse a range of tokens into raw node ids, without wrapping in a VALUE node.
+	// Used by parse_value() below, and by other parsers (e.g. at-rule prelude
+	// parsing) that need fully-typed value nodes — including FUNCTION nodes for
+	// calc(), env(), var(), min(), max(), clamp(), etc. — spliced directly into
+	// a different parent node.
+	parse_tokens(start: number, end: number, start_line: number, start_column: number): number[] {
 		this.value_end = end
 
 		// Position lexer at value start with provided line/column
 		this.lexer.seek(start, start_line, start_column)
 
+		return this.parse_value_tokens()
+	}
+
+	// Parse a declaration value range into a VALUE wrapper node
+	// Returns single VALUE node index
+	parse_value(start: number, end: number, start_line: number, start_column: number): number {
 		// Parse individual value tokens
-		let value_nodes = this.parse_value_tokens()
+		let value_nodes = this.parse_tokens(start, end, start_line, start_column)
 
 		// Wrap in VALUE node
 		if (value_nodes.length === 0) {
