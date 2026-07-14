@@ -11,8 +11,10 @@ import {
 	PARENTHESIS,
 	URL,
 	UNICODE_RANGE,
+	IF_BRANCH,
 	VALUE,
 	DECLARATION,
+	MEDIA_FEATURE,
 } from './arena'
 import type {
 	Atrule,
@@ -20,6 +22,7 @@ import type {
 	Declaration,
 	Dimension,
 	Function,
+	IfBranch,
 	Number,
 	Operator,
 	Parenthesis,
@@ -1115,6 +1118,310 @@ describe('Value Node Types', () => {
 			const value = getValue('div { width: CALC(MAX(100%, 50px) - 20px); }')
 			expect(value?.type).toBe(FUNCTION)
 			expect((value as Function | undefined)?.children[0].type).toBe(FUNCTION)
+		})
+	})
+
+	describe('FUNCTION if()', () => {
+		const getFunc = (css: string) => {
+			const root = parse(css)
+			const decl = root.first_child?.first_child?.next_sibling?.first_child
+			return (decl!.first_child! as Value).children[0] as Function | undefined
+		}
+		const getBranch = (func: Function | undefined, idx: number) =>
+			func?.children[idx] as IfBranch | undefined
+
+		// ── Basic structure ──────────────────────────────────────────────────
+
+		test('should parse if() as a FUNCTION node with IF_BRANCH children', () => {
+			const func = getFunc('div { color: if(style(--active: 1): green; else: red) }')
+			expect(func?.type).toBe(FUNCTION)
+			expect(func?.name).toBe('if')
+			// The two branches are the only direct children
+			expect(func?.children).toHaveLength(2)
+			expect(func?.children[0].type).toBe(IF_BRANCH)
+			expect(func?.children[1].type).toBe(IF_BRANCH)
+		})
+
+		test('should expose full function text and inner value', () => {
+			const func = getFunc('div { color: if(style(--active: 1): green; else: red) }')
+			expect(func?.text).toBe('if(style(--active: 1): green; else: red)')
+			expect(func?.value).toBe('style(--active: 1): green; else: red')
+		})
+
+		// ── IF_BRANCH node properties ─────────────────────────────────────────
+
+		test('branch has correct condition and value text', () => {
+			const func = getFunc('div { color: if(style(--active: 1): green; else: red) }')
+			const b0 = getBranch(func, 0)
+			const b1 = getBranch(func, 1)
+
+			expect(b0?.condition).toBe('style(--active: 1)')
+			expect((b0?.value as Value).text).toBe('green')
+			expect(b0?.is_else).toBe(false)
+
+			expect(b1?.condition).toBe('else')
+			expect((b1?.value as Value).text).toBe('red')
+			expect(b1?.is_else).toBe(true)
+		})
+
+		test('branch.text spans condition through value', () => {
+			const func = getFunc('div { color: if(style(--active: 1): green; else: red) }')
+			expect(getBranch(func, 0)?.text).toBe('style(--active: 1): green')
+			expect(getBranch(func, 1)?.text).toBe('else: red')
+		})
+
+		test('branch type_name is IfBranch', () => {
+			const func = getFunc('div { color: if(style(--active: 1): green; else: red) }')
+			expect(getBranch(func, 0)?.type_name).toBe('IfBranch')
+		})
+
+		// ── Branch children: condition node + value nodes ─────────────────────
+
+		test('branch.first_child is the condition node', () => {
+			const func = getFunc('div { color: if(style(--active: 1): green; else: red) }')
+			const b0 = getBranch(func, 0)!
+			expect(b0.first_child?.type).toBe(FUNCTION)
+			expect((b0.first_child as Function).name).toBe('style')
+
+			const b1 = getBranch(func, 1)!
+			expect(b1.first_child?.type).toBe(IDENTIFIER)
+			expect(b1.first_child?.text).toBe('else')
+		})
+
+		test('branch children contain condition node then VALUE wrapper', () => {
+			const func = getFunc('div { color: if(style(--active: 1): green; else: red) }')
+			const b0 = getBranch(func, 0)!
+			// children: FUNCTION("style"), VALUE("green")
+			expect(b0.children).toHaveLength(2)
+			expect(b0.children[0].type).toBe(FUNCTION)
+			expect(b0.children[1].type).toBe(VALUE)
+			expect(b0.children[1].text).toBe('green')
+		})
+
+		// ── style() condition ─────────────────────────────────────────────────
+
+		test('style() condition has a DECLARATION child', () => {
+			const func = getFunc('div { color: if(style(--active: 1): green; else: red) }')
+			const styleFunc = getBranch(func, 0)?.first_child as Function | undefined
+			expect(styleFunc?.name).toBe('style')
+			// 1 child: DECLARATION
+			expect(styleFunc?.children).toHaveLength(1)
+			const decl = styleFunc?.children[0] as Declaration
+			expect(decl.type).toBe(DECLARATION)
+			expect(decl.property).toBe('--active')
+			expect((decl.value as Value).children[0].type).toBe(NUMBER)
+			expect((decl.value as Value).children[0].text).toBe('1')
+		})
+
+		// ── supports() condition ──────────────────────────────────────────────
+
+		test('should parse if() with supports() condition', () => {
+			const func = getFunc('div { display: if(supports(display: grid): grid; else: block) }')
+			expect(func?.name).toBe('if')
+			expect(func?.children).toHaveLength(2)
+
+			const b0 = getBranch(func, 0)!
+			expect(b0.condition).toBe('supports(display: grid)')
+			expect((b0.value as Value).text).toBe('grid')
+
+			const supportsFunc = b0.first_child as Function
+			expect(supportsFunc.name).toBe('supports')
+			// 1 child: DECLARATION
+			expect(supportsFunc.children).toHaveLength(1)
+			const decl = supportsFunc.children[0] as Declaration
+			expect(decl.type).toBe(DECLARATION)
+			expect(decl.property).toBe('display')
+			expect((decl.value as Value).children[0].text).toBe('grid')
+
+			const b1 = getBranch(func, 1)!
+			expect(b1.is_else).toBe(true)
+			expect((b1.value as Value).text).toBe('block')
+		})
+
+		// ── media() condition ────────────────────────────────────────────────
+
+		test('should parse if() with media() condition', () => {
+			const func = getFunc('div { color: if(media(min-width: 600px): blue; else: red) }')
+			expect(func?.name).toBe('if')
+			expect(func?.children).toHaveLength(2)
+
+			const b0 = getBranch(func, 0)!
+			expect(b0.condition).toBe('media(min-width: 600px)')
+			expect((b0.value as Value).text).toBe('blue')
+
+			const mediaFunc = b0.first_child as Function
+			expect(mediaFunc.name).toBe('media')
+			// 1 child: MEDIA_FEATURE
+			expect(mediaFunc.children).toHaveLength(1)
+			const feature = mediaFunc.children[0]
+			expect(feature.type).toBe(MEDIA_FEATURE)
+			expect(feature.property).toBe('min-width')
+			expect(feature.value?.type).toBe(DIMENSION)
+
+			const b1 = getBranch(func, 1)!
+			expect(b1.is_else).toBe(true)
+			expect((b1.value as Value).text).toBe('red')
+		})
+
+		// ── Multiple branches ─────────────────────────────────────────────────
+
+		test('should parse if() with three branches', () => {
+			const func = getFunc(
+				'div { font-size: if(style(--large: 1): 2rem; style(--medium: 1): 1.5rem; else: 1rem) }',
+			)
+			expect(func?.name).toBe('if')
+			expect(func?.children).toHaveLength(3)
+
+			const b0 = getBranch(func, 0)!
+			expect(b0.condition).toBe('style(--large: 1)')
+			expect((b0.value as Value).text).toBe('2rem')
+			expect(b0.is_else).toBe(false)
+
+			const b1 = getBranch(func, 1)!
+			expect(b1.condition).toBe('style(--medium: 1)')
+			expect((b1.value as Value).text).toBe('1.5rem')
+			expect(b1.is_else).toBe(false)
+
+			const b2 = getBranch(func, 2)!
+			expect(b2.condition).toBe('else')
+			expect((b2.value as Value).text).toBe('1rem')
+			expect(b2.is_else).toBe(true)
+		})
+
+		// ── Value node types ──────────────────────────────────────────────────
+
+		test('value can be a DIMENSION', () => {
+			const func = getFunc('div { width: if(style(--wide: 1): 100%; else: 50%) }')
+			// children[1] is the VALUE wrapper; VALUE.text spans the value text
+			expect(getBranch(func, 0)?.children[1].type).toBe(VALUE)
+			expect(getBranch(func, 0)?.children[1].text).toBe('100%')
+			expect(getBranch(func, 1)?.children[1].type).toBe(VALUE)
+			expect(getBranch(func, 1)?.children[1].text).toBe('50%')
+		})
+
+		test('value can be a HASH color', () => {
+			const func = getFunc('div { color: if(style(--dark: 1): #000; else: #fff) }')
+			expect(getBranch(func, 0)?.children[1].type).toBe(VALUE)
+			expect(getBranch(func, 0)?.children[1].text).toBe('#000')
+			expect(getBranch(func, 1)?.children[1].type).toBe(VALUE)
+			expect(getBranch(func, 1)?.children[1].text).toBe('#fff')
+		})
+
+		test('value can be a FUNCTION (e.g. oklch())', () => {
+			const func = getFunc(
+				'div { color: if(supports(color: oklch(0 0 0)): oklch(0.5 0.2 240); else: blue) }',
+			)
+			// children[1] is the VALUE wrapper; VALUE.children[0] is the FUNCTION
+			expect(getBranch(func, 0)?.children[1].type).toBe(VALUE)
+			expect(((getBranch(func, 0)?.children[1] as Value).children[0] as Function).name).toBe(
+				'oklch',
+			)
+		})
+
+		test('value can be empty (condition-only branch)', () => {
+			// if(style(--x: 1):; else: red) — empty value between : and ;
+			const func = getFunc('div { color: if(style(--x: 1):; else: red) }')
+			expect(func?.children).toHaveLength(2)
+			const b0 = getBranch(func, 0)!
+			expect(b0.condition).toBe('style(--x: 1)')
+			expect(b0.value).toBeNull()
+			// Only the condition node as child, no value nodes
+			expect(b0.children).toHaveLength(1)
+		})
+
+		test('trailing semicolon before closing paren is accepted', () => {
+			const func = getFunc('div { color: if(style(--x: 1): red;) }')
+			expect(func?.children).toHaveLength(1)
+			const b0 = getBranch(func, 0)!
+			expect(b0.condition).toBe('style(--x: 1)')
+			expect((b0.value as Value).text).toBe('red')
+		})
+
+		// ── Nested if() ───────────────────────────────────────────────────────
+
+		test('nested if() in value is parsed recursively', () => {
+			const func = getFunc(
+				'div { color: if(style(--a: 1): if(style(--b: 1): blue; else: green); else: red) }',
+			)
+			expect(func?.name).toBe('if')
+			expect(func?.children).toHaveLength(2)
+
+			// Branch 0 value is a VALUE wrapper containing a nested if() FUNCTION
+			const valueNode = getBranch(func, 0)?.children[1] as Value | undefined
+			expect(valueNode?.type).toBe(VALUE)
+			const innerIf = valueNode?.children[0] as Function | undefined
+			expect(innerIf?.type).toBe(FUNCTION)
+			expect(innerIf?.name).toBe('if')
+			expect(innerIf?.children).toHaveLength(2)
+			expect(getBranch(innerIf, 0)?.condition).toBe('style(--b: 1)')
+			expect((getBranch(innerIf, 0)?.value as Value).text).toBe('blue')
+			expect(getBranch(innerIf, 1)?.is_else).toBe(true)
+			expect((getBranch(innerIf, 1)?.value as Value).text).toBe('green')
+		})
+
+		// ── Real-world example from the spec ──────────────────────────────────
+
+		test('spec example: supports(color: lch(…))', () => {
+			const css =
+				'h2 { color: if(supports(color: lch(29.57% 43.25 344.44)): lch(29.57% 43.25 344.44); else: #792359) }'
+			const func = getFunc(css)
+			expect(func?.name).toBe('if')
+			expect(func?.children).toHaveLength(2)
+
+			const b0 = getBranch(func, 0)!
+			expect(b0.is_else).toBe(false)
+			expect((b0.first_child as Function).name).toBe('supports')
+			// children[1] is VALUE; VALUE.children[0] is the lch() FUNCTION
+			expect(b0.children[1].type).toBe(VALUE)
+			expect(((b0.children[1] as Value).children[0] as Function).name).toBe('lch')
+
+			const b1 = getBranch(func, 1)!
+			expect(b1.is_else).toBe(true)
+			// children[1] is VALUE; VALUE.children[0] is the HASH
+			expect(b1.children[1].type).toBe(VALUE)
+			expect((b1.children[1] as Value).children[0].type).toBe(HASH)
+			expect((b1.children[1] as Value).children[0].text).toBe('#792359')
+		})
+
+		// ── Declaration boundary ──────────────────────────────────────────────
+
+		test('declaration following if() is parsed correctly', () => {
+			const root = parse('div { color: if(style(--x: 1): red; else: blue); font-size: 1em }')
+			const block = root.first_child?.first_child?.next_sibling
+			const children = (block as import('./node-types').Block | null | undefined)?.children
+			expect(children).toHaveLength(2)
+			expect(children?.[0].type).toBe(DECLARATION)
+			expect(children?.[1].type).toBe(DECLARATION)
+		})
+
+		// ── Location tracking ─────────────────────────────────────────────────
+
+		test('if() function has correct location', () => {
+			const func = getFunc('div { color: if(style(--x: 1): red; else: blue) }')
+			// "div { color: " = 13 chars, so if() starts at offset 13
+			expect(func?.start).toBe(13)
+			expect(func?.text).toBe('if(style(--x: 1): red; else: blue)')
+			expect(func?.length).toBe(34)
+			expect(func?.end).toBe(47)
+			expect(func?.line).toBe(1)
+			expect(func?.column).toBe(14)
+		})
+
+		test('IF_BRANCH has correct location', () => {
+			const func = getFunc('div { color: if(style(--x: 1): red; else: blue) }')
+			const b0 = getBranch(func, 0)!
+			// "div { color: if(" = 16 chars, so first branch starts at 16
+			expect(b0.start).toBe(16)
+			expect(b0.text).toBe('style(--x: 1): red')
+			expect(b0.end).toBe(34)
+			expect(b0.line).toBe(1)
+			expect(b0.column).toBe(17)
+
+			const b1 = getBranch(func, 1)!
+			// "; else: blue" — else starts at 36
+			expect(b1.start).toBe(36)
+			expect(b1.text).toBe('else: blue')
+			expect(b1.end).toBe(46)
 		})
 	})
 })
