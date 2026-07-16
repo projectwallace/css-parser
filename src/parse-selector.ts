@@ -102,7 +102,11 @@ export class SelectorParser {
 
 	// Parse comma-separated selectors
 	private parse_selector_list(allow_relative: boolean = true): number | null {
-		let selectors: number[] = []
+		// Chain selector wrappers as siblings without an intermediate array — most selector
+		// lists contain a single selector (no comma), so this avoids an allocation for the
+		// common case.
+		let first_selector = 0
+		let last_selector = 0
 		let list_start = this.lexer.pos
 		let list_line = this.lexer.line
 		let list_column = this.lexer.column
@@ -125,18 +129,15 @@ export class SelectorParser {
 				this.arena.set_content_start_delta(selector_wrapper, 0)
 				this.arena.set_content_length(selector_wrapper, this.lexer.pos - selector_start)
 
-				// Find the last component in the chain
-				let last_component = complex_selector
-				let next_sibling = this.arena.get_next_sibling(last_component)
-				while (next_sibling !== 0) {
-					last_component = next_sibling
-					next_sibling = this.arena.get_next_sibling(last_component)
-				}
-
 				// Set the complex selector chain as children
 				this.arena.set_first_child(selector_wrapper, complex_selector)
 
-				selectors.push(selector_wrapper)
+				if (first_selector === 0) {
+					first_selector = selector_wrapper
+				} else {
+					this.arena.set_next_sibling(last_selector, selector_wrapper)
+				}
+				last_selector = selector_wrapper
 			}
 
 			// Check for comma (selector separator)
@@ -158,7 +159,7 @@ export class SelectorParser {
 		}
 
 		// Always wrap in selector list node, even for single selectors
-		if (selectors.length > 0) {
+		if (first_selector !== 0) {
 			let list_node = this.arena.create_node(
 				SELECTOR_LIST,
 				list_start,
@@ -168,7 +169,7 @@ export class SelectorParser {
 			)
 
 			// Link selector wrapper nodes as children
-			this.arena.append_children(list_node, selectors)
+			this.arena.set_first_child(list_node, first_selector)
 
 			return list_node
 		}
@@ -180,7 +181,12 @@ export class SelectorParser {
 	// e.g., "div.class > p + span"
 	// Also supports CSS Nesting relaxed syntax: "> a", "~ span", etc.
 	private parse_complex_selector(allow_relative: boolean = true): number | null {
-		let components: number[] = []
+		// Chain components (compounds/combinators) as siblings without an intermediate array.
+		// Each compound selector may itself already be a chain of parts (e.g. `.foo.bar`), so
+		// `chain_tail` always points at the true end of the chain built so far, found via
+		// `arena.get_last_sibling` after appending a compound.
+		let first_component = 0
+		let chain_tail = 0
 
 		// Skip leading whitespace
 		this.skip_whitespace()
@@ -204,7 +210,8 @@ export class SelectorParser {
 						this.lexer.token_line,
 						this.lexer.token_column,
 					)
-					components.push(combinator)
+					first_component = combinator
+					chain_tail = combinator
 					this.skip_whitespace()
 					// Continue to parse the rest normally
 				} else {
@@ -223,12 +230,18 @@ export class SelectorParser {
 			if (compound === null) {
 				break
 			}
-			components.push(compound)
+			if (chain_tail === 0) {
+				first_component = compound
+			} else {
+				this.arena.set_next_sibling(chain_tail, compound)
+			}
+			chain_tail = this.arena.get_last_sibling(compound)
 
 			// After a compound selector, check if there's a combinator
 			let combinator = this.try_parse_combinator()
 			if (combinator !== null) {
-				components.push(combinator)
+				this.arena.set_next_sibling(chain_tail, combinator)
+				chain_tail = combinator
 				// Skip whitespace after combinator before next compound
 				this.skip_whitespace()
 				continue
@@ -254,27 +267,16 @@ export class SelectorParser {
 			break
 		}
 
-		if (components.length === 0) return null
-
-		// Chain components as siblings (need to find last node in each compound selector chain)
-		for (let i = 0; i < components.length - 1; i++) {
-			// Find the last node in the current component's chain
-			let last_node = components[i]
-			while (this.arena.get_next_sibling(last_node) !== 0) {
-				last_node = this.arena.get_next_sibling(last_node)
-			}
-			// Link the last node to the next component
-			this.arena.set_next_sibling(last_node, components[i + 1])
-		}
-
-		// Return first component (others are chained as siblings)
-		return components[0]
+		return first_component === 0 ? null : first_component
 	}
 
 	// Parse a compound selector (no combinators)
 	// e.g., "div.class#id[attr]:hover"
 	private parse_compound_selector(): number | null {
-		let parts: number[] = []
+		// Chain parts as siblings without an intermediate array — most compound selectors
+		// have exactly one part (e.g. a single class or type selector).
+		let first_part = 0
+		let last_part = 0
 
 		while (this.lexer.pos < this.selector_end) {
 			// Save lexer state before getting token
@@ -292,18 +294,15 @@ export class SelectorParser {
 				this.lexer.restore_position(saved)
 				break
 			}
-			parts.push(part)
+			if (first_part === 0) {
+				first_part = part
+			} else {
+				this.arena.set_next_sibling(last_part, part)
+			}
+			last_part = part
 		}
 
-		if (parts.length === 0) return null
-
-		// Chain parts as siblings
-		for (let i = 0; i < parts.length - 1; i++) {
-			this.arena.set_next_sibling(parts[i], parts[i + 1])
-		}
-
-		// Return first part (others are chained as siblings)
-		return parts[0]
+		return first_part === 0 ? null : first_part
 	}
 
 	// Parse a simple selector (single component)

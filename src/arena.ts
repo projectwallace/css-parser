@@ -369,6 +369,18 @@ export class CSSDataArena {
 		this.capacity = this.count
 	}
 
+	// Walk a sibling chain to find its last node. Used by parsers that build sibling chains
+	// incrementally (without an intermediate array) and need to append to the tail.
+	get_last_sibling(node_index: number): number {
+		let node = node_index
+		let next = this.get_next_sibling(node)
+		while (next !== 0) {
+			node = next
+			next = this.get_next_sibling(node)
+		}
+		return node
+	}
+
 	// Check if a node has any children
 	has_children(node_index: number): boolean {
 		return this.get_first_child(node_index) !== 0

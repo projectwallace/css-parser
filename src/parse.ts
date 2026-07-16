@@ -260,12 +260,12 @@ export class Parser {
 
 		// Set the rule's length and link children (selector + block)
 		this.arena.set_length(style_rule, rule_end - rule_start)
-		let style_rule_children: number[] = []
-		if (selector !== null) {
-			style_rule_children.push(selector)
+		if (selector === null) {
+			this.arena.set_first_child(style_rule, block_node)
+		} else {
+			this.arena.set_first_child(style_rule, selector)
+			this.arena.set_next_sibling(selector, block_node)
 		}
-		style_rule_children.push(block_node)
-		this.arena.append_children(style_rule, style_rule_children)
 
 		return style_rule
 	}
@@ -540,16 +540,14 @@ export class Parser {
 			// Link block children
 			this.arena.append_children(block_node, block_children)
 
-			// Build at-rule children: [prelude_wrapper?, block]
-			let at_rule_children: number[] = []
-			if (prelude_wrapper !== null) {
-				at_rule_children.push(prelude_wrapper)
-			}
-			at_rule_children.push(block_node)
-
-			// Set at-rule length and link children
+			// Set at-rule length and link children (prelude_wrapper?, block)
 			this.arena.set_length(at_rule, last_end - at_rule_start)
-			this.arena.append_children(at_rule, at_rule_children)
+			if (prelude_wrapper === null) {
+				this.arena.set_first_child(at_rule, block_node)
+			} else {
+				this.arena.set_first_child(at_rule, prelude_wrapper)
+				this.arena.set_next_sibling(prelude_wrapper, block_node)
+			}
 		} else {
 			if (this.peek_type() === TOKEN_SEMICOLON) {
 				// Statement at-rule (like @import, @namespace)
@@ -559,7 +557,7 @@ export class Parser {
 			// else: no block or semicolon (error recovery)
 			this.arena.set_length(at_rule, last_end - at_rule_start)
 			if (prelude_wrapper !== null) {
-				this.arena.append_children(at_rule, [prelude_wrapper])
+				this.arena.set_first_child(at_rule, prelude_wrapper)
 			}
 		}
 
