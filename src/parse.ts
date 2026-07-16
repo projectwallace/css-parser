@@ -132,20 +132,28 @@ export class Parser {
 		// Create the root stylesheet node
 		let stylesheet = this.arena.create_node(STYLESHEET, 0, this.source.length, 1, 1)
 
-		// Parse all rules at the top level
-		let rules: number[] = []
+		// Parse all rules at the top level, chained as siblings without an intermediate array
+		let first_rule = 0
+		let last_rule = 0
 		while (!this.is_eof()) {
 			let rule = this.parse_rule()
 			if (rule === null) {
 				// Skip unknown tokens
 				this.next_token()
 			} else {
-				rules.push(rule)
+				if (first_rule === 0) {
+					first_rule = rule
+				} else {
+					this.arena.set_next_sibling(last_rule, rule)
+				}
+				last_rule = rule
 			}
 		}
 
 		// Link all rules as children
-		this.arena.append_children(stylesheet, rules)
+		if (first_rule !== 0) {
+			this.arena.set_first_child(stylesheet, first_rule)
+		}
 
 		// Release wasted pre-allocated capacity now that node count is final
 		this.arena.trim()
@@ -210,38 +218,44 @@ export class Parser {
 			block_column,
 		)
 
-		// Parse declarations block (and nested rules for CSS Nesting)
-		let block_children: number[] = []
+		// Parse declarations block (and nested rules for CSS Nesting), chained as siblings
+		// without an intermediate array
+		let first_child = 0
+		let last_child = 0
 		while (!this.is_eof()) {
 			let token_type = this.peek_type()
 			if (token_type === TOKEN_RIGHT_BRACE) break
 
+			let child: number | null = null
+
 			// Check for nested at-rule
 			if (token_type === TOKEN_AT_KEYWORD) {
-				let nested_at_rule = this.parse_atrule()
-				if (nested_at_rule === null) {
+				child = this.parse_atrule()
+				if (child === null) {
 					this.next_token()
-				} else {
-					block_children.push(nested_at_rule)
 				}
-				continue
-			}
-
-			// Try to parse as declaration first
-			let declaration = this.parse_declaration()
-			if (declaration !== null) {
-				this.arena.set_flag(style_rule, FLAG_HAS_DECLARATIONS)
-				block_children.push(declaration)
-				continue
-			}
-
-			// If not a declaration, try parsing as nested style rule
-			let nested_rule = this.parse_style_rule()
-			if (nested_rule === null) {
-				// Skip unknown tokens
-				this.next_token()
 			} else {
-				block_children.push(nested_rule)
+				// Try to parse as declaration first
+				child = this.parse_declaration()
+				if (child === null) {
+					// If not a declaration, try parsing as nested style rule
+					child = this.parse_style_rule()
+					if (child === null) {
+						// Skip unknown tokens
+						this.next_token()
+					}
+				} else {
+					this.arena.set_flag(style_rule, FLAG_HAS_DECLARATIONS)
+				}
+			}
+
+			if (child !== null) {
+				if (first_child === 0) {
+					first_child = child
+				} else {
+					this.arena.set_next_sibling(last_child, child)
+				}
+				last_child = child
 			}
 		}
 
@@ -256,7 +270,9 @@ export class Parser {
 
 		// Set block length and link its children
 		this.arena.set_length(block_node, block_end - block_start)
-		this.arena.append_children(block_node, block_children)
+		if (first_child !== 0) {
+			this.arena.set_first_child(block_node, first_child)
+		}
 
 		// Set the rule's length and link children (selector + block)
 		this.arena.set_length(style_rule, rule_end - rule_start)
@@ -474,7 +490,9 @@ export class Parser {
 
 			// Determine what to parse inside the block based on the at-rule name
 			let has_declarations = this.atrule_has_declarations(at_rule_name)
-			let block_children: number[] = []
+			// Chain block children as siblings without an intermediate array
+			let first_child = 0
+			let last_child = 0
 
 			if (has_declarations) {
 				// Parse declarations only (like @font-face, @page)
@@ -486,7 +504,12 @@ export class Parser {
 					if (declaration === null) {
 						this.next_token()
 					} else {
-						block_children.push(declaration)
+						if (first_child === 0) {
+							first_child = declaration
+						} else {
+							this.arena.set_next_sibling(last_child, declaration)
+						}
+						last_child = declaration
 					}
 				}
 			} else {
@@ -495,31 +518,34 @@ export class Parser {
 					let token_type = this.peek_type()
 					if (token_type === TOKEN_RIGHT_BRACE) break
 
+					let child: number | null = null
+
 					// Check for nested at-rule
 					if (token_type === TOKEN_AT_KEYWORD) {
-						let nested_at_rule = this.parse_atrule()
-						if (nested_at_rule === null) {
+						child = this.parse_atrule()
+						if (child === null) {
 							this.next_token()
-						} else {
-							block_children.push(nested_at_rule)
 						}
-						continue
-					}
-
-					// Try to parse as declaration first
-					let declaration = this.parse_declaration()
-					if (declaration !== null) {
-						block_children.push(declaration)
-						continue
-					}
-
-					// If not a declaration, try parsing as nested style rule
-					let nested_rule = this.parse_style_rule()
-					if (nested_rule === null) {
-						// Skip unknown tokens
-						this.next_token()
 					} else {
-						block_children.push(nested_rule)
+						// Try to parse as declaration first
+						child = this.parse_declaration()
+						if (child === null) {
+							// If not a declaration, try parsing as nested style rule
+							child = this.parse_style_rule()
+							if (child === null) {
+								// Skip unknown tokens
+								this.next_token()
+							}
+						}
+					}
+
+					if (child !== null) {
+						if (first_child === 0) {
+							first_child = child
+						} else {
+							this.arena.set_next_sibling(last_child, child)
+						}
+						last_child = child
 					}
 				}
 			}
@@ -538,7 +564,9 @@ export class Parser {
 			}
 
 			// Link block children
-			this.arena.append_children(block_node, block_children)
+			if (first_child !== 0) {
+				this.arena.set_first_child(block_node, first_child)
+			}
 
 			// Set at-rule length and link children (prelude_wrapper?, block)
 			this.arena.set_length(at_rule, last_end - at_rule_start)
