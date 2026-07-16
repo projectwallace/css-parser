@@ -34,6 +34,7 @@ import {
 	TOKEN_NUMBER,
 	TOKEN_PERCENTAGE,
 	TOKEN_DIMENSION,
+	TOKEN_DELIM,
 	type TokenType,
 } from './token-types'
 import {
@@ -44,6 +45,7 @@ import {
 	CHAR_LESS_THAN,
 	CHAR_GREATER_THAN,
 	CHAR_EQUALS,
+	CHAR_PERIOD,
 } from './string-utils'
 import { trim_boundaries, skip_whitespace_and_comments_forward } from './parse-utils'
 import { CSSNode } from './css-node'
@@ -553,6 +555,8 @@ export class AtRulePreludeParser {
 	}
 
 	// Parse layer names: base, components, utilities
+	// A single name may be dotted for nested layers: base.normalize
+	// <layer-name> = <ident> ['.' <ident>]* with no whitespace around the dots.
 	private parse_layer_names(): number[] {
 		let nodes: number[] = []
 
@@ -564,10 +568,37 @@ export class AtRulePreludeParser {
 
 			let token_type = this.lexer.token_type
 			if (token_type === TOKEN_IDENT) {
-				// Layer name
-				let layer = this.create_node(LAYER_NAME, this.lexer.token_start, this.lexer.token_end)
+				let name_start = this.lexer.token_start
+				let name_end = this.lexer.token_end
+
+				// Glue on '.' ident segments immediately following, with no gaps.
+				while (this.lexer.pos < this.prelude_end) {
+					let saved = this.lexer.save_position()
+
+					let dot_token_type = this.next_token()
+					if (
+						dot_token_type !== TOKEN_DELIM ||
+						this.source.charCodeAt(this.lexer.token_start) !== CHAR_PERIOD ||
+						this.lexer.token_start !== name_end
+					) {
+						this.lexer.restore_position(saved)
+						break
+					}
+					let dot_end = this.lexer.token_end
+
+					let segment_token_type = this.next_token()
+					if (segment_token_type !== TOKEN_IDENT || this.lexer.token_start !== dot_end) {
+						this.lexer.restore_position(saved)
+						break
+					}
+
+					name_end = this.lexer.token_end
+				}
+
+				// Layer name (possibly dotted)
+				let layer = this.create_node(LAYER_NAME, name_start, name_end)
 				this.arena.set_content_start_delta(layer, 0)
-				this.arena.set_content_length(layer, this.lexer.token_end - this.lexer.token_start)
+				this.arena.set_content_length(layer, name_end - name_start)
 				nodes.push(layer)
 			} else if (token_type === TOKEN_COMMA) {
 				// Skip comma separator
