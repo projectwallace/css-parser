@@ -233,7 +233,7 @@ export class DeclarationParser {
 				)
 
 				// Link VALUE node as single child of the declaration
-				this.arena.append_children(declaration, [valueNode])
+				this.arena.set_first_child(declaration, valueNode)
 			} else {
 				// Create RAW node for unparsed value text
 				let rawNode = this.arena.create_node(
@@ -243,7 +243,7 @@ export class DeclarationParser {
 					value_start_line,
 					value_start_column,
 				)
-				this.arena.append_children(declaration, [rawNode])
+				this.arena.set_first_child(declaration, rawNode)
 			}
 		} else {
 			// Empty value - set zero-length value field so node.value returns "" instead of null
@@ -258,7 +258,7 @@ export class DeclarationParser {
 					value_start_line,
 					value_start_column,
 				)
-				this.arena.append_children(declaration, [valueNode])
+				this.arena.set_first_child(declaration, valueNode)
 			}
 		}
 
