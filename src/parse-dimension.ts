@@ -1,6 +1,6 @@
 import { is_digit, CHAR_MINUS_HYPHEN, CHAR_PLUS, CHAR_PERIOD } from './string-utils'
 
-/** Parse a dimension string into value and unit, e.g. "100px" → { value: 100, unit: "px" } */
+/** Parse a dimension string into value and unit, e.g. "100px" → { value: 100, unit: "px" } or "2%" → { value: 2, unit: "%" } */
 export function parse_dimension(text: string): { value: number; unit: string } {
 	// Find where the numeric part ends
 	let num_end = 0

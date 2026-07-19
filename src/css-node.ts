@@ -766,7 +766,7 @@ export class CSSNode {
 	// --- Node Cloning ---
 
 	/**
-	 * Clone this node as a mutable plain object with children as arrays. See API.md.
+	 * Clone this node as a mutable plain object with children as arrays.
 	 * Use sparingly — can consume a lot of memory.
 	 */
 	clone(options: CloneOptions = {}): PlainCSSNode {

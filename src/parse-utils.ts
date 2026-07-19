@@ -86,7 +86,10 @@ export function skip_whitespace_and_comments_backward(
 	return pos
 }
 
-/** Trims whitespace and CSS comments from both ends; returns null if the range is only whitespace/comments. @internal */
+/**
+ * Trims whitespace and CSS comments from both ends; returns null if the range is only whitespace/comments.
+ * @internal
+ */
 export function trim_boundaries(
 	source: string,
 	start: number,

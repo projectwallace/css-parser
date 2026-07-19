@@ -13,7 +13,7 @@ type WalkCallback = (node: AnyNode, depth: number) => void | typeof SKIP | typeo
 /**
  * Walk the AST depth-first, calling `callback` for each node. Return SKIP to skip
  * children, BREAK to stop. `depth` tracks rule nesting (STYLE_RULE/AT_RULE only),
- * not tree depth. See API.md for examples.
+ * not tree depth.
  */
 export function walk(node: CSSNode, callback: WalkCallback, depth = 0): boolean {
 	const result = callback(node as AnyNode, depth)
@@ -75,7 +75,6 @@ interface WalkEnterLeaveOptions {
 /**
  * Walk the AST depth-first, calling `enter` before children and `leave` after.
  * SKIP in enter skips children (leave still runs); BREAK stops (leave doesn't run).
- * See API.md for examples.
  */
 export function traverse(
 	node: CSSNode,
