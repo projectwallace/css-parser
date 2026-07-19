@@ -304,6 +304,17 @@ describe('Parser Options', () => {
 			const atrule = root.first_child! as Atrule
 			expect(atrule.prelude).toBeNull()
 		})
+
+		test('should not deep-parse function values (e.g. calc()) inside a disabled prelude', () => {
+			const root = parse('@media (min-width: calc(1px * 1)) { }', {
+				parse_atrule_preludes: false,
+			})
+			const atrule = root.first_child! as Atrule
+			const prelude = atrule.prelude
+			expect(prelude?.type).toBe(RAW)
+			expect(prelude?.text).toBe('(min-width: calc(1px * 1))')
+			expect(prelude?.first_child).toBeNull()
+		})
 	})
 
 	describe('on_comment callback', () => {
