@@ -512,6 +512,8 @@ export type SupportsDeclaration = WithClone<
 			readonly type_name: 'SupportsDeclaration'
 			/** Property name, e.g. "display" from "(display: flex)" */
 			readonly property: string
+			/** VALUE node for the declaration's value, e.g. "flex" from "(display: flex)" */
+			readonly value: Value | null
 		}
 >
 

@@ -40,6 +40,7 @@ import {
 	OPERATOR,
 	NUMBER,
 	SELECTOR_LIST,
+	VALUE,
 } from './arena'
 
 describe('At-Rule Prelude Nodes', () => {
@@ -777,6 +778,8 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(decl.type).toBe(SUPPORTS_DECLARATION)
 				expect(decl.text).toBe('--custom: 1')
 				expect((decl as SupportsDeclaration).property).toBe('--custom')
+				expect((decl as SupportsDeclaration).value?.type).toBe(VALUE)
+				expect((decl as SupportsDeclaration).value?.text).toBe('1')
 			})
 
 			test('should parse named style container query', () => {

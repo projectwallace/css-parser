@@ -368,6 +368,12 @@ export class CSSNode {
 			return first_child ?? null
 		}
 
+		// SupportsDeclaration wraps a Declaration, whose first_child is the VALUE node —
+		// one hop deeper than MEDIA_FEATURE, where first_child is already the value.
+		if (type === SUPPORTS_DECLARATION) {
+			return first_child?.first_child ?? null
+		}
+
 		if (type === DIMENSION) {
 			return parse_dimension(text).value
 		}
