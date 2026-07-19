@@ -39,6 +39,8 @@ import {
 	FUNCTION,
 	OPERATOR,
 	NUMBER,
+	SELECTOR_LIST,
+	VALUE,
 } from './arena'
 
 describe('At-Rule Prelude Nodes', () => {
@@ -770,6 +772,14 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(fn.type_name).toBe('Function')
 				expect(fn.text).toBe('style(--custom: 1)')
 				expect(fn.value).toBe('--custom: 1')
+
+				// style()'s argument should be deep-parsed into a SupportsDeclaration
+				const decl = fn.children[0]
+				expect(decl.type).toBe(SUPPORTS_DECLARATION)
+				expect(decl.text).toBe('--custom: 1')
+				expect((decl as SupportsDeclaration).property).toBe('--custom')
+				expect((decl as SupportsDeclaration).value?.type).toBe(VALUE)
+				expect((decl as SupportsDeclaration).value?.text).toBe('1')
 			})
 
 			test('should parse named style container query', () => {
@@ -786,6 +796,7 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(fn.type_name).toBe('Function')
 				expect(fn.text).toBe('style(--custom: 1)')
 				expect(fn.value).toBe('--custom: 1')
+				expect(fn.children[0].type).toBe(SUPPORTS_DECLARATION)
 			})
 
 			test('should parse container query with name only (no conditions)', () => {
@@ -893,6 +904,63 @@ describe('At-Rule Prelude Nodes', () => {
 
 				expect(queries.length).toBe(2)
 				expect(operators.length).toBe(1)
+			})
+
+			test('should parse a function condition, e.g. selector()', () => {
+				const css = '@supports selector([popover]:open) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const children = (atRule.prelude as AtrulePrelude).children || []
+
+				expect(children.length).toBe(1)
+				expect(children[0].type).toBe(FUNCTION)
+				expect(children[0].text).toBe('selector([popover]:open)')
+			})
+
+			test("should deep-parse selector()'s argument into a SelectorList", () => {
+				const css = '@supports selector(:has(> a)) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const children = (atRule.prelude as AtrulePrelude).children || []
+				const fn = children[0] as Function
+
+				expect(fn.type).toBe(FUNCTION)
+				const selectorList = fn.children[0]
+				expect(selectorList.type).toBe(SELECTOR_LIST)
+				expect(selectorList.text).toBe(':has(> a)')
+			})
+
+			test("should deep-parse style()'s argument into a SupportsDeclaration, not a selector", () => {
+				const css = '@supports style(--custom: 1) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const children = (atRule.prelude as AtrulePrelude).children || []
+				const fn = children[0] as Function
+
+				expect(fn.type).toBe(FUNCTION)
+				const decl = fn.children[0]
+				expect(decl.type).toBe(SUPPORTS_DECLARATION)
+				expect(decl.text).toBe('--custom: 1')
+			})
+
+			test('should parse a function condition combined with a feature query', () => {
+				const css = '@supports selector(:has(a)) and (display: flex) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const children = (atRule.prelude as AtrulePrelude).children || []
+
+				expect(children.map((c) => c.type)).toEqual([FUNCTION, PRELUDE_OPERATOR, SUPPORTS_QUERY])
+				expect(children[0].text).toBe('selector(:has(a))')
+			})
+
+			test('should parse "not" before a function condition', () => {
+				const css = '@supports not selector([popover]:open) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const children = (atRule.prelude as AtrulePrelude).children || []
+
+				expect(children.map((c) => c.type)).toEqual([PRELUDE_OPERATOR, FUNCTION])
+				expect(children[1].text).toBe('selector([popover]:open)')
 			})
 
 			test('should have a SupportsDeclaration as direct child of SupportsQuery', () => {
@@ -1552,6 +1620,11 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(children[0].type).toBe(URL)
 				expect(children[1].type).toBe(SUPPORTS_QUERY)
 				expect(children[1].text).toBe('supports(display: grid)')
+
+				// supports()'s argument should be deep-parsed into a SupportsDeclaration
+				const decl = (children[1] as SupportsQuery).children[0]
+				expect(decl.type).toBe(SUPPORTS_DECLARATION)
+				expect(decl.text).toBe('display: grid')
 			})
 
 			test('should parse with media query', () => {

@@ -343,7 +343,7 @@ export class CSSNode {
 	/** Alias for `name` on declarations ("color" in "color: blue"), more semantic than `name` there. */
 	get property(): string | undefined {
 		let { type } = this
-		if (type !== DECLARATION && type !== MEDIA_FEATURE) return
+		if (type !== DECLARATION && type !== MEDIA_FEATURE && type !== SUPPORTS_DECLARATION) return
 		return this.get_content()
 	}
 
@@ -366,6 +366,12 @@ export class CSSNode {
 
 		if (type === MEDIA_FEATURE) {
 			return first_child ?? null
+		}
+
+		// SupportsDeclaration wraps a Declaration, whose first_child is the VALUE node —
+		// one hop deeper than MEDIA_FEATURE, where first_child is already the value.
+		if (type === SUPPORTS_DECLARATION) {
+			return first_child?.first_child ?? null
 		}
 
 		if (type === DIMENSION) {
