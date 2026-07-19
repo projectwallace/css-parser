@@ -343,7 +343,7 @@ export class CSSNode {
 	/** Alias for `name` on declarations ("color" in "color: blue"), more semantic than `name` there. */
 	get property(): string | undefined {
 		let { type } = this
-		if (type !== DECLARATION && type !== MEDIA_FEATURE) return
+		if (type !== DECLARATION && type !== MEDIA_FEATURE && type !== SUPPORTS_DECLARATION) return
 		return this.get_content()
 	}
 

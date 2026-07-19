@@ -253,6 +253,10 @@ type ValueLike =
 	| Hash
 	| Dimension
 	| Number
+	// `@supports selector(...)`'s Function node holds its argument as a parsed SelectorList
+	| SelectorList
+	// `style(...)`'s Function node holds its argument as a parsed SupportsDeclaration
+	| SupportsDeclaration
 
 export type Identifier = Leaf<typeof IDENTIFIER, 'Identifier', { readonly name: string }>
 
@@ -450,6 +454,8 @@ export type AtrulePrelude = WithClone<
 			| PreludeSelectorList
 			| Parenthesis
 			| Url
+			// `@supports style(...)` / `selector(...)` function conditions
+			| Function
 		> & { readonly type: typeof AT_RULE_PRELUDE; readonly type_name: 'AtrulePrelude' }
 >
 
@@ -504,6 +510,8 @@ export type SupportsDeclaration = WithClone<
 		WithChildren<Declaration> & {
 			readonly type: typeof SUPPORTS_DECLARATION
 			readonly type_name: 'SupportsDeclaration'
+			/** Property name, e.g. "display" from "(display: flex)" */
+			readonly property: string
 		}
 >
 
