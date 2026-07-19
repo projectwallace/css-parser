@@ -242,26 +242,35 @@ export class AtRulePreludeParser {
 		this.skip_whitespace()
 		if (this.lexer.pos >= this.prelude_end) return null
 
-		// Check for modifier (only, not)
-		// let has_modifier = false
+		// Parse components (media type, features, operators), chained as siblings without an
+		// intermediate array — most media queries have exactly one component (a single media
+		// type or a single feature), so this avoids an allocation for the common case.
+		let first_component = 0
+		let last_component = 0
+
+		// Check for leading modifier (only, not), e.g. `only screen`. Emitted as a
+		// PRELUDE_OPERATOR node like the `and`/`or`/`not` combinators below, so it isn't
+		// silently dropped from MediaQuery.children while still being consumed from the stream.
 		const saved_token_start = this.lexer.save_position()
 		this.next_token()
 
 		if (this.lexer.token_type === TOKEN_IDENT) {
 			let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
-			if (!str_equals('only', text) && !str_equals('not', text)) {
+			if (str_equals('only', text) || str_equals('not', text)) {
+				let modifier = this.create_node(
+					PRELUDE_OPERATOR,
+					this.lexer.token_start,
+					this.lexer.token_end,
+				)
+				first_component = modifier
+				last_component = modifier
+			} else {
 				// Reset - this is a media type
 				this.lexer.restore_position(saved_token_start)
 			}
 		} else {
 			this.lexer.restore_position(saved_token_start)
 		}
-
-		// Parse components (media type, features, operators), chained as siblings without an
-		// intermediate array — most media queries have exactly one component (a single media
-		// type or a single feature), so this avoids an allocation for the common case.
-		let first_component = 0
-		let last_component = 0
 
 		while (this.lexer.pos < this.prelude_end) {
 			this.skip_whitespace()

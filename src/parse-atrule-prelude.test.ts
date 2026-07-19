@@ -497,6 +497,40 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(queryChildren.some((c) => c.type === MEDIA_FEATURE)).toBe(true)
 			})
 
+			test.each([
+				['@media only screen { }', 'only'],
+				['@media not screen { }', 'not'],
+			])(
+				'should emit a leading "only"/"not" modifier as a PreludeOperator child (%s)',
+				(css, modifier) => {
+					const ast = parse(css)
+					const atRule = ast.first_child! as Atrule
+					const children = (atRule.prelude as AtrulePrelude | null)?.children || []
+					const query = children[0] as MediaQuery
+
+					expect(query.text).toBe(`${modifier} screen`)
+					expect(query.children.map((c) => c.type)).toEqual([PRELUDE_OPERATOR, MEDIA_TYPE])
+					expect(query.children[0].text).toBe(modifier)
+					expect(query.children[1].text).toBe('screen')
+				},
+			)
+
+			test('should parse "only" combined with a feature query', () => {
+				const css = '@media only screen and (min-width: 768px) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
+				const query = children[0] as MediaQuery
+
+				expect(query.children.map((c) => c.type)).toEqual([
+					PRELUDE_OPERATOR,
+					MEDIA_TYPE,
+					PRELUDE_OPERATOR,
+					MEDIA_FEATURE,
+				])
+				expect(query.children[0].text).toBe('only')
+			})
+
 			test('should parse multiple media features', () => {
 				const css = '@media (min-width: 768px) and (max-width: 1024px) { }'
 				const ast = parse(css)
