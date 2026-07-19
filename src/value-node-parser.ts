@@ -1,8 +1,6 @@
-// Value Node Parser - Shared recursive parsing of value-shaped token streams.
-// Used by both ValueParser (declaration values) and AtRulePreludeParser (feature
-// values inside media/container/supports conditions), so calc(), env(), var(),
-// and other functions get the same structured tree — Number/Operator/Dimension
-// children, not just an opaque text span — regardless of where they appear.
+// Value Node Parser - shared recursive value-token parsing, used by both ValueParser
+// (declaration values) and AtRulePreludeParser (feature values), so calc()/env()/var()
+// get the same structured tree everywhere instead of an opaque text span.
 import { Lexer } from './tokenize'
 import {
 	CSSDataArena,
@@ -47,8 +45,7 @@ export class ValueNodeParser {
 	protected arena: CSSDataArena
 	protected source: string
 	protected end: number = 0
-	// Last node produced by parse_chain(), for callers that need the chain's end offset
-	// (e.g. to size a wrapper node). Avoids returning a tuple/array from the hot path.
+	// Last node from parse_chain(), for callers sizing a wrapper node. Avoids a tuple/array return.
 	last_chain_node: number = 0
 
 	constructor(arena: CSSDataArena, source: string) {
@@ -57,10 +54,8 @@ export class ValueNodeParser {
 		this.lexer = new Lexer(source)
 	}
 
-	// Parse a run of value tokens in [start, end) into typed nodes, chained as siblings
-	// without an intermediate array. Returns the first node (0 if none); the last node
-	// is left in `this.last_chain_node`. Used both for a full declaration value and for
-	// a sub-range excursion (e.g. a media feature's value) via a shared, independent lexer.
+	// Parse value tokens in [start, end) into typed nodes, chained as siblings.
+	// Returns the first node (0 if none); last node left in this.last_chain_node.
 	parse_chain(start: number, end: number, start_line: number, start_column: number): number {
 		this.end = end
 		this.lexer.seek(start, start_line, start_column)

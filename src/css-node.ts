@@ -368,8 +368,7 @@ export class CSSNode {
 			return first_child ?? null
 		}
 
-		// SupportsDeclaration wraps a Declaration, whose first_child is the VALUE node —
-		// one hop deeper than MEDIA_FEATURE, where first_child is already the value.
+		// SupportsDeclaration wraps a Declaration; go one hop deeper than MEDIA_FEATURE to reach VALUE
 		if (type === SUPPORTS_DECLARATION) {
 			return first_child?.first_child ?? null
 		}
