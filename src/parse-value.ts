@@ -63,41 +63,12 @@ export class ValueParser {
 		// Position lexer at value start with provided line/column
 		this.lexer.seek(start, start_line, start_column)
 
-		// Parse individual value tokens
-		let value_nodes = this.parse_value_tokens()
+		// Parse individual value tokens, chaining them as siblings without an intermediate array.
+		// The common case is a single token (e.g. `color: red`), so this avoids allocating and
+		// pushing into an array for what is by far the most frequent shape of a declaration value.
+		let first_node = 0
+		let last_node = 0
 
-		// Wrap in VALUE node
-		if (value_nodes.length === 0) {
-			// Empty value - create VALUE node with no children
-			let value_node = this.arena.create_node(VALUE, start, 0, start_line, start_column)
-			return value_node
-		}
-
-		// Create VALUE wrapper node spanning all value tokens
-		let first_node_start = this.arena.get_start_offset(value_nodes[0])
-		let last_node_index = value_nodes.at(-1)!
-		let last_node_end =
-			this.arena.get_start_offset(last_node_index) + this.arena.get_length(last_node_index)
-
-		let value_node = this.arena.create_node(
-			VALUE,
-			first_node_start,
-			last_node_end - first_node_start,
-			start_line,
-			start_column,
-		)
-
-		// Link value tokens as children
-		this.arena.append_children(value_node, value_nodes)
-
-		return value_node
-	}
-
-	// Core token parsing logic
-	private parse_value_tokens(): number[] {
-		let nodes: number[] = []
-
-		// Parse all tokens in the value range
 		while (this.lexer.pos < this.value_end) {
 			// Get next token without skipping whitespace (whitespace matters in values)
 			this.lexer.next_token_fast(false)
@@ -116,11 +87,38 @@ export class ValueParser {
 			// Parse this token into a value node (token_type already cached in lexer.token_type)
 			let node = this.parse_value_node()
 			if (node !== null) {
-				nodes.push(node)
+				if (first_node === 0) {
+					first_node = node
+				} else {
+					this.arena.set_next_sibling(last_node, node)
+				}
+				last_node = node
 			}
 		}
 
-		return nodes
+		// Wrap in VALUE node
+		if (first_node === 0) {
+			// Empty value - create VALUE node with no children
+			let value_node = this.arena.create_node(VALUE, start, 0, start_line, start_column)
+			return value_node
+		}
+
+		// Create VALUE wrapper node spanning all value tokens
+		let first_node_start = this.arena.get_start_offset(first_node)
+		let last_node_end = this.arena.get_start_offset(last_node) + this.arena.get_length(last_node)
+
+		let value_node = this.arena.create_node(
+			VALUE,
+			first_node_start,
+			last_node_end - first_node_start,
+			start_line,
+			start_column,
+		)
+
+		// Link value tokens as children
+		this.arena.set_first_child(value_node, first_node)
+
+		return value_node
 	}
 
 	// Helper to check if token is all whitespace (inline for hot paths)
@@ -293,8 +291,10 @@ export class ValueParser {
 			}
 		}
 
-		// Parse function arguments (everything until matching ')')
-		let args: number[] = []
+		// Parse function arguments (everything until matching ')'), chained as siblings
+		// without an intermediate array (single-argument calls like var(--x) are common)
+		let first_arg = 0
+		let last_arg = 0
 		let paren_depth = 1
 		let func_end = end
 		let content_start = end // Position after function name and '('
@@ -325,7 +325,12 @@ export class ValueParser {
 			// Parse argument node
 			let arg_node = this.parse_value_node()
 			if (arg_node !== null) {
-				args.push(arg_node)
+				if (first_arg === 0) {
+					first_arg = arg_node
+				} else {
+					this.arena.set_next_sibling(last_arg, arg_node)
+				}
+				last_arg = arg_node
 			}
 		}
 
@@ -337,7 +342,9 @@ export class ValueParser {
 		this.arena.set_value_length(node, content_end - content_start)
 
 		// Link arguments as children
-		this.arena.append_children(node, args)
+		if (first_arg !== 0) {
+			this.arena.set_first_child(node, first_arg)
+		}
 
 		return node
 	}
@@ -352,8 +359,10 @@ export class ValueParser {
 			this.lexer.token_column,
 		)
 
-		// Parse parenthesized content (everything until matching ')')
-		let children: number[] = []
+		// Parse parenthesized content (everything until matching ')'), chained as siblings
+		// without an intermediate array
+		let first_child = 0
+		let last_child = 0
 		let paren_depth = 1
 		let paren_end = end
 
@@ -383,7 +392,12 @@ export class ValueParser {
 			// because parse_value_node() will recursively handle them
 			let child_node = this.parse_value_node()
 			if (child_node !== null) {
-				children.push(child_node)
+				if (first_child === 0) {
+					first_child = child_node
+				} else {
+					this.arena.set_next_sibling(last_child, child_node)
+				}
+				last_child = child_node
 			}
 		}
 
@@ -391,7 +405,9 @@ export class ValueParser {
 		this.arena.set_length(node, paren_end - start)
 
 		// Link children as siblings
-		this.arena.append_children(node, children)
+		if (first_child !== 0) {
+			this.arena.set_first_child(node, first_child)
+		}
 
 		return node
 	}
