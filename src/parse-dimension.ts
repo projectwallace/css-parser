@@ -1,17 +1,6 @@
 import { is_digit, CHAR_MINUS_HYPHEN, CHAR_PLUS, CHAR_PERIOD } from './string-utils'
 
-/**
- * Parse a dimension string into numeric value and unit
- *
- * @param text - Dimension text like "100px", "50%", "1.5em"
- * @returns Object with value (number) and unit (string)
- *
- * Examples:
- * - "100px" → { value: 100, unit: "px" }
- * - "50%" → { value: 50, unit: "%" }
- * - "1.5em" → { value: 1.5, unit: "em" }
- * - "-10rem" → { value: -10, unit: "rem" }
- */
+/** Parse a dimension string into value and unit, e.g. "100px" → { value: 100, unit: "px" } or "2%" → { value: 2, unit: "%" } */
 export function parse_dimension(text: string): { value: number; unit: string } {
 	// Find where the numeric part ends
 	let num_end = 0

@@ -1,14 +1,6 @@
 import { CHAR_ASTERISK, CHAR_FORWARD_SLASH, is_whitespace } from './string-utils'
 
-/**
- * Skip whitespace forward from a position
- *
- * @param source - The source string
- * @param pos - Starting position
- * @param end - End boundary (exclusive)
- * @returns New position after skipping whitespace
- * @internal
- */
+/** @internal */
 export function skip_whitespace_forward(source: string, pos: number, end: number): number {
 	while (pos < end && is_whitespace(source.charCodeAt(pos))) {
 		pos++
@@ -16,15 +8,7 @@ export function skip_whitespace_forward(source: string, pos: number, end: number
 	return pos
 }
 
-/**
- * Skip whitespace and comments forward from a position
- *
- * @param source - The source string
- * @param pos - Starting position
- * @param end - End boundary (exclusive)
- * @returns New position after skipping whitespace/comments
- * @internal
- */
+/** @internal */
 export function skip_whitespace_and_comments_forward(
 	source: string,
 	pos: number,
@@ -65,15 +49,7 @@ export function skip_whitespace_and_comments_forward(
 	return pos
 }
 
-/**
- * Skip whitespace and comments backward from a position
- *
- * @param source - The source string
- * @param pos - Starting position (exclusive, scanning backward from pos-1)
- * @param start - Start boundary (inclusive, won't go before this)
- * @returns New position after skipping whitespace/comments backward
- * @internal
- */
+/** @internal */
 export function skip_whitespace_and_comments_backward(
 	source: string,
 	pos: number,
@@ -111,17 +87,8 @@ export function skip_whitespace_and_comments_backward(
 }
 
 /**
- * Trim whitespace and comments from both ends of a string range
- *
- * @param source - The source string
- * @param start - Start offset in source
- * @param end - End offset in source
- * @returns [trimmed_start, trimmed_end] or null if all whitespace/comments
+ * Trims whitespace and CSS comments from both ends; returns null if the range is only whitespace/comments.
  * @internal
- *
- * Skips whitespace (space, tab, newline, CR, FF) and CSS comments from both ends
- * of the specified range. Returns the trimmed boundaries or null if the range
- * contains only whitespace and comments.
  */
 export function trim_boundaries(
 	source: string,

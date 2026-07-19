@@ -71,15 +71,7 @@ export function str_equals(a: string, b: string): boolean {
 	return true
 }
 
-/**
- * Case-insensitive ASCII prefix check without allocations
- * Returns true if string `str` starts with prefix (case-insensitive)
- *
- * IMPORTANT: prefix MUST be lowercase for correct comparison
- *
- * @param str - The string to check
- * @param prefix - The lowercase prefix to match against
- */
+/** Case-insensitive ASCII prefix check without allocations. `prefix` MUST be lowercase. */
 export function str_starts_with(str: string, prefix: string): boolean {
 	if (str.length < prefix.length) {
 		return false
@@ -100,16 +92,7 @@ export function str_starts_with(str: string, prefix: string): boolean {
 	return true
 }
 
-/**
- * Case-insensitive character/substring search without allocations
- * Returns the index of the first occurrence of searchChar (case-insensitive)
- *
- * IMPORTANT: searchChar MUST be lowercase for correct comparison
- *
- * @param str - The string to search in
- * @param searchChar - The lowercase character/substring to find
- * @returns The index of the first match, or -1 if not found
- */
+/** Case-insensitive substring search without allocations, or -1 if not found. `searchChar` MUST be lowercase. */
 export function str_index_of(str: string, searchChar: string): number {
 	if (searchChar.length === 0) {
 		return -1
@@ -148,27 +131,7 @@ export function str_index_of(str: string, searchChar: string): number {
 	return -1
 }
 
-/**
- * Check if a string range has a vendor prefix
- *
- * @param source - The source string
- * @param start - Start offset in source
- * @param end - End offset in source
- * @returns true if the range starts with a vendor prefix (-webkit-, -moz-, -ms-, -o-)
- *
- * Detects vendor prefixes by checking:
- * 1. Starts with a single hyphen (not --)
- * 2. Contains at least 3 characters (shortest is -o-)
- * 3. Has a second hyphen after the vendor name
- *
- * Examples:
- * - `-webkit-transform` → true
- * - `-moz-appearance` → true
- * - `-ms-filter` → true
- * - `-o-border-image` → true
- * - `--custom-property` → false (CSS custom property)
- * - `border-radius` → false (doesn't start with hyphen)
- */
+/** True if the string/range is vendor-prefixed (-webkit-, -moz-, -ms-, -o-). `--custom-property` is not. */
 // Overload signatures
 export function is_vendor_prefixed(text: string): boolean
 export function is_vendor_prefixed(source: string, start: number, end: number): boolean
@@ -207,39 +170,14 @@ export function is_vendor_prefixed(source: string, start?: number, end?: number)
 	return false
 }
 
-/**
- * Check if a string is a CSS custom property (starts with --)
- *
- * @param str - The string to check
- * @returns true if the string starts with -- (custom property)
- *
- * Examples:
- * - `--primary-color` → true
- * - `--my-var` → true
- * - `-webkit-transform` → false (vendor prefix, not custom)
- * - `border-radius` → false (standard property)
- * - `color` → false
- */
+/** True if the string is a CSS custom property (starts with `--`). */
 export function is_custom(str: string): boolean {
 	// Must start with two hyphens and have at least one character after
 	if (str.length < 3) return false
 	return str.charCodeAt(0) === CHAR_MINUS_HYPHEN && str.charCodeAt(1) === CHAR_MINUS_HYPHEN
 }
 
-/**
- * Strip vendor prefix from a string
- *
- * @param str - The string to strip vendor prefix from
- * @returns The string without vendor prefix, or original string if no prefix found
- *
- * Examples:
- * - `-webkit-keyframes` → `keyframes`
- * - `-moz-appearance` → `appearance`
- * - `-ms-filter` → `filter`
- * - `-o-border-image` → `border-image`
- * - `keyframes` → `keyframes` (no change)
- * - `--custom-property` → `--custom-property` (custom property, not vendor prefix)
- */
+/** Strip a vendor prefix, e.g. `-webkit-keyframes` → `keyframes`. Returns the input unchanged if it has no prefix. */
 export function strip_vendor_prefix(str: string): string {
 	if (!is_vendor_prefixed(str)) {
 		return str

@@ -330,13 +330,7 @@ export class CSSNode {
 		return content
 	}
 
-	/**
-	 * Namespace prefix for type and universal selectors.
-	 * - `null` — no namespace qualifier (plain `div` or `*`)
-	 * - `''` — empty namespace (`|div` or `|*`)
-	 * - `'ns'` — named namespace (`ns|div` or `ns|*`)
-	 * - `'*'` — any namespace (`*|div` or `*|*`)
-	 */
+	/** Namespace prefix for type/universal selectors: null (none), '' (`|div`), 'ns' (`ns|div`), or '*' (`*|div`). */
 	get namespace(): string | null | undefined {
 		let { type } = this
 		if (type !== TYPE_SELECTOR && type !== UNIVERSAL_SELECTOR) return undefined
@@ -346,10 +340,7 @@ export class CSSNode {
 		return this.source.substring(start, start + length)
 	}
 
-	/**
-	 * Alias for name (for declarations: "color" in "color: blue")
-	 * More semantic than `name` for declaration nodes
-	 */
+	/** Alias for `name` on declarations ("color" in "color: blue"), more semantic than `name` there. */
 	get property(): string | undefined {
 		let { type } = this
 		if (type !== DECLARATION && type !== MEDIA_FEATURE) return
@@ -357,11 +348,8 @@ export class CSSNode {
 	}
 
 	/**
-	 * Get the value text (for declarations: "1px solid blue" in "border: 1px solid blue")
-	 * For dimension/number nodes: returns the numeric value as a number
-	 * For string nodes: returns the string content without quotes
-	 * For URL nodes with quoted string: returns the string with quotes (consistent with STRING node)
-	 * For URL nodes with unquoted URL: returns the URL content without quotes
+	 * Declarations: the value text ("1px solid blue"). Dimension/number: the numeric value.
+	 * String: content without quotes. URL: quoted string keeps quotes, unquoted URL doesn't.
 	 */
 	get value(): CSSNode | string | number | null | undefined {
 		let { type, text, first_child } = this
@@ -433,12 +421,7 @@ export class CSSNode {
 		return this.source.substring(start, start + length)
 	}
 
-	/**
-	 * Get the prelude node:
-	 * - For at-rules: AT_RULE_PRELUDE wrapper containing structured prelude children (media queries, layer names, etc.)
-	 * - For style rules: SELECTOR_LIST or SELECTOR node
-	 * Returns null if no prelude exists
-	 */
+	/** At-rules: AT_RULE_PRELUDE wrapper (media queries, layer names, …). Style rules: SELECTOR_LIST/SELECTOR. Null if none. */
 	get prelude(): CSSNode | null | undefined {
 		if (this.type === AT_RULE) {
 			let first = this.first_child
@@ -454,11 +437,7 @@ export class CSSNode {
 		return undefined
 	}
 
-	/**
-	 * Get the attribute operator (for attribute selectors: =, ~=, |=, ^=, $=, *=)
-	 * Returns the operator string, or null if no operator is present ([attr] form).
-	 * Derived from source text between the attribute name and value.
-	 */
+	/** Attribute selector operator (=, ~=, |=, ^=, $=, *=), or null for the bare `[attr]` form. */
 	get attr_operator(): string | null | undefined {
 		if (this.type !== ATTRIBUTE_SELECTOR) return undefined
 
@@ -485,11 +464,7 @@ export class CSSNode {
 		return null
 	}
 
-	/**
-	 * Get the attribute flags (for attribute selectors: i, s)
-	 * Returns "i" (case-insensitive), "s" (case-sensitive), or null if no flag is present.
-	 * Derived from source text after the attribute value.
-	 */
+	/** Attribute selector flag: "i" (case-insensitive), "s" (case-sensitive), or null if absent. */
 	get attr_flags(): string | null | undefined {
 		if (this.type !== ATTRIBUTE_SELECTOR) return undefined
 
@@ -684,11 +659,7 @@ export class CSSNode {
 		return sibling_index !== 0
 	}
 
-	/**
-	 * Check if this node has children
-	 * For pseudo-class/pseudo-element functions, returns true if FLAG_HAS_PARENS is set
-	 * This allows formatters to distinguish :lang() from :hover
-	 */
+	/** Whether this node has children. For pseudo-class/element functions, tracks FLAG_HAS_PARENS so formatters can tell `:lang()` from `:hover`. */
 	get has_children(): boolean {
 		let { type } = this
 		// For pseudo-class/pseudo-element nodes, check if they have function syntax
@@ -795,13 +766,8 @@ export class CSSNode {
 	// --- Node Cloning ---
 
 	/**
-	 * Clone this node as a mutable plain JavaScript object with children as arrays.
-	 * See API.md for examples.
-	 * Warning: this should be used sparingly because it potentially consumes a lot of memory.
-	 *
-	 * @param options - Cloning configuration
-	 * @param options.deep - Recursively clone children (default: true)
-	 * @param options.locations - Include line/column/start/length (default: false)
+	 * Clone this node as a mutable plain object with children as arrays.
+	 * Use sparingly — can consume a lot of memory.
 	 */
 	clone(options: CloneOptions = {}): PlainCSSNode {
 		const { deep = true, locations = false } = options
