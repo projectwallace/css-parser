@@ -187,8 +187,11 @@ export class AtRulePreludeParser {
 			this.lexer.restore_position(saved_token_start)
 		}
 
-		// Parse components (media type, features, operators)
-		let components: number[] = []
+		// Parse components (media type, features, operators), chained as siblings without an
+		// intermediate array — most media queries have exactly one component (a single media
+		// type or a single feature), so this avoids an allocation for the common case.
+		let first_component = 0
+		let last_component = 0
 
 		while (this.lexer.pos < this.prelude_end) {
 			this.skip_whitespace()
@@ -200,12 +203,11 @@ export class AtRulePreludeParser {
 			this.next_token()
 
 			let token_type = this.lexer.token_type
+			let component: number | null = null
+
 			// Media feature: (min-width: 768px)
 			if (token_type === TOKEN_LEFT_PAREN) {
-				let feature = this.parse_media_feature()
-				if (feature !== null) {
-					components.push(feature)
-				}
+				component = this.parse_media_feature()
 			}
 			// Identifier: media type or operator (and, or, not)
 			else if (token_type === TOKEN_IDENT) {
@@ -213,30 +215,37 @@ export class AtRulePreludeParser {
 
 				if (this.is_and_or_not(text)) {
 					// Logical operator
-					let op = this.create_node(PRELUDE_OPERATOR, this.lexer.token_start, this.lexer.token_end)
-					components.push(op)
-				} else {
-					// Media type: screen, print, all
-					let media_type = this.create_node(
-						MEDIA_TYPE,
+					component = this.create_node(
+						PRELUDE_OPERATOR,
 						this.lexer.token_start,
 						this.lexer.token_end,
 					)
-					components.push(media_type)
+				} else {
+					// Media type: screen, print, all
+					component = this.create_node(MEDIA_TYPE, this.lexer.token_start, this.lexer.token_end)
 				}
 			} else {
 				// Unknown token, skip
 				break
 			}
+
+			if (component !== null) {
+				if (first_component === 0) {
+					first_component = component
+				} else {
+					this.arena.set_next_sibling(last_component, component)
+				}
+				last_component = component
+			}
 		}
 
-		if (components.length === 0) return null
+		if (first_component === 0) return null
 
 		// Create media query node
 		let query_node = this.create_node(MEDIA_QUERY, query_start, this.lexer.pos)
 
-		// Append components as children
-		this.arena.append_children(query_node, components)
+		// Link components as children
+		this.arena.set_first_child(query_node, first_component)
 
 		return query_node
 	}
@@ -320,9 +329,9 @@ export class AtRulePreludeParser {
 			// Parse value portion
 			let value_trimmed = trim_boundaries(this.source, colon_pos + 1, content_end)
 			if (value_trimmed) {
-				let value_nodes = this.parse_feature_value(value_trimmed[0], value_trimmed[1])
-				if (value_nodes.length > 0) {
-					this.arena.append_children(feature, value_nodes)
+				let value_first = this.parse_feature_value(value_trimmed[0], value_trimmed[1])
+				if (value_first !== 0) {
+					this.arena.set_first_child(feature, value_first)
 				}
 			}
 		}
@@ -332,11 +341,12 @@ export class AtRulePreludeParser {
 
 	// Parse container query: [name] and (min-width: 400px)
 	private parse_container_query(): number[] {
-		let nodes: number[] = []
 		let query_start = this.lexer.pos
 
-		// Parse components (identifiers, operators, features)
-		let components: number[] = []
+		// Parse components (identifiers, operators, features), chained as siblings without an
+		// intermediate array — most container queries have a single component.
+		let first_component = 0
+		let last_component = 0
 
 		while (this.lexer.pos < this.prelude_end) {
 			this.skip_whitespace()
@@ -345,12 +355,11 @@ export class AtRulePreludeParser {
 			this.next_token()
 
 			let token_type = this.lexer.token_type
+			let component: number | null = null
+
 			// Container feature: (min-width: 400px)
 			if (token_type === TOKEN_LEFT_PAREN) {
-				let feature = this.parse_media_feature() // Reuse media feature parser
-				if (feature !== null) {
-					components.push(feature)
-				}
+				component = this.parse_media_feature() // Reuse media feature parser
 			}
 			// Function: style(--custom: 1)
 			else if (token_type === TOKEN_FUNCTION) {
@@ -390,7 +399,7 @@ export class AtRulePreludeParser {
 				this.arena.set_value_start_delta(func_node, content_start - func_start)
 				this.arena.set_value_length(func_node, content_end - content_start)
 
-				components.push(func_node)
+				component = func_node
 			}
 			// Identifier: operator (and, or, not) or container name
 			else if (token_type === TOKEN_IDENT) {
@@ -398,26 +407,36 @@ export class AtRulePreludeParser {
 
 				if (this.is_and_or_not(text)) {
 					// Logical operator
-					let op = this.create_node(PRELUDE_OPERATOR, this.lexer.token_start, this.lexer.token_end)
-					components.push(op)
+					component = this.create_node(
+						PRELUDE_OPERATOR,
+						this.lexer.token_start,
+						this.lexer.token_end,
+					)
 				} else {
 					// Container name or other identifier
-					let name = this.create_node(IDENTIFIER, this.lexer.token_start, this.lexer.token_end)
-					components.push(name)
+					component = this.create_node(IDENTIFIER, this.lexer.token_start, this.lexer.token_end)
 				}
+			}
+
+			if (component !== null) {
+				if (first_component === 0) {
+					first_component = component
+				} else {
+					this.arena.set_next_sibling(last_component, component)
+				}
+				last_component = component
 			}
 		}
 
-		if (components.length === 0) return []
+		if (first_component === 0) return []
 
 		// Create container query node
 		let query_node = this.create_node(CONTAINER_QUERY, query_start, this.lexer.pos)
 
-		// Append components as children
-		this.arena.append_children(query_node, components)
+		// Link components as children
+		this.arena.set_first_child(query_node, first_component)
 
-		nodes.push(query_node)
-		return nodes
+		return [query_node]
 	}
 
 	// Parse supports query: (display: flex) and (gap: 1rem)
@@ -466,7 +485,7 @@ export class AtRulePreludeParser {
 						let colon_pos = this.find_colon_at_depth_zero(trimmed[0], trimmed[1])
 						if (colon_pos !== -1) {
 							let decl_child = this.create_supports_declaration(trimmed[0], trimmed[1], colon_pos)
-							this.arena.append_children(query, [decl_child])
+							this.arena.set_first_child(query, decl_child)
 						}
 					}
 
@@ -526,9 +545,9 @@ export class AtRulePreludeParser {
 		this.arena.set_content_length(decl, prop_trimmed[1] - prop_trimmed[0])
 
 		if (val_trimmed) {
-			let value_nodes = this.parse_feature_value(val_trimmed[0], val_trimmed[1])
+			let value_first = this.parse_feature_value(val_trimmed[0], val_trimmed[1])
 			let value_node: number
-			if (value_nodes.length === 0) {
+			if (value_first === 0) {
 				value_node = this.arena.create_node(
 					VALUE,
 					val_trimmed[0],
@@ -544,13 +563,13 @@ export class AtRulePreludeParser {
 					this.lexer.token_line,
 					this.lexer.token_column,
 				)
-				this.arena.append_children(value_node, value_nodes)
+				this.arena.set_first_child(value_node, value_first)
 			}
-			this.arena.append_children(decl, [value_node])
+			this.arena.set_first_child(decl, value_node)
 		}
 
 		let supports_decl = this.create_node(SUPPORTS_DECLARATION, content_start, content_end)
-		this.arena.append_children(supports_decl, [decl])
+		this.arena.set_first_child(supports_decl, decl)
 		return supports_decl
 	}
 
@@ -906,12 +925,15 @@ export class AtRulePreludeParser {
 		}
 	}
 
-	// Helper: Parse feature value portion into typed nodes
-	private parse_feature_value(start: number, end: number): number[] {
+	// Helper: Parse feature value portion into typed nodes, chained as siblings without an
+	// intermediate array. Returns the first node in the chain (0 if none) — the common case is
+	// a single value (e.g. `min-width: 768px`), so callers get that node directly.
+	private parse_feature_value(start: number, end: number): number {
 		const saved_position = this.lexer.save_position()
 		this.lexer.seek(start, this.lexer.line, this.lexer.column)
 
-		let nodes: number[] = []
+		let first_node = 0
+		let last_node = 0
 
 		while (this.lexer.pos < end) {
 			this.lexer.next_token_fast(false)
@@ -929,11 +951,18 @@ export class AtRulePreludeParser {
 
 			// Create node based on token type
 			let node = this.parse_value_token()
-			if (node !== null) nodes.push(node)
+			if (node !== null) {
+				if (first_node === 0) {
+					first_node = node
+				} else {
+					this.arena.set_next_sibling(last_node, node)
+				}
+				last_node = node
+			}
 		}
 
 		this.lexer.restore_position(saved_position)
-		return nodes
+		return first_node
 	}
 
 	// Parse @namespace prelude: [prefix] url("...") | "..."
@@ -1036,7 +1065,8 @@ export class AtRulePreludeParser {
 		content_end: number,
 	): number {
 		let range_node = this.create_node(FEATURE_RANGE, feature_start, feature_end)
-		let children: number[] = []
+		let first_child = 0
+		let last_child = 0
 		let feature_name_start = -1
 		let feature_name_end = -1
 
@@ -1054,7 +1084,12 @@ export class AtRulePreludeParser {
 				if (pos < content_end && this.source.charCodeAt(pos) === CHAR_EQUALS) pos++
 
 				let op = this.create_node(PRELUDE_OPERATOR, op_start, pos)
-				children.push(op)
+				if (first_child === 0) {
+					first_child = op
+				} else {
+					this.arena.set_next_sibling(last_child, op)
+				}
+				last_child = op
 			} else {
 				// Value or feature name
 				let saved = this.lexer.save_position()
@@ -1066,9 +1101,16 @@ export class AtRulePreludeParser {
 					feature_name_start = this.lexer.token_start
 					feature_name_end = this.lexer.token_end
 				} else {
-					// Value
-					let value_nodes = this.parse_feature_value(this.lexer.token_start, this.lexer.token_end)
-					children.push(...value_nodes)
+					// Value (may itself be a short chain, e.g. a single dimension node)
+					let value_first = this.parse_feature_value(this.lexer.token_start, this.lexer.token_end)
+					if (value_first !== 0) {
+						if (first_child === 0) {
+							first_child = value_first
+						} else {
+							this.arena.set_next_sibling(last_child, value_first)
+						}
+						last_child = this.arena.get_last_sibling(value_first)
+					}
 				}
 
 				pos = this.lexer.pos
@@ -1082,7 +1124,9 @@ export class AtRulePreludeParser {
 			this.arena.set_content_length(range_node, feature_name_end - feature_name_start)
 		}
 
-		this.arena.append_children(range_node, children)
+		if (first_child !== 0) {
+			this.arena.set_first_child(range_node, first_child)
+		}
 		return range_node
 	}
 }
