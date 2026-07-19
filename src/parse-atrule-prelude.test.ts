@@ -36,6 +36,9 @@ import {
 	URL,
 	DIMENSION,
 	FEATURE_RANGE,
+	FUNCTION,
+	OPERATOR,
+	NUMBER,
 } from './arena'
 
 describe('At-Rule Prelude Nodes', () => {
@@ -562,6 +565,41 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(feature?.value?.text).toBe('portrait')
 			})
 
+			test('should parse calc() function value', () => {
+				const css = '@media (min-width: calc(1px * 1)) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const queryChildren =
+					((atRule.prelude as AtrulePrelude | null)?.children[0] as MediaQuery | undefined)
+						?.children || []
+				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE) as
+					| MediaFeature
+					| undefined
+
+				expect(feature?.value?.type).toBe(FUNCTION)
+				expect(feature?.value?.text).toBe('calc(1px * 1)')
+
+				// calc()'s arguments should be parsed into structured children, not dropped
+				const args = (feature?.value as Function | undefined)?.children || []
+				expect(args.map((n) => n.type)).toEqual([DIMENSION, OPERATOR, NUMBER])
+				expect(args.map((n) => n.text)).toEqual(['1px', '*', '1'])
+			})
+
+			test('should parse env() function value', () => {
+				const css = '@media (min-width: env(safe-area-inset-top)) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const queryChildren =
+					((atRule.prelude as AtrulePrelude | null)?.children[0] as MediaQuery | undefined)
+						?.children || []
+				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE) as
+					| MediaFeature
+					| undefined
+
+				expect(feature?.value?.type).toBe(FUNCTION)
+				expect(feature?.value?.text).toBe('env(safe-area-inset-top)')
+			})
+
 			test('should have null value for boolean features', () => {
 				const css = '@media (hover) { }'
 				const ast = parse(css)
@@ -867,6 +905,17 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(query.has_children).toBe(true)
 				expect(query.children.length).toBe(1)
 				expect(query.children[0].type).toBe(SUPPORTS_DECLARATION)
+			})
+
+			test('should not truncate the query at a nested function paren, e.g. calc()', () => {
+				const css = '@supports (width: calc(1px + 2px)) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const children = (atRule.prelude as AtrulePrelude).children || []
+				const query = children.find((c) => c.type === SUPPORTS_QUERY) as SupportsQuery | undefined
+
+				// The query's own closing paren must be found, not calc()'s
+				expect(query?.value).toBe('width: calc(1px + 2px)')
 			})
 
 			test('should have a Declaration with property inside SupportsDeclaration', () => {
@@ -1296,6 +1345,18 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(children[1].text).toBe('to')
 				expect(children[2].type).toBe(PRELUDE_SELECTORLIST)
 				expect((children[2] as PreludeSelectorList).value).toBe('.dark')
+			})
+
+			test('should not truncate the scope selector at a nested function paren, e.g. :not()', () => {
+				const root = parse('@scope (:not(.a)) to (.b) { }')
+				const atRule = root.first_child! as Atrule
+				const children = (atRule.prelude as AtrulePrelude | null)?.children ?? []
+
+				expect(children.length).toBe(3)
+				// The scope-start's own closing paren must be found, not :not()'s
+				expect((children[0] as PreludeSelectorList).value).toBe(':not(.a)')
+				expect(children[1].type).toBe(PRELUDE_OPERATOR)
+				expect((children[2] as PreludeSelectorList).value).toBe('.b')
 			})
 
 			test('should have no prelude children for bare @scope', () => {

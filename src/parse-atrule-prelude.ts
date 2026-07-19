@@ -16,8 +16,6 @@ import {
 	PRELUDE_SELECTORLIST,
 	URL,
 	FUNCTION,
-	NUMBER,
-	DIMENSION,
 	STRING,
 	FEATURE_RANGE,
 } from './arena'
@@ -31,15 +29,11 @@ import {
 	TOKEN_STRING,
 	TOKEN_URL,
 	TOKEN_FUNCTION,
-	TOKEN_NUMBER,
-	TOKEN_PERCENTAGE,
-	TOKEN_DIMENSION,
 	TOKEN_DELIM,
 	type TokenType,
 } from './token-types'
 import {
 	str_equals,
-	is_whitespace,
 	strip_vendor_prefix,
 	CHAR_COLON,
 	CHAR_LESS_THAN,
@@ -50,6 +44,7 @@ import {
 import { trim_boundaries, skip_whitespace_and_comments_forward } from './parse-utils'
 import { CSSNode } from './css-node'
 import type { AnyNode } from './node-types'
+import { ValueNodeParser } from './value-node-parser'
 
 /** @internal */
 export class AtRulePreludeParser {
@@ -57,6 +52,10 @@ export class AtRulePreludeParser {
 	private arena: CSSDataArena
 	private source: string
 	private prelude_end: number
+	// Shared with declaration-value parsing so feature values (calc(), env(), var(), ...)
+	// get the same structured Number/Operator/Function tree, not just an opaque text span.
+	// Runs on its own lexer instance, independent of this.lexer.
+	private value_node_parser: ValueNodeParser
 
 	constructor(arena: CSSDataArena, source: string) {
 		this.arena = arena
@@ -64,6 +63,7 @@ export class AtRulePreludeParser {
 		// Create a lexer instance for prelude parsing
 		this.lexer = new Lexer(source)
 		this.prelude_end = 0
+		this.value_node_parser = new ValueNodeParser(arena, source)
 	}
 
 	// Parse an at-rule prelude into nodes (standalone use)
@@ -261,7 +261,7 @@ export class AtRulePreludeParser {
 		while (this.lexer.pos < this.prelude_end && depth > 0) {
 			this.next_token()
 			let token_type = this.lexer.token_type
-			if (token_type === TOKEN_LEFT_PAREN) {
+			if (token_type === TOKEN_LEFT_PAREN || token_type === TOKEN_FUNCTION) {
 				depth++
 			} else if (token_type === TOKEN_RIGHT_PAREN) {
 				depth--
@@ -461,7 +461,7 @@ export class AtRulePreludeParser {
 				while (this.lexer.pos < this.prelude_end && depth > 0) {
 					this.next_token()
 					let inner_token_type = this.lexer.token_type
-					if (inner_token_type === TOKEN_LEFT_PAREN) {
+					if (inner_token_type === TOKEN_LEFT_PAREN || inner_token_type === TOKEN_FUNCTION) {
 						depth++
 					} else if (inner_token_type === TOKEN_RIGHT_PAREN) {
 						depth--
@@ -908,61 +908,13 @@ export class AtRulePreludeParser {
 		return this.lexer.next_token_fast(false)
 	}
 
-	// Helper: Parse a single value token into a node
-	private parse_value_token(): number | null {
-		switch (this.lexer.token_type) {
-			case TOKEN_IDENT:
-				return this.create_node(IDENTIFIER, this.lexer.token_start, this.lexer.token_end)
-			case TOKEN_NUMBER:
-				return this.create_node(NUMBER, this.lexer.token_start, this.lexer.token_end)
-			case TOKEN_PERCENTAGE:
-			case TOKEN_DIMENSION:
-				return this.create_node(DIMENSION, this.lexer.token_start, this.lexer.token_end)
-			case TOKEN_STRING:
-				return this.create_node(STRING, this.lexer.token_start, this.lexer.token_end)
-			default:
-				return null
-		}
-	}
-
-	// Helper: Parse feature value portion into typed nodes, chained as siblings without an
-	// intermediate array. Returns the first node in the chain (0 if none) — the common case is
-	// a single value (e.g. `min-width: 768px`), so callers get that node directly.
+	// Parse feature value portion into typed nodes (Number, Dimension, Function, Operator, ...),
+	// chained as siblings without an intermediate array. Delegates to the shared ValueNodeParser
+	// (also used for declaration values) so calc(), env(), var(), etc. get full structured
+	// children instead of being treated as opaque text. Runs on its own lexer instance, so it
+	// doesn't disturb this.lexer's position — no save/restore needed around the call.
 	private parse_feature_value(start: number, end: number): number {
-		const saved_position = this.lexer.save_position()
-		this.lexer.seek(start, this.lexer.line, this.lexer.column)
-
-		let first_node = 0
-		let last_node = 0
-
-		while (this.lexer.pos < end) {
-			this.lexer.next_token_fast(false)
-			if (this.lexer.token_start >= end) break
-
-			// Skip whitespace tokens
-			let all_whitespace = true
-			for (let i = this.lexer.token_start; i < this.lexer.token_end && i < end; i++) {
-				if (!is_whitespace(this.source.charCodeAt(i))) {
-					all_whitespace = false
-					break
-				}
-			}
-			if (all_whitespace) continue
-
-			// Create node based on token type
-			let node = this.parse_value_token()
-			if (node !== null) {
-				if (first_node === 0) {
-					first_node = node
-				} else {
-					this.arena.set_next_sibling(last_node, node)
-				}
-				last_node = node
-			}
-		}
-
-		this.lexer.restore_position(saved_position)
-		return first_node
+		return this.value_node_parser.parse_chain(start, end, this.lexer.line, this.lexer.column)
 	}
 
 	// Parse @namespace prelude: [prefix] url("...") | "..."
@@ -1009,7 +961,11 @@ export class AtRulePreludeParser {
 
 				while (this.lexer.pos < this.prelude_end && depth > 0) {
 					this.next_token()
-					if (this.lexer.token_type === TOKEN_LEFT_PAREN) depth++
+					if (
+						this.lexer.token_type === TOKEN_LEFT_PAREN ||
+						this.lexer.token_type === TOKEN_FUNCTION
+					)
+						depth++
 					else if (this.lexer.token_type === TOKEN_RIGHT_PAREN) depth--
 				}
 
