@@ -976,6 +976,23 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(children[2].text).toBe('utilities')
 				expect((children[2] as LayerName).value).toBe('utilities')
 			})
+
+			test('should keep dotted layer names intact among comma-separated names', () => {
+				const css = '@layer a.b, c;'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+
+				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
+				expect(children.length).toBe(2)
+
+				expect(children[0].type).toBe(LAYER_NAME)
+				expect(children[0].text).toBe('a.b')
+				expect((children[0] as LayerName).value).toBe('a.b')
+
+				expect(children[1].type).toBe(LAYER_NAME)
+				expect(children[1].text).toBe('c')
+				expect((children[1] as LayerName).value).toBe('c')
+			})
 		})
 
 		describe('@keyframes', () => {
@@ -1969,7 +1986,32 @@ describe('parse_atrule_prelude()', () => {
 		test('should parse dotted layer name', () => {
 			const result = parse_atrule_prelude('layer', 'framework.base')
 
-			expect(result.length).toBeGreaterThan(0)
+			expect(result.length).toBe(1)
+			expect(result[0].type).toBe(LAYER_NAME)
+			expect(result[0].text).toBe('framework.base')
+		})
+
+		test('should parse a nested dotted layer name mixed with a simple one', () => {
+			const result = parse_atrule_prelude('layer', 'a, b.c')
+
+			expect(result.length).toBe(2)
+			expect(result[0].type).toBe(LAYER_NAME)
+			expect(result[0].text).toBe('a')
+			expect(result[1].type).toBe(LAYER_NAME)
+			expect(result[1].text).toBe('b.c')
+		})
+
+		test('should parse deeply nested dotted layer names', () => {
+			const result = parse_atrule_prelude('layer', 'a, b.c, d.e.f')
+
+			expect(result.length).toBe(3)
+			expect(result.map((n) => n.text)).toEqual(['a', 'b.c', 'd.e.f'])
+		})
+
+		test('should not glue a dot separated by whitespace onto the layer name', () => {
+			const result = parse_atrule_prelude('layer', 'a. b')
+
+			expect(result.map((n) => n.text)).toEqual(['a', 'b'])
 		})
 	})
 
