@@ -456,6 +456,10 @@ export type AtrulePrelude = WithClone<
 			| Url
 			// `@supports style(...)` / `selector(...)` function conditions
 			| Function
+			// `@page`, `@keyframes`, `@property`, etc. (parse_identifier())
+			| Identifier
+			// `@charset` (parse_charset_prelude())
+			| String
 		> & { readonly type: typeof AT_RULE_PRELUDE; readonly type_name: 'AtrulePrelude' }
 >
 
@@ -489,7 +493,7 @@ export type MediaType = Leaf<
 
 export type ContainerQuery = WithClone<
 	CSSNode &
-		WithChildren<Identifier | MediaFeature | Function> & {
+		WithChildren<Identifier | MediaFeature | Function | PreludeOperator> & {
 			readonly type: typeof CONTAINER_QUERY
 			readonly type_name: 'ContainerQuery'
 		}
@@ -543,7 +547,7 @@ export type PreludeOperator = Leaf<typeof PRELUDE_OPERATOR, 'Operator'>
 
 export type FeatureRange = WithClone<
 	CSSNode &
-		WithChildren<Dimension | Operator> & {
+		WithChildren<Dimension | PreludeOperator> & {
 			readonly type: typeof FEATURE_RANGE
 			readonly type_name: 'MediaFeatureRange'
 			/** The feature name in a range comparison, e.g. "width" from "(width >= 400px)" */

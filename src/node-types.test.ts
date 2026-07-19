@@ -45,6 +45,9 @@ import type {
 	Identifier,
 	Operator,
 	PreludeOperator,
+	ContainerQuery,
+	FeatureRange,
+	String,
 } from './node-types'
 
 // ---------------------------------------------------------------------------
@@ -325,6 +328,52 @@ describe('type narrowing — compile-time', () => {
 		const range = atrule.prelude!.first_child!.first_child! as AnyNode
 		if (range.type_name === 'MediaFeatureRange') {
 			expectTypeOf(range.name).toEqualTypeOf<string>()
+		}
+	})
+
+	test('FeatureRange children are typed as Dimension | PreludeOperator, not Operator', () => {
+		const atrule = parse('@media (width >= 400px) {}').first_child! as Atrule
+		const range = atrule.prelude!.first_child!.first_child! as FeatureRange
+		expectTypeOf(range.children).toEqualTypeOf<(Dimension | PreludeOperator)[]>()
+
+		const [op, dim] = range.children
+		expect(op.type_name).toBe('Operator')
+		expect(dim.type_name).toBe('Dimension')
+	})
+
+	test('ContainerQuery children include PreludeOperator for and/or/not, without casting', () => {
+		const atrule = parse('@container style(a: 1) and style(b: 2) {}').first_child! as Atrule
+		const containerQuery = atrule.prelude!.first_child! as ContainerQuery
+		expectTypeOf(containerQuery.children).toEqualTypeOf<
+			(Identifier | MediaFeature | Function | PreludeOperator)[]
+		>()
+
+		const [, op] = containerQuery.children
+		expect(op.type_name).toBe('Operator')
+		expect((op as PreludeOperator).text).toBe('and')
+	})
+
+	test('AtrulePrelude children include Identifier for @keyframes/@page/@property preludes', () => {
+		const atrule = parse('@keyframes spin {}').first_child! as Atrule
+		const prelude = atrule.prelude! as AtrulePrelude
+		const [ident] = prelude.children
+
+		expect(ident.type_name).toBe('Identifier')
+		if (ident.type_name === 'Identifier') {
+			expectTypeOf(ident).toExtend<Identifier>()
+			expect(ident.text).toBe('spin')
+		}
+	})
+
+	test('AtrulePrelude children include String for @charset', () => {
+		const root = parse('@charset "UTF-8";')
+		const atrule = root.first_child! as Atrule
+		const prelude = atrule.prelude! as AtrulePrelude
+		const [str] = prelude.children
+
+		expect(str.type_name).toBe('String')
+		if (str.type_name === 'String') {
+			expectTypeOf(str).toExtend<String>()
 		}
 	})
 
