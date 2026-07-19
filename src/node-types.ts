@@ -110,14 +110,7 @@ type Leaf<Type extends CSSNodeType, Name extends TypeName, Extra = {}> = WithClo
 	CSSNode & Extra & { readonly type: Type; readonly type_name: Name }
 >
 
-/**
- * Mixin for node types that have child nodes.
- *
- * Only a subset of node types expose children — structural and container nodes
- * like StyleSheet, Block, SelectorList, Value, Function, etc. Leaf nodes
- * (Identifier, Number, Dimension, …) do not extend WithChildren, reflecting
- * that they never carry child nodes in a well-formed tree.
- */
+/** Mixin for container node types (StyleSheet, Block, SelectorList, …). Leaf nodes never carry children, so they skip this. */
 export interface WithChildren<T = AnyNode> {
 	readonly has_children: boolean
 	readonly child_count: number
@@ -127,21 +120,10 @@ export interface WithChildren<T = AnyNode> {
 }
 
 /**
- * Maps a CssNodeCommon subtype interface to its plain-object equivalent,
- * as returned by clone().
- *
- * The result is always a subtype of PlainCSSNode (the intersection starts
- * with PlainCSSNode), with two additions:
- *  - `type` is narrowed to T's specific literal (enables discriminated unions)
- *  - subtype-specific properties (those not on CssNodeCommon) are added with
- *    CssNodeCommon references replaced by PlainCSSNode
- *
- * Traversal properties (first_child, next_sibling, etc.) are excluded since
- * they live on CssNodeCommon and are never serialised by clone().
- *
- *   const rule = root.first_child as Rule
- *   rule.clone().prelude   // PlainCSSNode | null  — not PlainCSSNode | undefined
- *   rule.clone().block     // PlainCSSNode | null
+ * Maps a CssNodeCommon subtype to its clone() equivalent: `type` narrowed to
+ * T's literal, subtype-specific fields with CssNodeCommon refs replaced by
+ * PlainCSSNode, and traversal props (first_child, next_sibling, …) dropped
+ * since clone() never serialises them.
  */
 export type ToPlain<T extends CSSNode> = PlainCSSNode & { type: T['type'] } & {
 	[K in Exclude<
@@ -232,12 +214,9 @@ export type SelectorList = WithClone<
 >
 
 /**
- * A node that appears as a direct child of a Block.
- *
- * Identical to `Raw | Declaration | Atrule | Rule` except that `next_sibling`
- * is narrowed to the same union instead of the generic `CSSNode`.  This is
- * safe because none of these four types use WithChildren themselves, so
- * there is no recursive type graph to trigger TS2589.
+ * A direct child of a Block: `Raw | Declaration | Atrule | Rule` with
+ * `next_sibling` narrowed to the same union instead of generic `CSSNode`.
+ * Safe since none of the four use WithChildren, avoiding TS2589.
  */
 export type BlockChild = (Raw | Declaration | Atrule | Rule) &
 	Toggle<'has_next', 'next_sibling', Raw | Declaration | Atrule | Rule>
@@ -539,20 +518,10 @@ export type LayerName = Leaf<
 >
 
 /**
- * A parenthesised selector argument in an at-rule prelude.
- *
- * This node type exists because at-rule preludes that contain selectors (like
- * @scope) cannot reuse SELECTOR_LIST: that type already appears inside the
- * rule's block, and mixing the two would make traversal ambiguous. A distinct
- * type lets walkers and tooling distinguish "this is a selector used as a
- * scoping argument" from "this is a selector that matches elements".
- *
- * Currently produced only by @scope:
- *   @scope (.parent) to (.child) { }
- *          ^^^^^^^^^    ^^^^^^^^  — each parenthesised group is a PRELUDE_SELECTORLIST
- *
- * `value` is the raw selector text inside the parentheses, trimmed of
- * whitespace: ".parent" from "(.parent)".
+ * A parenthesised selector argument in an at-rule prelude, e.g. `(.parent)`
+ * in `@scope (.parent) to (.child)`. Distinct from SELECTOR_LIST, which
+ * already means "matches elements", so tooling can tell scoping arguments
+ * apart from real selectors. `value` is the trimmed text inside the parens.
  */
 export type PreludeSelectorList = Leaf<
 	typeof PRELUDE_SELECTORLIST,
