@@ -53,12 +53,9 @@ export class AtRulePreludeParser {
 	private arena: CSSDataArena
 	private source: string
 	private prelude_end: number
-	// Shared with declaration-value parsing so feature values (calc(), env(), var(), ...)
-	// get the same structured Number/Operator/Function tree, not just an opaque text span.
-	// Runs on its own lexer instance, independent of this.lexer.
+	// Shared with declaration values so calc()/env()/var() get structured children, not raw text
 	private value_node_parser: ValueNodeParser
-	// Used to deep-parse `selector()`'s argument (e.g. `@supports selector(:has(a))`) into a
-	// real SelectorList instead of leaving it as opaque text. Own lexer instance, like above.
+	// Deep-parses selector()'s argument into a real SelectorList
 	private selector_parser: SelectorParser
 
 	constructor(arena: CSSDataArena, source: string) {
@@ -169,10 +166,7 @@ export class AtRulePreludeParser {
 		return str_equals('and', str) || str_equals('or', str) || str_equals('not', str)
 	}
 
-	// Parse a bare function condition: style(--custom: 1), selector([popover]:open),
-	// font-tech(color-COLRv1), font-format(woff2), ... The lexer's current token must
-	// already be the TOKEN_FUNCTION. Content isn't a CSS value (it may be a selector or
-	// an arbitrary declaration), so it's captured as raw text rather than deep-parsed.
+	// Parse a bare function condition: style(...), selector(...), font-tech(...). Current token must be TOKEN_FUNCTION.
 	private parse_function_condition(): number {
 		let func_name = this.source.substring(this.lexer.token_start, this.lexer.token_end - 1) // -1 to exclude '('
 		let func_start = this.lexer.token_start
@@ -208,8 +202,7 @@ export class AtRulePreludeParser {
 		this.arena.set_value_start_delta(func_node, content_start - func_start)
 		this.arena.set_value_length(func_node, content_end - content_start)
 
-		// `selector()`'s argument is a <complex-selector>, e.g. `selector(:has(a))` — parse it
-		// with the selector parser so consumers get a real SelectorList instead of raw text.
+		// selector()'s argument is a <complex-selector> — parse it into a real SelectorList
 		if (str_equals('selector', func_name)) {
 			let selector_list = this.selector_parser.parse_selector(
 				content_start,
@@ -221,8 +214,7 @@ export class AtRulePreludeParser {
 				this.arena.set_first_child(func_node, selector_list)
 			}
 		}
-		// `style()`'s argument is a <declaration>, e.g. `style(--custom: 1)` — parse it into the
-		// same SupportsDeclaration → Declaration → Value tree as a plain `(property: value)` query.
+		// style()'s argument is a <declaration> — parse it into the same tree as (property: value)
 		else if (str_equals('style', func_name)) {
 			let colon_pos = this.find_colon_at_depth_zero(content_start, content_end)
 			if (colon_pos !== -1) {
@@ -248,9 +240,7 @@ export class AtRulePreludeParser {
 		let first_component = 0
 		let last_component = 0
 
-		// Check for leading modifier (only, not), e.g. `only screen`. Emitted as a
-		// PRELUDE_OPERATOR node like the `and`/`or`/`not` combinators below, so it isn't
-		// silently dropped from MediaQuery.children while still being consumed from the stream.
+		// Leading modifier (only/not) — emit as PRELUDE_OPERATOR like the and/or/not combinators below
 		const saved_token_start = this.lexer.save_position()
 		this.next_token()
 
@@ -616,8 +606,7 @@ export class AtRulePreludeParser {
 		}
 
 		let supports_decl = this.create_node(SUPPORTS_DECLARATION, content_start, content_end)
-		// Mirror the property name onto the wrapper too, so `.property` works without
-		// having to reach into the inner Declaration.
+		// Mirror the property name onto the wrapper so .property doesn't need the inner Declaration
 		this.arena.set_content_start_delta(supports_decl, prop_trimmed[0] - content_start)
 		this.arena.set_content_length(supports_decl, prop_trimmed[1] - prop_trimmed[0])
 		this.arena.set_first_child(supports_decl, decl)
@@ -966,11 +955,8 @@ export class AtRulePreludeParser {
 		return this.lexer.next_token_fast(false)
 	}
 
-	// Parse feature value portion into typed nodes (Number, Dimension, Function, Operator, ...),
-	// chained as siblings without an intermediate array. Delegates to the shared ValueNodeParser
-	// (also used for declaration values) so calc(), env(), var(), etc. get full structured
-	// children instead of being treated as opaque text. Runs on its own lexer instance, so it
-	// doesn't disturb this.lexer's position — no save/restore needed around the call.
+	// Parse feature value via the shared ValueNodeParser, so calc()/env()/var() get full children.
+	// Own lexer instance, so it doesn't disturb this.lexer's position — no save/restore needed.
 	private parse_feature_value(start: number, end: number): number {
 		return this.value_node_parser.parse_chain(start, end, this.lexer.line, this.lexer.column)
 	}
