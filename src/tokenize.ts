@@ -1,7 +1,6 @@
 import {
 	is_hex_digit,
 	is_ident_start,
-	is_whitespace,
 	char_types,
 	CHAR_DIGIT,
 	CHAR_WHITESPACE,
@@ -831,8 +830,9 @@ export class Lexer {
 		while (this.pos < end) {
 			let ch = this.source.charCodeAt(this.pos)
 
-			// Skip whitespace
-			if (is_whitespace(ch)) {
+			// Skip whitespace (space, tab, and newlines — is_whitespace() from string-utils
+			// covers newlines too, but here we go straight to char_types to avoid the import)
+			if (ch < 128 && (char_types[ch] & (CHAR_WHITESPACE | CHAR_NEWLINE)) !== 0) {
 				this.advance()
 				continue
 			}

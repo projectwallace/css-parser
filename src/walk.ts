@@ -16,26 +16,8 @@ type WalkCallback = (node: AnyNode, depth: number) => void | typeof SKIP | typeo
  * not tree depth.
  */
 export function walk(node: CSSNode, callback: WalkCallback, depth = 0): boolean {
-	const result = callback(node as AnyNode, depth)
-
-	if (result === BREAK) return false
-	if (result === SKIP) return true
-
 	const impl = node as unknown as CSSNodeImpl
-	const arena = impl.__get_arena()
-	const source = impl.__get_source()
-	const index = impl.__get_index()
-
-	const type = arena.get_type(index)
-	const child_depth = type === STYLE_RULE || type === AT_RULE ? depth + 1 : depth
-
-	let child = arena.get_first_child(index)
-	while (child !== 0) {
-		if (!_walk(arena, source, child, callback, child_depth)) return false
-		child = arena.get_next_sibling(child)
-	}
-
-	return true
+	return _walk(impl.__get_arena(), impl.__get_source(), impl.__get_index(), callback, depth)
 }
 
 function _walk(
@@ -80,27 +62,8 @@ export function traverse(
 	node: CSSNode,
 	{ enter = NOOP, leave = NOOP }: WalkEnterLeaveOptions = {},
 ): boolean {
-	const enter_result = enter(node as AnyNode)
-
-	if (enter_result === BREAK) return false
-
-	if (enter_result !== SKIP) {
-		const impl = node as unknown as CSSNodeImpl
-		const arena = impl.__get_arena()
-		const source = impl.__get_source()
-		const index = impl.__get_index()
-
-		let child = arena.get_first_child(index)
-		while (child !== 0) {
-			if (!_traverse(arena, source, child, enter, leave)) return false
-			child = arena.get_next_sibling(child)
-		}
-	}
-
-	const leave_result = leave(node as AnyNode)
-	if (leave_result === BREAK) return false
-
-	return true
+	const impl = node as unknown as CSSNodeImpl
+	return _traverse(impl.__get_arena(), impl.__get_source(), impl.__get_index(), enter, leave)
 }
 
 function _traverse(

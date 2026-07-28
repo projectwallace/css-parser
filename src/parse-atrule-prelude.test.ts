@@ -2047,6 +2047,39 @@ describe('At-Rule Prelude Nodes', () => {
 					expect(atRule?.prelude?.length).toBe(33)
 				})
 
+				test('@media query stays a single MediaQuery when a newline separates its components', () => {
+					// Regression test: a newline between tokens inside an at-rule prelude used to
+					// desync the internal whitespace-skip helper from the tokenizer's own newline
+					// handling, splitting one media query into two at the newline.
+					const css = '@media screen\nand (min-width: 768px) { }'
+					const ast = parse(css)
+					const atRule = ast.first_child! as Atrule
+					const prelude = atRule.prelude as AtrulePrelude
+
+					expect(prelude.child_count).toBe(1)
+
+					const query = prelude.first_child as MediaQuery
+					expect(query.type).toBe(MEDIA_QUERY)
+					expect(query.children.map((c) => c.type_name)).toEqual([
+						'MediaType',
+						'Operator',
+						'Feature',
+					])
+				})
+
+				test('@supports condition stays intact when a newline separates and/or operators', () => {
+					const css = '@supports (display: grid)\nand (gap: 1rem) { }'
+					const ast = parse(css)
+					const atRule = ast.first_child! as Atrule
+					const prelude = atRule.prelude as AtrulePrelude
+
+					expect(prelude.children.map((c) => c.type_name)).toEqual([
+						'SupportsQuery',
+						'Operator',
+						'SupportsQuery',
+					])
+				})
+
 				test('@layer with whitespace around commas', () => {
 					const css = '@layer base , components , utilities { }'
 					const ast = parse(css)
