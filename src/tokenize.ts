@@ -74,11 +74,9 @@ const CHAR_CARRIAGE_RETURN = 0x0d // \r
 const CHAR_LINE_FEED = 0x0a // \n
 const CHAR_FORM_FEED = 0x0c // \f
 
-// Characters skip_to_unquoted() needs to stop and inspect: quotes (start a string), '/'
-// (might start a comment), and newlines (need line/column tracking). Built once and shared
-// across all skip_to_unquoted calls regardless of the (dynamic) target character being
-// searched for, so the ordinary-character fast path is one table lookup, same cost as
-// consume_ident_or_function's inner loop.
+// Characters skip_to_unquoted()/skip_to_declaration_stop() must stop and inspect: quotes,
+// comment-starting '/', and newlines. One shared table keeps the ordinary-char fast path
+// to a single lookup, same cost as consume_ident_or_function's inner loop.
 const SKIP_SCAN_INTERESTING = new Uint8Array(128)
 SKIP_SCAN_INTERESTING[CHAR_DOUBLE_QUOTE] = 1
 SKIP_SCAN_INTERESTING[CHAR_SINGLE_QUOTE] = 1
@@ -87,11 +85,9 @@ SKIP_SCAN_INTERESTING[CHAR_LINE_FEED] = 1
 SKIP_SCAN_INTERESTING[CHAR_CARRIAGE_RETURN] = 1
 SKIP_SCAN_INTERESTING[CHAR_FORM_FEED] = 1
 
-// Extra characters skip_to_declaration_stop() reports back to its caller (on top of the
-// string/comment/newline handling shared with skip_to_unquoted above): statement/block/
-// paren delimiters and '!' (for !important detection). parse-declaration.ts decides what
-// each one means (paren depth, !important, "actually a nested rule") - this table only
-// flags which characters are worth stopping for.
+// Stop characters skip_to_declaration_stop() reports back: statement/block/paren
+// delimiters plus '!' for !important. The caller (parse-declaration.ts) decides what
+// each one means; this table only flags which are worth stopping for.
 const DECL_VALUE_STOP = new Uint8Array(128)
 DECL_VALUE_STOP[CHAR_SEMICOLON] = 1
 DECL_VALUE_STOP[CHAR_LEFT_BRACE] = 1
@@ -169,9 +165,8 @@ export class Lexer {
 		// Outer loop replaces comment recursion: after consuming a comment, continue
 		// to find the actual next token instead of making a recursive call.
 		while (true) {
-			// Inline whitespace skip — avoids method call + duplicate charCodeAt per char.
-			// Hoisted to locals (synced back once) instead of touching this.pos/_line/_line_offset
-			// on every character — most runs are plain spaces that never hit the newline branch.
+			// Inline whitespace skip, hoisted to locals (synced back once) instead of touching
+			// this.pos/_line/_line_offset per char — most runs are plain spaces.
 			if (skip_whitespace) {
 				let pos = this.pos
 				let line = this._line
@@ -254,21 +249,16 @@ export class Lexer {
 				continue
 			}
 
-			// Identifier or function — checked early: across real-world CSS this is the single
-			// most common non-whitespace token (~15-20%+ of all tokens), well ahead of numbers,
-			// hashes, at-keywords, strings, and the (essentially extinct in modern CSS) CDO/CDC
-			// tokens that used to precede it here. Measured via profiling + token frequency
-			// analysis on bootstrap.css/tailwind.css — see PR discussion for numbers.
+			// Identifier or function — checked first: the single most common non-whitespace
+			// token (~15-20% of all tokens), ahead of numbers/hashes/at-keywords/strings and
+			// the now-extinct CDO/CDC tokens that used to precede it (profiled on bootstrap.css/tailwind.css).
 			if (is_ident_start(ch)) {
 				return this.consume_ident_or_function(start_line, start_column)
 			}
 
-			// Hyphen-led tokens: --custom-property/-webkit-prefix (identifier), -5px (signed
-			// number), or the legacy --> CDC token. Consolidated into one block (single charCodeAt
-			// for the lookahead char) instead of three separate `ch === CHAR_HYPHEN` checks.
-			// NOTE: CDC must be checked first — "-->" would otherwise be misread as identifier "--"
-			// followed by a stray ">" delimiter, since -- is itself valid identifier-start (custom
-			// properties).
+			// Hyphen-led tokens: --custom-property (identifier), -5px (signed number), or the
+			// legacy --> CDC token — consolidated into one block sharing a single lookahead read.
+			// CDC must be checked first: "-->" would otherwise read as identifier "--" plus ">".
 			if (ch === CHAR_HYPHEN) {
 				let next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
 
@@ -346,8 +336,7 @@ export class Lexer {
 				return this.consume_hash(start_line, start_column)
 			}
 
-			// CDO: <!-- (essentially extinct in modern CSS — checked last, right before the
-			// default delimiter fallback; a lone "<" that isn't CDO just falls through to DELIM)
+			// CDO: <!-- (extinct in modern CSS — checked last; a lone "<" falls through to DELIM)
 			if (ch === CHAR_LESS_THAN && this.pos + 3 < source_length) {
 				if (
 					source.charCodeAt(this.pos + 1) === CHAR_EXCLAMATION &&
@@ -388,9 +377,8 @@ export class Lexer {
 		}
 	}
 
-	// Skip a comment (/* ... */), firing on_comment if set. Caller must have already
-	// verified this.pos points at '/' immediately followed by '*'. Shared by
-	// next_token_fast's hot loop and skip_to_unquoted, so both stay in sync by construction.
+	// Skip a comment (/* ... */), firing on_comment if set. Caller must have verified
+	// this.pos is at '/*'. Shared by next_token_fast and the skip_to_* scans below.
 	private _skip_comment(): void {
 		const source = this.source
 		const source_length = source.length
@@ -425,25 +413,16 @@ export class Lexer {
 	}
 
 	/**
-	 * Fast-forward to the next occurrence of `target` (a char code) that isn't inside a
-	 * string or comment, WITHOUT fully tokenizing everything in between — unlike
-	 * next_token_fast, this never dispatches through consume_ident_or_function/consume_number/
-	 * etc. for ordinary characters. Used by callers that only need to know *where a
-	 * construct ends* (a selector's `{`, a value's `;`), not the tokens inside it — the
-	 * detailed sub-parser for that construct re-tokenizes the span properly afterward.
+	 * Fast-forward to the next `target` char that isn't inside a string or comment, without
+	 * fully tokenizing what's in between — used by callers that only need to know *where a
+	 * construct ends* (e.g. a selector's `{`), since the sub-parser for that construct
+	 * re-tokenizes the span properly afterward.
 	 *
-	 * Strings are skipped via consume_string itself (not reimplemented here), so escape
-	 * sequences, hex escapes, escaped newlines, and bad/unterminated strings are handled
-	 * identically to real tokenization. Comments are skipped via the same _skip_comment
-	 * used by next_token_fast, so on_comment still fires for comments encountered here.
+	 * Strings go through consume_string and comments through _skip_comment, so escapes and
+	 * on_comment callbacks behave identically to real tokenization. Ordinary characters cost
+	 * one SKIP_SCAN_INTERESTING lookup each, same as consume_ident_or_function's inner loop.
 	 *
-	 * The ordinary-character fast path is a single table lookup (SKIP_SCAN_INTERESTING),
-	 * same shape as consume_ident_or_function's inner loop, so this doesn't cost more per
-	 * character than the full tokenizer would for a run of identifier/delimiter chars —
-	 * the savings come from skipping token classification and make_token entirely for them.
-	 *
-	 * Leaves this.pos at target's position (returns true) or at source_length (returns
-	 * false); this._line/_line_offset stay accurate for a subsequent seek/next_token_fast.
+	 * Returns true with this.pos at target, or false with this.pos at source_length.
 	 */
 	skip_to_unquoted(target: number): boolean {
 		const source = this.source
@@ -464,9 +443,7 @@ export class Lexer {
 			}
 
 			if (ch === CHAR_DOUBLE_QUOTE || ch === CHAR_SINGLE_QUOTE) {
-				// start_line/start_column are only used for the token this returns, which we
-				// discard - consume_string's side effects on this.pos/_line/_line_offset are
-				// what we actually want, and those are correct regardless of what we pass here.
+				// The returned token is discarded — only consume_string's pos/line side effects matter.
 				this.pos = pos
 				this.consume_string(ch, this._line, 1)
 				pos = this.pos
@@ -502,16 +479,11 @@ export class Lexer {
 	}
 
 	/**
-	 * Fast-forward to the next occurrence of one of `; { } ( ) !` that isn't inside a
-	 * string or comment, WITHOUT fully tokenizing the ordinary content in between - same
-	 * approach as skip_to_unquoted, specialized for the declaration-value boundary scan in
-	 * parse-declaration.ts (which needs several different stop characters: paren depth
-	 * tracking needs both `(` and `)`, statement end is `;`/`}`, and `!` flags a possible
-	 * !important). That caller decides what each returned character means; this method only
-	 * locates the next one.
+	 * Same approach as skip_to_unquoted, but stops at any of `; { } ( ) !` — the stop
+	 * characters parse-declaration.ts's value scan needs (paren depth, statement end,
+	 * !important). The caller decides what each one means; this only locates the next one.
 	 *
-	 * Returns the stop character's code, leaving this.pos at its position. Returns 0 (and
-	 * leaves this.pos at `end`) if none is found first.
+	 * Returns the stop character's code (this.pos left at it), or 0 at `end` if none found.
 	 */
 	skip_to_declaration_stop(end: number): number {
 		const source = this.source

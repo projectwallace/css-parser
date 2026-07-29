@@ -149,11 +149,9 @@ export class DeclarationParser {
 			lexer.restore_position(has_delimiter_prefix ? initial_saved : saved)
 			return null
 		}
-		// Skip whitespace/comments after ':' WITHOUT tokenizing the first value token - the
-		// raw scan below (skip_to_declaration_stop) needs to see every character of the value
-		// uniformly, including what would otherwise become an already-consumed first token
-		// (e.g. a leading "calc(" - its '(' must reach the paren-depth tracking below, which
-		// it wouldn't if next_token_fast had already tokenized past it here).
+		// Skip whitespace after ':' without tokenizing the value's first token - the raw scan
+		// below needs to see every value character itself (e.g. a leading "calc("'s '(' must
+		// reach the paren-depth tracking, not be pre-consumed here).
 		lexer.pos = lexer.token_end // move past ':' (already at this position, but be explicit)
 		lexer.skip_whitespace_in_range(this.source.length)
 
@@ -170,8 +168,7 @@ export class DeclarationParser {
 		this.arena.set_content_start_delta(declaration, 0)
 		this.arena.set_content_length(declaration, prop_end - prop_start)
 
-		// Track value start (after colon, skipping whitespace) - CRITICAL: Capture line/column
-		// for value parsing. Lexer is now positioned at the first value character (untokenized).
+		// Value start (after colon/whitespace) - lexer is positioned at the first, untokenized char.
 		let value_start = lexer.pos
 		let value_start_line = lexer.line
 		let value_start_column = lexer.column
@@ -183,14 +180,10 @@ export class DeclarationParser {
 		// Track parenthesis depth to handle semicolons inside functions (e.g., url(data:image/png;base64,...))
 		let paren_depth = 0
 
-		// Fast-forward through the value using a raw character scan for the exact stop
-		// points the token-by-token loop used to check (paren depth, ';'/'}' at depth zero,
-		// an unparenthesized '{', and '!' for !important) - the ordinary content in between
-		// doesn't need full tokenization here, since ValueNodeParser re-tokenizes the
-		// resulting span properly afterward.
-		// NOTE: every exit is an explicit break/return - the "ran out of input" case is only
-		// detected via skip_to_declaration_stop returning 0, not via a loop condition, since a
-		// paren_depth adjustment can land exactly on `end` without going through that path.
+		// Raw character scan for the value's stop points (paren depth, ';'/'}' at depth zero,
+		// '{', '!') - content in between doesn't need tokenizing since ValueNodeParser
+		// re-tokenizes the span afterward. Loop relies only on explicit break/return, since a
+		// paren_depth adjustment can land exactly on `end` without the "ran out" case firing.
 		while (true) {
 			let stop_ch = lexer.skip_to_declaration_stop(end)
 
@@ -207,36 +200,30 @@ export class DeclarationParser {
 
 			if (stop_ch === CHAR_SEMICOLON && paren_depth === 0) {
 				value_end = skip_whitespace_and_comments_backward(this.source, lexer.pos, value_start)
-				// Tokenize ';' so token_type reflects it, matching the state the old
-				// token-by-token loop left behind right when its condition saw TOKEN_SEMICOLON
-				// (already tokenized, not yet consumed) - the unchanged code below relies on it.
+				// Tokenize ';' so token_type reflects it, matching what the old loop left behind.
 				lexer.next_token_fast(false)
 				break
 			}
 
 			if (stop_ch === CHAR_RIGHT_BRACE && paren_depth === 0) {
 				if (lexer.pos === value_start) {
-					// Degenerate case: colon directly followed by the block's closing brace
-					// with no value content at all (e.g. "color:}"). Replicates a quirk of the
-					// original token-based scan: the pre-tokenized "first value token" being
-					// '}' itself meant its end position became last_end before the per-token
-					// loop ever got a chance to run.
+					// Degenerate case: "color:}" (no value content). Replicates a quirk of the old
+					// pre-tokenized scan, where '}' itself became the "first value token" and its
+					// end position became last_end before the per-token loop ever ran.
 					last_end = lexer.pos + 1
 					value_end = value_start
 				} else {
 					last_end = skip_whitespace_and_comments_backward(this.source, lexer.pos, value_start)
 					value_end = last_end
 				}
-				// Tokenize '}' so the caller's peek_type() sees it correctly - this declaration
-				// ends at a block boundary with no trailing semicolon, and '}' isn't consumed
-				// here (the enclosing block's own loop needs to see it to know it's done).
+				// Tokenize '}' (without consuming it) so peek_type() sees it - the enclosing
+				// block's own loop needs to see '}' to know it's done.
 				lexer.next_token_fast(false)
 				break
 			}
 
 			if (stop_ch === CHAR_LEFT_BRACE) {
-				// This is actually a style rule, not a declaration - '{' can appear at any
-				// paren depth and always bails out, regardless of depth.
+				// Actually a style rule, not a declaration - '{' bails out at any paren depth.
 				lexer.restore_position(saved)
 				return null
 			}
@@ -245,8 +232,7 @@ export class DeclarationParser {
 				// Mark end of value before !important
 				value_end = lexer.pos
 				lexer.pos++ // consume '!'
-				// Check if next token is an identifier (doesn't verify it's literally
-				// "important" - matches the pre-existing behavior this replaces)
+				// Check if next token is an identifier (doesn't verify it's literally "important")
 				let next_type = lexer.next_token_fast(true) // skip whitespace
 				if (next_type === TOKEN_IDENT) {
 					has_important = true
@@ -255,11 +241,8 @@ export class DeclarationParser {
 					break
 				}
 				// '!' wasn't followed by an identifier - treat the already-peeked token as
-				// ordinary content. lexer.pos is already right after it (tokenizing to peek
-				// advances past it), so the raw scan below picks up from there naturally - an
-				// extra next_token_fast here would blindly consume whatever comes next (e.g. a
-				// block's closing '}') without the scan ever getting a chance to treat it as a
-				// stop condition.
+				// ordinary content; lexer.pos is already past it, so the raw scan picks up
+				// naturally (an extra next_token_fast here would swallow e.g. a trailing '}').
 				last_end = lexer.token_end
 				value_end = last_end
 				continue

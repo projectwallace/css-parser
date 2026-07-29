@@ -307,13 +307,11 @@ export class Parser {
 
 		let last_end = this.lexer.token_end
 		if (this.peek_type() !== TOKEN_LEFT_BRACE) {
-			// Fast-forward to the next unquoted '{' (or EOF) without fully tokenizing
-			// everything in between — SelectorParser below re-tokenizes this exact span
-			// properly to build the AST, so this coarse pass only needs the boundary.
+			// Fast-forward to the unquoted '{' (or EOF) — SelectorParser below re-tokenizes
+			// this span properly, so this coarse pass only needs the boundary.
 			this.lexer.skip_to_unquoted(CHAR_LEFT_BRACE)
 			last_end = skip_whitespace_and_comments_backward(this.source, this.lexer.pos, selector_start)
-			// Tokenize the '{' (or EOF) so peek_type()/token_* reflect it for the caller,
-			// same as the old token-by-token loop would leave behind.
+			// Tokenize it so peek_type()/token_* reflect it, as the old loop would leave behind.
 			this.next_token()
 		}
 
