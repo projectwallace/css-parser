@@ -74,6 +74,32 @@ const CHAR_CARRIAGE_RETURN = 0x0d // \r
 const CHAR_LINE_FEED = 0x0a // \n
 const CHAR_FORM_FEED = 0x0c // \f
 
+// Characters skip_to_unquoted() needs to stop and inspect: quotes (start a string), '/'
+// (might start a comment), and newlines (need line/column tracking). Built once and shared
+// across all skip_to_unquoted calls regardless of the (dynamic) target character being
+// searched for, so the ordinary-character fast path is one table lookup, same cost as
+// consume_ident_or_function's inner loop.
+const SKIP_SCAN_INTERESTING = new Uint8Array(128)
+SKIP_SCAN_INTERESTING[CHAR_DOUBLE_QUOTE] = 1
+SKIP_SCAN_INTERESTING[CHAR_SINGLE_QUOTE] = 1
+SKIP_SCAN_INTERESTING[CHAR_FORWARD_SLASH] = 1
+SKIP_SCAN_INTERESTING[CHAR_LINE_FEED] = 1
+SKIP_SCAN_INTERESTING[CHAR_CARRIAGE_RETURN] = 1
+SKIP_SCAN_INTERESTING[CHAR_FORM_FEED] = 1
+
+// Extra characters skip_to_declaration_stop() reports back to its caller (on top of the
+// string/comment/newline handling shared with skip_to_unquoted above): statement/block/
+// paren delimiters and '!' (for !important detection). parse-declaration.ts decides what
+// each one means (paren depth, !important, "actually a nested rule") - this table only
+// flags which characters are worth stopping for.
+const DECL_VALUE_STOP = new Uint8Array(128)
+DECL_VALUE_STOP[CHAR_SEMICOLON] = 1
+DECL_VALUE_STOP[CHAR_LEFT_BRACE] = 1
+DECL_VALUE_STOP[CHAR_RIGHT_BRACE] = 1
+DECL_VALUE_STOP[CHAR_LEFT_PAREN] = 1
+DECL_VALUE_STOP[CHAR_RIGHT_PAREN] = 1
+DECL_VALUE_STOP[CHAR_EXCLAMATION] = 1
+
 export interface LexerPosition {
 	pos: number
 	line: number
@@ -223,35 +249,7 @@ export class Lexer {
 				this.pos + 1 < source_length &&
 				source.charCodeAt(this.pos + 1) === CHAR_ASTERISK
 			) {
-				let comment_start = start
-				let comment_line = start_line
-				let comment_column = start_column
-
-				// Neither / nor * are newlines — safe to skip without newline tracking
-				this.pos += 2
-
-				// Use native string search to find */ — dramatically faster than a JS loop
-				// for typical comment bodies (SIMD-accelerated in V8).
-				let end_idx = source.indexOf('*/', this.pos)
-				if (end_idx < 0) {
-					// Unterminated comment: scan tail for newlines, advance to EOF
-					this._scan_newlines(this.pos, source_length)
-					this.pos = source_length
-				} else {
-					this._scan_newlines(this.pos, end_idx)
-					this.pos = end_idx + 2
-				}
-
-				if (this.on_comment) {
-					this.on_comment({
-						start: comment_start,
-						end: this.pos,
-						length: this.pos - comment_start,
-						line: comment_line,
-						column: comment_column,
-					})
-				}
-
+				this._skip_comment()
 				// Loop instead of recursing — eliminates stack frame overhead
 				continue
 			}
@@ -388,6 +386,179 @@ export class Lexer {
 				this._line_offset = i + 1
 			}
 		}
+	}
+
+	// Skip a comment (/* ... */), firing on_comment if set. Caller must have already
+	// verified this.pos points at '/' immediately followed by '*'. Shared by
+	// next_token_fast's hot loop and skip_to_unquoted, so both stay in sync by construction.
+	private _skip_comment(): void {
+		const source = this.source
+		const source_length = source.length
+		let comment_start = this.pos
+		let comment_line = this._line
+		let comment_column = this.pos - this._line_offset + 1
+
+		// Neither / nor * are newlines — safe to skip without newline tracking
+		this.pos += 2
+
+		// Use native string search to find */ — dramatically faster than a JS loop
+		// for typical comment bodies (SIMD-accelerated in V8).
+		let end_idx = source.indexOf('*/', this.pos)
+		if (end_idx < 0) {
+			// Unterminated comment: scan tail for newlines, advance to EOF
+			this._scan_newlines(this.pos, source_length)
+			this.pos = source_length
+		} else {
+			this._scan_newlines(this.pos, end_idx)
+			this.pos = end_idx + 2
+		}
+
+		if (this.on_comment) {
+			this.on_comment({
+				start: comment_start,
+				end: this.pos,
+				length: this.pos - comment_start,
+				line: comment_line,
+				column: comment_column,
+			})
+		}
+	}
+
+	/**
+	 * Fast-forward to the next occurrence of `target` (a char code) that isn't inside a
+	 * string or comment, WITHOUT fully tokenizing everything in between — unlike
+	 * next_token_fast, this never dispatches through consume_ident_or_function/consume_number/
+	 * etc. for ordinary characters. Used by callers that only need to know *where a
+	 * construct ends* (a selector's `{`, a value's `;`), not the tokens inside it — the
+	 * detailed sub-parser for that construct re-tokenizes the span properly afterward.
+	 *
+	 * Strings are skipped via consume_string itself (not reimplemented here), so escape
+	 * sequences, hex escapes, escaped newlines, and bad/unterminated strings are handled
+	 * identically to real tokenization. Comments are skipped via the same _skip_comment
+	 * used by next_token_fast, so on_comment still fires for comments encountered here.
+	 *
+	 * The ordinary-character fast path is a single table lookup (SKIP_SCAN_INTERESTING),
+	 * same shape as consume_ident_or_function's inner loop, so this doesn't cost more per
+	 * character than the full tokenizer would for a run of identifier/delimiter chars —
+	 * the savings come from skipping token classification and make_token entirely for them.
+	 *
+	 * Leaves this.pos at target's position (returns true) or at source_length (returns
+	 * false); this._line/_line_offset stay accurate for a subsequent seek/next_token_fast.
+	 */
+	skip_to_unquoted(target: number): boolean {
+		const source = this.source
+		const source_length = source.length
+		let pos = this.pos
+
+		while (pos < source_length) {
+			let ch = source.charCodeAt(pos)
+
+			if (ch === target) {
+				this.pos = pos
+				return true
+			}
+
+			if (ch >= 128 || SKIP_SCAN_INTERESTING[ch] === 0) {
+				pos++
+				continue
+			}
+
+			if (ch === CHAR_DOUBLE_QUOTE || ch === CHAR_SINGLE_QUOTE) {
+				// start_line/start_column are only used for the token this returns, which we
+				// discard - consume_string's side effects on this.pos/_line/_line_offset are
+				// what we actually want, and those are correct regardless of what we pass here.
+				this.pos = pos
+				this.consume_string(ch, this._line, 1)
+				pos = this.pos
+				continue
+			}
+
+			if (ch === CHAR_FORWARD_SLASH) {
+				if (pos + 1 < source_length && source.charCodeAt(pos + 1) === CHAR_ASTERISK) {
+					this.pos = pos
+					this._skip_comment()
+					pos = this.pos
+				} else {
+					pos++
+				}
+				continue
+			}
+
+			// Newline (LF, CR, or FF) - track line/column even though we're not building tokens
+			pos++
+			if (
+				ch === CHAR_CARRIAGE_RETURN &&
+				pos < source_length &&
+				source.charCodeAt(pos) === CHAR_LINE_FEED
+			) {
+				pos++
+			}
+			this._line++
+			this._line_offset = pos
+		}
+
+		this.pos = pos
+		return false
+	}
+
+	/**
+	 * Fast-forward to the next occurrence of one of `; { } ( ) !` that isn't inside a
+	 * string or comment, WITHOUT fully tokenizing the ordinary content in between - same
+	 * approach as skip_to_unquoted, specialized for the declaration-value boundary scan in
+	 * parse-declaration.ts (which needs several different stop characters: paren depth
+	 * tracking needs both `(` and `)`, statement end is `;`/`}`, and `!` flags a possible
+	 * !important). That caller decides what each returned character means; this method only
+	 * locates the next one.
+	 *
+	 * Returns the stop character's code, leaving this.pos at its position. Returns 0 (and
+	 * leaves this.pos at `end`) if none is found first.
+	 */
+	skip_to_declaration_stop(end: number): number {
+		const source = this.source
+		let pos = this.pos
+
+		while (pos < end) {
+			let ch = source.charCodeAt(pos)
+
+			if (ch < 128 && DECL_VALUE_STOP[ch] !== 0) {
+				this.pos = pos
+				return ch
+			}
+
+			if (ch >= 128 || SKIP_SCAN_INTERESTING[ch] === 0) {
+				pos++
+				continue
+			}
+
+			if (ch === CHAR_DOUBLE_QUOTE || ch === CHAR_SINGLE_QUOTE) {
+				this.pos = pos
+				this.consume_string(ch, this._line, 1)
+				pos = this.pos
+				continue
+			}
+
+			if (ch === CHAR_FORWARD_SLASH) {
+				if (pos + 1 < end && source.charCodeAt(pos + 1) === CHAR_ASTERISK) {
+					this.pos = pos
+					this._skip_comment()
+					pos = this.pos
+				} else {
+					pos++
+				}
+				continue
+			}
+
+			// Newline (LF, CR, or FF) - track line/column even though we're not building tokens
+			pos++
+			if (ch === CHAR_CARRIAGE_RETURN && pos < end && source.charCodeAt(pos) === CHAR_LINE_FEED) {
+				pos++
+			}
+			this._line++
+			this._line_offset = pos
+		}
+
+		this.pos = pos
+		return 0
 	}
 
 	consume_whitespace(start_line: number, start_column: number): TokenType {
