@@ -34,13 +34,14 @@ import {
 	TOKEN_COLON,
 	TOKEN_FUNCTION,
 } from './token-types'
-import { trim_boundaries } from './parse-utils'
+import { trim_boundaries, skip_whitespace_and_comments_backward } from './parse-utils'
 import {
 	CHAR_PERIOD,
 	CHAR_GREATER_THAN,
 	CHAR_PLUS,
 	CHAR_TILDE,
 	CHAR_AMPERSAND,
+	CHAR_LEFT_BRACE,
 } from './string-utils'
 
 export interface ParserOptions {
@@ -304,10 +305,13 @@ export class Parser {
 		let selector_line = this.lexer.token_line
 		let selector_column = this.lexer.token_column
 
-		// Consume tokens until we hit '{'
 		let last_end = this.lexer.token_end
-		while (!this.is_eof() && this.peek_type() !== TOKEN_LEFT_BRACE) {
-			last_end = this.lexer.token_end
+		if (this.peek_type() !== TOKEN_LEFT_BRACE) {
+			// Fast-forward to the unquoted '{' (or EOF) — SelectorParser below re-tokenizes
+			// this span properly, so this coarse pass only needs the boundary.
+			this.lexer.skip_to_unquoted(CHAR_LEFT_BRACE)
+			last_end = skip_whitespace_and_comments_backward(this.source, this.lexer.pos, selector_start)
+			// Tokenize it so peek_type()/token_* reflect it, as the old loop would leave behind.
 			this.next_token()
 		}
 

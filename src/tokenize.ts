@@ -74,6 +74,28 @@ const CHAR_CARRIAGE_RETURN = 0x0d // \r
 const CHAR_LINE_FEED = 0x0a // \n
 const CHAR_FORM_FEED = 0x0c // \f
 
+// Characters skip_to_unquoted()/skip_to_declaration_stop() must stop and inspect: quotes,
+// comment-starting '/', and newlines. One shared table keeps the ordinary-char fast path
+// to a single lookup, same cost as consume_ident_or_function's inner loop.
+const SKIP_SCAN_INTERESTING = new Uint8Array(128)
+SKIP_SCAN_INTERESTING[CHAR_DOUBLE_QUOTE] = 1
+SKIP_SCAN_INTERESTING[CHAR_SINGLE_QUOTE] = 1
+SKIP_SCAN_INTERESTING[CHAR_FORWARD_SLASH] = 1
+SKIP_SCAN_INTERESTING[CHAR_LINE_FEED] = 1
+SKIP_SCAN_INTERESTING[CHAR_CARRIAGE_RETURN] = 1
+SKIP_SCAN_INTERESTING[CHAR_FORM_FEED] = 1
+
+// Stop characters skip_to_declaration_stop() reports back: statement/block/paren
+// delimiters plus '!' for !important. The caller (parse-declaration.ts) decides what
+// each one means; this table only flags which are worth stopping for.
+const DECL_VALUE_STOP = new Uint8Array(128)
+DECL_VALUE_STOP[CHAR_SEMICOLON] = 1
+DECL_VALUE_STOP[CHAR_LEFT_BRACE] = 1
+DECL_VALUE_STOP[CHAR_RIGHT_BRACE] = 1
+DECL_VALUE_STOP[CHAR_LEFT_PAREN] = 1
+DECL_VALUE_STOP[CHAR_RIGHT_PAREN] = 1
+DECL_VALUE_STOP[CHAR_EXCLAMATION] = 1
+
 export interface LexerPosition {
 	pos: number
 	line: number
@@ -143,24 +165,31 @@ export class Lexer {
 		// Outer loop replaces comment recursion: after consuming a comment, continue
 		// to find the actual next token instead of making a recursive call.
 		while (true) {
-			// Inline whitespace skip — avoids method call + duplicate charCodeAt per char
+			// Inline whitespace skip, hoisted to locals (synced back once) instead of touching
+			// this.pos/_line/_line_offset per char — most runs are plain spaces.
 			if (skip_whitespace) {
-				while (this.pos < source_length) {
-					let ch = source.charCodeAt(this.pos)
+				let pos = this.pos
+				let line = this._line
+				let line_offset = this._line_offset
+				while (pos < source_length) {
+					let ch = source.charCodeAt(pos)
 					if (ch >= 128 || (char_types[ch] & (CHAR_WHITESPACE | CHAR_NEWLINE)) === 0) break
-					this.pos++
+					pos++
 					if ((char_types[ch] & CHAR_NEWLINE) !== 0) {
 						if (
 							ch === CHAR_CARRIAGE_RETURN &&
-							this.pos < source_length &&
-							source.charCodeAt(this.pos) === CHAR_LINE_FEED
+							pos < source_length &&
+							source.charCodeAt(pos) === CHAR_LINE_FEED
 						) {
-							this.pos++
+							pos++
 						}
-						this._line++
-						this._line_offset = this.pos
+						line++
+						line_offset = pos
 					}
 				}
+				this.pos = pos
+				this._line = line
+				this._line_offset = line_offset
 			}
 
 			if (this.pos >= source_length) {
@@ -215,42 +244,55 @@ export class Lexer {
 				this.pos + 1 < source_length &&
 				source.charCodeAt(this.pos + 1) === CHAR_ASTERISK
 			) {
-				let comment_start = start
-				let comment_line = start_line
-				let comment_column = start_column
-
-				// Neither / nor * are newlines — safe to skip without newline tracking
-				this.pos += 2
-
-				// Use native string search to find */ — dramatically faster than a JS loop
-				// for typical comment bodies (SIMD-accelerated in V8).
-				let end_idx = source.indexOf('*/', this.pos)
-				if (end_idx < 0) {
-					// Unterminated comment: scan tail for newlines, advance to EOF
-					this._scan_newlines(this.pos, source_length)
-					this.pos = source_length
-				} else {
-					this._scan_newlines(this.pos, end_idx)
-					this.pos = end_idx + 2
-				}
-
-				if (this.on_comment) {
-					this.on_comment({
-						start: comment_start,
-						end: this.pos,
-						length: this.pos - comment_start,
-						line: comment_line,
-						column: comment_column,
-					})
-				}
-
+				this._skip_comment()
 				// Loop instead of recursing — eliminates stack frame overhead
 				continue
 			}
 
-			// Strings: " or '
-			if (ch === CHAR_DOUBLE_QUOTE || ch === CHAR_SINGLE_QUOTE) {
-				return this.consume_string(ch, start_line, start_column)
+			// Identifier or function — checked first: the single most common non-whitespace
+			// token (~15-20% of all tokens), ahead of numbers/hashes/at-keywords/strings and
+			// the now-extinct CDO/CDC tokens that used to precede it (profiled on bootstrap.css/tailwind.css).
+			if (is_ident_start(ch)) {
+				return this.consume_ident_or_function(start_line, start_column)
+			}
+
+			// Hyphen-led tokens: --custom-property (identifier), -5px (signed number), or the
+			// legacy --> CDC token — consolidated into one block sharing a single lookahead read.
+			// CDC must be checked first: "-->" would otherwise read as identifier "--" plus ">".
+			if (ch === CHAR_HYPHEN) {
+				let next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
+
+				if (
+					next === CHAR_HYPHEN &&
+					this.pos + 2 < source_length &&
+					source.charCodeAt(this.pos + 2) === CHAR_GREATER_THAN
+				) {
+					// CDC: --> (contains no newlines)
+					this.pos += 3
+					return this.make_token(TOKEN_CDC, start, this.pos, start_line, start_column)
+				}
+
+				if (is_ident_start(next) || next === CHAR_HYPHEN) {
+					return this.consume_ident_or_function(start_line, start_column)
+				}
+
+				if (next < 128 && (char_types[next] & CHAR_DIGIT) !== 0) {
+					return this.consume_number(start_line, start_column)
+				}
+				if (next === CHAR_DOT) {
+					let next2 = this.pos + 2 < source_length ? source.charCodeAt(this.pos + 2) : 0
+					if (next2 < 128 && (char_types[next2] & CHAR_DIGIT) !== 0) {
+						return this.consume_number(start_line, start_column)
+					}
+				}
+			}
+
+			// Backslash: escape sequence starting an identifier
+			if (ch === CHAR_BACKSLASH) {
+				let next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
+				if (next !== 0 && !is_newline(next)) {
+					return this.consume_ident_or_function(start_line, start_column)
+				}
 			}
 
 			// Numbers: digit or . followed by digit
@@ -265,29 +307,23 @@ export class Lexer {
 				}
 			}
 
-			// CDO: <!--
-			if (ch === CHAR_LESS_THAN && this.pos + 3 < source_length) {
-				if (
-					source.charCodeAt(this.pos + 1) === CHAR_EXCLAMATION &&
-					source.charCodeAt(this.pos + 2) === CHAR_HYPHEN &&
-					source.charCodeAt(this.pos + 3) === CHAR_HYPHEN
-				) {
-					// <!-- contains no newlines
-					this.pos += 4
-					return this.make_token(TOKEN_CDO, start, this.pos, start_line, start_column)
+			// Plus: could be a signed number like +5 (the hyphen-led case is handled above)
+			if (ch === CHAR_PLUS) {
+				let next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
+				if (next < 128 && (char_types[next] & CHAR_DIGIT) !== 0) {
+					return this.consume_number(start_line, start_column)
+				}
+				if (next === CHAR_DOT) {
+					let next2 = this.pos + 2 < source_length ? source.charCodeAt(this.pos + 2) : 0
+					if (next2 < 128 && (char_types[next2] & CHAR_DIGIT) !== 0) {
+						return this.consume_number(start_line, start_column)
+					}
 				}
 			}
 
-			// CDC: -->
-			if (ch === CHAR_HYPHEN && this.pos + 2 < source_length) {
-				if (
-					source.charCodeAt(this.pos + 1) === CHAR_HYPHEN &&
-					source.charCodeAt(this.pos + 2) === CHAR_GREATER_THAN
-				) {
-					// --> contains no newlines
-					this.pos += 3
-					return this.make_token(TOKEN_CDC, start, this.pos, start_line, start_column)
-				}
+			// Strings: " or '
+			if (ch === CHAR_DOUBLE_QUOTE || ch === CHAR_SINGLE_QUOTE) {
+				return this.consume_string(ch, start_line, start_column)
 			}
 
 			// At-keyword: @media, @keyframes, etc
@@ -300,37 +336,16 @@ export class Lexer {
 				return this.consume_hash(start_line, start_column)
 			}
 
-			// Identifier or function
-			if (is_ident_start(ch)) {
-				return this.consume_ident_or_function(start_line, start_column)
-			}
-			if (ch === CHAR_HYPHEN) {
-				let next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
-				if (is_ident_start(next) || next === CHAR_HYPHEN) {
-					return this.consume_ident_or_function(start_line, start_column)
-				}
-			}
-
-			// Backslash: escape sequence starting an identifier
-			if (ch === CHAR_BACKSLASH) {
-				let next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
-				if (next !== 0 && !is_newline(next)) {
-					return this.consume_ident_or_function(start_line, start_column)
-				}
-			}
-
-			// Hyphen/Plus: could be signed number like -5 or +5
-			if (ch === CHAR_HYPHEN || ch === CHAR_PLUS) {
-				let next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
-				let is_next_digit = next < 128 && (char_types[next] & CHAR_DIGIT) !== 0
-				if (is_next_digit) {
-					return this.consume_number(start_line, start_column)
-				}
-				if (next === CHAR_DOT) {
-					let next2 = this.pos + 2 < source_length ? source.charCodeAt(this.pos + 2) : 0
-					if (next2 < 128 && (char_types[next2] & CHAR_DIGIT) !== 0) {
-						return this.consume_number(start_line, start_column)
-					}
+			// CDO: <!-- (extinct in modern CSS — checked last; a lone "<" falls through to DELIM)
+			if (ch === CHAR_LESS_THAN && this.pos + 3 < source_length) {
+				if (
+					source.charCodeAt(this.pos + 1) === CHAR_EXCLAMATION &&
+					source.charCodeAt(this.pos + 2) === CHAR_HYPHEN &&
+					source.charCodeAt(this.pos + 3) === CHAR_HYPHEN
+				) {
+					// <!-- contains no newlines
+					this.pos += 4
+					return this.make_token(TOKEN_CDO, start, this.pos, start_line, start_column)
 				}
 			}
 
@@ -362,28 +377,191 @@ export class Lexer {
 		}
 	}
 
+	// Skip a comment (/* ... */), firing on_comment if set. Caller must have verified
+	// this.pos is at '/*'. Shared by next_token_fast and the skip_to_* scans below.
+	private _skip_comment(): void {
+		const source = this.source
+		const source_length = source.length
+		let comment_start = this.pos
+		let comment_line = this._line
+		let comment_column = this.pos - this._line_offset + 1
+
+		// Neither / nor * are newlines — safe to skip without newline tracking
+		this.pos += 2
+
+		// Use native string search to find */ — dramatically faster than a JS loop
+		// for typical comment bodies (SIMD-accelerated in V8).
+		let end_idx = source.indexOf('*/', this.pos)
+		if (end_idx < 0) {
+			// Unterminated comment: scan tail for newlines, advance to EOF
+			this._scan_newlines(this.pos, source_length)
+			this.pos = source_length
+		} else {
+			this._scan_newlines(this.pos, end_idx)
+			this.pos = end_idx + 2
+		}
+
+		if (this.on_comment) {
+			this.on_comment({
+				start: comment_start,
+				end: this.pos,
+				length: this.pos - comment_start,
+				line: comment_line,
+				column: comment_column,
+			})
+		}
+	}
+
+	/**
+	 * Fast-forward to the next `target` char that isn't inside a string or comment, without
+	 * fully tokenizing what's in between — used by callers that only need to know *where a
+	 * construct ends* (e.g. a selector's `{`), since the sub-parser for that construct
+	 * re-tokenizes the span properly afterward.
+	 *
+	 * Strings go through consume_string and comments through _skip_comment, so escapes and
+	 * on_comment callbacks behave identically to real tokenization. Ordinary characters cost
+	 * one SKIP_SCAN_INTERESTING lookup each, same as consume_ident_or_function's inner loop.
+	 *
+	 * Returns true with this.pos at target, or false with this.pos at source_length.
+	 */
+	skip_to_unquoted(target: number): boolean {
+		const source = this.source
+		const source_length = source.length
+		let pos = this.pos
+
+		while (pos < source_length) {
+			let ch = source.charCodeAt(pos)
+
+			if (ch === target) {
+				this.pos = pos
+				return true
+			}
+
+			if (ch >= 128 || SKIP_SCAN_INTERESTING[ch] === 0) {
+				pos++
+				continue
+			}
+
+			if (ch === CHAR_DOUBLE_QUOTE || ch === CHAR_SINGLE_QUOTE) {
+				// The returned token is discarded — only consume_string's pos/line side effects matter.
+				this.pos = pos
+				this.consume_string(ch, this._line, 1)
+				pos = this.pos
+				continue
+			}
+
+			if (ch === CHAR_FORWARD_SLASH) {
+				if (pos + 1 < source_length && source.charCodeAt(pos + 1) === CHAR_ASTERISK) {
+					this.pos = pos
+					this._skip_comment()
+					pos = this.pos
+				} else {
+					pos++
+				}
+				continue
+			}
+
+			// Newline (LF, CR, or FF) - track line/column even though we're not building tokens
+			pos++
+			if (
+				ch === CHAR_CARRIAGE_RETURN &&
+				pos < source_length &&
+				source.charCodeAt(pos) === CHAR_LINE_FEED
+			) {
+				pos++
+			}
+			this._line++
+			this._line_offset = pos
+		}
+
+		this.pos = pos
+		return false
+	}
+
+	/**
+	 * Same approach as skip_to_unquoted, but stops at any of `; { } ( ) !` — the stop
+	 * characters parse-declaration.ts's value scan needs (paren depth, statement end,
+	 * !important). The caller decides what each one means; this only locates the next one.
+	 *
+	 * Returns the stop character's code (this.pos left at it), or 0 at `end` if none found.
+	 */
+	skip_to_declaration_stop(end: number): number {
+		const source = this.source
+		let pos = this.pos
+
+		while (pos < end) {
+			let ch = source.charCodeAt(pos)
+
+			if (ch < 128 && DECL_VALUE_STOP[ch] !== 0) {
+				this.pos = pos
+				return ch
+			}
+
+			if (ch >= 128 || SKIP_SCAN_INTERESTING[ch] === 0) {
+				pos++
+				continue
+			}
+
+			if (ch === CHAR_DOUBLE_QUOTE || ch === CHAR_SINGLE_QUOTE) {
+				this.pos = pos
+				this.consume_string(ch, this._line, 1)
+				pos = this.pos
+				continue
+			}
+
+			if (ch === CHAR_FORWARD_SLASH) {
+				if (pos + 1 < end && source.charCodeAt(pos + 1) === CHAR_ASTERISK) {
+					this.pos = pos
+					this._skip_comment()
+					pos = this.pos
+				} else {
+					pos++
+				}
+				continue
+			}
+
+			// Newline (LF, CR, or FF) - track line/column even though we're not building tokens
+			pos++
+			if (ch === CHAR_CARRIAGE_RETURN && pos < end && source.charCodeAt(pos) === CHAR_LINE_FEED) {
+				pos++
+			}
+			this._line++
+			this._line_offset = pos
+		}
+
+		this.pos = pos
+		return 0
+	}
+
 	consume_whitespace(start_line: number, start_column: number): TokenType {
 		const source = this.source
 		const source_length = source.length
 		let start = this.pos
+		// Hoisted to locals (synced back once), same as next_token_fast's inline skip.
+		let pos = start
+		let line = this._line
+		let line_offset = this._line_offset
 		// Inline advance: read ch once, pos++, then track newlines with already-read value
-		while (this.pos < source_length) {
-			let ch = source.charCodeAt(this.pos)
+		while (pos < source_length) {
+			let ch = source.charCodeAt(pos)
 			if (ch >= 128 || (char_types[ch] & (CHAR_WHITESPACE | CHAR_NEWLINE)) === 0) break
-			this.pos++
+			pos++
 			if ((char_types[ch] & CHAR_NEWLINE) !== 0) {
 				if (
 					ch === CHAR_CARRIAGE_RETURN &&
-					this.pos < source_length &&
-					source.charCodeAt(this.pos) === CHAR_LINE_FEED
+					pos < source_length &&
+					source.charCodeAt(pos) === CHAR_LINE_FEED
 				) {
-					this.pos++
+					pos++
 				}
-				this._line++
-				this._line_offset = this.pos
+				line++
+				line_offset = pos
 			}
 		}
-		return this.make_token(TOKEN_WHITESPACE, start, this.pos, start_line, start_column)
+		this.pos = pos
+		this._line = line
+		this._line_offset = line_offset
+		return this.make_token(TOKEN_WHITESPACE, start, pos, start_line, start_column)
 	}
 
 	consume_string(quote: number, start_line: number, start_column: number): TokenType {
@@ -476,98 +654,106 @@ export class Lexer {
 		const source = this.source
 		const source_length = source.length
 		let start = this.pos
+		// Numbers never contain newlines, so the whole scan can run on a local var —
+		// no line/column bookkeeping to keep in sync with this.pos along the way.
+		let pos = start
 
 		// Optional sign — + and - are never newlines
-		let ch = source.charCodeAt(this.pos)
+		let ch = source.charCodeAt(pos)
 		if (ch === CHAR_PLUS || ch === CHAR_HYPHEN) {
-			this.pos++
+			pos++
 		}
 
 		// Integer part — digits are never newlines, use pos++
-		while (this.pos < source_length) {
-			let ch = source.charCodeAt(this.pos)
+		while (pos < source_length) {
+			let ch = source.charCodeAt(pos)
 			if (ch >= 128 || (char_types[ch] & CHAR_DIGIT) === 0) break
-			this.pos++
+			pos++
 		}
 
 		// Decimal part
-		if (
-			this.pos < source_length &&
-			source.charCodeAt(this.pos) === CHAR_DOT &&
-			this.pos + 1 < source_length
-		) {
-			let next = source.charCodeAt(this.pos + 1)
+		if (pos < source_length && source.charCodeAt(pos) === CHAR_DOT && pos + 1 < source_length) {
+			let next = source.charCodeAt(pos + 1)
 			if (next < 128 && (char_types[next] & CHAR_DIGIT) !== 0) {
-				this.pos++ // . is never a newline
-				while (this.pos < source_length) {
-					let ch = source.charCodeAt(this.pos)
+				pos++ // . is never a newline
+				while (pos < source_length) {
+					let ch = source.charCodeAt(pos)
 					if (ch >= 128 || (char_types[ch] & CHAR_DIGIT) === 0) break
-					this.pos++ // digits: never newlines
+					pos++ // digits: never newlines
 				}
 			}
 		}
 
 		// Exponent: e or E
-		if (this.pos < source_length) {
-			let ch = source.charCodeAt(this.pos)
+		if (pos < source_length) {
+			let ch = source.charCodeAt(pos)
 			if (ch === CHAR_LOWERCASE_E || ch === CHAR_UPPERCASE_E) {
-				let next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
+				let next = pos + 1 < source_length ? source.charCodeAt(pos + 1) : 0
 				let is_next_digit = next < 128 && (char_types[next] & CHAR_DIGIT) !== 0
-				let next2 = this.pos + 2 < source_length ? source.charCodeAt(this.pos + 2) : 0
+				let next2 = pos + 2 < source_length ? source.charCodeAt(pos + 2) : 0
 				let is_next2_digit = next2 < 128 && (char_types[next2] & CHAR_DIGIT) !== 0
 				if (is_next_digit || ((next === CHAR_PLUS || next === CHAR_HYPHEN) && is_next2_digit)) {
-					this.pos++ // e/E — never a newline
-					if (this.pos < source_length) {
-						let sign = source.charCodeAt(this.pos)
+					pos++ // e/E — never a newline
+					if (pos < source_length) {
+						let sign = source.charCodeAt(pos)
 						if (sign === CHAR_PLUS || sign === CHAR_HYPHEN) {
-							this.pos++ // +/- — never a newline
+							pos++ // +/- — never a newline
 						}
 					}
-					while (this.pos < source_length) {
-						let ch = source.charCodeAt(this.pos)
+					while (pos < source_length) {
+						let ch = source.charCodeAt(pos)
 						if (ch >= 128 || (char_types[ch] & CHAR_DIGIT) === 0) break
-						this.pos++ // digits: never newlines
+						pos++ // digits: never newlines
 					}
 				}
 			}
 		}
 
 		// Check for unit (dimension) or percentage
-		if (this.pos < source_length) {
-			let ch = source.charCodeAt(this.pos)
+		if (pos < source_length) {
+			let ch = source.charCodeAt(pos)
 			if (ch === CHAR_PERCENT) {
-				this.pos++ // % is never a newline
-				return this.make_token(TOKEN_PERCENTAGE, start, this.pos, start_line, start_column)
+				pos++ // % is never a newline
+				this.pos = pos
+				return this.make_token(TOKEN_PERCENTAGE, start, pos, start_line, start_column)
 			}
 			if (
 				is_ident_start(ch) ||
 				(ch === CHAR_HYPHEN &&
-					is_ident_start(this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0))
+					is_ident_start(pos + 1 < source_length ? source.charCodeAt(pos + 1) : 0))
 			) {
 				// Unit: px, em, rem, etc — ident chars and non-ASCII are never newlines
-				while (this.pos < source_length) {
-					let ch = source.charCodeAt(this.pos)
+				while (pos < source_length) {
+					let ch = source.charCodeAt(pos)
 					if (ch < 0x80 && (char_types[ch] & CHAR_IDENT) === 0) break
-					this.pos++
+					pos++
 				}
-				return this.make_token(TOKEN_DIMENSION, start, this.pos, start_line, start_column)
+				this.pos = pos
+				return this.make_token(TOKEN_DIMENSION, start, pos, start_line, start_column)
 			}
 		}
 
-		return this.make_token(TOKEN_NUMBER, start, this.pos, start_line, start_column)
+		this.pos = pos
+		return this.make_token(TOKEN_NUMBER, start, pos, start_line, start_column)
 	}
 
 	consume_ident_or_function(start_line: number, start_column: number): TokenType {
 		const source = this.source
 		const source_length = source.length
 		let start = this.pos
+		// Hoisted to a local: the common case below (plain ident chars, no escapes) never
+		// touches line/column, so it can advance a local var instead of this.pos on every
+		// char, syncing back only when the rare backslash-escape path needs this.pos (which
+		// it reads/writes directly, including via this.advance() for line tracking).
+		let pos = start
 
 		// Consume identifier (with escape sequence support)
-		while (this.pos < source_length) {
-			let ch = source.charCodeAt(this.pos)
+		while (pos < source_length) {
+			let ch = source.charCodeAt(pos)
 
 			// Handle escape sequences: \ followed by hex digits or any character
 			if (ch === CHAR_BACKSLASH) {
+				this.pos = pos
 				if (this.pos + 1 >= source_length) break
 
 				let next = source.charCodeAt(this.pos + 1)
@@ -595,14 +781,16 @@ export class Lexer {
 					// Non-newline chars: safe to pos++
 					this.pos++
 				}
+				pos = this.pos
 			} else if (ch >= 0x80 || (char_types[ch] & CHAR_IDENT) !== 0) {
 				// Normal identifier character — ident chars (a-z,A-Z,0-9,-,_) and
 				// non-ASCII code units are never newlines (newlines are 0x0A/0x0D/0x0C)
-				this.pos++
+				pos++
 			} else {
 				break
 			}
 		}
+		this.pos = pos
 
 		// Check for unicode-range: u+ or U+
 		if (this.pos - start === 1) {
@@ -680,32 +868,34 @@ export class Lexer {
 		const source = this.source
 		const source_length = source.length
 		let start = this.pos
-		this.pos++ // Skip @ — never a newline
+		let pos = start + 1 // Skip @ — never a newline
 
 		// Ident chars (a-z,A-Z,0-9,-,_) and non-ASCII are never newlines — use pos++
-		while (this.pos < source_length) {
-			let ch = source.charCodeAt(this.pos)
+		while (pos < source_length) {
+			let ch = source.charCodeAt(pos)
 			if (ch < 0x80 && (char_types[ch] & CHAR_IDENT) === 0) break
-			this.pos++
+			pos++
 		}
 
-		return this.make_token(TOKEN_AT_KEYWORD, start, this.pos, start_line, start_column)
+		this.pos = pos
+		return this.make_token(TOKEN_AT_KEYWORD, start, pos, start_line, start_column)
 	}
 
 	consume_hash(start_line: number, start_column: number): TokenType {
 		const source = this.source
 		const source_length = source.length
 		let start = this.pos
-		this.pos++ // Skip # — never a newline
+		let pos = start + 1 // Skip # — never a newline
 
 		// Ident chars and non-ASCII are never newlines — use pos++
-		while (this.pos < source_length) {
-			let ch = source.charCodeAt(this.pos)
+		while (pos < source_length) {
+			let ch = source.charCodeAt(pos)
 			if (ch < 0x80 && (char_types[ch] & CHAR_IDENT) === 0) break
-			this.pos++
+			pos++
 		}
 
-		return this.make_token(TOKEN_HASH, start, this.pos, start_line, start_column)
+		this.pos = pos
+		return this.make_token(TOKEN_HASH, start, pos, start_line, start_column)
 	}
 
 	advance(count: number = 1): void {

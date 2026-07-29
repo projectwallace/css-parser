@@ -2,15 +2,20 @@
 import { Lexer } from './tokenize'
 import { CSSDataArena, DECLARATION, RAW, FLAG_IMPORTANT, FLAG_BROWSERHACK } from './arena'
 import { ValueParser } from './parse-value'
-import { is_vendor_prefixed } from './string-utils'
+import {
+	is_vendor_prefixed,
+	CHAR_LEFT_BRACE,
+	CHAR_RIGHT_BRACE,
+	CHAR_SEMICOLON,
+	CHAR_LEFT_PAREN,
+	CHAR_RIGHT_PAREN,
+	CHAR_EXCLAMATION,
+} from './string-utils'
 import {
 	TOKEN_IDENT,
 	TOKEN_COLON,
 	TOKEN_SEMICOLON,
 	TOKEN_DELIM,
-	TOKEN_EOF,
-	TOKEN_LEFT_BRACE,
-	TOKEN_RIGHT_BRACE,
 	TOKEN_LEFT_PAREN,
 	TOKEN_RIGHT_PAREN,
 	TOKEN_LEFT_BRACKET,
@@ -18,10 +23,9 @@ import {
 	TOKEN_COMMA,
 	TOKEN_HASH,
 	TOKEN_AT_KEYWORD,
-	TOKEN_FUNCTION,
 	type TokenType,
 } from './token-types'
-import { trim_boundaries } from './parse-utils'
+import { trim_boundaries, skip_whitespace_and_comments_backward } from './parse-utils'
 import { CSSNode } from './css-node'
 import type { Declaration } from './node-types'
 
@@ -145,7 +149,11 @@ export class DeclarationParser {
 			lexer.restore_position(has_delimiter_prefix ? initial_saved : saved)
 			return null
 		}
-		lexer.next_token_fast(true) // consume ':', skip whitespace
+		// Skip whitespace after ':' without tokenizing the value's first token - the raw scan
+		// below needs to see every value character itself (e.g. a leading "calc("'s '(' must
+		// reach the paren-depth tracking, not be pre-consumed here).
+		lexer.pos = lexer.token_end // move past ':' (already at this position, but be explicit)
+		lexer.skip_whitespace_in_range(this.source.length)
 
 		// Create declaration node (length will be set later)
 		let declaration = this.arena.create_node(
@@ -160,47 +168,71 @@ export class DeclarationParser {
 		this.arena.set_content_start_delta(declaration, 0)
 		this.arena.set_content_length(declaration, prop_end - prop_start)
 
-		// Track value start (after colon, skipping whitespace)
-		// CRITICAL: Capture line/column for value parsing
-		// After consuming ':', lexer is now positioned at first value token
-		let value_start = lexer.token_start
-		let value_start_line = lexer.token_line
-		let value_start_column = lexer.token_column
+		// Value start (after colon/whitespace) - lexer is positioned at the first, untokenized char.
+		let value_start = lexer.pos
+		let value_start_line = lexer.line
+		let value_start_column = lexer.column
 		let value_end = value_start
 
 		// Parse value (everything until ';' or EOF)
 		let has_important = false
-		let last_end = lexer.token_end
+		let last_end = value_start
 		// Track parenthesis depth to handle semicolons inside functions (e.g., url(data:image/png;base64,...))
-		// NOTE: Same pattern exists in parse.ts for at-rule prelude parsing - keep in sync
 		let paren_depth = 0
 
-		// Process tokens until we hit semicolon, EOF, or end of input
-		while ((lexer.token_type as TokenType) !== TOKEN_EOF && lexer.token_start < end) {
-			let token_type = lexer.token_type as TokenType
+		// Raw character scan for the value's stop points (paren depth, ';'/'}' at depth zero,
+		// '{', '!') - content in between doesn't need tokenizing since ValueNodeParser
+		// re-tokenizes the span afterward. Loop relies only on explicit break/return, since a
+		// paren_depth adjustment can land exactly on `end` without the "ran out" case firing.
+		while (true) {
+			let stop_ch = lexer.skip_to_declaration_stop(end)
 
-			// Track parenthesis depth
-			if (token_type === TOKEN_LEFT_PAREN || token_type === TOKEN_FUNCTION) {
+			if (stop_ch === CHAR_LEFT_PAREN) {
 				paren_depth++
-			} else if (token_type === TOKEN_RIGHT_PAREN) {
+				lexer.pos++
+				continue
+			}
+			if (stop_ch === CHAR_RIGHT_PAREN) {
 				paren_depth--
+				lexer.pos++
+				continue
 			}
 
-			// Only break on semicolon/brace when outside all parentheses
-			if (token_type === TOKEN_SEMICOLON && paren_depth === 0) break
-			if (token_type === TOKEN_RIGHT_BRACE && paren_depth === 0) break
+			if (stop_ch === CHAR_SEMICOLON && paren_depth === 0) {
+				value_end = skip_whitespace_and_comments_backward(this.source, lexer.pos, value_start)
+				// Tokenize ';' so token_type reflects it, matching what the old loop left behind.
+				lexer.next_token_fast(false)
+				break
+			}
 
-			// If we encounter '{', this is actually a style rule, not a declaration
-			if (token_type === TOKEN_LEFT_BRACE) {
+			if (stop_ch === CHAR_RIGHT_BRACE && paren_depth === 0) {
+				if (lexer.pos === value_start) {
+					// Degenerate case: "color:}" (no value content). Replicates a quirk of the old
+					// pre-tokenized scan, where '}' itself became the "first value token" and its
+					// end position became last_end before the per-token loop ever ran.
+					last_end = lexer.pos + 1
+					value_end = value_start
+				} else {
+					last_end = skip_whitespace_and_comments_backward(this.source, lexer.pos, value_start)
+					value_end = last_end
+				}
+				// Tokenize '}' (without consuming it) so peek_type() sees it - the enclosing
+				// block's own loop needs to see '}' to know it's done.
+				lexer.next_token_fast(false)
+				break
+			}
+
+			if (stop_ch === CHAR_LEFT_BRACE) {
+				// Actually a style rule, not a declaration - '{' bails out at any paren depth.
 				lexer.restore_position(saved)
 				return null
 			}
 
-			// Check for ! followed by any identifier (optimized: only check when we see '!')
-			if (token_type === TOKEN_DELIM && this.source[lexer.token_start] === '!') {
+			if (stop_ch === CHAR_EXCLAMATION) {
 				// Mark end of value before !important
-				value_end = lexer.token_start
-				// Check if next token is an identifier
+				value_end = lexer.pos
+				lexer.pos++ // consume '!'
+				// Check if next token is an identifier (doesn't verify it's literally "important")
 				let next_type = lexer.next_token_fast(true) // skip whitespace
 				if (next_type === TOKEN_IDENT) {
 					has_important = true
@@ -208,11 +240,24 @@ export class DeclarationParser {
 					lexer.next_token_fast(true) // Advance to next token after "important", skip whitespace
 					break
 				}
+				// '!' wasn't followed by an identifier - treat the already-peeked token as
+				// ordinary content; lexer.pos is already past it, so the raw scan picks up
+				// naturally (an extra next_token_fast here would swallow e.g. a trailing '}').
+				last_end = lexer.token_end
+				value_end = last_end
+				continue
 			}
 
-			last_end = lexer.token_end
-			value_end = last_end
-			lexer.next_token_fast(true) // skip whitespace
+			if (stop_ch === 0) {
+				// Ran out of input before finding any of the above
+				last_end = skip_whitespace_and_comments_backward(this.source, lexer.pos, value_start)
+				value_end = last_end
+				lexer.next_token_fast(false) // tokenize EOF so token_type reflects it
+				break
+			}
+
+			// stop_ch is ';' or '}' but paren_depth !== 0 - ordinary content inside parens
+			lexer.pos++
 		}
 
 		// Store value position (trimmed) and parse value nodes

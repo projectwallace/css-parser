@@ -22,6 +22,12 @@ export const CHAR_DOLLAR = 0x24 // $
 export const CHAR_CARET = 0x5e // ^
 export const CHAR_COLON = 0x3a // :
 export const CHAR_LESS_THAN = 0x3c // <
+export const CHAR_LEFT_BRACE = 0x7b // {
+export const CHAR_SEMICOLON = 0x3b // ;
+export const CHAR_RIGHT_BRACE = 0x7d // }
+export const CHAR_LEFT_PAREN = 0x28 // (
+export const CHAR_RIGHT_PAREN = 0x29 // )
+export const CHAR_EXCLAMATION = 0x21 // !
 
 /**
  * Check if a character code is whitespace (space, tab, newline, CR, or FF)
