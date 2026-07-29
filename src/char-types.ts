@@ -82,10 +82,6 @@ function is_alpha(ch: number): boolean {
 	return ch < 128 && (char_types[ch] & CHAR_ALPHA) !== 0
 }
 
-export function is_whitespace(ch: number): boolean {
-	return ch < 128 && (char_types[ch] & CHAR_WHITESPACE) !== 0
-}
-
 // CSS ident start: letter, underscore, or non-ASCII (>= 0x80)
 export function is_ident_start(ch: number): boolean {
 	if (ch >= 0x80) return true // Non-ASCII

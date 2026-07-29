@@ -177,6 +177,54 @@ export class Parser {
 		return this.parse_style_rule()
 	}
 
+	// Parse the children of a block ({ ... }): declarations, and — unless declarations_only —
+	// nested at-rules and style rules too. Chains children as siblings without an intermediate
+	// array and returns the first child (0 if none). Sets FLAG_HAS_DECLARATIONS on `owner`
+	// whenever a direct declaration child is produced (used for both style rules and at-rules,
+	// e.g. `@font-face { ... }` or a nested `@media { color: red }` under CSS Nesting).
+	private parse_block_children(owner: number, declarations_only: boolean): number {
+		let first_child = 0
+		let last_child = 0
+
+		while (!this.is_eof()) {
+			let token_type = this.peek_type()
+			if (token_type === TOKEN_RIGHT_BRACE) break
+
+			let child: number | null = null
+
+			if (!declarations_only && token_type === TOKEN_AT_KEYWORD) {
+				child = this.parse_atrule()
+				if (child === null) {
+					this.next_token()
+				}
+			} else {
+				child = this.parse_declaration()
+				if (child !== null) {
+					this.arena.set_flag(owner, FLAG_HAS_DECLARATIONS)
+				} else if (declarations_only) {
+					this.next_token()
+				} else {
+					// Not a declaration - try parsing as nested style rule
+					child = this.parse_style_rule()
+					if (child === null) {
+						this.next_token()
+					}
+				}
+			}
+
+			if (child !== null) {
+				if (first_child === 0) {
+					first_child = child
+				} else {
+					this.arena.set_next_sibling(last_child, child)
+				}
+				last_child = child
+			}
+		}
+
+		return first_child
+	}
+
 	// Parse a style rule: selector { declarations }
 	private parse_style_rule(): number | null {
 		if (this.is_eof()) return null
@@ -218,46 +266,8 @@ export class Parser {
 			block_column,
 		)
 
-		// Parse declarations block (and nested rules for CSS Nesting), chained as siblings
-		// without an intermediate array
-		let first_child = 0
-		let last_child = 0
-		while (!this.is_eof()) {
-			let token_type = this.peek_type()
-			if (token_type === TOKEN_RIGHT_BRACE) break
-
-			let child: number | null = null
-
-			// Check for nested at-rule
-			if (token_type === TOKEN_AT_KEYWORD) {
-				child = this.parse_atrule()
-				if (child === null) {
-					this.next_token()
-				}
-			} else {
-				// Try to parse as declaration first
-				child = this.parse_declaration()
-				if (child === null) {
-					// If not a declaration, try parsing as nested style rule
-					child = this.parse_style_rule()
-					if (child === null) {
-						// Skip unknown tokens
-						this.next_token()
-					}
-				} else {
-					this.arena.set_flag(style_rule, FLAG_HAS_DECLARATIONS)
-				}
-			}
-
-			if (child !== null) {
-				if (first_child === 0) {
-					first_child = child
-				} else {
-					this.arena.set_next_sibling(last_child, child)
-				}
-				last_child = child
-			}
-		}
+		// Parse declarations block (and nested rules for CSS Nesting)
+		let first_child = this.parse_block_children(style_rule, false)
 
 		// Expect '}' and calculate lengths (block excludes brace, rule includes it)
 		let block_end = this.lexer.token_start
@@ -331,18 +341,11 @@ export class Parser {
 		// Check if this could be a declaration (identifier or browser hack prefix)
 		const token_type = this.peek_type()
 
-		// Accept identifiers, at-keywords, and hash tokens
-		if (
-			token_type === TOKEN_IDENT ||
-			token_type === TOKEN_AT_KEYWORD ||
-			token_type === TOKEN_HASH
-		) {
-			return this.declaration_parser.parse_declaration_with_lexer(this.lexer, this.source.length)
-		}
-
-		// For delimiters and special tokens, check if they could be browser hack prefixes
-		// Only accept single-character prefixes that are not CSS selector syntax
-		if (
+		// Accept identifiers, at-keywords, and hash tokens outright. Delimiters and special
+		// tokens are only accepted as single-character browser hack prefixes (e.g. `*zoom: 1`),
+		// excluding selector syntax that happens to share those tokens: . (class), > (child),
+		// + (adjacent), ~ (general), & (nesting).
+		const could_be_hack =
 			token_type === TOKEN_DELIM ||
 			token_type === TOKEN_LEFT_PAREN ||
 			token_type === TOKEN_RIGHT_PAREN ||
@@ -350,10 +353,8 @@ export class Parser {
 			token_type === TOKEN_RIGHT_BRACKET ||
 			token_type === TOKEN_COMMA ||
 			token_type === TOKEN_COLON
-		) {
-			// Check if this delimiter could be a browser hack (not a selector combinator)
+		if (could_be_hack) {
 			const char_code = this.source.charCodeAt(this.lexer.token_start)
-			// Exclude selector-specific delimiters: . (class), > (child), + (adjacent), ~ (general), & (nesting)
 			if (
 				char_code === CHAR_PERIOD ||
 				char_code === CHAR_GREATER_THAN ||
@@ -363,11 +364,16 @@ export class Parser {
 			) {
 				return null
 			}
-			// Let DeclarationParser try to parse it and return null if it's not a valid declaration
-			return this.declaration_parser.parse_declaration_with_lexer(this.lexer, this.source.length)
+		} else if (
+			token_type !== TOKEN_IDENT &&
+			token_type !== TOKEN_AT_KEYWORD &&
+			token_type !== TOKEN_HASH
+		) {
+			return null
 		}
 
-		return null
+		// Let DeclarationParser try to parse it and return null if it's not a valid declaration
+		return this.declaration_parser.parse_declaration_with_lexer(this.lexer, this.source.length)
 	}
 
 	// Parse an at-rule: @media, @import, @font-face, etc.
@@ -488,67 +494,11 @@ export class Parser {
 				block_column,
 			)
 
-			// Determine what to parse inside the block based on the at-rule name
-			let has_declarations = this.atrule_has_declarations(at_rule_name)
-			// Chain block children as siblings without an intermediate array
-			let first_child = 0
-			let last_child = 0
-
-			if (has_declarations) {
-				// Parse declarations only (like @font-face, @page)
-				while (!this.is_eof()) {
-					let token_type = this.peek_type()
-					if (token_type === TOKEN_RIGHT_BRACE) break
-
-					let declaration = this.parse_declaration()
-					if (declaration === null) {
-						this.next_token()
-					} else {
-						if (first_child === 0) {
-							first_child = declaration
-						} else {
-							this.arena.set_next_sibling(last_child, declaration)
-						}
-						last_child = declaration
-					}
-				}
-			} else {
-				// Parse declarations + rules + at-rules (like @media, @keyframes, unknown at-rules)
-				while (!this.is_eof()) {
-					let token_type = this.peek_type()
-					if (token_type === TOKEN_RIGHT_BRACE) break
-
-					let child: number | null = null
-
-					// Check for nested at-rule
-					if (token_type === TOKEN_AT_KEYWORD) {
-						child = this.parse_atrule()
-						if (child === null) {
-							this.next_token()
-						}
-					} else {
-						// Try to parse as declaration first
-						child = this.parse_declaration()
-						if (child === null) {
-							// If not a declaration, try parsing as nested style rule
-							child = this.parse_style_rule()
-							if (child === null) {
-								// Skip unknown tokens
-								this.next_token()
-							}
-						}
-					}
-
-					if (child !== null) {
-						if (first_child === 0) {
-							first_child = child
-						} else {
-							this.arena.set_next_sibling(last_child, child)
-						}
-						last_child = child
-					}
-				}
-			}
+			// Determine what to parse inside the block based on the at-rule name:
+			// declarations only (like @font-face, @page), or declarations + rules + at-rules
+			// (like @media, @keyframes, unknown at-rules, and nested conditional groups)
+			let declarations_only = this.atrule_has_declarations(at_rule_name)
+			let first_child = this.parse_block_children(at_rule, declarations_only)
 
 			// Consume '}' (block excludes closing brace, but at-rule includes it)
 			if (this.peek_type() === TOKEN_RIGHT_BRACE) {

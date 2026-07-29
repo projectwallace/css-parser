@@ -166,6 +166,36 @@ export class AtRulePreludeParser {
 		return str_equals('and', str) || str_equals('or', str) || str_equals('not', str)
 	}
 
+	// Scan tokens from just after an already-open '(' or function-call (depth 1) to its
+	// matching ')'. Must be called right after consuming the opening token. Returns
+	// [content_end, close_end, matched]: content_end/close_end are the positions right
+	// before/after the closing ')'; matched is false if EOF was hit first, in which case
+	// content_end/close_end are left at the position scanning started from (mirroring the
+	// caller's own pre-loop defaults, so callers that don't check `matched` still get sane
+	// fallback spans).
+	private scan_matching_paren(): [content_end: number, close_end: number, matched: boolean] {
+		let depth = 1
+		let content_end = this.lexer.pos
+		let close_end = this.lexer.token_end
+
+		while (this.lexer.pos < this.prelude_end && depth > 0) {
+			let token_type = this.next_token()
+			if (token_type === TOKEN_LEFT_PAREN || token_type === TOKEN_FUNCTION) {
+				depth++
+			} else if (token_type === TOKEN_RIGHT_PAREN) {
+				depth--
+				if (depth === 0) {
+					content_end = this.lexer.token_start
+					close_end = this.lexer.token_end
+				}
+			} else if (token_type === TOKEN_EOF) {
+				break
+			}
+		}
+
+		return [content_end, close_end, depth === 0]
+	}
+
 	// Parse a bare function condition: style(...), selector(...), font-tech(...). Current token must be TOKEN_FUNCTION.
 	private parse_function_condition(): number {
 		let func_name = this.source.substring(this.lexer.token_start, this.lexer.token_end - 1) // -1 to exclude '('
@@ -173,25 +203,7 @@ export class AtRulePreludeParser {
 		let content_start = this.lexer.token_end // After '('
 
 		// Find matching closing paren
-		let paren_depth = 1
-		let func_end = this.lexer.token_end
-		let content_end = content_start
-
-		while (this.lexer.pos < this.prelude_end && paren_depth > 0) {
-			this.next_token()
-			let inner_token = this.lexer.token_type
-			if (inner_token === TOKEN_LEFT_PAREN || inner_token === TOKEN_FUNCTION) {
-				paren_depth++
-			} else if (inner_token === TOKEN_RIGHT_PAREN) {
-				paren_depth--
-				if (paren_depth === 0) {
-					content_end = this.lexer.token_start
-					func_end = this.lexer.token_end
-				}
-			} else if (inner_token === TOKEN_EOF) {
-				break
-			}
-		}
+		let [content_end, func_end] = this.scan_matching_paren()
 
 		// Create function node
 		let func_node = this.create_node(FUNCTION, func_start, func_end)
@@ -322,25 +334,11 @@ export class AtRulePreludeParser {
 	// Parse media feature: (min-width: 768px) or range: (50px <= width <= 100px)
 	private parse_media_feature(): number | null {
 		let feature_start = this.lexer.token_start // '(' position
-
-		// Find matching right paren
-		let depth = 1
 		let content_start = this.lexer.pos
 
-		while (this.lexer.pos < this.prelude_end && depth > 0) {
-			this.next_token()
-			let token_type = this.lexer.token_type
-			if (token_type === TOKEN_LEFT_PAREN || token_type === TOKEN_FUNCTION) {
-				depth++
-			} else if (token_type === TOKEN_RIGHT_PAREN) {
-				depth--
-			}
-		}
-
-		if (depth !== 0) return null // Unmatched parentheses
-
-		let content_end = this.lexer.token_start // Before ')'
-		let feature_end = this.lexer.token_end // After ')'
+		// Find matching right paren
+		let [content_end, feature_end, matched] = this.scan_matching_paren()
+		if (!matched) return null // Unmatched parentheses
 
 		// Check for range syntax (has comparison operators)
 		let has_comparison = false
@@ -486,25 +484,12 @@ export class AtRulePreludeParser {
 			// Feature query: (property: value)
 			if (token_type === TOKEN_LEFT_PAREN) {
 				let feature_start = this.lexer.token_start
-
-				// Find matching right paren
-				let depth = 1
 				let content_start = this.lexer.pos
 
-				while (this.lexer.pos < this.prelude_end && depth > 0) {
-					this.next_token()
-					let inner_token_type = this.lexer.token_type
-					if (inner_token_type === TOKEN_LEFT_PAREN || inner_token_type === TOKEN_FUNCTION) {
-						depth++
-					} else if (inner_token_type === TOKEN_RIGHT_PAREN) {
-						depth--
-					}
-				}
+				// Find matching right paren
+				let [content_end, feature_end, matched] = this.scan_matching_paren()
 
-				if (depth === 0) {
-					let content_end = this.lexer.token_start
-					let feature_end = this.lexer.token_end
-
+				if (matched) {
 					// Create supports query node
 					let query = this.create_node(SUPPORTS_QUERY, feature_start, feature_end)
 
@@ -785,20 +770,8 @@ export class AtRulePreludeParser {
 
 		if (this.lexer.token_type === TOKEN_FUNCTION) {
 			// It's url( ... we need to find the matching )
-			let paren_depth = 1
-			while (this.lexer.pos < this.prelude_end && paren_depth > 0) {
-				let tokenType = this.next_token()
-				if (tokenType === TOKEN_LEFT_PAREN || tokenType === TOKEN_FUNCTION) {
-					paren_depth++
-				} else if (tokenType === TOKEN_RIGHT_PAREN) {
-					paren_depth--
-					if (paren_depth === 0) {
-						url_end = this.lexer.token_end
-					}
-				} else if (tokenType === TOKEN_EOF) {
-					break
-				}
-			}
+			let [, close_end] = this.scan_matching_paren()
+			url_end = close_end
 		}
 
 		// Create URL node
@@ -831,20 +804,10 @@ export class AtRulePreludeParser {
 				if (this.lexer.token_type === TOKEN_FUNCTION) {
 					// Track the content inside the parentheses
 					content_start = this.lexer.pos
-					let paren_depth = 1
-					while (this.lexer.pos < this.prelude_end && paren_depth > 0) {
-						let tokenType = this.next_token()
-						if (tokenType === TOKEN_LEFT_PAREN || tokenType === TOKEN_FUNCTION) {
-							paren_depth++
-						} else if (tokenType === TOKEN_RIGHT_PAREN) {
-							paren_depth--
-							if (paren_depth === 0) {
-								content_length = this.lexer.token_start - content_start
-								layer_end = this.lexer.token_end
-							}
-						} else if (tokenType === TOKEN_EOF) {
-							break
-						}
+					let [content_end, close_end, matched] = this.scan_matching_paren()
+					if (matched) {
+						content_length = content_end - content_start
+						layer_end = close_end
 					}
 				}
 
@@ -884,24 +847,7 @@ export class AtRulePreludeParser {
 				let content_start = this.lexer.token_end // After the opening '('
 
 				// Find matching closing parenthesis
-				let paren_depth = 1
-				let supports_end = this.lexer.token_end
-				let content_end = content_start
-
-				while (this.lexer.pos < this.prelude_end && paren_depth > 0) {
-					let tokenType = this.next_token()
-					if (tokenType === TOKEN_LEFT_PAREN || tokenType === TOKEN_FUNCTION) {
-						paren_depth++
-					} else if (tokenType === TOKEN_RIGHT_PAREN) {
-						paren_depth--
-						if (paren_depth === 0) {
-							content_end = this.lexer.token_start // Before the closing ')'
-							supports_end = this.lexer.token_end
-						}
-					} else if (tokenType === TOKEN_EOF) {
-						break
-					}
-				}
+				let [content_end, supports_end] = this.scan_matching_paren()
 
 				// Create supports node
 				let supports_node = this.create_node(SUPPORTS_QUERY, supports_start, supports_end)
@@ -1001,20 +947,8 @@ export class AtRulePreludeParser {
 				this.next_token() // consume '('
 				let paren_start = this.lexer.token_start
 				let content_start = this.lexer.pos
-				let depth = 1
 
-				while (this.lexer.pos < this.prelude_end && depth > 0) {
-					this.next_token()
-					if (
-						this.lexer.token_type === TOKEN_LEFT_PAREN ||
-						this.lexer.token_type === TOKEN_FUNCTION
-					)
-						depth++
-					else if (this.lexer.token_type === TOKEN_RIGHT_PAREN) depth--
-				}
-
-				let content_end = this.lexer.token_start
-				let paren_end = this.lexer.token_end
+				let [content_end, paren_end] = this.scan_matching_paren()
 
 				let scope_node = this.create_node(PRELUDE_SELECTORLIST, paren_start, paren_end)
 				let trimmed = trim_boundaries(this.source, content_start, content_end)

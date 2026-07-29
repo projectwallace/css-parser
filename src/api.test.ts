@@ -427,13 +427,32 @@ describe('CSSNode', () => {
 			expect(rule.has_declarations).toBe(true)
 		})
 
-		test('should return false for at-rules', () => {
+		test('should return false for at-rules with only nested rules', () => {
 			const source = '@media screen { body { color: red; } }'
 			const root = parse(source)
 			const media = root.first_child! as Atrule
 
 			expect(media.type).toBe(AT_RULE)
 			expect(media.has_declarations).toBe(false)
+		})
+
+		test('should return true for at-rules with direct declarations', () => {
+			const source = '@font-face { font-family: "Arial"; src: url(a.woff); }'
+			const root = parse(source)
+			const fontFace = root.first_child! as Atrule
+
+			expect(fontFace.type).toBe(AT_RULE)
+			expect(fontFace.has_declarations).toBe(true)
+		})
+
+		test('should return true for nested conditional at-rules with a direct declaration (CSS Nesting)', () => {
+			const source = '.foo { color: red; @media (min-width: 800px) { color: blue; } }'
+			const root = parse(source)
+			const rule = root.first_child! as Rule
+			const media = (rule.block!.children.find((c) => c.type === AT_RULE) as Atrule) ?? null
+
+			expect(media).not.toBeNull()
+			expect(media!.has_declarations).toBe(true)
 		})
 	})
 

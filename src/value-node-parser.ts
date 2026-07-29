@@ -161,10 +161,6 @@ export class ValueNodeParser {
 		return node
 	}
 
-	private create_operator_node(start: number, end: number): number {
-		return this.create_node(OPERATOR, start, end)
-	}
-
 	private parse_operator_node(start: number, end: number): number | null {
 		// Only create operator nodes for specific delimiters: + - * /
 		let ch = this.source.charCodeAt(start)
@@ -174,7 +170,7 @@ export class ValueNodeParser {
 			ch === CHAR_ASTERISK ||
 			ch === CHAR_FORWARD_SLASH
 		) {
-			return this.create_operator_node(start, end)
+			return this.create_node(OPERATOR, start, end)
 		}
 		// Other delimiters are ignored for now
 		return null
