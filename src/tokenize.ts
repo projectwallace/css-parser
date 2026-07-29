@@ -248,9 +248,55 @@ export class Lexer {
 				continue
 			}
 
-			// Strings: " or '
-			if (ch === CHAR_DOUBLE_QUOTE || ch === CHAR_SINGLE_QUOTE) {
-				return this.consume_string(ch, start_line, start_column)
+			// Identifier or function — checked early: across real-world CSS this is the single
+			// most common non-whitespace token (~15-20%+ of all tokens), well ahead of numbers,
+			// hashes, at-keywords, strings, and the (essentially extinct in modern CSS) CDO/CDC
+			// tokens that used to precede it here. Measured via profiling + token frequency
+			// analysis on bootstrap.css/tailwind.css — see PR discussion for numbers.
+			if (is_ident_start(ch)) {
+				return this.consume_ident_or_function(start_line, start_column)
+			}
+
+			// Hyphen-led tokens: --custom-property/-webkit-prefix (identifier), -5px (signed
+			// number), or the legacy --> CDC token. Consolidated into one block (single charCodeAt
+			// for the lookahead char) instead of three separate `ch === CHAR_HYPHEN` checks.
+			// NOTE: CDC must be checked first — "-->" would otherwise be misread as identifier "--"
+			// followed by a stray ">" delimiter, since -- is itself valid identifier-start (custom
+			// properties).
+			if (ch === CHAR_HYPHEN) {
+				let next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
+
+				if (
+					next === CHAR_HYPHEN &&
+					this.pos + 2 < source_length &&
+					source.charCodeAt(this.pos + 2) === CHAR_GREATER_THAN
+				) {
+					// CDC: --> (contains no newlines)
+					this.pos += 3
+					return this.make_token(TOKEN_CDC, start, this.pos, start_line, start_column)
+				}
+
+				if (is_ident_start(next) || next === CHAR_HYPHEN) {
+					return this.consume_ident_or_function(start_line, start_column)
+				}
+
+				if (next < 128 && (char_types[next] & CHAR_DIGIT) !== 0) {
+					return this.consume_number(start_line, start_column)
+				}
+				if (next === CHAR_DOT) {
+					let next2 = this.pos + 2 < source_length ? source.charCodeAt(this.pos + 2) : 0
+					if (next2 < 128 && (char_types[next2] & CHAR_DIGIT) !== 0) {
+						return this.consume_number(start_line, start_column)
+					}
+				}
+			}
+
+			// Backslash: escape sequence starting an identifier
+			if (ch === CHAR_BACKSLASH) {
+				let next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
+				if (next !== 0 && !is_newline(next)) {
+					return this.consume_ident_or_function(start_line, start_column)
+				}
 			}
 
 			// Numbers: digit or . followed by digit
@@ -265,29 +311,23 @@ export class Lexer {
 				}
 			}
 
-			// CDO: <!--
-			if (ch === CHAR_LESS_THAN && this.pos + 3 < source_length) {
-				if (
-					source.charCodeAt(this.pos + 1) === CHAR_EXCLAMATION &&
-					source.charCodeAt(this.pos + 2) === CHAR_HYPHEN &&
-					source.charCodeAt(this.pos + 3) === CHAR_HYPHEN
-				) {
-					// <!-- contains no newlines
-					this.pos += 4
-					return this.make_token(TOKEN_CDO, start, this.pos, start_line, start_column)
+			// Plus: could be a signed number like +5 (the hyphen-led case is handled above)
+			if (ch === CHAR_PLUS) {
+				let next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
+				if (next < 128 && (char_types[next] & CHAR_DIGIT) !== 0) {
+					return this.consume_number(start_line, start_column)
+				}
+				if (next === CHAR_DOT) {
+					let next2 = this.pos + 2 < source_length ? source.charCodeAt(this.pos + 2) : 0
+					if (next2 < 128 && (char_types[next2] & CHAR_DIGIT) !== 0) {
+						return this.consume_number(start_line, start_column)
+					}
 				}
 			}
 
-			// CDC: -->
-			if (ch === CHAR_HYPHEN && this.pos + 2 < source_length) {
-				if (
-					source.charCodeAt(this.pos + 1) === CHAR_HYPHEN &&
-					source.charCodeAt(this.pos + 2) === CHAR_GREATER_THAN
-				) {
-					// --> contains no newlines
-					this.pos += 3
-					return this.make_token(TOKEN_CDC, start, this.pos, start_line, start_column)
-				}
+			// Strings: " or '
+			if (ch === CHAR_DOUBLE_QUOTE || ch === CHAR_SINGLE_QUOTE) {
+				return this.consume_string(ch, start_line, start_column)
 			}
 
 			// At-keyword: @media, @keyframes, etc
@@ -300,37 +340,17 @@ export class Lexer {
 				return this.consume_hash(start_line, start_column)
 			}
 
-			// Identifier or function
-			if (is_ident_start(ch)) {
-				return this.consume_ident_or_function(start_line, start_column)
-			}
-			if (ch === CHAR_HYPHEN) {
-				let next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
-				if (is_ident_start(next) || next === CHAR_HYPHEN) {
-					return this.consume_ident_or_function(start_line, start_column)
-				}
-			}
-
-			// Backslash: escape sequence starting an identifier
-			if (ch === CHAR_BACKSLASH) {
-				let next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
-				if (next !== 0 && !is_newline(next)) {
-					return this.consume_ident_or_function(start_line, start_column)
-				}
-			}
-
-			// Hyphen/Plus: could be signed number like -5 or +5
-			if (ch === CHAR_HYPHEN || ch === CHAR_PLUS) {
-				let next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
-				let is_next_digit = next < 128 && (char_types[next] & CHAR_DIGIT) !== 0
-				if (is_next_digit) {
-					return this.consume_number(start_line, start_column)
-				}
-				if (next === CHAR_DOT) {
-					let next2 = this.pos + 2 < source_length ? source.charCodeAt(this.pos + 2) : 0
-					if (next2 < 128 && (char_types[next2] & CHAR_DIGIT) !== 0) {
-						return this.consume_number(start_line, start_column)
-					}
+			// CDO: <!-- (essentially extinct in modern CSS — checked last, right before the
+			// default delimiter fallback; a lone "<" that isn't CDO just falls through to DELIM)
+			if (ch === CHAR_LESS_THAN && this.pos + 3 < source_length) {
+				if (
+					source.charCodeAt(this.pos + 1) === CHAR_EXCLAMATION &&
+					source.charCodeAt(this.pos + 2) === CHAR_HYPHEN &&
+					source.charCodeAt(this.pos + 3) === CHAR_HYPHEN
+				) {
+					// <!-- contains no newlines
+					this.pos += 4
+					return this.make_token(TOKEN_CDO, start, this.pos, start_line, start_column)
 				}
 			}
 
