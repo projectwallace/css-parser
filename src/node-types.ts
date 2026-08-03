@@ -61,6 +61,7 @@ import {
 	PRELUDE_SELECTORLIST,
 	FEATURE_RANGE,
 	AT_RULE_PRELUDE,
+	RATIO,
 } from './arena'
 
 // ---------------------------------------------------------------------------
@@ -253,6 +254,7 @@ type ValueLike =
 	| Hash
 	| Dimension
 	| Number
+	| Ratio
 	// `@supports selector(...)`'s Function node holds its argument as a parsed SelectorList
 	| SelectorList
 	// `style(...)`'s Function node holds its argument as a parsed SupportsDeclaration
@@ -261,6 +263,16 @@ type ValueLike =
 export type Identifier = Leaf<typeof IDENTIFIER, 'Identifier', { readonly name: string }>
 
 export type Number = Leaf<typeof NUMBER, 'Number', { readonly value: number }>
+
+/** Ratio value, e.g. "16/9" in `aspect-ratio: 16/9`. A bare number like `aspect-ratio: 1` parses as a plain Number instead. */
+export type Ratio = Leaf<
+	typeof RATIO,
+	'Ratio',
+	{
+		readonly left: Number
+		readonly right: Number
+	}
+>
 
 export type Dimension = Leaf<
 	typeof DIMENSION,
@@ -477,7 +489,7 @@ export type MediaFeature = Leaf<
 	{
 		/** Feature name, e.g. "min-width" */
 		readonly property: string
-		/** Feature value node, or null for boolean features like (hover) */
+		/** Feature value node (e.g. Dimension, Number, Identifier, Ratio), or null for boolean features like (hover) */
 		readonly value: CSSNode | null
 	}
 >
@@ -578,6 +590,7 @@ export type AnyNode =
 	| Identifier
 	| Number
 	| Dimension
+	| Ratio
 	| String
 	| Hash
 	| Function
@@ -743,6 +756,9 @@ export function is_prelude_operator(node: CSSNode): node is PreludeOperator {
 }
 export function is_feature_range(node: CSSNode): node is FeatureRange {
 	return node.type === FEATURE_RANGE
+}
+export function is_ratio(node: CSSNode): node is Ratio {
+	return node.type === RATIO
 }
 export function is_prelude_selectorlist(node: CSSNode): node is PreludeSelectorList {
 	return node.type === PRELUDE_SELECTORLIST

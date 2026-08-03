@@ -44,6 +44,7 @@ import {
 	AT_RULE_PRELUDE,
 	PRELUDE_SELECTORLIST,
 	SUPPORTS_DECLARATION,
+	RATIO,
 	FLAG_IMPORTANT,
 	FLAG_HAS_ERROR,
 	FLAG_HAS_BLOCK,
@@ -113,6 +114,7 @@ export const TYPE_NAMES = {
 	[FEATURE_RANGE]: 'MediaFeatureRange',
 	[AT_RULE_PRELUDE]: 'AtrulePrelude',
 	[PRELUDE_SELECTORLIST]: 'PreludeSelectorList',
+	[RATIO]: 'Ratio',
 } as const
 
 export type TypeName = (typeof TYPE_NAMES)[keyof typeof TYPE_NAMES] | 'unknown'
@@ -162,6 +164,7 @@ export type CSSNodeType =
 	| typeof AT_RULE_PRELUDE
 	| typeof PRELUDE_SELECTORLIST
 	| typeof SUPPORTS_DECLARATION
+	| typeof RATIO
 
 // Options for cloning nodes
 export interface CloneOptions {
@@ -193,6 +196,8 @@ export type PlainCSSNode = {
 	value?: PlainCSSNode | string | number | null
 	unit?: string
 	prelude?: PlainCSSNode | null
+	left?: PlainCSSNode
+	right?: PlainCSSNode
 
 	// Flags (only when true)
 	is_important?: boolean
@@ -265,6 +270,8 @@ const enumerable_properties = [
 	'is_vendor_prefixed',
 	'has_error',
 	'is_important',
+	'left',
+	'right',
 ] as const
 
 export class CSSNode {
@@ -497,6 +504,18 @@ export class CSSNode {
 	get unit(): string | undefined {
 		if (this.type !== DIMENSION) return undefined
 		return parse_dimension(this.text).unit
+	}
+
+	/** Numerator for ratio values, e.g. the Number "16" in `aspect-ratio: 16/9` */
+	get left(): CSSNode | undefined {
+		if (this.type !== RATIO) return undefined
+		return this.first_child ?? undefined
+	}
+
+	/** Denominator for ratio values, e.g. the Number "9" in `aspect-ratio: 16/9` */
+	get right(): CSSNode | undefined {
+		if (this.type !== RATIO) return undefined
+		return this.first_child?.next_sibling ?? undefined
 	}
 
 	/** Check if this declaration has !important */
@@ -786,7 +805,9 @@ export class CSSNode {
 
 		for (let key of enumerable_properties) {
 			let val = this[key]
-			if (val !== undefined && val !== false) {
+			if (val instanceof CSSNode) {
+				plain[key] = val.clone({ deep, locations })
+			} else if (val !== undefined && val !== false) {
 				plain[key] = val
 			}
 		}
