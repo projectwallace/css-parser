@@ -18,6 +18,8 @@ import type {
 	SupportsDeclaration,
 	Url,
 	PreludeSelectorList,
+	Ratio,
+	Number as NumberNode,
 } from './node-types'
 import {
 	AT_RULE,
@@ -41,6 +43,7 @@ import {
 	NUMBER,
 	SELECTOR_LIST,
 	VALUE,
+	RATIO,
 } from './arena'
 
 describe('At-Rule Prelude Nodes', () => {
@@ -453,6 +456,7 @@ describe('At-Rule Prelude Nodes', () => {
 				// Feature should have content
 				const feature = query.first_child as MediaFeature | null
 				expect(feature?.property).toBe('min-width')
+				expect(feature?.value?.type_name).toBe('Dimension')
 			})
 
 			test('should parse media feature (hover)', () => {
@@ -636,6 +640,62 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(feature?.value?.text).toBe('env(safe-area-inset-top)')
 			})
 
+			test('should parse ratio value (aspect-ratio: 16/9)', () => {
+				const css = '@media (aspect-ratio: 16/9) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const queryChildren =
+					((atRule.prelude as AtrulePrelude | null)?.children[0] as MediaQuery | undefined)
+						?.children || []
+				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE) as
+					| MediaFeature
+					| undefined
+
+				expect(feature?.property).toBe('aspect-ratio')
+				expect(feature?.value?.type).toBe(RATIO)
+				expect(feature?.value?.text).toBe('16/9')
+
+				const ratio = feature?.value as Ratio | undefined
+				expect(ratio?.left.type).toBe(NUMBER)
+				expect(ratio?.left.text).toBe('16')
+				expect(ratio?.left.value).toBe(16)
+				expect(ratio?.right.type).toBe(NUMBER)
+				expect(ratio?.right.text).toBe('9')
+				expect(ratio?.right.value).toBe(9)
+			})
+
+			test('should parse ratio value with whitespace around the slash', () => {
+				const css = '@media (aspect-ratio: 16 / 9) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const queryChildren =
+					((atRule.prelude as AtrulePrelude | null)?.children[0] as MediaQuery | undefined)
+						?.children || []
+				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE) as
+					| MediaFeature
+					| undefined
+
+				const ratio = feature?.value as Ratio | undefined
+				expect(ratio?.type).toBe(RATIO)
+				expect(ratio?.left.text).toBe('16')
+				expect(ratio?.right.text).toBe('9')
+			})
+
+			test('should parse bare number value (aspect-ratio: 1), not a Ratio', () => {
+				const css = '@media (aspect-ratio: 1) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const queryChildren =
+					((atRule.prelude as AtrulePrelude | null)?.children[0] as MediaQuery | undefined)
+						?.children || []
+				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE) as
+					| MediaFeature
+					| undefined
+
+				expect(feature?.value?.type).toBe(NUMBER)
+				expect((feature?.value as NumberNode | undefined)?.value).toBe(1)
+			})
+
 			test('should have null value for boolean features', () => {
 				const css = '@media (hover) { }'
 				const ast = parse(css)
@@ -648,6 +708,7 @@ describe('At-Rule Prelude Nodes', () => {
 					| undefined
 
 				expect(feature?.value).toBeNull()
+				expect(feature?.first_child).toBeNull()
 			})
 
 			test('should parse vendor-prefixed media feature (-ms-high-contrast: active)', () => {

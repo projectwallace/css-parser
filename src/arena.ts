@@ -89,6 +89,7 @@ export const FEATURE_RANGE = 39 // Range syntax: (50px <= width <= 100px)
 export const AT_RULE_PRELUDE = 40 // Wrapper for at-rule prelude children
 export const PRELUDE_SELECTORLIST = 41 // Parenthesized selector list in at-rule preludes: (.parent), (figure) in @scope
 export const SUPPORTS_DECLARATION = 57 // declaration wrapper inside @supports: (display: flex)
+export const RATIO = 58 // ratio value: 16/9 in aspect-ratio: 16/9
 
 // Wrapper node types
 export const VALUE = 50 // Wrapper for declaration values

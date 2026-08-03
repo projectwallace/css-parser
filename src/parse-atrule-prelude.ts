@@ -18,6 +18,9 @@ import {
 	FUNCTION,
 	STRING,
 	FEATURE_RANGE,
+	NUMBER,
+	OPERATOR,
+	RATIO,
 } from './arena'
 import {
 	TOKEN_IDENT,
@@ -40,6 +43,7 @@ import {
 	CHAR_GREATER_THAN,
 	CHAR_EQUALS,
 	CHAR_PERIOD,
+	CHAR_FORWARD_SLASH,
 } from './string-utils'
 import { trim_boundaries, skip_whitespace_and_comments_forward } from './parse-utils'
 import { CSSNode } from './css-node'
@@ -398,7 +402,7 @@ export class AtRulePreludeParser {
 			if (value_trimmed) {
 				let value_first = this.parse_feature_value(value_trimmed[0], value_trimmed[1])
 				if (value_first !== 0) {
-					this.arena.set_first_child(feature, value_first)
+					this.arena.set_first_child(feature, this.wrap_ratio_value(value_first))
 				}
 			}
 		}
@@ -905,6 +909,39 @@ export class AtRulePreludeParser {
 	// Own lexer instance, so it doesn't disturb this.lexer's position — no save/restore needed.
 	private parse_feature_value(start: number, end: number): number {
 		return this.value_node_parser.parse_chain(start, end, this.lexer.line, this.lexer.column)
+	}
+
+	// Detect a ratio value chain (e.g. "16/9" from aspect-ratio: 16/9) and collapse it into
+	// a single RATIO node, so features like `aspect-ratio: 1` and `aspect-ratio: 16/9` both
+	// expose one coherent value node instead of `.value` silently returning just the numerator.
+	private wrap_ratio_value(first_node: number): number {
+		if (this.arena.get_type(first_node) !== NUMBER) return first_node
+
+		let op_node = this.arena.get_next_sibling(first_node)
+		if (op_node === 0 || this.arena.get_type(op_node) !== OPERATOR) return first_node
+		if (this.arena.get_length(op_node) !== 1) return first_node
+		if (this.source.charCodeAt(this.arena.get_start_offset(op_node)) !== CHAR_FORWARD_SLASH) {
+			return first_node
+		}
+
+		let second_node = this.arena.get_next_sibling(op_node)
+		if (second_node === 0 || this.arena.get_type(second_node) !== NUMBER) return first_node
+		if (this.arena.get_next_sibling(second_node) !== 0) return first_node
+
+		let start = this.arena.get_start_offset(first_node)
+		let end = this.arena.get_start_offset(second_node) + this.arena.get_length(second_node)
+		let ratio_node = this.arena.create_node(
+			RATIO,
+			start,
+			end - start,
+			this.arena.get_start_line(first_node),
+			this.arena.get_start_column(first_node),
+		)
+
+		this.arena.set_first_child(ratio_node, first_node)
+		this.arena.set_next_sibling(first_node, second_node) // drop the "/" operator from the chain
+
+		return ratio_node
 	}
 
 	// Parse @namespace prelude: [prefix] url("...") | "..."
