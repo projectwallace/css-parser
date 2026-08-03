@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'vitest'
 import { parse } from './parse'
 import { parse_atrule_prelude } from './parse-atrule-prelude'
+import { CSSNode, type PlainCSSNode } from './css-node'
 import type {
 	Atrule,
 	AtrulePrelude,
@@ -12,7 +13,6 @@ import type {
 	MediaFeature,
 	FeatureRange,
 	Function,
-	CSSNode,
 	LayerName,
 	SupportsQuery,
 	SupportsDeclaration,
@@ -662,6 +662,27 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(ratio?.right.type).toBe(NUMBER)
 				expect(ratio?.right.text).toBe('9')
 				expect(ratio?.right.value).toBe(9)
+			})
+
+			test('clone() serializes Ratio.left/right as plain objects, not live CSSNode instances', () => {
+				const css = '@media (aspect-ratio: 16/9) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const queryChildren =
+					((atRule.prelude as AtrulePrelude | null)?.children[0] as MediaQuery | undefined)
+						?.children || []
+				const feature = queryChildren.find((c) => c.type === MEDIA_FEATURE) as
+					| MediaFeature
+					| undefined
+
+				const clone = feature!.clone()
+				const ratio = clone.value as PlainCSSNode
+
+				expect(ratio.type_name).toBe('Ratio')
+				expect(ratio.left).not.toBeInstanceOf(CSSNode)
+				expect((ratio.left as PlainCSSNode).value).toBe(16)
+				expect((ratio.right as PlainCSSNode).value).toBe(9)
+				expect(JSON.stringify(clone)).not.toContain('"arena"')
 			})
 
 			test('should parse ratio value with whitespace around the slash', () => {

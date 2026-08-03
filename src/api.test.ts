@@ -867,6 +867,20 @@ describe('CSSNode', () => {
 				// Function should have nested children
 				expect(value.children?.[0].children?.length).toBeGreaterThan(0)
 			})
+
+			test('nested node properties (value, left, right, selector) are plain objects, not live CSSNode instances', () => {
+				const ast = parse('div { color: red; }')
+				const decl = (ast.first_child! as Rule).block!.first_child!
+
+				const clone = decl.clone()
+				const value = clone.value as PlainCSSNode
+
+				// Must be JSON-serializable plain data, not a wrapper holding an arena/source/index
+				expect(value).not.toBeInstanceOf(CSSNode)
+				expect(value.type_name).toBe('Value')
+				expect(value.children?.[0].type_name).toBe('Identifier')
+				expect(JSON.stringify(clone)).not.toContain('"arena"')
+			})
 		})
 
 		describe('Type-specific properties', () => {
