@@ -292,7 +292,9 @@ export type Hash = Leaf<typeof HASH, 'Hash'>
 
 export type Function = WithClone<
 	CSSNode &
-		WithChildren<ValueLike> & {
+		// `style(...)`/`supports(...)` if()-conditions hold a Declaration child; `media(...)`
+		// if()-conditions hold a MediaFeature child (see parse_if_condition_function)
+		WithChildren<ValueLike | Declaration | MediaFeature> & {
 			readonly type: typeof FUNCTION
 			readonly type_name: 'Function'
 			/** Function name, e.g. "rgb", "calc" */

@@ -23,6 +23,7 @@ import type {
 	Dimension,
 	Function,
 	IfBranch,
+	MediaFeature,
 	Number,
 	Operator,
 	Parenthesis,
@@ -1253,7 +1254,7 @@ describe('Value Node Types', () => {
 			expect(mediaFunc.name).toBe('media')
 			// 1 child: MEDIA_FEATURE
 			expect(mediaFunc.children).toHaveLength(1)
-			const feature = mediaFunc.children[0]
+			const feature = mediaFunc.children[0] as MediaFeature
 			expect(feature.type).toBe(MEDIA_FEATURE)
 			expect(feature.property).toBe('min-width')
 			expect(feature.value?.type).toBe(DIMENSION)
