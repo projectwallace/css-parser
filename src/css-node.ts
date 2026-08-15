@@ -204,7 +204,7 @@ export type PlainCSSNode = {
 	right?: PlainCSSNode
 
 	// IfBranch-specific
-	condition?: string
+	condition?: PlainCSSNode
 	is_else?: boolean
 
 	// Flags (only when true)
@@ -534,10 +534,12 @@ export class CSSNode {
 		return this.first_child?.next_sibling ?? undefined
 	}
 
-	/** Get the condition text of an if() branch, e.g. "style(--active: 1)" or "else" */
-	get condition(): string | undefined {
-		if (this.type !== IF_BRANCH) return undefined
-		return this.get_content()
+	/** Get the parsed condition node of an if() branch, e.g. the Function "style(--active: 1)" or the Identifier "else" */
+	get condition(): CSSNode | undefined {
+		if (this.type !== IF_BRANCH) {
+			return undefined
+		}
+		return this.first_child ?? undefined
 	}
 
 	/** True when this is the else branch of an if() function */

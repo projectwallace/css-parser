@@ -1128,8 +1128,8 @@ describe('Value Node Types', () => {
 			const decl = root.first_child?.first_child?.next_sibling?.first_child
 			return (decl!.first_child! as Value).children[0] as Function | undefined
 		}
-		const getBranch = (func: Function | undefined, idx: number) =>
-			func?.children[idx] as IfBranch | undefined
+		const getBranch = (func: Function | undefined, index: number) =>
+			func?.children[index] as IfBranch | undefined
 
 		// ── Basic structure ──────────────────────────────────────────────────
 
@@ -1156,11 +1156,11 @@ describe('Value Node Types', () => {
 			const b0 = getBranch(func, 0)
 			const b1 = getBranch(func, 1)
 
-			expect(b0?.condition).toBe('style(--active: 1)')
+			expect(b0?.condition?.text).toBe('style(--active: 1)')
 			expect((b0?.value as Value).text).toBe('green')
 			expect(b0?.is_else).toBe(false)
 
-			expect(b1?.condition).toBe('else')
+			expect(b1?.condition?.text).toBe('else')
 			expect((b1?.value as Value).text).toBe('red')
 			expect(b1?.is_else).toBe(true)
 		})
@@ -1222,7 +1222,7 @@ describe('Value Node Types', () => {
 			expect(func?.children).toHaveLength(2)
 
 			const b0 = getBranch(func, 0)!
-			expect(b0.condition).toBe('supports(display: grid)')
+			expect(b0.condition.text).toBe('supports(display: grid)')
 			expect((b0.value as Value).text).toBe('grid')
 
 			const supportsFunc = b0.first_child as Function
@@ -1247,7 +1247,7 @@ describe('Value Node Types', () => {
 			expect(func?.children).toHaveLength(2)
 
 			const b0 = getBranch(func, 0)!
-			expect(b0.condition).toBe('media(min-width: 600px)')
+			expect(b0.condition.text).toBe('media(min-width: 600px)')
 			expect((b0.value as Value).text).toBe('blue')
 
 			const mediaFunc = b0.first_child as Function
@@ -1274,17 +1274,17 @@ describe('Value Node Types', () => {
 			expect(func?.children).toHaveLength(3)
 
 			const b0 = getBranch(func, 0)!
-			expect(b0.condition).toBe('style(--large: 1)')
+			expect(b0.condition.text).toBe('style(--large: 1)')
 			expect((b0.value as Value).text).toBe('2rem')
 			expect(b0.is_else).toBe(false)
 
 			const b1 = getBranch(func, 1)!
-			expect(b1.condition).toBe('style(--medium: 1)')
+			expect(b1.condition.text).toBe('style(--medium: 1)')
 			expect((b1.value as Value).text).toBe('1.5rem')
 			expect(b1.is_else).toBe(false)
 
 			const b2 = getBranch(func, 2)!
-			expect(b2.condition).toBe('else')
+			expect(b2.condition.text).toBe('else')
 			expect((b2.value as Value).text).toBe('1rem')
 			expect(b2.is_else).toBe(true)
 		})
@@ -1324,7 +1324,7 @@ describe('Value Node Types', () => {
 			const func = getFunc('div { color: if(style(--x: 1):; else: red) }')
 			expect(func?.children).toHaveLength(2)
 			const b0 = getBranch(func, 0)!
-			expect(b0.condition).toBe('style(--x: 1)')
+			expect(b0.condition.text).toBe('style(--x: 1)')
 			expect(b0.value).toBeNull()
 			// Only the condition node as child, no value nodes
 			expect(b0.children).toHaveLength(1)
@@ -1334,7 +1334,7 @@ describe('Value Node Types', () => {
 			const func = getFunc('div { color: if(style(--x: 1): red;) }')
 			expect(func?.children).toHaveLength(1)
 			const b0 = getBranch(func, 0)!
-			expect(b0.condition).toBe('style(--x: 1)')
+			expect(b0.condition.text).toBe('style(--x: 1)')
 			expect((b0.value as Value).text).toBe('red')
 		})
 
@@ -1354,7 +1354,7 @@ describe('Value Node Types', () => {
 			expect(innerIf?.type).toBe(FUNCTION)
 			expect(innerIf?.name).toBe('if')
 			expect(innerIf?.children).toHaveLength(2)
-			expect(getBranch(innerIf, 0)?.condition).toBe('style(--b: 1)')
+			expect(getBranch(innerIf, 0)?.condition?.text).toBe('style(--b: 1)')
 			expect((getBranch(innerIf, 0)?.value as Value).text).toBe('blue')
 			expect(getBranch(innerIf, 1)?.is_else).toBe(true)
 			expect((getBranch(innerIf, 1)?.value as Value).text).toBe('green')

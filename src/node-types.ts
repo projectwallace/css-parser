@@ -338,18 +338,18 @@ export type Value = WithClone<
  * Each branch corresponds to a `<condition>: <value>` pair in:
  *   `if( <condition>: <value>; … else: <fallback> )`
  *
- * - `condition` — the condition text, e.g. `"style(--x: 1)"` or `"else"`
+ * - `condition` — the parsed condition node (Function, e.g. `style(--x: 1)`, or Identifier `else`)
  * - `value`     — the value text, e.g. `"green"`; `null` when omitted
  * - `is_else`   — `true` for the `else` branch
- * - `first_child` — the parsed condition node (Function or Identifier)
+ * - `first_child` — same node as `condition`
  * - `children`    — condition node followed by parsed value nodes
  */
 export type IfBranch = CSSNode &
 	WithChildren<Function | Identifier | Value> & {
 		readonly type: typeof IF_BRANCH
 		readonly type_name: 'IfBranch'
-		/** Condition text, e.g. "style(--active: 1)" or "else" */
-		readonly condition: string
+		/** The parsed condition node, e.g. the Function "style(--active: 1)" or the Identifier "else" */
+		readonly condition: Function | Identifier
 		/** The parsed value as a VALUE node, or null when the branch value is empty */
 		readonly value: Value | null
 		/** True when this is the else branch */
