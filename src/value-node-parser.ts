@@ -15,7 +15,9 @@ import {
 	URL,
 	UNICODE_RANGE,
 	IF_BRANCH,
+	IF_CONDITION,
 	VALUE,
+	PRELUDE_OPERATOR,
 } from './arena'
 import {
 	TOKEN_IDENT,
@@ -33,6 +35,7 @@ import {
 	TOKEN_LEFT_PAREN,
 	TOKEN_RIGHT_PAREN,
 	TOKEN_UNICODE_RANGE,
+	type TokenType,
 } from './token-types'
 import {
 	is_whitespace,
@@ -418,16 +421,7 @@ export class ValueNodeParser {
 			let branch_line = this.lexer.token_line
 			let branch_col = this.lexer.token_column
 
-			// Condition functions get specialized parsing; identifiers ("else") use generic
-			let condition_node: number | null
-			if (tt === TOKEN_FUNCTION) {
-				condition_node = this.parse_if_condition_function(
-					this.lexer.token_start,
-					this.lexer.token_end,
-				)
-			} else {
-				condition_node = this.parse_value_node()
-			}
+			let condition_node = this.parse_if_condition()
 			if (condition_node === null) continue
 
 			let condition_end_pos =
@@ -537,6 +531,121 @@ export class ValueNodeParser {
 		return node
 	}
 
+	private is_and_or_not(str: string): boolean {
+		// All logical operators are 2-3 chars: "and" (3), "or" (2), "not" (3)
+		return str_equals('and', str) || str_equals('or', str) || str_equals('not', str)
+	}
+
+	// Advance past whitespace to the next real token, returning its type (TOKEN_EOF once
+	// `this.end` is reached). Used to look ahead for a not/and/or continuation without
+	// committing to consuming it — callers restore to a saved position when it doesn't.
+	private next_significant_token(): TokenType {
+		while (this.lexer.pos < this.end) {
+			this.lexer.next_token_fast(false)
+			if (this.lexer.token_start >= this.end) return TOKEN_EOF
+			if (this.is_whitespace_inline()) continue
+			return this.lexer.token_type
+		}
+		return TOKEN_EOF
+	}
+
+	/**
+	 * Parse an if()-branch condition:
+	 *   <if-condition> = <boolean-expr[ <if-test> ]> | else
+	 *   <if-test>      = style(…) | media(…) | supports(…)
+	 * i.e. a single test function, the bare "else" identifier, or those test functions
+	 * combined with not/and/or (e.g. "not style(--x: 1)", "style(--a: 1) and media(width > 600px)").
+	 * Called with the lexer's current token already positioned at the condition's first token.
+	 * A simple single-function/"else" condition returns that node directly, unwrapped (matching
+	 * prior behavior); a compound not/and/or condition wraps the flat operator/function chain in
+	 * an IF_CONDITION node so IfBranch.condition/.value (single first_child/next_sibling hops)
+	 * still see exactly one node for "the condition".
+	 */
+	private parse_if_condition(): number | null {
+		// "else" never combines with not/and/or — always a bare identifier.
+		if (this.lexer.token_type === TOKEN_IDENT) {
+			let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
+			if (str_equals('else', text)) {
+				return this.parse_value_node()
+			}
+		}
+
+		let first = 0
+		let last = 0
+		let component_count = 0
+		let compound = false
+
+		for (;;) {
+			let tt = this.lexer.token_type
+			let component: number | null = null
+			let is_operator = false
+
+			if (tt === TOKEN_FUNCTION) {
+				component = this.parse_if_condition_function(this.lexer.token_start, this.lexer.token_end)
+			} else if (tt === TOKEN_IDENT) {
+				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
+				if (this.is_and_or_not(text)) {
+					is_operator = true
+					component = this.arena.create_node(
+						PRELUDE_OPERATOR,
+						this.lexer.token_start,
+						this.lexer.token_end - this.lexer.token_start,
+						this.lexer.token_line,
+						this.lexer.token_column,
+					)
+				} else {
+					component = this.parse_value_node()
+				}
+			} else {
+				component = this.parse_value_node()
+			}
+
+			if (component !== null) {
+				component_count++
+				if (first === 0) first = component
+				else this.arena.set_next_sibling(last, component)
+				last = component
+			}
+
+			// Only a test function or a not/and/or operator can be followed by more of the
+			// condition; anything else ends the condition here.
+			if (tt !== TOKEN_FUNCTION && !is_operator) break
+
+			let saved = this.lexer.save_position()
+			let next_tt = this.next_significant_token()
+			if (next_tt === TOKEN_FUNCTION) {
+				compound = true
+				continue
+			}
+			if (next_tt === TOKEN_IDENT) {
+				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
+				if (this.is_and_or_not(text)) {
+					compound = true
+					continue
+				}
+			}
+			this.lexer.restore_position(saved)
+			break
+		}
+
+		if (first === 0) return null
+		if (component_count === 1 && !compound) return first
+
+		// Compound condition — wrap the flat not/and/or/function chain in an IF_CONDITION node
+		let wrapper_start = this.arena.get_start_offset(first)
+		let last_sibling = this.arena.get_last_sibling(first)
+		let wrapper_end = this.arena.get_start_offset(last_sibling) + this.arena.get_length(last_sibling)
+		let wrapper = this.arena.create_node(
+			IF_CONDITION,
+			wrapper_start,
+			wrapper_end - wrapper_start,
+			this.arena.get_start_line(first),
+			this.arena.get_start_column(first),
+		)
+		this.arena.set_first_child(wrapper, first)
+		return wrapper
+	}
+
 	/**
 	 * Parse a condition function inside if() — style(), supports(), or media(). Content parsing
 	 * is delegated to the shared ConditionParser (see parse-condition.ts), so these produce the
@@ -584,11 +693,23 @@ export class ValueNodeParser {
 		let child_nodes: number[] = []
 
 		if (str_equals('style', func_name)) {
+			// style(<style-query>): a bare single declaration when the content has a top-level
+			// ':' (style(--x: 1)); otherwise the full compound and/or/not grammar over
+			// parenthesized declarations, same as `@supports` — style((--a: 1) or (--a: 2)).
 			let decl = this.condition_parser.parse_supports_declaration_content(
 				content_start,
 				content_end,
 			)
-			if (decl !== null) child_nodes = [decl]
+			if (decl === null) {
+				child_nodes = this.condition_parser.parse_supports_condition(
+					content_start,
+					content_end,
+					func_line,
+					func_col,
+				)
+			} else {
+				child_nodes = [decl]
+			}
 		} else if (str_equals('supports', func_name)) {
 			// supports(<supports-condition>): a bare single declaration when the content has a
 			// top-level ':' (matching style()'s shorthand — supports(display: grid), no extra
