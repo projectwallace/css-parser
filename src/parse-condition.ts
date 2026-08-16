@@ -39,7 +39,11 @@ import {
 	CHAR_EQUALS,
 	CHAR_FORWARD_SLASH,
 } from './string-utils'
-import { trim_boundaries, skip_whitespace_and_comments_forward } from './parse-utils'
+import {
+	trim_boundaries,
+	skip_whitespace_and_comments_forward,
+	find_colon_at_depth_zero,
+} from './parse-utils'
 import { SelectorParser } from './parse-selector'
 import type { ValueNodeParser } from './value-node-parser'
 
@@ -454,20 +458,9 @@ export class ConditionParser {
 	 * `@import … supports(…)`. Returns null if no top-level ':' is found.
 	 */
 	parse_supports_declaration_content(content_start: number, content_end: number): number | null {
-		let colon_pos = this.find_colon_at_depth_zero(content_start, content_end)
+		let colon_pos = find_colon_at_depth_zero(this.source, content_start, content_end)
 		if (colon_pos === -1) return null
 		return this.create_supports_declaration(content_start, content_end, colon_pos)
-	}
-
-	private find_colon_at_depth_zero(start: number, end: number): number {
-		let depth = 0
-		for (let i = start; i < end; i++) {
-			let ch = this.source.charCodeAt(i)
-			if (ch === 0x28 /* ( */) depth++
-			else if (ch === 0x29 /* ) */) depth--
-			else if (ch === CHAR_COLON && depth === 0) return i
-		}
-		return -1
 	}
 
 	/**
