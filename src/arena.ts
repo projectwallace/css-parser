@@ -62,6 +62,7 @@ export const PARENTHESIS = 17 // parenthesized expression: (100% - 50px)
 export const URL = 18 // URL: url("file.css"), url(image.png), used in values and @import
 export const UNICODE_RANGE = 19 // unicode range: u+0025-00ff, u+4??
 export const IF_BRANCH = 59 // Branch inside an if() function: <condition>: <value>
+export const IF_CONDITION = 60 // Compound if()-branch condition: not style(...), style(...) and media(...), etc.
 
 // Selector node type constants (for detailed selector parsing)
 export const SELECTOR_LIST = 20 // comma-separated selectors

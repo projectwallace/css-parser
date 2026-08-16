@@ -46,6 +46,7 @@ import {
 	SUPPORTS_DECLARATION,
 	RATIO,
 	IF_BRANCH,
+	IF_CONDITION,
 	FLAG_IMPORTANT,
 	FLAG_HAS_ERROR,
 	FLAG_HAS_BLOCK,
@@ -118,6 +119,7 @@ export const TYPE_NAMES = {
 	[PRELUDE_SELECTORLIST]: 'PreludeSelectorList',
 	[RATIO]: 'Ratio',
 	[IF_BRANCH]: 'IfBranch',
+	[IF_CONDITION]: 'IfCondition',
 } as const
 
 export type TypeName = (typeof TYPE_NAMES)[keyof typeof TYPE_NAMES] | 'unknown'
@@ -169,6 +171,7 @@ export type CSSNodeType =
 	| typeof SUPPORTS_DECLARATION
 	| typeof RATIO
 	| typeof IF_BRANCH
+	| typeof IF_CONDITION
 
 // Options for cloning nodes
 export interface CloneOptions {
@@ -262,6 +265,7 @@ const nodes_with_children = new Set<number>([
 	SUPPORTS_QUERY,
 	SUPPORTS_DECLARATION,
 	IF_BRANCH,
+	IF_CONDITION,
 ])
 
 const enumerable_properties = [

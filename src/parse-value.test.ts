@@ -12,6 +12,7 @@ import {
 	URL,
 	UNICODE_RANGE,
 	IF_BRANCH,
+	IF_CONDITION,
 	VALUE,
 	DECLARATION,
 	MEDIA_FEATURE,
@@ -28,6 +29,7 @@ import type {
 	FeatureRange,
 	Function,
 	IfBranch,
+	IfCondition,
 	MediaFeature,
 	Number,
 	Operator,
@@ -1326,6 +1328,138 @@ describe('Value Node Types', () => {
 			const secondDecl = second.first_child as SupportsDeclaration
 			expect(secondDecl.property).toBe('gap')
 			expect((secondDecl.value as Value).text).toBe('1rem')
+		})
+
+		test('style() condition supports the full compound and/or/not grammar', () => {
+			// MDN if() example: style((--scheme: dark) or (--scheme: very-dark))
+			const func = getFunc(
+				'div { background-color: if(style((--scheme: dark) or (--scheme: very-dark)): black;) }',
+			)
+			const styleFunc = getBranch(func, 0)?.first_child as Function
+			expect(styleFunc.name).toBe('style')
+			// children: SupportsQuery, PreludeOperator("or"), SupportsQuery
+			expect(styleFunc.children).toHaveLength(3)
+
+			const first = styleFunc.children[0] as SupportsQuery
+			expect(first.type).toBe(SUPPORTS_QUERY)
+			expect((first.first_child as SupportsDeclaration).property).toBe('--scheme')
+			expect(((first.first_child as SupportsDeclaration).value as Value).text).toBe('dark')
+
+			expect(styleFunc.children[1].type).toBe(PRELUDE_OPERATOR)
+			expect(styleFunc.children[1].text).toBe('or')
+
+			const second = styleFunc.children[2] as SupportsQuery
+			expect(second.type).toBe(SUPPORTS_QUERY)
+			expect((second.first_child as SupportsDeclaration).property).toBe('--scheme')
+			expect(((second.first_child as SupportsDeclaration).value as Value).text).toBe('very-dark')
+		})
+
+		test('style() condition supports "and" combining two parenthesized declarations', () => {
+			// MDN if() example: style((--scheme: dark) and (--contrast: hi))
+			const func = getFunc(
+				'div { background-color: if(style((--scheme: dark) and (--contrast: hi)): black;) }',
+			)
+			const styleFunc = getBranch(func, 0)?.first_child as Function
+			expect(styleFunc.children).toHaveLength(3)
+			expect(styleFunc.children[1].type).toBe(PRELUDE_OPERATOR)
+			expect(styleFunc.children[1].text).toBe('and')
+			expect(
+				((styleFunc.children[0] as SupportsQuery).first_child as SupportsDeclaration).property,
+			).toBe('--scheme')
+			expect(
+				((styleFunc.children[2] as SupportsQuery).first_child as SupportsDeclaration).property,
+			).toBe('--contrast')
+		})
+
+		// ── Compound if-condition: not/and/or combining test functions ─────────
+
+		describe('compound if-condition (not/and/or)', () => {
+			test('"not style(...)" produces an IfCondition wrapping Operator + Function', () => {
+				// The reported bug: parsing dropped style() entirely, keeping only "not".
+				const func = getFunc('div { background-color: if(not style(--scheme: light): black;) }')
+				expect(func?.children).toHaveLength(1)
+
+				const b0 = getBranch(func, 0)!
+				expect(b0.condition.type).toBe(IF_CONDITION)
+				expect(b0.condition.type_name).toBe('IfCondition')
+				expect(b0.condition.text).toBe('not style(--scheme: light)')
+				expect((b0.value as Value).text).toBe('black')
+
+				const condition = b0.condition as IfCondition
+				expect(condition.children).toHaveLength(2)
+				expect(condition.children[0].type).toBe(PRELUDE_OPERATOR)
+				expect(condition.children[0].text).toBe('not')
+
+				const styleFunc = condition.children[1] as Function
+				expect(styleFunc.type).toBe(FUNCTION)
+				expect(styleFunc.name).toBe('style')
+				const decl = styleFunc.children[0] as SupportsDeclaration
+				expect(decl.property).toBe('--scheme')
+				expect((decl.value as Value).text).toBe('light')
+			})
+
+			test('MDN example: multi-line whitespace and trailing semicolon around "not style(...)"', () => {
+				const func = getFunc(
+					'div { background-color: if(\n\t\t\t\tnot style(--scheme: light): black;\n\t\t\t); }',
+				)
+				const b0 = getBranch(func, 0)!
+				expect(b0.condition.type_name).toBe('IfCondition')
+				expect(b0.condition.text).toBe('not style(--scheme: light)')
+				expect((b0.value as Value).text).toBe('black')
+			})
+
+			test('branch.first_child is the IfCondition wrapper for compound conditions', () => {
+				const func = getFunc('div { color: if(not style(--x: 1): red; else: blue) }')
+				const b0 = getBranch(func, 0)!
+				expect(b0.first_child?.type).toBe(IF_CONDITION)
+				// children: IfCondition, VALUE — same shape as the simple-condition case
+				expect(b0.children).toHaveLength(2)
+				expect(b0.children[0].type).toBe(IF_CONDITION)
+				expect(b0.children[1].type).toBe(VALUE)
+			})
+
+			test('"style(...) and media(...)" combines two test functions', () => {
+				const func = getFunc(
+					'div { color: if(style(--dark: 1) and media(min-width: 600px): black; else: white) }',
+				)
+				const b0 = getBranch(func, 0)!
+				const condition = b0.condition as IfCondition
+				expect(condition.type).toBe(IF_CONDITION)
+				expect(condition.children).toHaveLength(3)
+
+				expect((condition.children[0] as Function).name).toBe('style')
+				expect(condition.children[1].type).toBe(PRELUDE_OPERATOR)
+				expect(condition.children[1].text).toBe('and')
+				expect((condition.children[2] as Function).name).toBe('media')
+
+				expect((b0.value as Value).text).toBe('black')
+			})
+
+			test('"style(...) or supports(...)" combines two test functions', () => {
+				const func = getFunc(
+					'div { color: if(style(--x: 1) or supports(display: grid): black; else: white) }',
+				)
+				const condition = getBranch(func, 0)?.condition as IfCondition
+				expect(condition.children).toHaveLength(3)
+				expect(condition.children[1].text).toBe('or')
+			})
+
+			test('a simple single-function condition stays unwrapped (no IfCondition)', () => {
+				// Guards against regressing the common case while fixing the compound one
+				const func = getFunc('div { color: if(style(--active: 1): green; else: red) }')
+				const b0 = getBranch(func, 0)!
+				expect(b0.condition.type).toBe(FUNCTION)
+				expect(b0.condition.type_name).toBe('Function')
+			})
+
+			test('unterminated "not style(" does not throw or run past the value', () => {
+				const func = getFunc('div { color: if(not style(--x: 1 }')
+				expect(func?.name).toBe('if')
+				const b0 = getBranch(func, 0)!
+				// style( is unterminated, so the compound condition can't close either —
+				// falls back to whatever was parsed without throwing.
+				expect(b0.condition).toBeDefined()
+			})
 		})
 
 		// ── Multiple branches ─────────────────────────────────────────────────
