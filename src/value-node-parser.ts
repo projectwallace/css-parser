@@ -507,7 +507,7 @@ export class ValueNodeParser {
 			}
 
 			// ── Create IF_BRANCH node ──────────────────────────────────────────
-			let branch_end = value_node !== null ? value_last_end : condition_end_pos
+			let branch_end = value_node === null ? condition_end_pos : value_last_end
 			let branch_node = this.arena.create_node(
 				IF_BRANCH,
 				branch_start,

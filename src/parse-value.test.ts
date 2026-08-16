@@ -1163,13 +1163,13 @@ describe('Value Node Types', () => {
 			const b0 = getBranch(func, 0)
 			const b1 = getBranch(func, 1)
 
-			expect(b0?.condition?.text).toBe('style(--active: 1)')
-			expect((b0?.value as Value).text).toBe('green')
-			expect(b0?.is_else).toBe(false)
+			expect(b0!.condition?.text).toBe('style(--active: 1)')
+			expect((b0!.value as Value).text).toBe('green')
+			expect(b0!.is_else).toBe(false)
 
-			expect(b1?.condition?.text).toBe('else')
-			expect((b1?.value as Value).text).toBe('red')
-			expect(b1?.is_else).toBe(true)
+			expect(b1!.condition?.text).toBe('else')
+			expect((b1!.value as Value).text).toBe('red')
+			expect(b1!.is_else).toBe(true)
 		})
 
 		test('branch.text spans condition through value', () => {
@@ -1378,7 +1378,7 @@ describe('Value Node Types', () => {
 			)
 			// children[1] is the VALUE wrapper; VALUE.children[0] is the FUNCTION
 			expect(getBranch(func, 0)?.children[1].type).toBe(VALUE)
-			expect(((getBranch(func, 0)?.children[1] as Value).children[0] as Function).name).toBe(
+			expect(((getBranch(func, 0)!.children[1] as Value).children[0] as Function).name).toBe(
 				'oklch',
 			)
 		})
@@ -1431,9 +1431,9 @@ describe('Value Node Types', () => {
 			expect(innerIf?.name).toBe('if')
 			expect(innerIf?.children).toHaveLength(2)
 			expect(getBranch(innerIf, 0)?.condition?.text).toBe('style(--b: 1)')
-			expect((getBranch(innerIf, 0)?.value as Value).text).toBe('blue')
+			expect((getBranch(innerIf, 0)!.value as Value).text).toBe('blue')
 			expect(getBranch(innerIf, 1)?.is_else).toBe(true)
-			expect((getBranch(innerIf, 1)?.value as Value).text).toBe('green')
+			expect((getBranch(innerIf, 1)!.value as Value).text).toBe('green')
 		})
 
 		// ── Real-world example from the spec ──────────────────────────────────

@@ -81,7 +81,7 @@
 		"test-build": "pnpm run build && vitest run --config vitest.config.build.ts",
 		"build": "tsdown",
 		"benchmark": "pnpm run build && node --expose-gc benchmark/index.ts",
-		"lint": "oxlint --config .oxlintrc.json; oxfmt --check",
+		"lint": "oxlint --config .oxlintrc.json && oxfmt --check",
 		"check": "tsc --noEmit",
 		"knip": "knip",
 		"precommit": "pnpm run test --run; pnpm run lint; pnpm run check"
