@@ -1376,9 +1376,7 @@ describe('Value Node Types', () => {
 		describe('compound if-condition (not/and/or)', () => {
 			test('"not style(...)" produces an IfCondition wrapping Operator + Function', () => {
 				// The reported bug: parsing dropped style() entirely, keeping only "not".
-				const func = getFunc(
-					'div { background-color: if(not style(--scheme: light): black;) }',
-				)
+				const func = getFunc('div { background-color: if(not style(--scheme: light): black;) }')
 				expect(func?.children).toHaveLength(1)
 
 				const b0 = getBranch(func, 0)!

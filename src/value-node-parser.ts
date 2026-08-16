@@ -634,7 +634,8 @@ export class ValueNodeParser {
 		// Compound condition — wrap the flat not/and/or/function chain in an IF_CONDITION node
 		let wrapper_start = this.arena.get_start_offset(first)
 		let last_sibling = this.arena.get_last_sibling(first)
-		let wrapper_end = this.arena.get_start_offset(last_sibling) + this.arena.get_length(last_sibling)
+		let wrapper_end =
+			this.arena.get_start_offset(last_sibling) + this.arena.get_length(last_sibling)
 		let wrapper = this.arena.create_node(
 			IF_CONDITION,
 			wrapper_start,
