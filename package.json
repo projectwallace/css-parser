@@ -95,6 +95,7 @@
 		"knip": "^6.18.0",
 		"oxfmt": "^0.60.0",
 		"oxlint": "^1.71.0",
+		"pkg-pr-new": "^0.0.88",
 		"postcss": "^8.5.15",
 		"publint": "^0.3.21",
 		"tailwindcss": "^2.2.8",
