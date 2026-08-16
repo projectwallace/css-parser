@@ -32,6 +32,9 @@ importers:
       oxlint:
         specifier: ^1.71.0
         version: 1.75.0
+      pkg-pr-new:
+        specifier: ^0.0.88
+        version: 0.0.88
       postcss:
         specifier: ^8.5.15
         version: 8.5.23
@@ -1723,6 +1726,10 @@ packages:
     resolution: {integrity: sha512-RvwwcruNjI1ncT5xRakeyS9Lf8lcItv34KD+aif+VH9kduAyfYBipGh12274xtenIPZ119/R9BdTBa8gAwSh0A==}
     engines: {node: '>=12'}
 
+  pkg-pr-new@0.0.88:
+    resolution: {integrity: sha512-Xc6PMJ2gher0WZP+rtjefFk26hIb7V1PTLL30bmy1Z2vsRmSvqiss7Ag1XUdyplTGYzIlFNJp4L3vMNmK44N6g==}
+    hasBin: true
+
   postcss-js@3.0.3:
     resolution: {integrity: sha512-gWnoWQXKFw65Hk/mi2+WTQTHdPD5UJdDXZmX073EY/B3BWnYjO4F4t0VneTCnCGQ5E5GsCdMkzPaTXwl3r5dJw==}
     engines: {node: '>=10.0'}
@@ -3367,6 +3374,8 @@ snapshots:
   picomatch@2.3.2: {}
 
   picomatch@4.0.5: {}
+
+  pkg-pr-new@0.0.88: {}
 
   postcss-js@3.0.3:
     dependencies:
