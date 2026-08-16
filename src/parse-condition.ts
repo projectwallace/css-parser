@@ -65,12 +65,8 @@ export class ConditionParser {
 		this.selector_parser = new SelectorParser(arena, source)
 	}
 
-	// Where this instance's own lexer landed after the most recent parse_media_feature() or
-	// parse_function_condition() call. ConditionParser scans with its own Lexer, separate from
-	// whichever class is calling it — a caller that's mid-scan through the same range on its
-	// own lexer (e.g. AtRulePreludeParser stepping through a media query's components) must
-	// reseek to this position after delegating, or its own lexer position will silently fall
-	// behind by however much this call consumed.
+	// Where this instance's own lexer landed after the last parse_media_feature()/
+	// parse_function_condition() call — callers scanning the same range on their own lexer must reseek here after delegating.
 	get end_position(): [pos: number, line: number, column: number] {
 		return [this.lexer.pos, this.lexer.line, this.lexer.column]
 	}
@@ -246,7 +242,9 @@ export class ConditionParser {
 			// Comparison operator
 			if (ch === CHAR_LESS_THAN || ch === CHAR_GREATER_THAN || ch === CHAR_EQUALS) {
 				let op_start = pos++
-				if (pos < content_end && this.source.charCodeAt(pos) === CHAR_EQUALS) pos++
+				if (pos < content_end && this.source.charCodeAt(pos) === CHAR_EQUALS) {
+					pos++
+				}
 
 				let op = this.create_node(PRELUDE_OPERATOR, op_start, pos)
 				if (first_child === 0) {
