@@ -44,6 +44,7 @@ import {
 	CHAR_FORWARD_SLASH,
 	str_equals,
 } from './string-utils'
+import { trim_boundaries, find_colon_at_depth_zero } from './parse-utils'
 
 /** @internal */
 export class ValueNodeParser {
@@ -184,6 +185,40 @@ export class ValueNodeParser {
 		return null
 	}
 
+	// Scan tokens from just after an already-open '(' or function-call (depth 1) to its
+	// matching ')'. Must be called right after consuming the opening token.
+	// When `bounded` is true, scanning stops at `this.end` (the if()-condition-function
+	// case, which must not overrun its enclosing range). When `bounded` is false, `this.end`
+	// is ignored and scanning continues to a real ')' or EOF (the unquoted url()/src() case,
+	// whose content may contain characters like ';' that would otherwise truncate it early —
+	// see the caller for why).
+	// Returns [content_end, close_end, matched]; matched is false if EOF was hit first, in
+	// which case content_end/close_end are left at their initial (scan-start) values.
+	private scan_matching_paren(bounded: boolean): [content_end: number, close_end: number, matched: boolean] {
+		let depth = 1
+		let content_end = this.lexer.pos
+		let close_end = this.lexer.token_end
+
+		while ((!bounded || this.lexer.pos < this.end) && depth > 0) {
+			this.lexer.next_token_fast(false)
+			let token_type = this.lexer.token_type
+			if (token_type === TOKEN_EOF) break
+			if (bounded && this.lexer.token_start >= this.end) break
+
+			if (token_type === TOKEN_LEFT_PAREN || token_type === TOKEN_FUNCTION) {
+				depth++
+			} else if (token_type === TOKEN_RIGHT_PAREN) {
+				depth--
+				if (depth === 0) {
+					content_end = this.lexer.token_start
+					close_end = this.lexer.token_end
+				}
+			}
+		}
+
+		return [content_end, close_end, depth === 0]
+	}
+
 	private parse_function_node(start: number, end: number): number {
 		// Function name is everything before the '('
 		// The lexer's TOKEN_FUNCTION includes the '(' at the end
@@ -236,30 +271,14 @@ export class ValueNodeParser {
 				// Note: We can't rely on `end` because URLs may contain semicolons
 				// that confuse the declaration parser (e.g., data:image/png;base64,...)
 				// So we consume tokens until we find the matching ')' regardless of `end`
-				let paren_depth = 1
 				let func_end = end
 				let content_start = end // Position after 'url('
 				let content_end = end
 
-				// Just consume tokens until we find the matching ')'
-				// Don't create child nodes
-				while (paren_depth > 0) {
-					this.lexer.next_token_fast(false)
-
-					let token_type = this.lexer.token_type
-					if (token_type === TOKEN_EOF) break
-
-					// Track parentheses depth
-					if (token_type === TOKEN_LEFT_PAREN || token_type === TOKEN_FUNCTION) {
-						paren_depth++
-					} else if (token_type === TOKEN_RIGHT_PAREN) {
-						paren_depth--
-						if (paren_depth === 0) {
-							content_end = this.lexer.token_start // Position of ')'
-							func_end = this.lexer.token_end
-							break
-						}
-					}
+				let [scanned_content_end, scanned_func_end, matched] = this.scan_matching_paren(false)
+				if (matched) {
+					content_end = scanned_content_end
+					func_end = scanned_func_end
 				}
 
 				// Set function total length (includes opening and closing parens)
@@ -336,19 +355,11 @@ export class ValueNodeParser {
 	 *
 	 * Spec grammar (CSS Values Level 5):
 	 *   if( <if-branch>+ )
-	 *   <if-branch>   = <if-condition> : <declaration-value>? ;?
+	 *   <if-branch>    = <if-condition> : <declaration-value>? ;?
 	 *   <if-condition> = style(…) | media(…) | supports(…) | else
 	 *
-	 * Each branch becomes an IF_BRANCH child of the FUNCTION("if") node.
-	 * The colon and semicolons are structural separators and do not become
-	 * OPERATOR nodes — structure is carried by the IF_BRANCH nodes.
-	 *
-	 * IF_BRANCH arena fields:
-	 *   content  → condition text (e.g. "style(--x: 1)" or "else")
-	 *   value    → value text (e.g. "green")
-	 *   children → [condition-node, VALUE-node?]
-	 *              condition-node: FUNCTION(style/supports/media) or IDENTIFIER(else)
-	 *              VALUE-node: wraps the parsed value tokens; absent when value is empty
+	 * Each branch becomes an IF_BRANCH child (see the `IfBranch` type in node-types.ts
+	 * for its shape). Colons/semicolons here are structural separators, not OPERATOR nodes.
 	 */
 	private parse_if_function_node(start: number, end: number): number {
 		let name_end = end - 1 // exclude '('
@@ -507,15 +518,12 @@ export class ValueNodeParser {
 
 	/**
 	 * Parse a condition function inside if() — style(), supports(), or media().
+	 * Children: style()/supports() → one DECLARATION (property + VALUE); media() → one
+	 * MEDIA_FEATURE; anything else → generic value nodes.
 	 *
-	 * Creates a FUNCTION node whose children are:
-	 *   - style() / supports() → one DECLARATION child (property + VALUE)
-	 *   - media()              → one MEDIA_FEATURE child (property + value children)
-	 *   - anything else        → generic value nodes as children
-	 *
-	 * Called when the current lexer token is TOKEN_FUNCTION (the '(' is already consumed).
-	 * @param func_start  Source offset of the first char of the function name.
-	 * @param token_end   Source offset right after '(' (== lexer.token_end at call site).
+	 * Called with the current token at TOKEN_FUNCTION (the '(' already consumed).
+	 * @param func_start  Offset of the function name's first char.
+	 * @param token_end   Offset right after '(' (== lexer.token_end here).
 	 */
 	private parse_if_condition_function(func_start: number, token_end: number): number {
 		let func_name_end = token_end - 1 // before '('
@@ -528,22 +536,10 @@ export class ValueNodeParser {
 		let func_end = content_start
 
 		// Scan for matching ')' to find the full function extent
-		let depth = 1
-		while (this.lexer.pos < this.end && depth > 0) {
-			this.lexer.next_token_fast(false)
-			let tt = this.lexer.token_type
-			if (tt === TOKEN_EOF) break
-			if (this.lexer.token_start >= this.end) break
-
-			if (tt === TOKEN_LEFT_PAREN || tt === TOKEN_FUNCTION) {
-				depth++
-			} else if (tt === TOKEN_RIGHT_PAREN) {
-				depth--
-				if (depth === 0) {
-					content_end = this.lexer.token_start // before ')'
-					func_end = this.lexer.token_end // after ')'
-				}
-			}
+		let [scanned_content_end, scanned_func_end, matched] = this.scan_matching_paren(true)
+		if (matched) {
+			content_end = scanned_content_end
+			func_end = scanned_func_end
 		}
 
 		// Create FUNCTION node spanning the full function text
@@ -584,9 +580,9 @@ export class ValueNodeParser {
 	 * The DECLARATION has one child: a VALUE node containing the parsed value tokens.
 	 */
 	private parse_declaration_in_range(content_start: number, content_end: number): number | null {
-		let colon = this.find_colon_at_depth_zero(content_start, content_end)
+		let colon = find_colon_at_depth_zero(this.source, content_start, content_end)
 		let prop_end = colon === -1 ? content_end : colon
-		let prop_range = this.trim_range(content_start, prop_end)
+		let prop_range = trim_boundaries(this.source, content_start, prop_end)
 		if (!prop_range) return null
 
 		let [prop_start, prop_end_trim] = prop_range
@@ -603,7 +599,7 @@ export class ValueNodeParser {
 		this.arena.set_content_length(decl, prop_end_trim - prop_start)
 
 		if (colon !== -1) {
-			let val_range = this.trim_range(colon + 1, content_end)
+			let val_range = trim_boundaries(this.source, colon + 1, content_end)
 			if (val_range) {
 				let [val_start, val_end] = val_range
 				let val_nodes = this.parse_value_nodes_in_range(val_start, val_end)
@@ -627,9 +623,9 @@ export class ValueNodeParser {
 	 * Value tokens become children of the MEDIA_FEATURE.
 	 */
 	private parse_media_feature_in_range(content_start: number, content_end: number): number | null {
-		let colon = this.find_colon_at_depth_zero(content_start, content_end)
+		let colon = find_colon_at_depth_zero(this.source, content_start, content_end)
 		let prop_end = colon === -1 ? content_end : colon
-		let prop_range = this.trim_range(content_start, prop_end)
+		let prop_range = trim_boundaries(this.source, content_start, prop_end)
 		if (!prop_range) return null
 
 		let feature = this.arena.create_node(
@@ -643,7 +639,7 @@ export class ValueNodeParser {
 		this.arena.set_content_length(feature, prop_range[1] - prop_range[0])
 
 		if (colon !== -1) {
-			let val_range = this.trim_range(colon + 1, content_end)
+			let val_range = trim_boundaries(this.source, colon + 1, content_end)
 			if (val_range) {
 				let val_nodes = this.parse_value_nodes_in_range(val_range[0], val_range[1])
 				this.arena.append_children(feature, val_nodes)
@@ -676,26 +672,6 @@ export class ValueNodeParser {
 		this.end = saved_end
 
 		return nodes
-	}
-
-	/** Find the position of the first ':' at parenthesis depth 0. Returns -1 if not found. */
-	private find_colon_at_depth_zero(start: number, end: number): number {
-		let depth = 0
-		for (let i = start; i < end; i++) {
-			let ch = this.source.charCodeAt(i)
-			if (ch === 0x28 /* ( */) depth++
-			else if (ch === 0x29 /* ) */) depth--
-			else if (ch === 0x3a /* : */ && depth === 0) return i
-		}
-		return -1
-	}
-
-	/** Trim leading/trailing whitespace from [start, end). Returns null if the range is empty. */
-	private trim_range(start: number, end: number): [number, number] | null {
-		while (start < end && is_whitespace(this.source.charCodeAt(start))) start++
-		while (end > start && is_whitespace(this.source.charCodeAt(end - 1))) end--
-		if (start >= end) return null
-		return [start, end]
 	}
 
 	private parse_parenthesis_node(start: number, end: number): number {

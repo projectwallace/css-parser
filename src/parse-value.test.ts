@@ -1338,6 +1338,18 @@ describe('Value Node Types', () => {
 			expect((b0.value as Value).text).toBe('red')
 		})
 
+		test('unterminated condition function inside if() does not throw or run past the value', () => {
+			// style( never closes: parsing should stop gracefully instead of consuming
+			// past the declaration value's end
+			const func = getFunc('div { color: if(style(--x: 1 }')
+			expect(func?.name).toBe('if')
+			const b0 = getBranch(func, 0)!
+			const condition = b0.condition as Function
+			expect(condition.name).toBe('style')
+			expect(condition.text).toBe('style(')
+			expect(condition.children).toHaveLength(0)
+		})
+
 		// ── Nested if() ───────────────────────────────────────────────────────
 
 		test('nested if() in value is parsed recursively', () => {
