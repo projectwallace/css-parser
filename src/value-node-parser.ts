@@ -15,8 +15,6 @@ import {
 	URL,
 	UNICODE_RANGE,
 	IF_BRANCH,
-	DECLARATION,
-	MEDIA_FEATURE,
 	VALUE,
 } from './arena'
 import {
@@ -44,7 +42,7 @@ import {
 	CHAR_FORWARD_SLASH,
 	str_equals,
 } from './string-utils'
-import { trim_boundaries, find_colon_at_depth_zero } from './parse-utils'
+import { ConditionParser } from './parse-condition'
 
 /** @internal */
 export class ValueNodeParser {
@@ -54,6 +52,27 @@ export class ValueNodeParser {
 	protected end: number = 0
 	// Last node from parse_chain(), for callers sizing a wrapper node. Avoids a tuple/array return.
 	last_chain_node: number = 0
+	// Shared media-feature/supports-condition/style() parsing for if()'s condition functions, so
+	// they produce the same MediaFeature/FeatureRange/SupportsQuery/SupportsDeclaration nodes real
+	// @media/@supports conditions do. Lazily built with a dedicated helper ValueNodeParser — NOT
+	// `this` — because ConditionParser's content methods call back into the injected parser's
+	// parse_chain(), which reseeks its own lexer/end; reentering `this` while it's still mid-parse
+	// (inside parse_if_function_node's own scan) would clobber that in-progress state. Lazy, since
+	// eagerly constructing the helper here would recurse: every ValueNodeParser's constructor would
+	// try to build another ValueNodeParser to inject, forever. The helper's own condition_parser is
+	// simply never accessed (it's only ever used via parse_chain), so the recursion stops there.
+	private _condition_parser: ConditionParser | null = null
+
+	private get condition_parser(): ConditionParser {
+		if (this._condition_parser === null) {
+			this._condition_parser = new ConditionParser(
+				this.arena,
+				this.source,
+				new ValueNodeParser(this.arena, this.source),
+			)
+		}
+		return this._condition_parser
+	}
 
 	constructor(arena: CSSDataArena, source: string) {
 		this.arena = arena
@@ -519,9 +538,13 @@ export class ValueNodeParser {
 	}
 
 	/**
-	 * Parse a condition function inside if() — style(), supports(), or media().
-	 * Children: style()/supports() → one DECLARATION (property + VALUE); media() → one
-	 * MEDIA_FEATURE; anything else → generic value nodes.
+	 * Parse a condition function inside if() — style(), supports(), or media(). Content parsing
+	 * is delegated to the shared ConditionParser (see parse-condition.ts), so these produce the
+	 * same node shapes real `@supports`/`@media` conditions do:
+	 *   style()/supports() → SUPPORTS_DECLARATION(s) — supports() gets the full compound
+	 *     <supports-condition> grammar (and/or/not, nested conditions), same as `@supports`.
+	 *   media()  → a single MEDIA_FEATURE or FEATURE_RANGE (comparison syntax), same as `@media`.
+	 *   anything else → generic value nodes, as before.
 	 *
 	 * Called with the current token at TOKEN_FUNCTION (the '(' already consumed).
 	 * @param func_start  Offset of the function name's first char.
@@ -560,14 +583,41 @@ export class ValueNodeParser {
 		// Parse content based on function name
 		let child_nodes: number[] = []
 
-		if (str_equals('style', func_name) || str_equals('supports', func_name)) {
-			// Parse as DECLARATION (property: value)
-			let decl = this.parse_declaration_in_range(content_start, content_end)
+		if (str_equals('style', func_name)) {
+			let decl = this.condition_parser.parse_supports_declaration_content(
+				content_start,
+				content_end,
+			)
 			if (decl !== null) child_nodes = [decl]
+		} else if (str_equals('supports', func_name)) {
+			// supports(<supports-condition>): a bare single declaration when the content has a
+			// top-level ':' (matching style()'s shorthand — supports(display: grid), no extra
+			// parens needed); otherwise the full compound grammar, same as `@supports`'s own
+			// prelude — supports((a) and (b)), supports(not (c)), nested style()/selector()/…
+			let decl = this.condition_parser.parse_supports_declaration_content(
+				content_start,
+				content_end,
+			)
+			if (decl === null) {
+				child_nodes = this.condition_parser.parse_supports_condition(
+					content_start,
+					content_end,
+					func_line,
+					func_col,
+				)
+			} else {
+				child_nodes = [decl]
+			}
 		} else if (str_equals('media', func_name)) {
-			// Parse as MEDIA_FEATURE (property: value)
-			let feature = this.parse_media_feature_in_range(content_start, content_end)
-			if (feature !== null) child_nodes = [feature]
+			// media()'s own parens delimit the feature; there's no separate inner paren pair,
+			// so the feature span equals the content span (see parse_media_feature_content's docs)
+			let feature = this.condition_parser.parse_media_feature_content(
+				content_start,
+				content_end,
+				content_start,
+				content_end,
+			)
+			child_nodes = [feature]
 		} else {
 			// Generic: parse content as value nodes
 			child_nodes = this.parse_value_nodes_in_range(content_start, content_end)
@@ -575,80 +625,6 @@ export class ValueNodeParser {
 
 		this.arena.append_children(func_node, child_nodes)
 		return func_node
-	}
-
-	/**
-	 * Parse a "property: value" text range into a DECLARATION node.
-	 * The DECLARATION has one child: a VALUE node containing the parsed value tokens.
-	 */
-	private parse_declaration_in_range(content_start: number, content_end: number): number | null {
-		let colon = find_colon_at_depth_zero(this.source, content_start, content_end)
-		let prop_end = colon === -1 ? content_end : colon
-		let prop_range = trim_boundaries(this.source, content_start, prop_end)
-		if (!prop_range) return null
-
-		let [prop_start, prop_end_trim] = prop_range
-		let decl_end = colon === -1 ? prop_end_trim : content_end
-
-		let decl = this.arena.create_node(
-			DECLARATION,
-			prop_start,
-			decl_end - prop_start,
-			this.lexer.token_line,
-			this.lexer.token_column,
-		)
-		this.arena.set_content_start_delta(decl, 0)
-		this.arena.set_content_length(decl, prop_end_trim - prop_start)
-
-		if (colon !== -1) {
-			let val_range = trim_boundaries(this.source, colon + 1, content_end)
-			if (val_range) {
-				let [val_start, val_end] = val_range
-				let val_nodes = this.parse_value_nodes_in_range(val_start, val_end)
-				let value_node = this.arena.create_node(
-					VALUE,
-					val_start,
-					val_end - val_start,
-					this.lexer.token_line,
-					this.lexer.token_column,
-				)
-				this.arena.append_children(value_node, val_nodes)
-				this.arena.append_children(decl, [value_node])
-			}
-		}
-
-		return decl
-	}
-
-	/**
-	 * Parse a "property: value" text range into a MEDIA_FEATURE node.
-	 * Value tokens become children of the MEDIA_FEATURE.
-	 */
-	private parse_media_feature_in_range(content_start: number, content_end: number): number | null {
-		let colon = find_colon_at_depth_zero(this.source, content_start, content_end)
-		let prop_end = colon === -1 ? content_end : colon
-		let prop_range = trim_boundaries(this.source, content_start, prop_end)
-		if (!prop_range) return null
-
-		let feature = this.arena.create_node(
-			MEDIA_FEATURE,
-			content_start,
-			content_end - content_start,
-			this.lexer.token_line,
-			this.lexer.token_column,
-		)
-		this.arena.set_content_start_delta(feature, prop_range[0] - content_start)
-		this.arena.set_content_length(feature, prop_range[1] - prop_range[0])
-
-		if (colon !== -1) {
-			let val_range = trim_boundaries(this.source, colon + 1, content_end)
-			if (val_range) {
-				let val_nodes = this.parse_value_nodes_in_range(val_range[0], val_range[1])
-				this.arena.append_children(feature, val_nodes)
-			}
-		}
-
-		return feature
 	}
 
 	/** Parse value tokens in a source sub-range using save/restore to protect lexer state. */

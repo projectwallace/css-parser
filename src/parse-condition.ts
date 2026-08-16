@@ -308,6 +308,12 @@ export class ConditionParser {
 		content_start: number,
 		content_end: number,
 	): number {
+		// parse_feature_range() below tokenizes via this.next_token(), which is bounded by
+		// this.end — set it here so a direct call (bypassing parse_media_feature(), which would
+		// otherwise set it) doesn't leave it stale. Never widens: content_end is always within
+		// whatever bound the caller already established.
+		this.end = content_end
+
 		// Check for range syntax (has comparison operators)
 		let has_comparison = false
 		let i = content_start

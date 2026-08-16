@@ -15,18 +15,25 @@ import {
 	VALUE,
 	DECLARATION,
 	MEDIA_FEATURE,
+	SUPPORTS_DECLARATION,
+	FEATURE_RANGE,
+	SUPPORTS_QUERY,
+	PRELUDE_OPERATOR,
 } from './arena'
 import type {
 	Atrule,
 	Block,
 	Declaration,
 	Dimension,
+	FeatureRange,
 	Function,
 	IfBranch,
 	MediaFeature,
 	Number,
 	Operator,
 	Parenthesis,
+	SupportsDeclaration,
+	SupportsQuery,
 	Url,
 	Value,
 } from './node-types'
@@ -1201,14 +1208,14 @@ describe('Value Node Types', () => {
 
 		// ── style() condition ─────────────────────────────────────────────────
 
-		test('style() condition has a DECLARATION child', () => {
+		test('style() condition has a SUPPORTS_DECLARATION child', () => {
 			const func = getFunc('div { color: if(style(--active: 1): green; else: red) }')
 			const styleFunc = getBranch(func, 0)?.first_child as Function | undefined
 			expect(styleFunc?.name).toBe('style')
-			// 1 child: DECLARATION
+			// 1 child: SUPPORTS_DECLARATION, matching @supports style()'s shape
 			expect(styleFunc?.children).toHaveLength(1)
-			const decl = styleFunc?.children[0] as Declaration
-			expect(decl.type).toBe(DECLARATION)
+			const decl = styleFunc?.children[0] as SupportsDeclaration
+			expect(decl.type).toBe(SUPPORTS_DECLARATION)
 			expect(decl.property).toBe('--active')
 			expect((decl.value as Value).children[0].type).toBe(NUMBER)
 			expect((decl.value as Value).children[0].text).toBe('1')
@@ -1227,10 +1234,10 @@ describe('Value Node Types', () => {
 
 			const supportsFunc = b0.first_child as Function
 			expect(supportsFunc.name).toBe('supports')
-			// 1 child: DECLARATION
+			// 1 child: SUPPORTS_DECLARATION, matching @supports's own shape
 			expect(supportsFunc.children).toHaveLength(1)
-			const decl = supportsFunc.children[0] as Declaration
-			expect(decl.type).toBe(DECLARATION)
+			const decl = supportsFunc.children[0] as SupportsDeclaration
+			expect(decl.type).toBe(SUPPORTS_DECLARATION)
 			expect(decl.property).toBe('display')
 			expect((decl.value as Value).children[0].text).toBe('grid')
 
@@ -1262,6 +1269,63 @@ describe('Value Node Types', () => {
 			const b1 = getBranch(func, 1)!
 			expect(b1.is_else).toBe(true)
 			expect((b1.value as Value).text).toBe('red')
+		})
+
+		test('media() condition can be a boolean feature (bare media type)', () => {
+			const func = getFunc('div { color: if(media(screen): blue; else: red) }')
+			const mediaFunc = getBranch(func, 0)?.first_child as Function
+			expect(mediaFunc.children).toHaveLength(1)
+			const feature = mediaFunc.children[0] as MediaFeature
+			expect(feature.type).toBe(MEDIA_FEATURE)
+			expect(feature.property).toBe('screen')
+			expect(feature.value).toBeNull()
+		})
+
+		test('media() condition supports range syntax', () => {
+			const func = getFunc('div { color: if(media(400px <= width): blue; else: red) }')
+			const mediaFunc = getBranch(func, 0)?.first_child as Function
+			expect(mediaFunc.children).toHaveLength(1)
+			const range = mediaFunc.children[0] as FeatureRange
+			expect(range.type).toBe(FEATURE_RANGE)
+			expect(range.name).toBe('width')
+			expect(range.children[0].type).toBe(DIMENSION)
+			expect(range.children[0].text).toBe('400px')
+			expect(range.children[1].type).toBe(PRELUDE_OPERATOR)
+			expect(range.children[1].text).toBe('<=')
+		})
+
+		test('media() condition supports double-sided range syntax', () => {
+			const func = getFunc('div { color: if(media(400px <= width <= 800px): blue; else: red) }')
+			const mediaFunc = getBranch(func, 0)?.first_child as Function
+			const range = mediaFunc.children[0] as FeatureRange
+			expect(range.type).toBe(FEATURE_RANGE)
+			expect(range.name).toBe('width')
+			expect(range.children.map((c) => c.text)).toEqual(['400px', '<=', '<=', '800px'])
+		})
+
+		test('supports() condition supports the full compound and/or/not grammar', () => {
+			const func = getFunc(
+				'div { display: if(supports((display: grid) and (gap: 1rem)): grid; else: block) }',
+			)
+			const supportsFunc = getBranch(func, 0)?.first_child as Function
+			expect(supportsFunc.name).toBe('supports')
+			// children: SupportsQuery, PreludeOperator("and"), SupportsQuery
+			expect(supportsFunc.children).toHaveLength(3)
+
+			const first = supportsFunc.children[0] as SupportsQuery
+			expect(first.type).toBe(SUPPORTS_QUERY)
+			const firstDecl = first.first_child as SupportsDeclaration
+			expect(firstDecl.property).toBe('display')
+			expect((firstDecl.value as Value).text).toBe('grid')
+
+			expect(supportsFunc.children[1].type).toBe(PRELUDE_OPERATOR)
+			expect(supportsFunc.children[1].text).toBe('and')
+
+			const second = supportsFunc.children[2] as SupportsQuery
+			expect(second.type).toBe(SUPPORTS_QUERY)
+			const secondDecl = second.first_child as SupportsDeclaration
+			expect(secondDecl.property).toBe('gap')
+			expect((secondDecl.value as Value).text).toBe('1rem')
 		})
 
 		// ── Multiple branches ─────────────────────────────────────────────────

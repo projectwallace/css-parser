@@ -292,9 +292,19 @@ export type Hash = Leaf<typeof HASH, 'Hash'>
 
 export type Function = WithClone<
 	CSSNode &
-		// `style(...)`/`supports(...)` if()-conditions hold a Declaration child; `media(...)`
-		// if()-conditions hold a MediaFeature child (see parse_if_condition_function)
-		WithChildren<ValueLike | Declaration | MediaFeature> & {
+		// if()-conditions reuse the shared condition parser (parse-condition.ts), so `style()`/
+		// `supports()` hold SupportsDeclaration/SupportsQuery/PreludeOperator children (matching
+		// `@supports`'s own shape, including the full compound and/or/not grammar for
+		// `supports()`) and `media()` holds a MediaFeature or FeatureRange child (matching
+		// `@media`'s own shape, including range comparison syntax) — see parse_if_condition_function
+		WithChildren<
+			| ValueLike
+			| MediaFeature
+			| SupportsDeclaration
+			| SupportsQuery
+			| FeatureRange
+			| PreludeOperator
+		> & {
 			readonly type: typeof FUNCTION
 			readonly type_name: 'Function'
 			/** Function name, e.g. "rgb", "calc" */
