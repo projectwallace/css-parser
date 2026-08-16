@@ -1343,8 +1343,8 @@ describe('Value Node Types', () => {
 			// past the declaration value's end
 			const func = getFunc('div { color: if(style(--x: 1 }')
 			expect(func?.name).toBe('if')
-			const b0 = getBranch(func, 0)!
-			const condition = b0.condition as Function
+			const branch = getBranch(func, 0)!
+			const condition = branch.condition as Function
 			expect(condition.name).toBe('style')
 			expect(condition.text).toBe('style(')
 			expect(condition.children).toHaveLength(0)
