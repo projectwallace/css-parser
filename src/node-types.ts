@@ -36,6 +36,7 @@ import {
 	PARENTHESIS,
 	URL,
 	UNICODE_RANGE,
+	IF_BRANCH,
 	VALUE,
 	SELECTOR_LIST,
 	TYPE_SELECTOR,
@@ -245,6 +246,7 @@ export type Raw = Leaf<typeof RAW, 'Raw'>
 
 type ValueLike =
 	| Function
+	| IfBranch
 	| Identifier
 	| Operator
 	| Parenthesis
@@ -290,7 +292,19 @@ export type Hash = Leaf<typeof HASH, 'Hash'>
 
 export type Function = WithClone<
 	CSSNode &
-		WithChildren<ValueLike> & {
+		// if()-conditions reuse the shared condition parser (parse-condition.ts), so `style()`/
+		// `supports()` hold SupportsDeclaration/SupportsQuery/PreludeOperator children (matching
+		// `@supports`'s own shape, including the full compound and/or/not grammar for
+		// `supports()`) and `media()` holds a MediaFeature or FeatureRange child (matching
+		// `@media`'s own shape, including range comparison syntax) — see parse_if_condition_function
+		WithChildren<
+			| ValueLike
+			| MediaFeature
+			| SupportsDeclaration
+			| SupportsQuery
+			| FeatureRange
+			| PreludeOperator
+		> & {
 			readonly type: typeof FUNCTION
 			readonly type_name: 'Function'
 			/** Function name, e.g. "rgb", "calc" */
@@ -327,6 +341,31 @@ export type UnicodeRange = Leaf<typeof UNICODE_RANGE, 'UnicodeRange'>
 export type Value = WithClone<
 	CSSNode & WithChildren<ValueLike> & { readonly type: typeof VALUE; readonly type_name: 'Value' }
 >
+
+/**
+ * One branch inside a CSS `if()` inline conditional function.
+ *
+ * Each branch corresponds to a `<condition>: <value>` pair in:
+ *   `if( <condition>: <value>; … else: <fallback> )`
+ *
+ * - `condition` — the parsed condition node (Function, e.g. `style(--x: 1)`, or Identifier `else`)
+ * - `value`     — the value text, e.g. `"green"`; `null` when omitted
+ * - `is_else`   — `true` for the `else` branch
+ * - `first_child` — same node as `condition`
+ * - `children`    — condition node followed by parsed value nodes
+ */
+export type IfBranch = CSSNode &
+	WithChildren<Function | Identifier | Value> & {
+		readonly type: typeof IF_BRANCH
+		readonly type_name: 'IfBranch'
+		/** The parsed condition node, e.g. the Function "style(--active: 1)" or the Identifier "else" */
+		readonly condition: Function | Identifier
+		/** The parsed value as a VALUE node, or null when the branch value is empty */
+		readonly value: Value | null
+		/** True when this is the else branch */
+		readonly is_else: boolean
+		clone(options?: CloneOptions): ToPlain<IfBranch>
+	}
 
 // ---------------------------------------------------------------------------
 // Selector nodes
@@ -598,6 +637,7 @@ export type AnyNode =
 	| Parenthesis
 	| Url
 	| UnicodeRange
+	| IfBranch
 	| Value
 	| TypeSelector
 	| ClassSelector
@@ -687,6 +727,9 @@ export function is_url(node: CSSNode): node is Url {
 }
 export function is_unicode_range(node: CSSNode): node is UnicodeRange {
 	return node.type === UNICODE_RANGE
+}
+export function is_if_branch(node: CSSNode): node is IfBranch {
+	return node.type === IF_BRANCH
 }
 export function is_value(node: CSSNode): node is Value {
 	return node.type === VALUE

@@ -1,4 +1,11 @@
-import { CHAR_ASTERISK, CHAR_FORWARD_SLASH, is_whitespace } from './string-utils'
+import {
+	CHAR_ASTERISK,
+	CHAR_COLON,
+	CHAR_FORWARD_SLASH,
+	CHAR_LEFT_PAREN,
+	CHAR_RIGHT_PAREN,
+	is_whitespace,
+} from './string-utils'
 
 /** @internal */
 export function skip_whitespace_forward(source: string, pos: number, end: number): number {
@@ -100,4 +107,16 @@ export function trim_boundaries(
 
 	if (start >= end) return null
 	return [start, end]
+}
+
+/** Find the position of the first ':' at parenthesis depth 0 in [start, end). Returns -1 if not found. @internal */
+export function find_colon_at_depth_zero(source: string, start: number, end: number): number {
+	let depth = 0
+	for (let i = start; i < end; i++) {
+		let ch = source.charCodeAt(i)
+		if (ch === CHAR_LEFT_PAREN) depth++
+		else if (ch === CHAR_RIGHT_PAREN) depth--
+		else if (ch === CHAR_COLON && depth === 0) return i
+	}
+	return -1
 }
