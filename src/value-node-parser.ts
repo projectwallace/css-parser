@@ -194,7 +194,9 @@ export class ValueNodeParser {
 	// see the caller for why).
 	// Returns [content_end, close_end, matched]; matched is false if EOF was hit first, in
 	// which case content_end/close_end are left at their initial (scan-start) values.
-	private scan_matching_paren(bounded: boolean): [content_end: number, close_end: number, matched: boolean] {
+	private scan_matching_paren(
+		bounded: boolean,
+	): [content_end: number, close_end: number, matched: boolean] {
 		let depth = 1
 		let content_end = this.lexer.pos
 		let close_end = this.lexer.token_end
