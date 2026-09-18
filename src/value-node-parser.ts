@@ -35,15 +35,16 @@ import {
 	TOKEN_LEFT_PAREN,
 	TOKEN_RIGHT_PAREN,
 	TOKEN_UNICODE_RANGE,
+	TOKEN_WHITESPACE,
 	type TokenType,
 } from './token-types'
 import {
-	is_whitespace,
 	CHAR_MINUS_HYPHEN,
 	CHAR_PLUS,
 	CHAR_ASTERISK,
 	CHAR_FORWARD_SLASH,
 	str_equals,
+	str_equals_range,
 } from './string-utils'
 import { ConditionParser } from './parse-condition'
 
@@ -123,15 +124,12 @@ export class ValueNodeParser {
 		return first_node
 	}
 
-	// Helper to check if token is all whitespace (inline for hot paths)
+	// Helper to check if the current token is a whitespace run. next_token_fast(false)
+	// always tokenizes consecutive whitespace as a single TOKEN_WHITESPACE token (it only
+	// skips whitespace inline when called with skip_whitespace=true), so a direct type
+	// check is equivalent to scanning the token's characters but O(1) instead of O(n).
 	private is_whitespace_inline(): boolean {
-		if (this.lexer.token_start >= this.lexer.token_end) return false
-		for (let i = this.lexer.token_start; i < this.lexer.token_end; i++) {
-			if (!is_whitespace(this.source.charCodeAt(i))) {
-				return false
-			}
-		}
-		return true
+		return this.lexer.token_type === TOKEN_WHITESPACE
 	}
 
 	private parse_value_node(): number | null {
@@ -248,17 +246,20 @@ export class ValueNodeParser {
 		// The lexer's TOKEN_FUNCTION includes the '(' at the end
 		let name_end = end - 1 // Exclude the '('
 
-		// Get function name to check for special handling
-		let func_name_substr = this.source.substring(start, name_end)
+		// Check function name for special handling without allocating a substring — most
+		// function calls (calc(), var(), rgb(), translate(), ...) aren't any of these, and
+		// this runs once per FUNCTION token, one of the most common tokens in a value.
 
 		// Dispatch to dedicated parser for if()
-		if (str_equals('if', func_name_substr)) {
+		if (str_equals_range(this.source, start, name_end, 'if')) {
 			return this.parse_if_function_node(start, end)
 		}
 
+		let is_url = str_equals_range(this.source, start, name_end, 'url')
+
 		// Create URL or function node based on function name (length will be set later)
 		let node = this.arena.create_node(
-			str_equals('url', func_name_substr) ? URL : FUNCTION,
+			is_url ? URL : FUNCTION,
 			start,
 			0, // length unknown yet
 			this.lexer.token_line,
@@ -271,7 +272,7 @@ export class ValueNodeParser {
 		// Don't parse contents to preserve URLs with dots, base64, inline SVGs, etc.
 		// Users can extract the full URL from the function's text property
 		// Note: Quoted urls like url("...") or url('...') parse normally
-		if (str_equals('url', func_name_substr) || str_equals('src', func_name_substr)) {
+		if (is_url || str_equals_range(this.source, start, name_end, 'src')) {
 			// Peek at the next token to see if it's a string
 			// If it's a string, parse normally. Otherwise, skip parsing children.
 			let save_pos = this.lexer.save_position()

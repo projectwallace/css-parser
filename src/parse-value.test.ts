@@ -1013,6 +1013,29 @@ describe('Value Node Types', () => {
 				expect((decl!.first_child! as Value).children[0].text).toBe('red')
 				expect(decl?.is_important).toBe(true)
 			})
+
+			test('should skip comments between value tokens', () => {
+				const root = parse('body { margin: 10px /* comment */ 20px; }')
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+
+				const children = (decl!.first_child! as Value).children
+				expect(children).toHaveLength(2)
+				expect(children[0].type).toBe(DIMENSION)
+				expect(children[0].text).toBe('10px')
+				expect(children[1].type).toBe(DIMENSION)
+				expect(children[1].text).toBe('20px')
+			})
+
+			test('should skip comments between function arguments', () => {
+				const root = parse('body { color: rgb(255 /* red */, 0, /* green */ 0); }')
+				const decl = root.first_child?.first_child?.next_sibling?.first_child
+				const func = (decl!.first_child! as Value).children[0] as Function
+
+				expect(func.type).toBe(FUNCTION)
+				const args = func.children
+				expect(args.map((n) => n.type)).toEqual([NUMBER, OPERATOR, NUMBER, OPERATOR, NUMBER])
+				expect(args.map((n) => n.text)).toEqual(['255', ',', '0', ',', '0'])
+			})
 		})
 	})
 

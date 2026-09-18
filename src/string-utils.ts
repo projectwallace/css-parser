@@ -77,6 +77,34 @@ export function str_equals(a: string, b: string): boolean {
 	return true
 }
 
+/**
+ * Case-insensitive equality between `source[start, end)` and `literal`, without allocating
+ * a substring first. Same semantics as `str_equals(literal, source.substring(start, end))`.
+ * `literal` MUST be lowercase.
+ */
+export function str_equals_range(
+	source: string,
+	start: number,
+	end: number,
+	literal: string,
+): boolean {
+	if (end - start !== literal.length) {
+		return false
+	}
+
+	for (let i = 0; i < literal.length; i++) {
+		let ch = source.charCodeAt(start + i)
+		// normalize ASCII uppercase A-Z → a-z
+		ch |= 32
+
+		if (ch !== literal.charCodeAt(i)) {
+			return false
+		}
+	}
+
+	return true
+}
+
 /** Case-insensitive ASCII prefix check without allocations. `prefix` MUST be lowercase. */
 export function str_starts_with(str: string, prefix: string): boolean {
 	if (str.length < prefix.length) {
