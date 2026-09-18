@@ -104,7 +104,7 @@ export class ValueNodeParser {
 			if (token_type === TOKEN_EOF) break
 
 			// Skip whitespace tokens (they're separators, not value nodes)
-			if (this.is_whitespace_inline()) {
+			if (token_type === TOKEN_WHITESPACE) {
 				continue
 			}
 
@@ -122,14 +122,6 @@ export class ValueNodeParser {
 
 		this.last_chain_node = last_node
 		return first_node
-	}
-
-	// Helper to check if the current token is a whitespace run. next_token_fast(false)
-	// always tokenizes consecutive whitespace as a single TOKEN_WHITESPACE token (it only
-	// skips whitespace inline when called with skip_whitespace=true), so a direct type
-	// check is equivalent to scanning the token's characters but O(1) instead of O(n).
-	private is_whitespace_inline(): boolean {
-		return this.lexer.token_type === TOKEN_WHITESPACE
 	}
 
 	private parse_value_node(): number | null {
@@ -279,7 +271,7 @@ export class ValueNodeParser {
 			this.lexer.next_token_fast(false)
 
 			// Skip whitespace
-			while (this.is_whitespace_inline() && this.lexer.pos < this.end) {
+			while (this.lexer.token_type === TOKEN_WHITESPACE && this.lexer.pos < this.end) {
 				this.lexer.next_token_fast(false)
 			}
 
@@ -346,7 +338,7 @@ export class ValueNodeParser {
 			}
 
 			// Skip whitespace
-			if (this.is_whitespace_inline()) continue
+			if (token_type === TOKEN_WHITESPACE) continue
 
 			// Parse argument node
 			let arg_node = this.parse_value_node()
@@ -415,7 +407,7 @@ export class ValueNodeParser {
 			}
 
 			// Skip whitespace and any stray separators between branches
-			if (this.is_whitespace_inline() || tt === TOKEN_SEMICOLON || tt === TOKEN_COLON) continue
+			if (tt === TOKEN_WHITESPACE || tt === TOKEN_SEMICOLON || tt === TOKEN_COLON) continue
 
 			// ── Condition ──────────────────────────────────────────────────────
 			let branch_start = this.lexer.token_start
@@ -435,7 +427,7 @@ export class ValueNodeParser {
 				let t = this.lexer.token_type
 				if (t === TOKEN_EOF) break
 				if (this.lexer.token_start >= this.end) break
-				if (this.is_whitespace_inline()) continue
+				if (t === TOKEN_WHITESPACE) continue
 				if (t === TOKEN_COLON) {
 					colon_found = true
 					break
@@ -463,7 +455,7 @@ export class ValueNodeParser {
 					let t = this.lexer.token_type
 					if (t === TOKEN_EOF) break
 					if (this.lexer.token_start >= this.end) break
-					if (this.is_whitespace_inline()) continue
+					if (t === TOKEN_WHITESPACE) continue
 
 					if (t === TOKEN_SEMICOLON) break // end of this branch
 
@@ -544,7 +536,7 @@ export class ValueNodeParser {
 		while (this.lexer.pos < this.end) {
 			this.lexer.next_token_fast(false)
 			if (this.lexer.token_start >= this.end) return TOKEN_EOF
-			if (this.is_whitespace_inline()) continue
+			if (this.lexer.token_type === TOKEN_WHITESPACE) continue
 			return this.lexer.token_type
 		}
 		return TOKEN_EOF
@@ -764,7 +756,7 @@ export class ValueNodeParser {
 			if (this.lexer.token_start >= this.end) break
 			let token_type = this.lexer.token_type
 			if (token_type === TOKEN_EOF) break
-			if (this.is_whitespace_inline()) continue
+			if (token_type === TOKEN_WHITESPACE) continue
 			let node = this.parse_value_node()
 			if (node !== null) nodes.push(node)
 		}
@@ -811,7 +803,7 @@ export class ValueNodeParser {
 			}
 
 			// Skip whitespace
-			if (this.is_whitespace_inline()) continue
+			if (token_type === TOKEN_WHITESPACE) continue
 
 			// Parse child node
 			// Note: We don't track paren_depth for LEFT_PAREN or TOKEN_FUNCTION here
