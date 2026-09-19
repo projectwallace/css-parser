@@ -8,7 +8,8 @@ import * as path from 'node:path'
 import * as csstree from 'css-tree'
 import * as postcss from 'postcss'
 
-const largeCSS = fs.readFileSync(path.resolve('benchmark/medium.css'), 'utf-8')
+const nerdyDevCSS = fs.readFileSync(path.resolve('benchmark/nerdy-dev.css'), 'utf-8')
+const cssTricksCSS = fs.readFileSync(path.resolve('benchmark/css-tricks.css'), 'utf-8')
 const bootstrapCSS = fs.readFileSync(
 	path.resolve('node_modules/bootstrap/dist/css/bootstrap.css'),
 	'utf-8',
@@ -18,25 +19,28 @@ const tailwindCSS = fs.readFileSync(
 	'utf-8',
 )
 
-type CSSFile = 'Large' | 'Bootstrap' | 'Tailwind'
+type CSSFile = 'Nerdy.dev' | 'CSS Tricks' | 'Bootstrap' | 'Tailwind'
 
-const files: CSSFile[] = ['Large', 'Bootstrap', 'Tailwind']
+const files: CSSFile[] = ['Nerdy.dev', 'CSS Tricks', 'Bootstrap', 'Tailwind']
 
 const cssMap: Record<CSSFile, string> = {
-	Large: largeCSS,
+	'Nerdy.dev': nerdyDevCSS,
+	'CSS Tricks': cssTricksCSS,
 	Bootstrap: bootstrapCSS,
 	Tailwind: tailwindCSS,
 }
 
 const fileSizes: Record<CSSFile, number> = {
-	Large: largeCSS.length,
+	'Nerdy.dev': nerdyDevCSS.length,
+	'CSS Tricks': cssTricksCSS.length,
 	Bootstrap: bootstrapCSS.length,
 	Tailwind: tailwindCSS.length,
 }
 
 // Pre-parse once for walk-only benchmarks so parse time doesn't pollute walk timings
 const parsedMap = {
-	Large: parse(largeCSS),
+	'Nerdy.dev': parse(nerdyDevCSS),
+	'CSS Tricks': parse(cssTricksCSS),
 	Bootstrap: parse(bootstrapCSS),
 	Tailwind: parse(tailwindCSS),
 }
