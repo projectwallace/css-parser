@@ -1,8 +1,13 @@
 import { is_digit, CHAR_MINUS_HYPHEN, CHAR_PLUS, CHAR_PERIOD } from './string-utils'
 
-/** Parse a dimension string into value and unit, e.g. "100px" → { value: 100, unit: "px" } or "2%" → { value: 2, unit: "%" } */
-export function parse_dimension(text: string): { value: number; unit: string } {
-	// Find where the numeric part ends
+/**
+ * Find where a dimension's numeric part ends, e.g. 3 for "100px" or 2 for "2%".
+ * No allocation — callers that only need `value` or only `unit` can slice just
+ * the part they want instead of going through `parse_dimension`'s object + two
+ * substrings for both.
+ * @internal
+ */
+export function dimension_number_end(text: string): number {
 	let num_end = 0
 	for (let i = 0; i < text.length; i++) {
 		let ch = text.charCodeAt(i)
@@ -39,6 +44,12 @@ export function parse_dimension(text: string): { value: number; unit: string } {
 		}
 	}
 
+	return num_end
+}
+
+/** Parse a dimension string into value and unit, e.g. "100px" → { value: 100, unit: "px" } or "2%" → { value: 2, unit: "%" } */
+export function parse_dimension(text: string): { value: number; unit: string } {
+	let num_end = dimension_number_end(text)
 	let num_str = text.substring(0, num_end)
 	let unit = text.substring(num_end)
 	// oxlint-disable-next-line prefer-number-coercion

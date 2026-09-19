@@ -43,7 +43,7 @@ import {
 } from './parse-utils'
 import {
 	is_whitespace,
-	str_equals,
+	str_equals_range,
 	CHAR_PLUS,
 	CHAR_TILDE,
 	CHAR_GREATER_THAN,
@@ -791,16 +791,15 @@ export class SelectorParser {
 
 		// Parse the content inside the parentheses
 		if (content_end > content_start) {
-			// Check if this is an nth-* pseudo-class
-			let func_name_substr = this.source.substring(func_name_start, func_name_end)
-
-			if (this.is_nth_pseudo(func_name_substr)) {
+			// Check if this is an nth-* pseudo-class (offset-based — avoids allocating a
+			// substring for every parenthesized pseudo-class, e.g. :not(), :is(), :nth-child())
+			if (this.is_nth_pseudo(func_name_start, func_name_end)) {
 				// Parse as An+B expression
 				let child = this.parse_nth_expression(content_start, content_end)
 				if (child !== null) {
 					this.arena.set_first_child(node, child)
 				}
-			} else if (str_equals('lang', func_name_substr)) {
+			} else if (str_equals_range(this.source, func_name_start, func_name_end, 'lang')) {
 				// Parse as :lang() - comma-separated language identifiers
 				this.parse_lang_identifiers(content_start, content_end, node)
 			} else {
@@ -811,7 +810,7 @@ export class SelectorParser {
 
 				// Recursively parse the content as a selector
 				// Only :has() accepts relative selectors (starting with combinator)
-				let allow_relative = str_equals('has', func_name_substr)
+				let allow_relative = str_equals_range(this.source, func_name_start, func_name_end, 'has')
 				let child_selector = this.parse_selector(
 					content_start,
 					content_end,
@@ -834,15 +833,15 @@ export class SelectorParser {
 		return node
 	}
 
-	// Check if pseudo-class name is an nth-* pseudo
-	private is_nth_pseudo(name: string): boolean {
+	// Check if pseudo-class name (source[start, end)) is an nth-* pseudo
+	private is_nth_pseudo(start: number, end: number): boolean {
 		return (
-			str_equals('nth-child', name) ||
-			str_equals('nth-last-child', name) ||
-			str_equals('nth-of-type', name) ||
-			str_equals('nth-last-of-type', name) ||
-			str_equals('nth-col', name) ||
-			str_equals('nth-last-col', name)
+			str_equals_range(this.source, start, end, 'nth-child') ||
+			str_equals_range(this.source, start, end, 'nth-last-child') ||
+			str_equals_range(this.source, start, end, 'nth-of-type') ||
+			str_equals_range(this.source, start, end, 'nth-last-of-type') ||
+			str_equals_range(this.source, start, end, 'nth-col') ||
+			str_equals_range(this.source, start, end, 'nth-last-col')
 		)
 	}
 

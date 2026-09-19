@@ -70,7 +70,7 @@ import {
 	str_starts_with,
 	str_equals,
 } from './string-utils'
-import { parse_dimension } from './parse-dimension'
+import { dimension_number_end } from './parse-dimension'
 
 // Type name lookup table - maps numeric type to CSSTree-compatible strings
 export const TYPE_NAMES = {
@@ -401,7 +401,10 @@ export class CSSNode {
 		}
 
 		if (type === DIMENSION) {
-			return parse_dimension(text).value
+			// Slice only the numeric part — avoids parse_dimension's extra unit substring + object
+			let num_str = text.substring(0, dimension_number_end(text))
+			// oxlint-disable-next-line prefer-number-coercion
+			return num_str ? Number.parseFloat(num_str) : 0
 		}
 
 		if (type === NUMBER) {
@@ -523,7 +526,8 @@ export class CSSNode {
 	/** Get the unit for dimension nodes (e.g., "px" from "100px", "%" from "50%") */
 	get unit(): string | undefined {
 		if (this.type !== DIMENSION) return undefined
-		return parse_dimension(this.text).unit
+		let text = this.text
+		return text.substring(dimension_number_end(text))
 	}
 
 	/** Numerator for ratio values, e.g. the Number "16" in `aspect-ratio: 16/9` */
