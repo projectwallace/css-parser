@@ -375,6 +375,37 @@ describe('Parser Options', () => {
 			expect(comments[0].column).toBe(2)
 		})
 
+		test('should find comments in selectors, values and at-rule blocks', () => {
+			const comments: Array<{ length: number }> = []
+			const css = `
+    /* comment 1 */
+    test1,
+    /* comment 2 */
+    test2 {
+      /* comment 3 */
+      color: /* comment 4 */ green;
+      background:
+        red,
+        /* comment 5 */
+        yellow
+      ;
+    }
+
+    @media all {
+      /* comment 6 */
+    }
+  `
+
+			parse(css, {
+				on_comment: (info) => {
+					comments.push(info)
+				},
+			})
+
+			expect(comments).toHaveLength(6)
+			expect(comments.reduce((sum, c) => sum + c.length, 0)).toBe(90)
+		})
+
 		test('should not call on_comment when no comments present', () => {
 			let called = false
 			const css = 'body { color: red; }'

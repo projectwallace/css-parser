@@ -1027,26 +1027,13 @@ export class Lexer {
 				continue
 			}
 
-			// Skip comments /*...*/
+			// Skip comments /*...*/ (fires on_comment)
 			if (
 				ch === CHAR_FORWARD_SLASH &&
 				this.pos + 1 < end &&
 				this.source.charCodeAt(this.pos + 1) === CHAR_ASTERISK
 			) {
-				this.advance() // skip /
-				this.advance() // skip *
-				while (this.pos < end) {
-					if (
-						this.source.charCodeAt(this.pos) === CHAR_ASTERISK &&
-						this.pos + 1 < end &&
-						this.source.charCodeAt(this.pos + 1) === CHAR_FORWARD_SLASH
-					) {
-						this.advance() // skip *
-						this.advance() // skip /
-						break
-					}
-					this.advance()
-				}
+				this._skip_comment()
 				continue
 			}
 
