@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'vitest'
+import { describe, test, expect, vi } from 'vitest'
 import { parse } from './parse'
 import { SELECTOR_LIST, STYLE_RULE, DECLARATION, VALUE, AT_RULE, RAW } from './arena'
 import { PlainCSSNode } from './css-node'
@@ -376,7 +376,7 @@ describe('Parser Options', () => {
 		})
 
 		test('should find comments in selectors, values and at-rule blocks', () => {
-			const comments: Array<{ length: number }> = []
+			const on_comment = vi.fn()
 			const css = `
     /* comment 1 */
     test1,
@@ -396,14 +396,11 @@ describe('Parser Options', () => {
     }
   `
 
-			parse(css, {
-				on_comment: (info) => {
-					comments.push(info)
-				},
-			})
+			parse(css, { on_comment })
 
-			expect(comments).toHaveLength(6)
-			expect(comments.reduce((sum, c) => sum + c.length, 0)).toBe(90)
+			expect(on_comment).toHaveBeenCalledTimes(6)
+			const total_length = on_comment.mock.calls.reduce((sum, [info]) => sum + info.length, 0)
+			expect(total_length).toBe(90)
 		})
 
 		test('should find comments in at-rule preludes', () => {
