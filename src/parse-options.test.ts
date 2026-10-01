@@ -406,6 +406,35 @@ describe('Parser Options', () => {
 			expect(comments.reduce((sum, c) => sum + c.length, 0)).toBe(90)
 		})
 
+		test('should find comments in at-rule preludes', () => {
+			const css = `
+    @media /* c1 */ screen and /* c2 */ (min-width: 100px) {}
+    @supports /* c3 */ (display: grid) {}
+    @layer /* c4 */ base, /* c5 */ theme;
+    @import /* c6 */ url("a.css") /* c7 */ layer(base);
+    @container /* c8 */ sidebar /* c9 */ (min-width: 1px) {}
+  `
+			const found: string[] = []
+
+			parse(css, {
+				on_comment: (info) => {
+					found.push(css.slice(info.start, info.end))
+				},
+			})
+
+			expect(found).toEqual([
+				'/* c1 */',
+				'/* c2 */',
+				'/* c3 */',
+				'/* c4 */',
+				'/* c5 */',
+				'/* c6 */',
+				'/* c7 */',
+				'/* c8 */',
+				'/* c9 */',
+			])
+		})
+
 		test('should not call on_comment when no comments present', () => {
 			let called = false
 			const css = 'body { color: red; }'
