@@ -2,6 +2,7 @@ import { describe, test, expect, vi } from 'vitest'
 import { parse } from './parse'
 import { SELECTOR_LIST, STYLE_RULE, DECLARATION, VALUE, AT_RULE, RAW } from './arena'
 import { PlainCSSNode } from './css-node'
+import type { CommentInfo } from './tokenize'
 import type { Rule, Atrule, Declaration, CSSNode } from './node-types'
 
 describe('Parser Options', () => {
@@ -376,7 +377,7 @@ describe('Parser Options', () => {
 		})
 
 		test('should find comments in selectors, values and at-rule blocks', () => {
-			const on_comment = vi.fn()
+			const on_comment = vi.fn<(info: CommentInfo) => void>()
 			const css = `
     /* comment 1 */
     test1,
