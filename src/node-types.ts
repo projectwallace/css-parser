@@ -129,16 +129,18 @@ export interface WithChildren<T = AnyNode> {
  * since clone() never serialises them.
  */
 export type ToPlain<T extends CSSNode> = PlainCSSNode & { type: T['type'] } & {
-	[K in Exclude<
-		keyof T,
-		| keyof CSSNode
-		| symbol
-		| 'attr_operator'
-		| 'attr_flags'
-		| 'has_children'
-		| 'child_count'
-		| 'children'
-	> as T[K] extends (...args: any[]) => any ? never : K]: T[K] extends CSSNode | null | undefined
+	[
+		K in Exclude<
+			keyof T,
+			| keyof CSSNode
+			| symbol
+			| 'attr_operator'
+			| 'attr_flags'
+			| 'has_children'
+			| 'child_count'
+			| 'children'
+		> as T[K] extends (...args: any[]) => any ? never : K
+	]: T[K] extends CSSNode | null | undefined
 		? PlainCSSNode | Exclude<T[K], CSSNode>
 		: T[K] extends CSSNode[]
 			? PlainCSSNode[]
