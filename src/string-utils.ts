@@ -99,7 +99,7 @@ export function str_equals_range(
 	return true
 }
 
-/** Case-insensitive check that `source[start, end)` is `and`, `or` or `not`, without allocating. */
+/** True if `source[start, end)` is and/or/not (case-insensitive). */
 export function is_and_or_not_range(source: string, start: number, end: number): boolean {
 	let length = end - start
 	if (length === 3) {
