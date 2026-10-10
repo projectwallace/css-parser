@@ -30,9 +30,8 @@ import {
 import {
 	str_equals_range,
 	is_and_or_not_range,
-	is_vendor_prefixed,
+	strip_vendor_prefix,
 	CHAR_PERIOD,
-	CHAR_MINUS_HYPHEN,
 } from './string-utils'
 import { trim_boundaries, skip_whitespace_and_comments_forward } from './parse-utils'
 import { CSSNode } from './css-node'
@@ -70,80 +69,49 @@ export class AtRulePreludeParser {
 		line: number = 1,
 		column: number = 1,
 	): number[] {
-		return this.parse_prelude_dispatch(
-			at_rule_name,
-			0,
-			at_rule_name.length,
-			start,
-			end,
-			line,
-			column,
-		)
-	}
-
-	// Same as parse_prelude, but the at-rule name is the range [name_start, name_end) of this
-	// parser's own source — avoids allocating a substring for the name.
-	parse_prelude_named_in_source(
-		name_start: number,
-		name_end: number,
-		start: number,
-		end: number,
-		line: number = 1,
-		column: number = 1,
-	): number[] {
-		return this.parse_prelude_dispatch(this.source, name_start, name_end, start, end, line, column)
-	}
-
-	// Dispatch to appropriate parser based on at-rule type
-	private parse_prelude_dispatch(
-		name_source: string,
-		name_start: number,
-		name_end: number,
-		start: number,
-		end: number,
-		line: number,
-		column: number,
-	): number[] {
 		this.prelude_end = end
 
 		// Position lexer at prelude start
 		this.lexer.seek(start, line, column)
 
-		// Strip vendor prefix to treat @-webkit-keyframes same as @keyframes
-		if (is_vendor_prefixed(name_source, name_start, name_end)) {
-			for (let i = name_start + 2; i < name_end; i++) {
-				if (name_source.charCodeAt(i) === CHAR_MINUS_HYPHEN) {
-					name_start = i + 1
-					break
-				}
-			}
-		}
+		return this.parse_prelude_dispatch(at_rule_name)
+	}
 
-		// Each comparison rejects on length first, so a flat chain is cheap
-		let is = str_equals_range
-		if (is(name_source, name_start, name_end, 'media')) return this.parse_media_query_list()
-		if (is(name_source, name_start, name_end, 'container')) return this.parse_container_query()
-		if (is(name_source, name_start, name_end, 'supports')) return this.parse_supports_query()
-		if (is(name_source, name_start, name_end, 'layer')) return this.parse_layer_names()
-		if (
-			is(name_source, name_start, name_end, 'keyframes') ||
-			is(name_source, name_start, name_end, 'property') ||
-			is(name_source, name_start, name_end, 'counter-style') ||
-			is(name_source, name_start, name_end, 'color-profile') ||
-			is(name_source, name_start, name_end, 'font-palette-values') ||
-			is(name_source, name_start, name_end, 'position-try') ||
-			is(name_source, name_start, name_end, 'font-feature-values') ||
-			is(name_source, name_start, name_end, 'page')
-		) {
-			return this.parse_identifier()
-		}
-		if (is(name_source, name_start, name_end, 'function')) return this.parse_function_prelude()
-		if (is(name_source, name_start, name_end, 'import')) return this.parse_import_prelude()
-		if (is(name_source, name_start, name_end, 'charset')) return this.parse_charset_prelude()
-		if (is(name_source, name_start, name_end, 'namespace')) return this.parse_namespace_prelude()
-		if (is(name_source, name_start, name_end, 'scope')) return this.parse_scope_prelude()
-		if (is(name_source, name_start, name_end, 'custom-media')) {
-			return this.parse_custom_media_prelude()
+	// Dispatch to appropriate parser based on at-rule type
+	private parse_prelude_dispatch(at_rule_name: string): number[] {
+		// Strip vendor prefix to treat @-webkit-keyframes same as @keyframes
+		let normalized_name = strip_vendor_prefix(at_rule_name).toLowerCase()
+
+		switch (normalized_name) {
+			case 'media':
+				return this.parse_media_query_list()
+			case 'container':
+				return this.parse_container_query()
+			case 'supports':
+				return this.parse_supports_query()
+			case 'layer':
+				return this.parse_layer_names()
+			case 'keyframes':
+			case 'property':
+			case 'counter-style':
+			case 'color-profile':
+			case 'font-palette-values':
+			case 'position-try':
+			case 'font-feature-values':
+			case 'page':
+				return this.parse_identifier()
+			case 'function':
+				return this.parse_function_prelude()
+			case 'import':
+				return this.parse_import_prelude()
+			case 'charset':
+				return this.parse_charset_prelude()
+			case 'namespace':
+				return this.parse_namespace_prelude()
+			case 'scope':
+				return this.parse_scope_prelude()
+			case 'custom-media':
+				return this.parse_custom_media_prelude()
 		}
 
 		return []

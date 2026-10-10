@@ -37,19 +37,8 @@ export class DeclarationParser {
 	private arena: CSSDataArena
 	private source: string
 	private value_parser: ValueParser | null
-	// Reused for the property-name lookahead snapshot (never nested), so each declaration
-	// attempt doesn't allocate a fresh LexerPosition
-	private lookahead_position: LexerPosition = {
-		pos: 0,
-		line: 0,
-		column: 0,
-		_line_offset: 0,
-		token_type: 0 as TokenType,
-		token_start: 0,
-		token_end: 0,
-		token_line: 0,
-		token_column: 0,
-	}
+	// Reused lookahead snapshot (never nested) to avoid an allocation per declaration
+	private lookahead_position: LexerPosition = new Lexer('').save_position()
 
 	constructor(arena: CSSDataArena, source: string, parse_values: boolean = true) {
 		this.arena = arena
@@ -74,8 +63,7 @@ export class DeclarationParser {
 
 	// Parse a declaration using a provided lexer (used by Parser to avoid re-tokenization)
 	parse_declaration_with_lexer(lexer: Lexer, end: number): number | null {
-		// Only saved if a delimiter prefix is found (rare), so we can fully restore if parsing
-		// fails after consuming it
+		// Only set when a delimiter prefix is consumed, to fully restore on failure
 		let initial_saved: LexerPosition | null = null
 
 		// Check for browser hack prefix (single delimiter/special character before identifier)

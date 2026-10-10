@@ -998,8 +998,7 @@ export class Lexer {
 	}
 
 	/**
-	 * Like `save_position()`, but overwrites an existing object instead of allocating a new one.
-	 * For hot paths that backtrack often and can own a long-lived, non-reentrant snapshot.
+	 * Like `save_position()`, but reuses `target` instead of allocating.
 	 */
 	save_position_into(target: LexerPosition): LexerPosition {
 		target.pos = this.pos
