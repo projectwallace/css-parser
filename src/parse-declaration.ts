@@ -1,5 +1,5 @@
 // Declaration Parser - Parses CSS declarations into structured AST nodes
-import { Lexer } from './tokenize'
+import { Lexer, type LexerPosition } from './tokenize'
 import { CSSDataArena, DECLARATION, RAW, FLAG_IMPORTANT, FLAG_BROWSERHACK } from './arena'
 import { ValueParser } from './parse-value'
 import {
@@ -25,7 +25,10 @@ import {
 	TOKEN_AT_KEYWORD,
 	type TokenType,
 } from './token-types'
-import { trim_boundaries, skip_whitespace_and_comments_backward } from './parse-utils'
+import {
+	skip_whitespace_and_comments_forward,
+	skip_whitespace_and_comments_backward,
+} from './parse-utils'
 import { CSSNode } from './css-node'
 import type { Declaration } from './node-types'
 
@@ -34,6 +37,19 @@ export class DeclarationParser {
 	private arena: CSSDataArena
 	private source: string
 	private value_parser: ValueParser | null
+	// Reused for the property-name lookahead snapshot (never nested), so each declaration
+	// attempt doesn't allocate a fresh LexerPosition
+	private lookahead_position: LexerPosition = {
+		pos: 0,
+		line: 0,
+		column: 0,
+		_line_offset: 0,
+		token_type: 0 as TokenType,
+		token_start: 0,
+		token_end: 0,
+		token_line: 0,
+		token_column: 0,
+	}
 
 	constructor(arena: CSSDataArena, source: string, parse_values: boolean = true) {
 		this.arena = arena
@@ -58,8 +74,9 @@ export class DeclarationParser {
 
 	// Parse a declaration using a provided lexer (used by Parser to avoid re-tokenization)
 	parse_declaration_with_lexer(lexer: Lexer, end: number): number | null {
-		// Save initial position so we can fully restore if parsing fails after consuming a delimiter prefix
-		const initial_saved = lexer.save_position()
+		// Only saved if a delimiter prefix is found (rare), so we can fully restore if parsing
+		// fails after consuming it
+		let initial_saved: LexerPosition | null = null
 
 		// Check for browser hack prefix (single delimiter/special character before identifier)
 		let has_browser_hack = false
@@ -116,6 +133,7 @@ export class DeclarationParser {
 			if ((lexer.token_type as TokenType) === TOKEN_IDENT) {
 				has_browser_hack = true
 				has_delimiter_prefix = true
+				initial_saved = delim_saved
 			} else {
 				lexer.restore_position(delim_saved)
 			}
@@ -137,7 +155,7 @@ export class DeclarationParser {
 		let decl_column = has_browser_hack ? browser_hack_column : lexer.token_column
 
 		// Lookahead: save lexer state before consuming
-		const saved = lexer.save_position()
+		const saved = lexer.save_position_into(this.lookahead_position)
 
 		lexer.next_token_fast(true) // consume property name, skip whitespace
 
@@ -146,7 +164,7 @@ export class DeclarationParser {
 			// Restore lexer state and return null.
 			// If we consumed a delimiter prefix (e.g. ':' before the property name), we must restore
 			// all the way back to before that prefix so the caller's lexer position is correct.
-			lexer.restore_position(has_delimiter_prefix ? initial_saved : saved)
+			lexer.restore_position(initial_saved ?? saved)
 			return null
 		}
 		// Skip whitespace after ':' without tokenizing the value's first token - the raw scan
@@ -261,18 +279,19 @@ export class DeclarationParser {
 		}
 
 		// Store value position (trimmed) and parse value nodes
-		let trimmed = trim_boundaries(this.source, value_start, value_end)
-		if (trimmed) {
+		let trimmed_start = skip_whitespace_and_comments_forward(this.source, value_start, value_end)
+		let trimmed_end = skip_whitespace_and_comments_backward(this.source, value_end, trimmed_start)
+		if (trimmed_start < trimmed_end) {
 			// Store raw value string offsets (for fast string access)
-			this.arena.set_value_start_delta(declaration, trimmed[0] - prop_start)
-			this.arena.set_value_length(declaration, trimmed[1] - trimmed[0])
+			this.arena.set_value_start_delta(declaration, trimmed_start - prop_start)
+			this.arena.set_value_length(declaration, trimmed_end - trimmed_start)
 
 			// Parse value into structured nodes (only if enabled)
 			if (this.value_parser) {
 				// CRITICAL: Pass value_start_line and value_start_column to value parser
 				let valueNode = this.value_parser.parse_value(
 					value_start,
-					trimmed[1],
+					trimmed_end,
 					value_start_line,
 					value_start_column,
 				)
@@ -283,8 +302,8 @@ export class DeclarationParser {
 				// Create RAW node for unparsed value text
 				let rawNode = this.arena.create_node(
 					RAW,
-					trimmed[0],
-					trimmed[1] - trimmed[0],
+					trimmed_start,
+					trimmed_end - trimmed_start,
 					value_start_line,
 					value_start_column,
 				)

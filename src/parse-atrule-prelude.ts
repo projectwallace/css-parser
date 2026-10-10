@@ -27,7 +27,13 @@ import {
 	TOKEN_DELIM,
 	type TokenType,
 } from './token-types'
-import { str_equals, strip_vendor_prefix, CHAR_PERIOD } from './string-utils'
+import {
+	str_equals_range,
+	is_and_or_not_range,
+	is_vendor_prefixed,
+	CHAR_PERIOD,
+	CHAR_MINUS_HYPHEN,
+} from './string-utils'
 import { trim_boundaries, skip_whitespace_and_comments_forward } from './parse-utils'
 import { CSSNode } from './css-node'
 import type { AnyNode } from './node-types'
@@ -64,49 +70,80 @@ export class AtRulePreludeParser {
 		line: number = 1,
 		column: number = 1,
 	): number[] {
+		return this.parse_prelude_dispatch(
+			at_rule_name,
+			0,
+			at_rule_name.length,
+			start,
+			end,
+			line,
+			column,
+		)
+	}
+
+	// Same as parse_prelude, but the at-rule name is the range [name_start, name_end) of this
+	// parser's own source — avoids allocating a substring for the name.
+	parse_prelude_named_in_source(
+		name_start: number,
+		name_end: number,
+		start: number,
+		end: number,
+		line: number = 1,
+		column: number = 1,
+	): number[] {
+		return this.parse_prelude_dispatch(this.source, name_start, name_end, start, end, line, column)
+	}
+
+	// Dispatch to appropriate parser based on at-rule type
+	private parse_prelude_dispatch(
+		name_source: string,
+		name_start: number,
+		name_end: number,
+		start: number,
+		end: number,
+		line: number,
+		column: number,
+	): number[] {
 		this.prelude_end = end
 
 		// Position lexer at prelude start
 		this.lexer.seek(start, line, column)
 
-		return this.parse_prelude_dispatch(at_rule_name)
-	}
-
-	// Dispatch to appropriate parser based on at-rule type
-	private parse_prelude_dispatch(at_rule_name: string): number[] {
 		// Strip vendor prefix to treat @-webkit-keyframes same as @keyframes
-		let normalized_name = strip_vendor_prefix(at_rule_name).toLowerCase()
+		if (is_vendor_prefixed(name_source, name_start, name_end)) {
+			for (let i = name_start + 2; i < name_end; i++) {
+				if (name_source.charCodeAt(i) === CHAR_MINUS_HYPHEN) {
+					name_start = i + 1
+					break
+				}
+			}
+		}
 
-		switch (normalized_name) {
-			case 'media':
-				return this.parse_media_query_list()
-			case 'container':
-				return this.parse_container_query()
-			case 'supports':
-				return this.parse_supports_query()
-			case 'layer':
-				return this.parse_layer_names()
-			case 'keyframes':
-			case 'property':
-			case 'counter-style':
-			case 'color-profile':
-			case 'font-palette-values':
-			case 'position-try':
-			case 'font-feature-values':
-			case 'page':
-				return this.parse_identifier()
-			case 'function':
-				return this.parse_function_prelude()
-			case 'import':
-				return this.parse_import_prelude()
-			case 'charset':
-				return this.parse_charset_prelude()
-			case 'namespace':
-				return this.parse_namespace_prelude()
-			case 'scope':
-				return this.parse_scope_prelude()
-			case 'custom-media':
-				return this.parse_custom_media_prelude()
+		// Each comparison rejects on length first, so a flat chain is cheap
+		let is = str_equals_range
+		if (is(name_source, name_start, name_end, 'media')) return this.parse_media_query_list()
+		if (is(name_source, name_start, name_end, 'container')) return this.parse_container_query()
+		if (is(name_source, name_start, name_end, 'supports')) return this.parse_supports_query()
+		if (is(name_source, name_start, name_end, 'layer')) return this.parse_layer_names()
+		if (
+			is(name_source, name_start, name_end, 'keyframes') ||
+			is(name_source, name_start, name_end, 'property') ||
+			is(name_source, name_start, name_end, 'counter-style') ||
+			is(name_source, name_start, name_end, 'color-profile') ||
+			is(name_source, name_start, name_end, 'font-palette-values') ||
+			is(name_source, name_start, name_end, 'position-try') ||
+			is(name_source, name_start, name_end, 'font-feature-values') ||
+			is(name_source, name_start, name_end, 'page')
+		) {
+			return this.parse_identifier()
+		}
+		if (is(name_source, name_start, name_end, 'function')) return this.parse_function_prelude()
+		if (is(name_source, name_start, name_end, 'import')) return this.parse_import_prelude()
+		if (is(name_source, name_start, name_end, 'charset')) return this.parse_charset_prelude()
+		if (is(name_source, name_start, name_end, 'namespace')) return this.parse_namespace_prelude()
+		if (is(name_source, name_start, name_end, 'scope')) return this.parse_scope_prelude()
+		if (is(name_source, name_start, name_end, 'custom-media')) {
+			return this.parse_custom_media_prelude()
 		}
 
 		return []
@@ -148,12 +185,6 @@ export class AtRulePreludeParser {
 		)
 	}
 
-	private is_and_or_not(str: string): boolean {
-		// All logical operators are 2-3 chars: "and" (3), "or" (2), "not" (3)
-		// The str_equals calls will quickly reject strings of other lengths
-		return str_equals('and', str) || str_equals('or', str) || str_equals('not', str)
-	}
-
 	// Scan tokens from just after an already-open '(' or function-call (depth 1) to its
 	// matching ')'. Must be called right after consuming the opening token. Returns
 	// [content_end, close_end, matched]: content_end/close_end are the positions right
@@ -161,7 +192,10 @@ export class AtRulePreludeParser {
 	// content_end/close_end are left at the position scanning started from (mirroring the
 	// caller's own pre-loop defaults, so callers that don't check `matched` still get sane
 	// fallback spans).
-	private scan_matching_paren(): [content_end: number, close_end: number, matched: boolean] {
+	private paren_content_end = 0
+	private paren_close_end = 0
+
+	private scan_matching_paren(): boolean {
 		let depth = 1
 		let content_end = this.lexer.pos
 		let close_end = this.lexer.token_end
@@ -181,7 +215,9 @@ export class AtRulePreludeParser {
 			}
 		}
 
-		return [content_end, close_end, depth === 0]
+		this.paren_content_end = content_end
+		this.paren_close_end = close_end
+		return depth === 0
 	}
 
 	// Parse a single media query: screen and (min-width: 768px)
@@ -203,8 +239,10 @@ export class AtRulePreludeParser {
 		this.next_token()
 
 		if (this.lexer.token_type === TOKEN_IDENT) {
-			let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
-			if (str_equals('only', text) || str_equals('not', text)) {
+			if (
+				str_equals_range(this.source, this.lexer.token_start, this.lexer.token_end, 'only') ||
+				str_equals_range(this.source, this.lexer.token_start, this.lexer.token_end, 'not')
+			) {
 				let modifier = this.create_node(
 					PRELUDE_OPERATOR,
 					this.lexer.token_start,
@@ -242,14 +280,12 @@ export class AtRulePreludeParser {
 				)
 				if (component !== null) {
 					// condition_parser scanned with its own lexer — resync ours past what it consumed
-					this.lexer.seek(...this.condition_parser.end_position)
+					this.condition_parser.seek_to_end(this.lexer)
 				}
 			}
 			// Identifier: media type or operator (and, or, not)
 			else if (token_type === TOKEN_IDENT) {
-				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
-
-				if (this.is_and_or_not(text)) {
+				if (is_and_or_not_range(this.source, this.lexer.token_start, this.lexer.token_end)) {
 					// Logical operator
 					component = this.create_node(
 						PRELUDE_OPERATOR,
@@ -313,7 +349,7 @@ export class AtRulePreludeParser {
 					this.lexer.token_column,
 				)
 				if (component !== null) {
-					this.lexer.seek(...this.condition_parser.end_position)
+					this.condition_parser.seek_to_end(this.lexer)
 				}
 			}
 			// Function: style(--custom: 1)
@@ -324,13 +360,11 @@ export class AtRulePreludeParser {
 					this.lexer.token_line,
 					this.lexer.token_column,
 				)
-				this.lexer.seek(...this.condition_parser.end_position)
+				this.condition_parser.seek_to_end(this.lexer)
 			}
 			// Identifier: operator (and, or, not) or container name
 			else if (token_type === TOKEN_IDENT) {
-				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
-
-				if (this.is_and_or_not(text)) {
+				if (is_and_or_not_range(this.source, this.lexer.token_start, this.lexer.token_end)) {
 					// Logical operator
 					component = this.create_node(
 						PRELUDE_OPERATOR,
@@ -546,7 +580,8 @@ export class AtRulePreludeParser {
 
 		if (this.lexer.token_type === TOKEN_FUNCTION) {
 			// It's url( ... we need to find the matching )
-			let [, close_end] = this.scan_matching_paren()
+			this.scan_matching_paren()
+			let close_end = this.paren_close_end
 			url_end = close_end
 		}
 
@@ -564,13 +599,11 @@ export class AtRulePreludeParser {
 
 		// Check for 'layer' keyword or 'layer(' function
 		if (this.lexer.token_type === TOKEN_IDENT || this.lexer.token_type === TOKEN_FUNCTION) {
-			let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
-			// For function tokens, remove the trailing '('
-			if (this.lexer.token_type === TOKEN_FUNCTION && text.endsWith('(')) {
-				text = text.slice(0, -1)
-			}
+			// For function tokens, exclude the trailing '('
+			let name_end =
+				this.lexer.token_type === TOKEN_FUNCTION ? this.lexer.token_end - 1 : this.lexer.token_end
 
-			if (str_equals('layer', text)) {
+			if (str_equals_range(this.source, this.lexer.token_start, name_end, 'layer')) {
 				let layer_start = this.lexer.token_start
 				let layer_end = this.lexer.token_end
 				let content_start = 0
@@ -580,7 +613,9 @@ export class AtRulePreludeParser {
 				if (this.lexer.token_type === TOKEN_FUNCTION) {
 					// Track the content inside the parentheses
 					content_start = this.lexer.pos
-					let [content_end, close_end, matched] = this.scan_matching_paren()
+					let matched = this.scan_matching_paren()
+					let content_end = this.paren_content_end
+					let close_end = this.paren_close_end
 					if (matched) {
 						content_length = content_end - content_start
 						layer_end = close_end
@@ -617,13 +652,17 @@ export class AtRulePreludeParser {
 
 		// Check for 'supports(' function
 		if (this.lexer.token_type === TOKEN_FUNCTION) {
-			let text = this.source.substring(this.lexer.token_start, this.lexer.token_end - 1) // -1 to exclude '('
-			if (str_equals('supports', text)) {
+			// -1 to exclude '('
+			if (
+				str_equals_range(this.source, this.lexer.token_start, this.lexer.token_end - 1, 'supports')
+			) {
 				let supports_start = this.lexer.token_start
 				let content_start = this.lexer.token_end // After the opening '('
 
 				// Find matching closing parenthesis
-				let [content_end, supports_end] = this.scan_matching_paren()
+				this.scan_matching_paren()
+				let content_end = this.paren_content_end
+				let supports_end = this.paren_close_end
 
 				// Create supports node
 				let supports_node = this.create_node(SUPPORTS_QUERY, supports_start, supports_end)
@@ -720,7 +759,9 @@ export class AtRulePreludeParser {
 				let paren_start = this.lexer.token_start
 				let content_start = this.lexer.pos
 
-				let [content_end, paren_end] = this.scan_matching_paren()
+				this.scan_matching_paren()
+				let content_end = this.paren_content_end
+				let paren_end = this.paren_close_end
 
 				let scope_node = this.create_node(PRELUDE_SELECTORLIST, paren_start, paren_end)
 				let trimmed = trim_boundaries(this.source, content_start, content_end)
@@ -731,8 +772,7 @@ export class AtRulePreludeParser {
 				nodes.push(scope_node)
 			} else if (token_type === TOKEN_IDENT) {
 				this.next_token()
-				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
-				if (str_equals('to', text)) {
+				if (str_equals_range(this.source, this.lexer.token_start, this.lexer.token_end, 'to')) {
 					nodes.push(
 						this.create_node(PRELUDE_OPERATOR, this.lexer.token_start, this.lexer.token_end),
 					)

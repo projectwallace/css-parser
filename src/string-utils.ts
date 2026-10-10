@@ -99,6 +99,17 @@ export function str_equals_range(
 	return true
 }
 
+/** True if `source[start, end)` is `and`, `or` or `not` (case-insensitive), without allocating a substring. */
+export function is_and_or_not_range(source: string, start: number, end: number): boolean {
+	let length = end - start
+	if (length === 3) {
+		return (
+			str_equals_range(source, start, end, 'and') || str_equals_range(source, start, end, 'not')
+		)
+	}
+	return length === 2 && str_equals_range(source, start, end, 'or')
+}
+
 /** Case-insensitive ASCII prefix check without allocations. `prefix` MUST be lowercase. */
 export function str_starts_with(str: string, prefix: string): boolean {
 	if (str.length < prefix.length) {

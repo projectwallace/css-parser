@@ -34,7 +34,10 @@ import {
 	TOKEN_COLON,
 	TOKEN_FUNCTION,
 } from './token-types'
-import { trim_boundaries, skip_whitespace_and_comments_backward } from './parse-utils'
+import {
+	skip_whitespace_and_comments_forward,
+	skip_whitespace_and_comments_backward,
+} from './parse-utils'
 import {
 	CHAR_PERIOD,
 	CHAR_GREATER_THAN,
@@ -42,6 +45,7 @@ import {
 	CHAR_TILDE,
 	CHAR_AMPERSAND,
 	CHAR_LEFT_BRACE,
+	str_equals_range,
 } from './string-utils'
 
 export interface ParserOptions {
@@ -52,7 +56,7 @@ export interface ParserOptions {
 }
 
 // Static at-rule lookup sets for fast classification
-let DECLARATION_AT_RULES = new Set([
+let DECLARATION_AT_RULES = [
 	'font-face',
 	'font-feature-values',
 	'page',
@@ -62,7 +66,7 @@ let DECLARATION_AT_RULES = new Set([
 	'font-palette-values',
 	'position-try',
 	'view-transition',
-])
+]
 
 /** @internal */
 export class Parser {
@@ -393,7 +397,7 @@ export class Parser {
 		// Extract at-rule name (skip the '@')
 		let name_start = this.lexer.token_start + 1
 		let name_length = this.lexer.token_end - name_start
-		let at_rule_name = this.source.substring(name_start, this.lexer.token_end)
+		let name_end = this.lexer.token_end
 
 		this.next_token() // consume @keyword
 
@@ -436,24 +440,30 @@ export class Parser {
 		}
 
 		// Store prelude position (trimmed)
-		let trimmed = trim_boundaries(this.source, prelude_start, prelude_end)
+		let trimmed_start = skip_whitespace_and_comments_forward(
+			this.source,
+			prelude_start,
+			prelude_end,
+		)
+		let trimmed_end = skip_whitespace_and_comments_backward(this.source, prelude_end, trimmed_start)
 		let prelude_wrapper: number | null = null
-		if (trimmed) {
+		if (trimmed_start < trimmed_end) {
 			// Create AT_RULE_PRELUDE wrapper if prelude parsing is enabled
 			if (this.prelude_parser) {
 				// Parse prelude and add structured nodes as children
-				let prelude_nodes = this.prelude_parser.parse_prelude(
-					at_rule_name,
-					trimmed[0],
-					trimmed[1],
+				let prelude_nodes = this.prelude_parser.parse_prelude_named_in_source(
+					name_start,
+					name_end,
+					trimmed_start,
+					trimmed_end,
 					at_rule_line,
 					at_rule_column,
 				)
 				if (prelude_nodes.length > 0) {
 					prelude_wrapper = this.arena.create_node(
 						AT_RULE_PRELUDE,
-						trimmed[0],
-						trimmed[1] - trimmed[0],
+						trimmed_start,
+						trimmed_end - trimmed_start,
 						at_rule_line,
 						at_rule_column,
 					)
@@ -461,8 +471,8 @@ export class Parser {
 				} else {
 					prelude_wrapper = this.arena.create_node(
 						RAW,
-						trimmed[0],
-						trimmed[1] - trimmed[0],
+						trimmed_start,
+						trimmed_end - trimmed_start,
 						at_rule_line,
 						at_rule_column,
 					)
@@ -470,8 +480,8 @@ export class Parser {
 			} else {
 				prelude_wrapper = this.arena.create_node(
 					RAW,
-					trimmed[0],
-					trimmed[1] - trimmed[0],
+					trimmed_start,
+					trimmed_end - trimmed_start,
 					at_rule_line,
 					at_rule_column,
 				)
@@ -501,7 +511,7 @@ export class Parser {
 			// Determine what to parse inside the block based on the at-rule name:
 			// declarations only (like @font-face, @page), or declarations + rules + at-rules
 			// (like @media, @keyframes, unknown at-rules, and nested conditional groups)
-			let declarations_only = this.atrule_has_declarations(at_rule_name)
+			let declarations_only = this.atrule_has_declarations(name_start, name_end)
 			let first_child = this.parse_block_children(at_rule, declarations_only)
 
 			// Consume '}' (block excludes closing brace, but at-rule includes it)
@@ -547,8 +557,11 @@ export class Parser {
 	}
 
 	// Determine if an at-rule contains declarations or nested rules
-	private atrule_has_declarations(name: string): boolean {
-		return DECLARATION_AT_RULES.has(name.toLowerCase())
+	private atrule_has_declarations(name_start: number, name_end: number): boolean {
+		for (let i = 0; i < DECLARATION_AT_RULES.length; i++) {
+			if (str_equals_range(this.source, name_start, name_end, DECLARATION_AT_RULES[i])) return true
+		}
+		return false
 	}
 }
 
