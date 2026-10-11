@@ -47,7 +47,6 @@ import {
 import { SelectorParser } from './parse-selector'
 import type { ValueNodeParser } from './value-node-parser'
 
-/** @internal */
 export class ConditionParser {
 	private lexer: Lexer
 	private arena: CSSDataArena
@@ -297,15 +296,13 @@ export class ConditionParser {
 		return range_node
 	}
 
-	/**
-	 * Parse the content of a media feature — everything between its parentheses, already
-	 * known by the caller as `[content_start, content_end)`. `feature_start`/`feature_end`
-	 * are the span of the feature node itself: for a real `@media (min-width: 768px)` feature
-	 * this includes the surrounding parens (`feature_start < content_start`); for if()'s
-	 * `media(min-width: 768px)`, media()'s own parens already delimit the content, so callers
-	 * pass `feature_start === content_start` and `feature_end === content_end`.
-	 * Returns a MEDIA_FEATURE (name/boolean/name:value) or FEATURE_RANGE (comparison syntax) node.
-	 */
+	// Parse the content of a media feature — everything between its parentheses, already
+	// known by the caller as `[content_start, content_end)`. `feature_start`/`feature_end`
+	// are the span of the feature node itself: for a real `@media (min-width: 768px)` feature
+	// this includes the surrounding parens (`feature_start < content_start`); for if()'s
+	// `media(min-width: 768px)`, media()'s own parens already delimit the content, so callers
+	// pass `feature_start === content_start` and `feature_end === content_end`.
+	// Returns a MEDIA_FEATURE (name/boolean/name:value) or FEATURE_RANGE (comparison syntax) node.
 	parse_media_feature_content(
 		feature_start: number,
 		feature_end: number,
@@ -452,25 +449,21 @@ export class ConditionParser {
 		return func_node
 	}
 
-	/**
-	 * Parse a single `(property: value)` supports declaration from a content range — the
-	 * `<style-feature>`/`<supports-feature>` grammar shared by `style()`, `@supports (…)`, and
-	 * `@import … supports(…)`. Returns null if no top-level ':' is found.
-	 */
+	// Parse a single `(property: value)` supports declaration from a content range — the
+	// `<style-feature>`/`<supports-feature>` grammar shared by `style()`, `@supports (…)`, and
+	// `@import … supports(…)`. Returns null if no top-level ':' is found.
 	parse_supports_declaration_content(content_start: number, content_end: number): number | null {
 		let colon_pos = find_colon_at_depth_zero(this.source, content_start, content_end)
 		if (colon_pos === -1) return null
 		return this.create_supports_declaration(content_start, content_end, colon_pos)
 	}
 
-	/**
-	 * Parse a `<supports-condition>` — the compound and/or/not grammar shared by `@supports`
-	 * preludes and if()'s `supports(...)` condition function: parenthesized `(property: value)`
-	 * declarations, `and`/`or`/`not` logical operators, and nested function conditions
-	 * (`selector()`, `style()`, etc.), chained as flat siblings.
-	 * `start`/`end` bound the range to scan; the caller has already positioned nothing — this
-	 * seeks its own lexer, so it's safe to call with any sub-range of the source.
-	 */
+	// Parse a `<supports-condition>` — the compound and/or/not grammar shared by `@supports`
+	// preludes and if()'s `supports(...)` condition function: parenthesized `(property: value)`
+	// declarations, `and`/`or`/`not` logical operators, and nested function conditions
+	// (`selector()`, `style()`, etc.), chained as flat siblings.
+	// `start`/`end` bound the range to scan; the caller has already positioned nothing — this
+	// seeks its own lexer, so it's safe to call with any sub-range of the source.
 	parse_supports_condition(start: number, end: number, line: number, column: number): number[] {
 		let saved_end = this.end
 		this.end = end

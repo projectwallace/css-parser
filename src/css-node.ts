@@ -300,20 +300,15 @@ export class CSSNode {
 		this.index = index
 	}
 
-	/**
-	 * @internal
-	 * Get the arena (for internal/advanced use only)
-	 */
+	// Get the arena (for internal/advanced use only)
 	__get_arena(): CSSDataArena {
 		return this.arena
 	}
 
-	/** @internal */
 	__get_source(): string {
 		return this.source
 	}
 
-	/** @internal */
 	__get_index(): number {
 		return this.index
 	}

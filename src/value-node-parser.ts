@@ -48,7 +48,6 @@ import {
 } from './string-utils'
 import { ConditionParser } from './parse-condition'
 
-/** @internal */
 export class ValueNodeParser {
 	protected lexer: Lexer
 	protected arena: CSSDataArena
@@ -367,17 +366,15 @@ export class ValueNodeParser {
 		return node
 	}
 
-	/**
-	 * Parse an if() inline conditional function.
-	 *
-	 * Spec grammar (CSS Values Level 5):
-	 *   if( <if-branch>+ )
-	 *   <if-branch>    = <if-condition> : <declaration-value>? ;?
-	 *   <if-condition> = style(…) | media(…) | supports(…) | else
-	 *
-	 * Each branch becomes an IF_BRANCH child (see the `IfBranch` type in node-types.ts
-	 * for its shape). Colons/semicolons here are structural separators, not OPERATOR nodes.
-	 */
+	// Parse an if() inline conditional function.
+	//
+	// Spec grammar (CSS Values Level 5):
+	//   if( <if-branch>+ )
+	//   <if-branch>    = <if-condition> : <declaration-value>? ;?
+	//   <if-condition> = style(…) | media(…) | supports(…) | else
+	//
+	// Each branch becomes an IF_BRANCH child (see the `IfBranch` type in node-types.ts
+	// for its shape). Colons/semicolons here are structural separators, not OPERATOR nodes.
 	private parse_if_function_node(start: number, end: number): number {
 		let name_end = end - 1 // exclude '('
 		let save_line = this.lexer.token_line
@@ -542,18 +539,16 @@ export class ValueNodeParser {
 		return TOKEN_EOF
 	}
 
-	/**
-	 * Parse an if()-branch condition:
-	 *   <if-condition> = <boolean-expr[ <if-test> ]> | else
-	 *   <if-test>      = style(…) | media(…) | supports(…)
-	 * i.e. a single test function, the bare "else" identifier, or those test functions
-	 * combined with not/and/or (e.g. "not style(--x: 1)", "style(--a: 1) and media(width > 600px)").
-	 * Called with the lexer's current token already positioned at the condition's first token.
-	 * A simple single-function/"else" condition returns that node directly, unwrapped (matching
-	 * prior behavior); a compound not/and/or condition wraps the flat operator/function chain in
-	 * an IF_CONDITION node so IfBranch.condition/.value (single first_child/next_sibling hops)
-	 * still see exactly one node for "the condition".
-	 */
+	// Parse an if()-branch condition:
+	//   <if-condition> = <boolean-expr[ <if-test> ]> | else
+	//   <if-test>      = style(…) | media(…) | supports(…)
+	// i.e. a single test function, the bare "else" identifier, or those test functions
+	// combined with not/and/or (e.g. "not style(--x: 1)", "style(--a: 1) and media(width > 600px)").
+	// Called with the lexer's current token already positioned at the condition's first token.
+	// A simple single-function/"else" condition returns that node directly, unwrapped (matching
+	// prior behavior); a compound not/and/or condition wraps the flat operator/function chain in
+	// an IF_CONDITION node so IfBranch.condition/.value (single first_child/next_sibling hops)
+	// still see exactly one node for "the condition".
 	private parse_if_condition(): number | null {
 		// "else" never combines with not/and/or — always a bare identifier.
 		if (this.lexer.token_type === TOKEN_IDENT) {
@@ -640,19 +635,17 @@ export class ValueNodeParser {
 		return wrapper
 	}
 
-	/**
-	 * Parse a condition function inside if() — style(), supports(), or media(). Content parsing
-	 * is delegated to the shared ConditionParser (see parse-condition.ts), so these produce the
-	 * same node shapes real `@supports`/`@media` conditions do:
-	 *   style()/supports() → SUPPORTS_DECLARATION(s) — supports() gets the full compound
-	 *     <supports-condition> grammar (and/or/not, nested conditions), same as `@supports`.
-	 *   media()  → a single MEDIA_FEATURE or FEATURE_RANGE (comparison syntax), same as `@media`.
-	 *   anything else → generic value nodes, as before.
-	 *
-	 * Called with the current token at TOKEN_FUNCTION (the '(' already consumed).
-	 * @param func_start  Offset of the function name's first char.
-	 * @param token_end   Offset right after '(' (== lexer.token_end here).
-	 */
+	// Parse a condition function inside if() — style(), supports(), or media(). Content parsing
+	// is delegated to the shared ConditionParser (see parse-condition.ts), so these produce the
+	// same node shapes real `@supports`/`@media` conditions do:
+	//   style()/supports() → SUPPORTS_DECLARATION(s) — supports() gets the full compound
+	//     <supports-condition> grammar (and/or/not, nested conditions), same as `@supports`.
+	//   media()  → a single MEDIA_FEATURE or FEATURE_RANGE (comparison syntax), same as `@media`.
+	//   anything else → generic value nodes, as before.
+	//
+	// Called with the current token at TOKEN_FUNCTION (the '(' already consumed).
+	// @param func_start  Offset of the function name's first char.
+	// @param token_end   Offset right after '(' (== lexer.token_end here).
 	private parse_if_condition_function(func_start: number, token_end: number): number {
 		let func_name_end = token_end - 1 // before '('
 		let func_name = this.source.substring(func_start, func_name_end)
@@ -742,7 +735,7 @@ export class ValueNodeParser {
 		return func_node
 	}
 
-	/** Parse value tokens in a source sub-range using save/restore to protect lexer state. */
+	// Parse value tokens in a source sub-range using save/restore to protect lexer state.
 	private parse_value_nodes_in_range(start: number, end: number): number[] {
 		let saved_end = this.end
 		let saved_pos = this.lexer.save_position()

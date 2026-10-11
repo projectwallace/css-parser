@@ -29,10 +29,7 @@ export const CHAR_LEFT_PAREN = 0x28 // (
 export const CHAR_RIGHT_PAREN = 0x29 // )
 export const CHAR_EXCLAMATION = 0x21 // !
 
-/**
- * Check if a character code is whitespace (space, tab, newline, CR, or FF)
- * @internal
- */
+// Check if a character code is whitespace (space, tab, newline, CR, or FF)
 export function is_whitespace(ch: number): boolean {
 	return (
 		ch === CHAR_SPACE ||
@@ -48,7 +45,6 @@ export function is_combinator(ch: number): boolean {
 	return ch === CHAR_GREATER_THAN || ch === CHAR_PLUS || ch === CHAR_TILDE
 }
 
-/** @internal */
 export function is_digit(ch: number): boolean {
 	return ch >= 0x30 && ch <= 0x39 // 0-9
 }
@@ -77,11 +73,9 @@ export function str_equals(a: string, b: string): boolean {
 	return true
 }
 
-/**
- * Case-insensitive equality between `source[start, end)` and `literal`, without allocating
- * a substring first. Same semantics as `str_equals(literal, source.substring(start, end))`.
- * `literal` MUST be lowercase.
- */
+// Case-insensitive equality between `source[start, end)` and `literal`, without allocating
+// a substring first. Same semantics as `str_equals(literal, source.substring(start, end))`.
+// `literal` MUST be lowercase.
 export function str_equals_range(
 	source: string,
 	start: number,
@@ -211,7 +205,7 @@ export function is_custom(str: string): boolean {
 	return str.charCodeAt(0) === CHAR_MINUS_HYPHEN && str.charCodeAt(1) === CHAR_MINUS_HYPHEN
 }
 
-/** Strip a vendor prefix, e.g. `-webkit-keyframes` → `keyframes`. Returns the input unchanged if it has no prefix. */
+// Strip a vendor prefix, e.g. `-webkit-keyframes` → `keyframes`. Returns the input unchanged if it has no prefix.
 export function strip_vendor_prefix(str: string): string {
 	if (!is_vendor_prefixed(str)) {
 		return str
