@@ -512,8 +512,10 @@ export class ConditionParser {
 			}
 			// Identifier: operator (and, or, not)
 			else if (token_type === TOKEN_IDENT) {
-				if (is_and_or_not_range(this.source, this.lexer.token_start, this.lexer.token_end)) {
-					let op = this.create_node(PRELUDE_OPERATOR, this.lexer.token_start, this.lexer.token_end)
+				let token_start = this.lexer.token_start
+				let token_end = this.lexer.token_end
+				if (is_and_or_not_range(this.source, token_start, token_end)) {
+					let op = this.create_node(PRELUDE_OPERATOR, token_start, token_end)
 					nodes.push(op)
 				}
 			}

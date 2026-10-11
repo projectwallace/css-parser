@@ -571,12 +571,14 @@ export class ValueNodeParser {
 			if (tt === TOKEN_FUNCTION) {
 				component = this.parse_if_condition_function(this.lexer.token_start, this.lexer.token_end)
 			} else if (tt === TOKEN_IDENT) {
-				if (is_and_or_not_range(this.source, this.lexer.token_start, this.lexer.token_end)) {
+				let token_start = this.lexer.token_start
+				let token_end = this.lexer.token_end
+				if (is_and_or_not_range(this.source, token_start, token_end)) {
 					is_operator = true
 					component = this.arena.create_node(
 						PRELUDE_OPERATOR,
-						this.lexer.token_start,
-						this.lexer.token_end - this.lexer.token_start,
+						token_start,
+						token_end - token_start,
 						this.lexer.token_line,
 						this.lexer.token_column,
 					)

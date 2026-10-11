@@ -207,15 +207,14 @@ export class AtRulePreludeParser {
 		this.next_token()
 
 		if (this.lexer.token_type === TOKEN_IDENT) {
+			let source = this.source
+			let token_start = this.lexer.token_start
+			let token_end = this.lexer.token_end
 			if (
-				str_equals_range(this.source, this.lexer.token_start, this.lexer.token_end, 'only') ||
-				str_equals_range(this.source, this.lexer.token_start, this.lexer.token_end, 'not')
+				str_equals_range(source, token_start, token_end, 'only') ||
+				str_equals_range(source, token_start, token_end, 'not')
 			) {
-				let modifier = this.create_node(
-					PRELUDE_OPERATOR,
-					this.lexer.token_start,
-					this.lexer.token_end,
-				)
+				let modifier = this.create_node(PRELUDE_OPERATOR, token_start, token_end)
 				first_component = modifier
 				last_component = modifier
 			} else {
@@ -253,16 +252,14 @@ export class AtRulePreludeParser {
 			}
 			// Identifier: media type or operator (and, or, not)
 			else if (token_type === TOKEN_IDENT) {
-				if (is_and_or_not_range(this.source, this.lexer.token_start, this.lexer.token_end)) {
+				let token_start = this.lexer.token_start
+				let token_end = this.lexer.token_end
+				if (is_and_or_not_range(this.source, token_start, token_end)) {
 					// Logical operator
-					component = this.create_node(
-						PRELUDE_OPERATOR,
-						this.lexer.token_start,
-						this.lexer.token_end,
-					)
+					component = this.create_node(PRELUDE_OPERATOR, token_start, token_end)
 				} else {
 					// Media type: screen, print, all
-					component = this.create_node(MEDIA_TYPE, this.lexer.token_start, this.lexer.token_end)
+					component = this.create_node(MEDIA_TYPE, token_start, token_end)
 				}
 			} else {
 				// Unknown token, skip
@@ -332,16 +329,14 @@ export class AtRulePreludeParser {
 			}
 			// Identifier: operator (and, or, not) or container name
 			else if (token_type === TOKEN_IDENT) {
-				if (is_and_or_not_range(this.source, this.lexer.token_start, this.lexer.token_end)) {
+				let token_start = this.lexer.token_start
+				let token_end = this.lexer.token_end
+				if (is_and_or_not_range(this.source, token_start, token_end)) {
 					// Logical operator
-					component = this.create_node(
-						PRELUDE_OPERATOR,
-						this.lexer.token_start,
-						this.lexer.token_end,
-					)
+					component = this.create_node(PRELUDE_OPERATOR, token_start, token_end)
 				} else {
 					// Container name or other identifier
-					component = this.create_node(IDENTIFIER, this.lexer.token_start, this.lexer.token_end)
+					component = this.create_node(IDENTIFIER, token_start, token_end)
 				}
 			}
 
