@@ -997,6 +997,20 @@ export class Lexer {
 		}
 	}
 
+	// Like `save_position()`, but fills `target` instead of allocating
+	save_position_into(target: LexerPosition): LexerPosition {
+		target.pos = this.pos
+		target.line = this._line
+		target.column = this.pos - this._line_offset + 1
+		target._line_offset = this._line_offset
+		target.token_type = this.token_type
+		target.token_start = this.token_start
+		target.token_end = this.token_end
+		target.token_line = this.token_line
+		target.token_column = this.token_column
+		return target
+	}
+
 	/**
 	 * Restore lexer state from saved position
 	 * @param saved The saved position to restore

@@ -38,6 +38,8 @@ import {
 	CHAR_GREATER_THAN,
 	CHAR_EQUALS,
 	CHAR_FORWARD_SLASH,
+	str_equals_range,
+	is_and_or_not_range,
 } from './string-utils'
 import {
 	trim_boundaries,
@@ -70,8 +72,8 @@ export class ConditionParser {
 
 	// Where this instance's own lexer landed after the last parse_media_feature()/
 	// parse_function_condition() call — callers scanning the same range on their own lexer must reseek here after delegating.
-	get end_position(): [pos: number, line: number, column: number] {
-		return [this.lexer.pos, this.lexer.line, this.lexer.column]
+	seek_to_end(target: Lexer): void {
+		target.seek(this.lexer.pos, this.lexer.line, this.lexer.column)
 	}
 
 	private create_node(type: number, start: number, end: number): number {
@@ -92,12 +94,6 @@ export class ConditionParser {
 		return this.lexer.next_token_fast(false)
 	}
 
-	private is_and_or_not(str: string): boolean {
-		// All logical operators are 2-3 chars: "and" (3), "or" (2), "not" (3)
-		// The str_equals calls will quickly reject strings of other lengths
-		return str_equals('and', str) || str_equals('or', str) || str_equals('not', str)
-	}
-
 	// Scan tokens from just after an already-open '(' or function-call (depth 1) to its
 	// matching ')'. Must be called right after consuming the opening token. Returns
 	// [content_end, close_end, matched]: content_end/close_end are the positions right
@@ -105,7 +101,10 @@ export class ConditionParser {
 	// content_end/close_end are left at the position scanning started from (mirroring the
 	// caller's own pre-loop defaults, so callers that don't check `matched` still get sane
 	// fallback spans).
-	private scan_matching_paren(): [content_end: number, close_end: number, matched: boolean] {
+	private paren_content_end = 0
+	private paren_close_end = 0
+
+	private scan_matching_paren(): boolean {
 		let depth = 1
 		let content_end = this.lexer.pos
 		let close_end = this.lexer.token_end
@@ -125,7 +124,9 @@ export class ConditionParser {
 			}
 		}
 
-		return [content_end, close_end, depth === 0]
+		this.paren_content_end = content_end
+		this.paren_close_end = close_end
+		return depth === 0
 	}
 
 	// Parse feature value via the shared ValueNodeParser, so calc()/env()/var() get full children.
@@ -397,7 +398,9 @@ export class ConditionParser {
 		let feature_start = this.lexer.token_start
 		let content_start = this.lexer.pos
 
-		let [content_end, feature_end, matched] = this.scan_matching_paren()
+		let matched = this.scan_matching_paren()
+		let content_end = this.paren_content_end
+		let feature_end = this.paren_close_end
 		if (!matched) return null
 
 		return this.parse_media_feature_content(feature_start, feature_end, content_start, content_end)
@@ -411,23 +414,26 @@ export class ConditionParser {
 		this.lexer.seek(func_start, line, column)
 		this.next_token() // consume the function token, up to and including '('
 
-		let func_name = this.source.substring(this.lexer.token_start, this.lexer.token_end - 1) // -1 to exclude '('
+		let func_name_start = this.lexer.token_start
+		let func_name_end = this.lexer.token_end - 1 // -1 to exclude '('
 		let content_start = this.lexer.token_end // After '('
 
 		// Find matching closing paren
-		let [content_end, func_end] = this.scan_matching_paren()
+		this.scan_matching_paren()
+		let content_end = this.paren_content_end
+		let func_end = this.paren_close_end
 
 		// Create function node
 		let func_node = this.create_node(FUNCTION, func_start, func_end)
 		// Set content fields to function name
 		this.arena.set_content_start_delta(func_node, 0)
-		this.arena.set_content_length(func_node, func_name.length)
+		this.arena.set_content_length(func_node, func_name_end - func_name_start)
 		// Set value fields to content inside parentheses
 		this.arena.set_value_start_delta(func_node, content_start - func_start)
 		this.arena.set_value_length(func_node, content_end - content_start)
 
 		// selector()'s argument is a <complex-selector> — parse it into a real SelectorList
-		if (str_equals('selector', func_name)) {
+		if (str_equals_range(this.source, func_name_start, func_name_end, 'selector')) {
 			let selector_list = this.selector_parser.parse_selector(
 				content_start,
 				content_end,
@@ -439,7 +445,7 @@ export class ConditionParser {
 			}
 		}
 		// style()'s argument is a <declaration> — parse it into the same tree as (property: value)
-		else if (str_equals('style', func_name)) {
+		else if (str_equals_range(this.source, func_name_start, func_name_end, 'style')) {
 			let decl_child = this.parse_supports_declaration_content(content_start, content_end)
 			if (decl_child !== null) {
 				this.arena.set_first_child(func_node, decl_child)
@@ -483,7 +489,9 @@ export class ConditionParser {
 				let feature_start = this.lexer.token_start
 				let content_start = this.lexer.pos
 
-				let [content_end, feature_end, matched] = this.scan_matching_paren()
+				let matched = this.scan_matching_paren()
+				let content_end = this.paren_content_end
+				let feature_end = this.paren_close_end
 
 				if (matched) {
 					let query = this.create_node(SUPPORTS_QUERY, feature_start, feature_end)
@@ -504,10 +512,10 @@ export class ConditionParser {
 			}
 			// Identifier: operator (and, or, not)
 			else if (token_type === TOKEN_IDENT) {
-				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
-
-				if (this.is_and_or_not(text)) {
-					let op = this.create_node(PRELUDE_OPERATOR, this.lexer.token_start, this.lexer.token_end)
+				let token_start = this.lexer.token_start
+				let token_end = this.lexer.token_end
+				if (is_and_or_not_range(this.source, token_start, token_end)) {
+					let op = this.create_node(PRELUDE_OPERATOR, token_start, token_end)
 					nodes.push(op)
 				}
 			}
