@@ -997,7 +997,7 @@ export class Lexer {
 		}
 	}
 
-	/** Like `save_position()`, but fills `target` instead of allocating. */
+	// Like `save_position()`, but fills `target` instead of allocating
 	save_position_into(target: LexerPosition): LexerPosition {
 		target.pos = this.pos
 		target.line = this._line
