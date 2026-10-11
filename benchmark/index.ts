@@ -10,8 +10,8 @@ import * as postcss from 'postcss'
 
 const nerdyDevCSS = fs.readFileSync(path.resolve('benchmark/nerdy-dev.css'), 'utf-8')
 const cssTricksCSS = fs.readFileSync(path.resolve('benchmark/css-tricks.css'), 'utf-8')
-const bootstrapCSS = fs.readFileSync(path.resolve('benchmark/bootstrap.css'), 'utf-8')
-const tailwindCSS = fs.readFileSync(path.resolve('benchmark/tailwind.css'), 'utf-8')
+const bootstrapCSS = fs.readFileSync(path.resolve('benchmark/bootstrap.min.css'), 'utf-8')
+const tailwindCSS = fs.readFileSync(path.resolve('benchmark/tailwind.min.css'), 'utf-8')
 
 type CSSFile = 'Nerdy.dev' | 'CSS Tricks' | 'Bootstrap' | 'Tailwind'
 
