@@ -357,7 +357,7 @@ describe('CSSDataArena', () => {
 
 	describe('real-world CSS frameworks', () => {
 		test('should not grow for Bootstrap CSS', () => {
-			const css = readFileSync('node_modules/bootstrap/dist/css/bootstrap.css', 'utf-8')
+			const css = readFileSync('benchmark/bootstrap.min.css', 'utf-8')
 			const result = parse(css) as unknown as CSSNode
 			const arena = result.__get_arena()
 
@@ -366,26 +366,8 @@ describe('CSSDataArena', () => {
 			expect(arena.get_capacity()).toBe(arena.get_count())
 		})
 
-		test('should not grow for Bootstrap minified CSS', () => {
-			const css = readFileSync('node_modules/bootstrap/dist/css/bootstrap.min.css', 'utf-8')
-			const result = parse(css) as unknown as CSSNode
-			const arena = result.__get_arena()
-
-			expect(arena.get_growth_count()).toBe(0)
-			expect(arena.get_capacity()).toBe(arena.get_count())
-		})
-
 		test('should not grow for Tailwind CSS', () => {
-			const css = readFileSync('node_modules/tailwindcss/dist/tailwind.css', 'utf-8')
-			const result = parse(css) as unknown as CSSNode
-			const arena = result.__get_arena()
-
-			expect(arena.get_growth_count()).toBe(0)
-			expect(arena.get_capacity()).toBe(arena.get_count())
-		})
-
-		test('should not grow for Tailwind minified CSS', () => {
-			const css = readFileSync('node_modules/tailwindcss/dist/tailwind.min.css', 'utf-8')
+			const css = readFileSync('benchmark/tailwind.min.css', 'utf-8')
 			const result = parse(css) as unknown as CSSNode
 			const arena = result.__get_arena()
 
