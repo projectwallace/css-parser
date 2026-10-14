@@ -19,13 +19,17 @@
 // HOW THE ARENA WORKS:
 // 1. BYTES_PER_NODE defines the size of each node (32 bytes). The ArrayBuffer size is calculated
 //    as: capacity × BYTES_PER_NODE. For example, 1024 nodes = 32,768 bytes (32KB).
-//    Node indices map to byte offsets via: node_offset = node_index × 32.
 //
-// 2. We use a single DataView over the ArrayBuffer to read/write different types at specific offsets.
-//    - Uint8: 1-byte reads/writes for type, flags (e.g., view.getUint8(offset))
-//    - Uint16: 2-byte reads/writes for length, deltas (e.g., view.getUint16(offset, true))
-//    - Uint32: 4-byte reads/writes for startOffset, pointers, line, column (e.g., view.getUint32(offset, true))
-//    The 'true' parameter specifies little-endian byte order (native on x86/ARM CPUs).
+// 2. We keep three TypedArray views over the *same* ArrayBuffer instead of a single DataView:
+//    - u8  (Uint8Array):  type, flags
+//    - u16 (Uint16Array): length, deltas, contentLength, valueLength
+//    - u32 (Uint32Array): firstChild, nextSibling, startOffset, startLine, startColumn
+//    Every field is naturally aligned (see point 3), so each one maps to a whole-number element
+//    index in its view — no DataView.getX(byteOffset, littleEndian) call is needed. Indexed
+//    TypedArray access avoids that call's argument handling and reads native (little-endian)
+//    byte order directly, which is the only order actually used on real hardware (x86/ARM).
+//    A node's element index within each view is node_index × (BYTES_PER_NODE / element size):
+//    ×32 for u8, ×16 for u16, ×8 for u32 — see U16_PER_NODE/U32_PER_NODE below.
 //
 // 3. All fields are naturally aligned:
 //    - Uint32 fields align to 4-byte boundaries (offsets 4, 8, 12, 24, 28)
@@ -38,7 +42,22 @@
 //    lastChild field saved another 4 bytes. startColumn was changed from Uint16 to Uint32 to avoid
 //    overflow on long lines (common in minified CSS).
 
-let BYTES_PER_NODE = 32
+const BYTES_PER_NODE = 32
+const U16_PER_NODE = BYTES_PER_NODE / 2 // element stride into the Uint16Array view
+const U32_PER_NODE = BYTES_PER_NODE / 4 // element stride into the Uint32Array view
+
+// Element indices within a node, in each view's own element units (not bytes).
+const U16_LENGTH = 1 // byte offset 2
+const U16_CONTENT_START_DELTA = 8 // byte offset 16
+const U16_VALUE_START_DELTA = 9 // byte offset 18
+const U16_CONTENT_LENGTH = 10 // byte offset 20
+const U16_VALUE_LENGTH = 11 // byte offset 22
+
+const U32_FIRST_CHILD = 1 // byte offset 4
+const U32_NEXT_SIBLING = 2 // byte offset 8
+const U32_START_OFFSET = 3 // byte offset 12
+const U32_START_LINE = 6 // byte offset 24
+const U32_START_COLUMN = 7 // byte offset 28
 
 // Node type constants
 export const STYLESHEET = 1
@@ -110,7 +129,9 @@ export const FLAG_BROWSERHACK = 1 << 7 // Has browser hack prefix (*property, _p
 /** @internal */
 export class CSSDataArena {
 	private buffer: ArrayBuffer
-	private view: DataView
+	private u8: Uint8Array
+	private u16: Uint16Array
+	private u32: Uint32Array
 	private capacity: number // Number of nodes that can fit
 	private count: number // Number of nodes currently allocated
 	private growth_count: number // Number of times the arena has grown
@@ -135,7 +156,9 @@ export class CSSDataArena {
 		this.count = 1
 		this.growth_count = 0
 		this.buffer = new ArrayBuffer(initial_capacity * BYTES_PER_NODE)
-		this.view = new DataView(this.buffer)
+		this.u8 = new Uint8Array(this.buffer)
+		this.u16 = new Uint16Array(this.buffer)
+		this.u32 = new Uint32Array(this.buffer)
 		this.overflow_lengths = new Map()
 	}
 
@@ -164,24 +187,19 @@ export class CSSDataArena {
 		return this.growth_count
 	}
 
-	// Calculate byte offset for a node
-	private node_offset(node_index: number): number {
-		return node_index * BYTES_PER_NODE
-	}
-
 	// Read node type
 	get_type(node_index: number): number {
-		return this.view.getUint8(this.node_offset(node_index))
+		return this.u8[node_index * BYTES_PER_NODE]
 	}
 
 	// Read node flags
 	get_flags(node_index: number): number {
-		return this.view.getUint8(this.node_offset(node_index) + 1)
+		return this.u8[node_index * BYTES_PER_NODE + 1]
 	}
 
 	// Read start offset in source
 	get_start_offset(node_index: number): number {
-		return this.view.getUint32(this.node_offset(node_index) + 12, true)
+		return this.u32[node_index * U32_PER_NODE + U32_START_OFFSET]
 	}
 
 	// Read length in source
@@ -193,106 +211,106 @@ export class CSSDataArena {
 				return overflow_length
 			}
 		}
-		return this.view.getUint16(this.node_offset(node_index) + 2, true)
+		return this.u16[node_index * U16_PER_NODE + U16_LENGTH]
 	}
 
 	// Read content start offset (stored as delta from startOffset)
 	get_content_start(node_index: number): number {
 		const startOffset = this.get_start_offset(node_index)
-		const delta = this.view.getUint16(this.node_offset(node_index) + 16, true)
+		const delta = this.u16[node_index * U16_PER_NODE + U16_CONTENT_START_DELTA]
 		return startOffset + delta
 	}
 
 	// Read content length
 	get_content_length(node_index: number): number {
-		return this.view.getUint16(this.node_offset(node_index) + 20, true)
+		return this.u16[node_index * U16_PER_NODE + U16_CONTENT_LENGTH]
 	}
 
 	// Read first child index (0 = no children)
 	get_first_child(node_index: number): number {
-		return this.view.getUint32(this.node_offset(node_index) + 4, true)
+		return this.u32[node_index * U32_PER_NODE + U32_FIRST_CHILD]
 	}
 
 	// Read next sibling index (0 = no sibling)
 	get_next_sibling(node_index: number): number {
-		return this.view.getUint32(this.node_offset(node_index) + 8, true)
+		return this.u32[node_index * U32_PER_NODE + U32_NEXT_SIBLING]
 	}
 
 	// Read start line
 	get_start_line(node_index: number): number {
-		return this.view.getUint32(this.node_offset(node_index) + 24, true)
+		return this.u32[node_index * U32_PER_NODE + U32_START_LINE]
 	}
 
 	// Read start column
 	get_start_column(node_index: number): number {
-		return this.view.getUint32(this.node_offset(node_index) + 28, true)
+		return this.u32[node_index * U32_PER_NODE + U32_START_COLUMN]
 	}
 
 	// Read value start offset (stored as delta from startOffset, declaration value / at-rule prelude)
 	get_value_start(node_index: number): number {
 		const startOffset = this.get_start_offset(node_index)
-		const delta = this.view.getUint16(this.node_offset(node_index) + 18, true)
+		const delta = this.u16[node_index * U16_PER_NODE + U16_VALUE_START_DELTA]
 		return startOffset + delta
 	}
 
 	// Read value length
 	get_value_length(node_index: number): number {
-		return this.view.getUint16(this.node_offset(node_index) + 22, true)
+		return this.u16[node_index * U16_PER_NODE + U16_VALUE_LENGTH]
 	}
 
 	// --- Write Methods ---
 
 	// Write node type
 	set_type(node_index: number, type: number): void {
-		this.view.setUint8(this.node_offset(node_index), type)
+		this.u8[node_index * BYTES_PER_NODE] = type
 	}
 
 	// Write node flags
 	set_flags(node_index: number, flags: number): void {
-		this.view.setUint8(this.node_offset(node_index) + 1, flags)
+		this.u8[node_index * BYTES_PER_NODE + 1] = flags
 	}
 
 	// Write length in source
 	set_length(node_index: number, length: number): void {
 		// Uint16 max value is 65535
 		if (length > 65535) {
-			this.view.setUint16(this.node_offset(node_index) + 2, 65535, true)
+			this.u16[node_index * U16_PER_NODE + U16_LENGTH] = 65535
 			this.set_flag(node_index, FLAG_LENGTH_OVERFLOW)
 			// Store the actual length in the overflow map
 			this.overflow_lengths.set(node_index, length)
 		} else {
-			this.view.setUint16(this.node_offset(node_index) + 2, length, true)
+			this.u16[node_index * U16_PER_NODE + U16_LENGTH] = length
 		}
 	}
 
 	// Write content start delta (offset from startOffset)
 	set_content_start_delta(node_index: number, delta: number): void {
-		this.view.setUint16(this.node_offset(node_index) + 16, delta, true)
+		this.u16[node_index * U16_PER_NODE + U16_CONTENT_START_DELTA] = delta
 	}
 
 	// Write content length
 	set_content_length(node_index: number, length: number): void {
-		this.view.setUint16(this.node_offset(node_index) + 20, length, true)
+		this.u16[node_index * U16_PER_NODE + U16_CONTENT_LENGTH] = length
 	}
 
 	// Write first child index
 	set_first_child(node_index: number, childIndex: number): void {
-		this.view.setUint32(this.node_offset(node_index) + 4, childIndex, true)
+		this.u32[node_index * U32_PER_NODE + U32_FIRST_CHILD] = childIndex
 	}
 
 	// Write next sibling index
 	set_next_sibling(node_index: number, siblingIndex: number): void {
-		this.view.setUint32(this.node_offset(node_index) + 8, siblingIndex, true)
+		this.u32[node_index * U32_PER_NODE + U32_NEXT_SIBLING] = siblingIndex
 	}
 
 	// Write value start delta (offset from startOffset, declaration value / at-rule prelude)
 	set_value_start_delta(node_index: number, delta: number): void {
-		this.view.setUint16(this.node_offset(node_index) + 18, delta, true)
+		this.u16[node_index * U16_PER_NODE + U16_VALUE_START_DELTA] = delta
 	}
 
 	// Write value length
 	set_value_length(node_index: number, length: number): void {
-		this.view.setUint16(this.node_offset(node_index) + 22, length, true)
+		this.u16[node_index * U16_PER_NODE + U16_VALUE_LENGTH] = length
 	}
 
 	// --- Node Creation ---
@@ -306,9 +324,11 @@ export class CSSDataArena {
 		// Copy existing data to new buffer
 		new Uint8Array(new_buffer).set(new Uint8Array(this.buffer))
 
-		// Update arena state
+		// Update arena state — views must be recreated, they don't follow a buffer swap
 		this.buffer = new_buffer
-		this.view = new DataView(new_buffer)
+		this.u8 = new Uint8Array(new_buffer)
+		this.u16 = new Uint16Array(new_buffer)
+		this.u32 = new Uint32Array(new_buffer)
 		this.capacity = new_capacity
 	}
 
@@ -327,11 +347,10 @@ export class CSSDataArena {
 		const node_index = this.count
 		this.count++
 
-		const offset = node_index * BYTES_PER_NODE
-		this.view.setUint8(offset, type) // +0: type
-		this.view.setUint32(offset + 12, start_offset, true) // +12: startOffset
-		this.view.setUint32(offset + 24, start_line, true) // +24: startLine
-		this.view.setUint32(offset + 28, start_column, true) // +28: startColumn
+		this.u8[node_index * BYTES_PER_NODE] = type // +0: type
+		this.u32[node_index * U32_PER_NODE + U32_START_OFFSET] = start_offset
+		this.u32[node_index * U32_PER_NODE + U32_START_LINE] = start_line
+		this.u32[node_index * U32_PER_NODE + U32_START_COLUMN] = start_column
 
 		// Use setter method to handle overflow
 		this.set_length(node_index, length)
@@ -346,8 +365,7 @@ export class CSSDataArena {
 	append_children(parent_index: number, children: number[]): void {
 		if (children.length === 0) return
 
-		const offset = this.node_offset(parent_index)
-		this.view.setUint32(offset + 4, children[0], true) // firstChild
+		this.u32[parent_index * U32_PER_NODE + U32_FIRST_CHILD] = children[0]
 
 		// Chain siblings
 		for (let i = 0; i < children.length - 1; i++) {
@@ -357,12 +375,18 @@ export class CSSDataArena {
 
 	/** Shrink the buffer to the live node count, releasing wasted capacity. Call once after parsing; no-op if already tight. */
 	trim(): void {
-		if (this.count === this.capacity) return
+		if (this.count === this.capacity) {
+			// no-op: already tightly packed
+			return
+		}
+
 		let byte_count = this.count * BYTES_PER_NODE
 		let new_buffer = new ArrayBuffer(byte_count)
 		new Uint8Array(new_buffer).set(new Uint8Array(this.buffer, 0, byte_count))
 		this.buffer = new_buffer
-		this.view = new DataView(new_buffer)
+		this.u8 = new Uint8Array(new_buffer)
+		this.u16 = new Uint16Array(new_buffer)
+		this.u32 = new Uint32Array(new_buffer)
 		this.capacity = this.count
 	}
 
