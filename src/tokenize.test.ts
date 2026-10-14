@@ -756,9 +756,11 @@ describe('Lexer', () => {
 		const oracle_digit = (c: number) => c >= 0x30 && c <= 0x39
 
 		test('is_ident_start matches letters, underscore and non-ASCII for every code unit', () => {
+			let mismatches: string[] = []
 			for (let c = 0; c <= 0xffff; c++) {
-				expect(is_ident_start(c), `code unit 0x${c.toString(16)}`).toBe(oracle_ident_start(c))
+				if (is_ident_start(c) !== oracle_ident_start(c)) mismatches.push(`0x${c.toString(16)}`)
 			}
+			expect(mismatches).toEqual([])
 		})
 
 		test('a lone character becomes IDENT, WHITESPACE or NUMBER exactly when the oracle says so', () => {
@@ -773,18 +775,21 @@ describe('Lexer', () => {
 				0xfeff,
 				0xffff,
 			]
+			let mismatches: string[] = []
 			for (let c of codes) {
 				let lexer = new Lexer(String.fromCharCode(c))
 				lexer.next_token_fast(false)
 				let type = lexer.token_type
-				let label = `code unit 0x${c.toString(16)}`
-				expect(type === TOKEN_IDENT, label).toBe(oracle_ident_start(c))
-				expect(type === TOKEN_WHITESPACE, label).toBe(oracle_whitespace(c))
-				expect(type === TOKEN_NUMBER, label).toBe(oracle_digit(c))
-				// Whatever it is, it must cover the whole single character
-				expect(lexer.token_start, label).toBe(0)
-				expect(lexer.token_end, label).toBe(1)
+				let ok =
+					(type === TOKEN_IDENT) === oracle_ident_start(c) &&
+					(type === TOKEN_WHITESPACE) === oracle_whitespace(c) &&
+					(type === TOKEN_NUMBER) === oracle_digit(c) &&
+					// Whatever it is, it must cover the whole single character
+					lexer.token_start === 0 &&
+					lexer.token_end === 1
+				if (!ok) mismatches.push(`0x${c.toString(16)} -> type ${type}`)
 			}
+			expect(mismatches).toEqual([])
 		})
 
 		test('skip_whitespace=true lands on the same token as an explicit whitespace token', () => {
@@ -800,8 +805,8 @@ describe('Lexer', () => {
 			for (let source of ['_a', 'a', 'Z', 'é', '日本', '\u{1F600}x']) {
 				let lexer = new Lexer(source)
 				lexer.next_token_fast(false)
-				expect(lexer.token_type, source).toBe(TOKEN_IDENT)
-				expect(lexer.token_end, source).toBe(source.length)
+				expect(lexer.token_type).toBe(TOKEN_IDENT)
+				expect(lexer.token_end).toBe(source.length)
 			}
 		})
 
@@ -809,7 +814,7 @@ describe('Lexer', () => {
 			for (let source of ['0', '9', '5px', '.5']) {
 				let lexer = new Lexer(source)
 				lexer.next_token_fast(false)
-				expect(lexer.token_type === TOKEN_IDENT, source).toBe(false)
+				expect(lexer.token_type === TOKEN_IDENT).toBe(false)
 			}
 		})
 	})
