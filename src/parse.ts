@@ -348,6 +348,11 @@ export class Parser {
 		// Check if this could be a declaration (identifier or browser hack prefix)
 		const token_type = this.peek_type()
 
+		// Fast path: identifiers are by far the most common declaration start
+		if (token_type === TOKEN_IDENT) {
+			return this.declaration_parser.parse_declaration_with_lexer(this.lexer, this.source.length)
+		}
+
 		// Accept identifiers, at-keywords, and hash tokens outright. Delimiters and special
 		// tokens are only accepted as single-character browser hack prefixes (e.g. `*zoom: 1`),
 		// excluding selector syntax that happens to share those tokens: . (class), > (child),
