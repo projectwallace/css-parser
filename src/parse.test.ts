@@ -2816,3 +2816,88 @@ describe('Core Nodes', () => {
 		})
 	})
 })
+
+describe('Block children classification', () => {
+	// What each child of the first rule's block is: "<type name>:<text>", flagged when it is a
+	// browser hack (!hack) or important (!important). Covers every way a block child can start,
+	// since the declaration-vs-nested-rule decision is made from the first token.
+	const children = (css: string) => {
+		const block = (parse(css).first_child as Rule | Atrule).block as Block
+		return block.children.map((c) => {
+			const decl = c as Declaration
+			const flags = [decl.is_browserhack ? '!hack' : '', decl.is_important ? '!important' : '']
+			return `${c.type_name}:${c.text}${flags.join('')}`
+		})
+	}
+
+	test.each([
+		['color: red; margin: 0', ['Declaration:color: red;', 'Declaration:margin: 0']],
+		['COLOR: RED', ['Declaration:COLOR: RED']],
+		['a : b', ['Declaration:a : b']],
+		['-webkit-box: 1; --x: 1', ['Declaration:-webkit-box: 1;', 'Declaration:--x: 1']],
+		[
+			'color: red !important; margin: 0 !ie',
+			['Declaration:color: red !important;!important', 'Declaration:margin: 0 !ie!important'],
+		],
+	])('declarations starting with an identifier: %j', (block, expected) => {
+		expect(children(`s { ${block} }`)).toEqual(expected)
+	})
+
+	test.each([
+		['a:hover { color: red }', ['Rule:a:hover { color: red }']],
+		[
+			'a:hover { color: red } color: blue',
+			['Rule:a:hover { color: red }', 'Declaration:color: blue'],
+		],
+		['div > p { color: red }', ['Rule:div > p { color: red }']],
+		['a b { x: 1 } c: d', ['Rule:a b { x: 1 }', 'Declaration:c: d']],
+		['a:not(.b) { x: 1 }', ['Rule:a:not(.b) { x: 1 }']],
+		['a:b:c { x: 1 }', ['Rule:a:b:c { x: 1 }']],
+		['div { span { x: 1 } }', ['Rule:div { span { x: 1 } }']],
+	])('nested rules starting with an identifier: %j', (block, expected) => {
+		expect(children(`s { ${block} }`)).toEqual(expected)
+	})
+
+	test.each([
+		['.nested { x: 1 } y: 2', ['Rule:.nested { x: 1 }', 'Declaration:y: 2']],
+		['&:hover { x: 1 }', ['Rule:&:hover { x: 1 }']],
+		['> p { x: 1 }', ['Rule:> p { x: 1 }']],
+		['+ p { x: 1 }', ['Rule:+ p { x: 1 }']],
+		['~ p { x: 1 }', ['Rule:~ p { x: 1 }']],
+		[':hover { x: 1 }', ['Rule::hover { x: 1 }']],
+		['[data-a] { x: 1 }', ['Rule:[data-a] { x: 1 }']],
+		['@media (x) { y: 1 } z: 2', ['Atrule:@media (x) { y: 1 }', 'Declaration:z: 2']],
+	])('nested rules and at-rules starting with other tokens: %j', (block, expected) => {
+		expect(children(`s { ${block} }`)).toEqual(expected)
+	})
+
+	test.each([
+		['*zoom: 1; color: red', ['Declaration:*zoom: 1;!hack', 'Declaration:color: red']],
+		['_height: 1px; color: red', ['Declaration:_height: 1px;!hack', 'Declaration:color: red']],
+		['#hack: 1; color: red', ['Declaration:#hack: 1;!hack', 'Declaration:color: red']],
+	])('browser hack prefixes: %j', (block, expected) => {
+		expect(children(`s { ${block} }`)).toEqual(expected)
+	})
+
+	test('identifier-led declarations inside declaration-only at-rules', () => {
+		expect(children('@font-face { color: red; margin: 0 }')).toEqual([
+			'Declaration:color: red;',
+			'Declaration:margin: 0',
+		])
+		expect(children('@font-face { *zoom: 1; color: red }')).toEqual([
+			'Declaration:*zoom: 1;!hack',
+			'Declaration:color: red',
+		])
+	})
+
+	test('identifier-led children inside conditional at-rules', () => {
+		expect(children('@media x { a:hover { color: red } color: blue }')).toEqual([
+			'Rule:a:hover { color: red }',
+			'Declaration:color: blue',
+		])
+		expect(children('@media x { *zoom: 1; color: red }')).toEqual([
+			'Declaration:*zoom: 1;!hack',
+			'Declaration:color: red',
+		])
+	})
+})
