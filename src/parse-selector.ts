@@ -473,6 +473,13 @@ export class SelectorParser {
 
 		this.lexer.next_token_fast(false)
 
+		// A comma ends the selector: whitespace before it separates selectors, it is not a
+		// descendant combinator (`a , b` is `a` and `b`, not `a<space>` and `b`)
+		if (this.lexer.token_type === TOKEN_COMMA) {
+			this.lexer.restore_position(saved_whitespace_start)
+			return null
+		}
+
 		// Check for explicit combinators
 		if (this.lexer.token_type === TOKEN_DELIM) {
 			let ch = this.source.charCodeAt(this.lexer.token_start)

@@ -1234,6 +1234,43 @@ describe('Selector Nodes', () => {
 					],
 				],
 				['a, ', [{ selector: 'a', components: ['a'] }]],
+				// Whitespace/comments before a comma separate selectors; they are not a descendant combinator
+				[
+					'a , b',
+					[
+						{ selector: 'a', components: ['a'] },
+						{ selector: 'b', components: ['b'] },
+					],
+				],
+				[
+					'a /* c */ , b',
+					[
+						{ selector: 'a', components: ['a'] },
+						{ selector: 'b', components: ['b'] },
+					],
+				],
+				[
+					'a\n,\n  b',
+					[
+						{ selector: 'a', components: ['a'] },
+						{ selector: 'b', components: ['b'] },
+					],
+				],
+				['a ,', [{ selector: 'a', components: ['a'] }]],
+				[
+					'.a.b , #c:hover ',
+					[
+						{ selector: '.a.b', components: ['.a', '.b'] },
+						{ selector: '#c:hover', components: ['#c', ':hover'] },
+					],
+				],
+				[
+					'a b , c > d',
+					[
+						{ selector: 'a b', components: ['a', ' ', 'b'] },
+						{ selector: 'c > d', components: ['c', '>', 'd'] },
+					],
+				],
 				['a b ', [{ selector: 'a b', components: ['a', ' ', 'b'] }]],
 				['a  >  b ', [{ selector: 'a  >  b', components: ['a', '>', 'b'] }]],
 				['a > b /* x */', [{ selector: 'a > b', components: ['a', '>', 'b'] }]],
@@ -1254,6 +1291,27 @@ describe('Selector Nodes', () => {
 				}))
 				expect(actual).toEqual(expected)
 			})
+
+			test('whitespace before a comma inside :is() is not a combinator either', () => {
+				const { arena, rootNode, source } = parseSelectorInternal('a:is(b , c) d')
+				const [selector] = getChildren(arena, source, rootNode)
+				const pseudo = getChildren(arena, source, selector)[1]
+				const [list] = getChildren(arena, source, pseudo)
+				const inner = getChildren(arena, source, list).map((sel) =>
+					getChildren(arena, source, sel).map((c) => getNodeText(arena, source, c)),
+				)
+				expect(inner).toEqual([['b'], ['c']])
+			})
+
+			test.each(['a , b', 'a/* c */, b', 'a\t\n, b'])(
+				'a selector before a comma never ends with a COMBINATOR node: %j',
+				(input) => {
+					const { arena, rootNode, source } = parseSelectorInternal(input)
+					const [first] = getChildren(arena, source, rootNode)
+					const types = getChildren(arena, source, first).map((c) => arena.get_type(c))
+					expect(types).not.toContain(COMBINATOR)
+				},
+			)
 
 			test('a selector after a comma keeps its line and column across newlines', () => {
 				const { arena, rootNode, source } = parseSelectorInternal('a\n,\n  b')
