@@ -186,14 +186,23 @@ export class CSSDataArena {
 
 	// Read length in source
 	get_length(node_index: number): number {
-		// Check if this node has overflow length stored
+		const length = this.view.getUint16(this.node_offset(node_index) + 2, true)
+		// Only the saturated value can mean "overflow"; skip the flag read for everything else
+		if (length === 65535) {
+			return this.get_overflow_length(node_index)
+		}
+		return length
+	}
+
+	// Cold path of get_length: a saturated length is only an overflow if the flag is set
+	private get_overflow_length(node_index: number): number {
 		if (this.has_flag(node_index, FLAG_LENGTH_OVERFLOW)) {
 			const overflow_length = this.overflow_lengths.get(node_index)
 			if (overflow_length !== undefined) {
 				return overflow_length
 			}
 		}
-		return this.view.getUint16(this.node_offset(node_index) + 2, true)
+		return 65535
 	}
 
 	// Read content start offset (stored as delta from startOffset)
@@ -256,13 +265,17 @@ export class CSSDataArena {
 	set_length(node_index: number, length: number): void {
 		// Uint16 max value is 65535
 		if (length > 65535) {
-			this.view.setUint16(this.node_offset(node_index) + 2, 65535, true)
-			this.set_flag(node_index, FLAG_LENGTH_OVERFLOW)
-			// Store the actual length in the overflow map
-			this.overflow_lengths.set(node_index, length)
+			this.set_length_overflow(node_index, length)
 		} else {
 			this.view.setUint16(this.node_offset(node_index) + 2, length, true)
 		}
+	}
+
+	// Cold path of set_length: saturate the stored length and keep the real one in the map
+	private set_length_overflow(node_index: number, length: number): void {
+		this.view.setUint16(this.node_offset(node_index) + 2, 65535, true)
+		this.set_flag(node_index, FLAG_LENGTH_OVERFLOW)
+		this.overflow_lengths.set(node_index, length)
 	}
 
 	// Write content start delta (offset from startOffset)
@@ -333,8 +346,12 @@ export class CSSDataArena {
 		this.view.setUint32(offset + 24, start_line, true) // +24: startLine
 		this.view.setUint32(offset + 28, start_column, true) // +28: startColumn
 
-		// Use setter method to handle overflow
-		this.set_length(node_index, length)
+		// Inline the common (non-overflow) length write; overflow goes through the cold path
+		if (length > 65535) {
+			this.set_length_overflow(node_index, length)
+		} else {
+			this.view.setUint16(offset + 2, length, true) // +2: length
+		}
 
 		return node_index
 	}
@@ -392,14 +409,14 @@ export class CSSDataArena {
 
 	// Set a specific flag bit (doesn't clear other flags)
 	set_flag(node_index: number, flag: number): void {
-		let current_flags = this.get_flags(node_index)
-		this.set_flags(node_index, current_flags | flag)
+		const offset = node_index * BYTES_PER_NODE + 1
+		this.view.setUint8(offset, this.view.getUint8(offset) | flag)
 	}
 
 	// Clear a specific flag bit (doesn't affect other flags)
 	clear_flag(node_index: number, flag: number): void {
-		let current_flags = this.get_flags(node_index)
-		this.set_flags(node_index, current_flags & ~flag)
+		const offset = node_index * BYTES_PER_NODE + 1
+		this.view.setUint8(offset, this.view.getUint8(offset) & ~flag)
 	}
 
 	// Check if a specific flag is set
