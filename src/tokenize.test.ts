@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { Lexer } from './tokenize'
+import { is_ident_start } from './char-types'
 import {
 	TOKEN_IDENT,
 	TOKEN_FUNCTION,
@@ -743,6 +744,73 @@ describe('Lexer', () => {
 			token = lexer.next_token() // 'b'
 			expect(token?.line).toBe(2)
 			expect(token?.column).toBe(1)
+		})
+	})
+
+	describe('first-character classification', () => {
+		// Independent oracle: what the dispatch in next_token_fast must decide from a lone first character
+		const is_letter = (c: number) => (c >= 0x41 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a)
+		const oracle_ident_start = (c: number) => is_letter(c) || c === 0x5f || c >= 0x80
+		const oracle_whitespace = (c: number) =>
+			c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d || c === 0x0c
+		const oracle_digit = (c: number) => c >= 0x30 && c <= 0x39
+
+		test('is_ident_start matches letters, underscore and non-ASCII for every code unit', () => {
+			for (let c = 0; c <= 0xffff; c++) {
+				expect(is_ident_start(c), `code unit 0x${c.toString(16)}`).toBe(oracle_ident_start(c))
+			}
+		})
+
+		test('a lone character becomes IDENT, WHITESPACE or NUMBER exactly when the oracle says so', () => {
+			// Every ASCII code unit plus a spread of non-ASCII ones (Latin-1, BMP, lone surrogates)
+			const codes = [
+				...Array.from({ length: 0x180 }, (_, i) => i),
+				0x2028,
+				0x3042,
+				0x65e5,
+				0xd83d,
+				0xde00,
+				0xfeff,
+				0xffff,
+			]
+			for (let c of codes) {
+				let lexer = new Lexer(String.fromCharCode(c))
+				lexer.next_token_fast(false)
+				let type = lexer.token_type
+				let label = `code unit 0x${c.toString(16)}`
+				expect(type === TOKEN_IDENT, label).toBe(oracle_ident_start(c))
+				expect(type === TOKEN_WHITESPACE, label).toBe(oracle_whitespace(c))
+				expect(type === TOKEN_NUMBER, label).toBe(oracle_digit(c))
+				// Whatever it is, it must cover the whole single character
+				expect(lexer.token_start, label).toBe(0)
+				expect(lexer.token_end, label).toBe(1)
+			}
+		})
+
+		test('skip_whitespace=true lands on the same token as an explicit whitespace token', () => {
+			let source = ' \t\n\r\f_x'
+			let lexer = new Lexer(source)
+			lexer.next_token_fast(true)
+			expect(lexer.token_type).toBe(TOKEN_IDENT)
+			expect(source.slice(lexer.token_start, lexer.token_end)).toBe('_x')
+			expect(lexer.token_line).toBe(4) // \n, then \r, then \f each start a line
+		})
+
+		test('identifiers may start with underscore, a letter or a non-ASCII character', () => {
+			for (let source of ['_a', 'a', 'Z', 'é', '日本', '\u{1F600}x']) {
+				let lexer = new Lexer(source)
+				lexer.next_token_fast(false)
+				expect(lexer.token_type, source).toBe(TOKEN_IDENT)
+				expect(lexer.token_end, source).toBe(source.length)
+			}
+		})
+
+		test('digits start numbers and are not identifiers', () => {
+			for (let source of ['0', '9', '5px', '.5']) {
+				let lexer = new Lexer(source)
+				lexer.next_token_fast(false)
+				expect(lexer.token_type === TOKEN_IDENT, source).toBe(false)
+			}
 		})
 	})
 })
