@@ -1,7 +1,8 @@
-import { describe, test, expect } from 'vitest'
+import { describe, test, expect, vi } from 'vitest'
 import { parse } from './parse'
 import { SELECTOR_LIST, STYLE_RULE, DECLARATION, VALUE, AT_RULE, RAW } from './arena'
 import { PlainCSSNode } from './css-node'
+import type { CommentInfo } from './tokenize'
 import type { Rule, Atrule, Declaration, CSSNode } from './node-types'
 
 describe('Parser Options', () => {
@@ -373,6 +374,63 @@ describe('Parser Options', () => {
 			expect(comments).toHaveLength(1)
 			expect(comments[0].line).toBe(2)
 			expect(comments[0].column).toBe(2)
+		})
+
+		test('should find comments in selectors, values and at-rule blocks', () => {
+			const on_comment = vi.fn<(info: CommentInfo) => void>()
+			const css = `
+    /* comment 1 */
+    test1,
+    /* comment 2 */
+    test2 {
+      /* comment 3 */
+      color: /* comment 4 */ green;
+      background:
+        red,
+        /* comment 5 */
+        yellow
+      ;
+    }
+
+    @media all {
+      /* comment 6 */
+    }
+  `
+
+			parse(css, { on_comment })
+
+			expect(on_comment).toHaveBeenCalledTimes(6)
+			const total_length = on_comment.mock.calls.reduce((sum, [info]) => sum + info.length, 0)
+			expect(total_length).toBe(90)
+		})
+
+		test('should find comments in at-rule preludes', () => {
+			const css = `
+    @media /* c1 */ screen and /* c2 */ (min-width: 100px) {}
+    @supports /* c3 */ (display: grid) {}
+    @layer /* c4 */ base, /* c5 */ theme;
+    @import /* c6 */ url("a.css") /* c7 */ layer(base);
+    @container /* c8 */ sidebar /* c9 */ (min-width: 1px) {}
+  `
+			const found: string[] = []
+
+			parse(css, {
+				on_comment: (info) => {
+					found.push(css.slice(info.start, info.end))
+				},
+			})
+
+			expect(found).toEqual([
+				'/* c1 */',
+				'/* c2 */',
+				'/* c3 */',
+				'/* c4 */',
+				'/* c5 */',
+				'/* c6 */',
+				'/* c7 */',
+				'/* c8 */',
+				'/* c9 */',
+			])
 		})
 
 		test('should not call on_comment when no comments present', () => {

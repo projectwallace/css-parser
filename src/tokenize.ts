@@ -6,6 +6,7 @@ import {
 	CHAR_WHITESPACE,
 	CHAR_NEWLINE,
 	CHAR_IDENT,
+	CHAR_IDENT_START,
 } from './char-types'
 
 // Local inline version for hot paths that still need it
@@ -197,6 +198,8 @@ export class Lexer {
 			}
 
 			let ch = source.charCodeAt(this.pos)
+			// One table read classifies ch for the dispatch below (non-ASCII → 0, handled via ch >= 128)
+			let ch_type = ch < 128 ? char_types[ch] : 0
 			let start = this.pos
 			let start_line = this._line
 			let start_column = this.pos - this._line_offset + 1
@@ -233,7 +236,7 @@ export class Lexer {
 			}
 
 			// Whitespace
-			if (ch < 128 && (char_types[ch] & (CHAR_WHITESPACE | CHAR_NEWLINE)) !== 0) {
+			if ((ch_type & (CHAR_WHITESPACE | CHAR_NEWLINE)) !== 0) {
 				return this.consume_whitespace(start_line, start_column)
 			}
 
@@ -252,7 +255,7 @@ export class Lexer {
 			// Identifier or function — checked first: the single most common non-whitespace
 			// token (~15-20% of all tokens), ahead of numbers/hashes/at-keywords/strings and
 			// the now-extinct CDO/CDC tokens that used to precede it (profiled on bootstrap.css/tailwind.css).
-			if (is_ident_start(ch)) {
+			if (ch >= 128 || (ch_type & CHAR_IDENT_START) !== 0) {
 				return this.consume_ident_or_function(start_line, start_column)
 			}
 
@@ -296,7 +299,7 @@ export class Lexer {
 			}
 
 			// Numbers: digit or . followed by digit
-			if (ch < 128 && (char_types[ch] & CHAR_DIGIT) !== 0) {
+			if ((ch_type & CHAR_DIGIT) !== 0) {
 				return this.consume_number(start_line, start_column)
 			}
 
@@ -997,6 +1000,20 @@ export class Lexer {
 		}
 	}
 
+	// Like `save_position()`, but fills `target` instead of allocating
+	save_position_into(target: LexerPosition): LexerPosition {
+		target.pos = this.pos
+		target.line = this._line
+		target.column = this.pos - this._line_offset + 1
+		target._line_offset = this._line_offset
+		target.token_type = this.token_type
+		target.token_start = this.token_start
+		target.token_end = this.token_end
+		target.token_line = this.token_line
+		target.token_column = this.token_column
+		return target
+	}
+
 	/**
 	 * Restore lexer state from saved position
 	 * @param saved The saved position to restore
@@ -1027,26 +1044,13 @@ export class Lexer {
 				continue
 			}
 
-			// Skip comments /*...*/
+			// Skip comments /*...*/ (fires on_comment)
 			if (
 				ch === CHAR_FORWARD_SLASH &&
 				this.pos + 1 < end &&
 				this.source.charCodeAt(this.pos + 1) === CHAR_ASTERISK
 			) {
-				this.advance() // skip /
-				this.advance() // skip *
-				while (this.pos < end) {
-					if (
-						this.source.charCodeAt(this.pos) === CHAR_ASTERISK &&
-						this.pos + 1 < end &&
-						this.source.charCodeAt(this.pos + 1) === CHAR_FORWARD_SLASH
-					) {
-						this.advance() // skip *
-						this.advance() // skip /
-						break
-					}
-					this.advance()
-				}
+				this._skip_comment()
 				continue
 			}
 

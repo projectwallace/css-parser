@@ -45,10 +45,10 @@ import {
 	CHAR_FORWARD_SLASH,
 	str_equals,
 	str_equals_range,
+	is_and_or_not_range,
 } from './string-utils'
 import { ConditionParser } from './parse-condition'
 
-/** @internal */
 export class ValueNodeParser {
 	protected lexer: Lexer
 	protected arena: CSSDataArena
@@ -94,19 +94,15 @@ export class ValueNodeParser {
 		let last_node = 0
 
 		while (this.lexer.pos < this.end) {
-			// Get next token without skipping whitespace (whitespace matters in values)
-			this.lexer.next_token_fast(false)
+			// Whitespace is only a separator here, so let the lexer skip it instead of
+			// emitting a token we'd immediately discard
+			this.lexer.next_token_fast(true)
 
 			// Stop if we've reached the end of the range
 			if (this.lexer.token_start >= this.end) break
 
 			let token_type = this.lexer.token_type
 			if (token_type === TOKEN_EOF) break
-
-			// Skip whitespace tokens (they're separators, not value nodes)
-			if (token_type === TOKEN_WHITESPACE) {
-				continue
-			}
 
 			// Parse this token into a value node (token_type already cached in lexer.token_type)
 			let node = this.parse_value_node()
@@ -206,9 +202,10 @@ export class ValueNodeParser {
 	// see the caller for why).
 	// Returns [content_end, close_end, matched]; matched is false if EOF was hit first, in
 	// which case content_end/close_end are left at their initial (scan-start) values.
-	private scan_matching_paren(
-		bounded: boolean,
-	): [content_end: number, close_end: number, matched: boolean] {
+	private paren_content_end = 0
+	private paren_close_end = 0
+
+	private scan_matching_paren(bounded: boolean): boolean {
 		let depth = 1
 		let content_end = this.lexer.pos
 		let close_end = this.lexer.token_end
@@ -230,7 +227,9 @@ export class ValueNodeParser {
 			}
 		}
 
-		return [content_end, close_end, depth === 0]
+		this.paren_content_end = content_end
+		this.paren_close_end = close_end
+		return depth === 0
 	}
 
 	private parse_function_node(start: number, end: number): number {
@@ -292,7 +291,9 @@ export class ValueNodeParser {
 				let content_start = end // Position after 'url('
 				let content_end = end
 
-				let [scanned_content_end, scanned_func_end, matched] = this.scan_matching_paren(false)
+				let matched = this.scan_matching_paren(false)
+				let scanned_content_end = this.paren_content_end
+				let scanned_func_end = this.paren_close_end
 				if (matched) {
 					content_end = scanned_content_end
 					func_end = scanned_func_end
@@ -319,7 +320,7 @@ export class ValueNodeParser {
 		let content_end = end
 
 		while (this.lexer.pos < this.end && paren_depth > 0) {
-			this.lexer.next_token_fast(false)
+			this.lexer.next_token_fast(true)
 
 			let token_type = this.lexer.token_type
 			if (token_type === TOKEN_EOF) break
@@ -336,9 +337,6 @@ export class ValueNodeParser {
 					break
 				}
 			}
-
-			// Skip whitespace
-			if (token_type === TOKEN_WHITESPACE) continue
 
 			// Parse argument node
 			let arg_node = this.parse_value_node()
@@ -367,17 +365,15 @@ export class ValueNodeParser {
 		return node
 	}
 
-	/**
-	 * Parse an if() inline conditional function.
-	 *
-	 * Spec grammar (CSS Values Level 5):
-	 *   if( <if-branch>+ )
-	 *   <if-branch>    = <if-condition> : <declaration-value>? ;?
-	 *   <if-condition> = style(…) | media(…) | supports(…) | else
-	 *
-	 * Each branch becomes an IF_BRANCH child (see the `IfBranch` type in node-types.ts
-	 * for its shape). Colons/semicolons here are structural separators, not OPERATOR nodes.
-	 */
+	// Parse an if() inline conditional function.
+	//
+	// Spec grammar (CSS Values Level 5):
+	//   if( <if-branch>+ )
+	//   <if-branch>    = <if-condition> : <declaration-value>? ;?
+	//   <if-condition> = style(…) | media(…) | supports(…) | else
+	//
+	// Each branch becomes an IF_BRANCH child (see the `IfBranch` type in node-types.ts
+	// for its shape). Colons/semicolons here are structural separators, not OPERATOR nodes.
 	private parse_if_function_node(start: number, end: number): number {
 		let name_end = end - 1 // exclude '('
 		let save_line = this.lexer.token_line
@@ -524,11 +520,6 @@ export class ValueNodeParser {
 		return node
 	}
 
-	private is_and_or_not(str: string): boolean {
-		// All logical operators are 2-3 chars: "and" (3), "or" (2), "not" (3)
-		return str_equals('and', str) || str_equals('or', str) || str_equals('not', str)
-	}
-
 	// Advance past whitespace to the next real token, returning its type (TOKEN_EOF once
 	// `this.end` is reached). Used to look ahead for a not/and/or continuation without
 	// committing to consuming it — callers restore to a saved position when it doesn't.
@@ -542,23 +533,20 @@ export class ValueNodeParser {
 		return TOKEN_EOF
 	}
 
-	/**
-	 * Parse an if()-branch condition:
-	 *   <if-condition> = <boolean-expr[ <if-test> ]> | else
-	 *   <if-test>      = style(…) | media(…) | supports(…)
-	 * i.e. a single test function, the bare "else" identifier, or those test functions
-	 * combined with not/and/or (e.g. "not style(--x: 1)", "style(--a: 1) and media(width > 600px)").
-	 * Called with the lexer's current token already positioned at the condition's first token.
-	 * A simple single-function/"else" condition returns that node directly, unwrapped (matching
-	 * prior behavior); a compound not/and/or condition wraps the flat operator/function chain in
-	 * an IF_CONDITION node so IfBranch.condition/.value (single first_child/next_sibling hops)
-	 * still see exactly one node for "the condition".
-	 */
+	// Parse an if()-branch condition:
+	//   <if-condition> = <boolean-expr[ <if-test> ]> | else
+	//   <if-test>      = style(…) | media(…) | supports(…)
+	// i.e. a single test function, the bare "else" identifier, or those test functions
+	// combined with not/and/or (e.g. "not style(--x: 1)", "style(--a: 1) and media(width > 600px)").
+	// Called with the lexer's current token already positioned at the condition's first token.
+	// A simple single-function/"else" condition returns that node directly, unwrapped (matching
+	// prior behavior); a compound not/and/or condition wraps the flat operator/function chain in
+	// an IF_CONDITION node so IfBranch.condition/.value (single first_child/next_sibling hops)
+	// still see exactly one node for "the condition".
 	private parse_if_condition(): number | null {
 		// "else" never combines with not/and/or — always a bare identifier.
 		if (this.lexer.token_type === TOKEN_IDENT) {
-			let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
-			if (str_equals('else', text)) {
+			if (str_equals_range(this.source, this.lexer.token_start, this.lexer.token_end, 'else')) {
 				return this.parse_value_node()
 			}
 		}
@@ -576,13 +564,14 @@ export class ValueNodeParser {
 			if (tt === TOKEN_FUNCTION) {
 				component = this.parse_if_condition_function(this.lexer.token_start, this.lexer.token_end)
 			} else if (tt === TOKEN_IDENT) {
-				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
-				if (this.is_and_or_not(text)) {
+				let token_start = this.lexer.token_start
+				let token_end = this.lexer.token_end
+				if (is_and_or_not_range(this.source, token_start, token_end)) {
 					is_operator = true
 					component = this.arena.create_node(
 						PRELUDE_OPERATOR,
-						this.lexer.token_start,
-						this.lexer.token_end - this.lexer.token_start,
+						token_start,
+						token_end - token_start,
 						this.lexer.token_line,
 						this.lexer.token_column,
 					)
@@ -611,8 +600,7 @@ export class ValueNodeParser {
 				continue
 			}
 			if (next_tt === TOKEN_IDENT) {
-				let text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
-				if (this.is_and_or_not(text)) {
+				if (is_and_or_not_range(this.source, this.lexer.token_start, this.lexer.token_end)) {
 					compound = true
 					continue
 				}
@@ -640,22 +628,19 @@ export class ValueNodeParser {
 		return wrapper
 	}
 
-	/**
-	 * Parse a condition function inside if() — style(), supports(), or media(). Content parsing
-	 * is delegated to the shared ConditionParser (see parse-condition.ts), so these produce the
-	 * same node shapes real `@supports`/`@media` conditions do:
-	 *   style()/supports() → SUPPORTS_DECLARATION(s) — supports() gets the full compound
-	 *     <supports-condition> grammar (and/or/not, nested conditions), same as `@supports`.
-	 *   media()  → a single MEDIA_FEATURE or FEATURE_RANGE (comparison syntax), same as `@media`.
-	 *   anything else → generic value nodes, as before.
-	 *
-	 * Called with the current token at TOKEN_FUNCTION (the '(' already consumed).
-	 * @param func_start  Offset of the function name's first char.
-	 * @param token_end   Offset right after '(' (== lexer.token_end here).
-	 */
+	// Parse a condition function inside if() — style(), supports(), or media(). Content parsing
+	// is delegated to the shared ConditionParser (see parse-condition.ts), so these produce the
+	// same node shapes real `@supports`/`@media` conditions do:
+	//   style()/supports() → SUPPORTS_DECLARATION(s) — supports() gets the full compound
+	//     <supports-condition> grammar (and/or/not, nested conditions), same as `@supports`.
+	//   media()  → a single MEDIA_FEATURE or FEATURE_RANGE (comparison syntax), same as `@media`.
+	//   anything else → generic value nodes, as before.
+	//
+	// Called with the current token at TOKEN_FUNCTION (the '(' already consumed).
+	// @param func_start  Offset of the function name's first char.
+	// @param token_end   Offset right after '(' (== lexer.token_end here).
 	private parse_if_condition_function(func_start: number, token_end: number): number {
 		let func_name_end = token_end - 1 // before '('
-		let func_name = this.source.substring(func_start, func_name_end)
 		let func_line = this.lexer.token_line
 		let func_col = this.lexer.token_column
 
@@ -664,7 +649,9 @@ export class ValueNodeParser {
 		let func_end = content_start
 
 		// Scan for matching ')' to find the full function extent
-		let [scanned_content_end, scanned_func_end, matched] = this.scan_matching_paren(true)
+		let matched = this.scan_matching_paren(true)
+		let scanned_content_end = this.paren_content_end
+		let scanned_func_end = this.paren_close_end
 		if (matched) {
 			content_end = scanned_content_end
 			func_end = scanned_func_end
@@ -686,7 +673,7 @@ export class ValueNodeParser {
 		// Parse content based on function name
 		let child_nodes: number[] = []
 
-		if (str_equals('style', func_name)) {
+		if (str_equals_range(this.source, func_start, func_name_end, 'style')) {
 			// style(<style-query>): a bare single declaration when the content has a top-level
 			// ':' (style(--x: 1)); otherwise the full compound and/or/not grammar over
 			// parenthesized declarations, same as `@supports` — style((--a: 1) or (--a: 2)).
@@ -704,7 +691,7 @@ export class ValueNodeParser {
 			} else {
 				child_nodes = [decl]
 			}
-		} else if (str_equals('supports', func_name)) {
+		} else if (str_equals_range(this.source, func_start, func_name_end, 'supports')) {
 			// supports(<supports-condition>): a bare single declaration when the content has a
 			// top-level ':' (matching style()'s shorthand — supports(display: grid), no extra
 			// parens needed); otherwise the full compound grammar, same as `@supports`'s own
@@ -723,7 +710,7 @@ export class ValueNodeParser {
 			} else {
 				child_nodes = [decl]
 			}
-		} else if (str_equals('media', func_name)) {
+		} else if (str_equals_range(this.source, func_start, func_name_end, 'media')) {
 			// media()'s own parens delimit the feature; there's no separate inner paren pair,
 			// so the feature span equals the content span (see parse_media_feature_content's docs)
 			let feature = this.condition_parser.parse_media_feature_content(
@@ -742,7 +729,7 @@ export class ValueNodeParser {
 		return func_node
 	}
 
-	/** Parse value tokens in a source sub-range using save/restore to protect lexer state. */
+	// Parse value tokens in a source sub-range using save/restore to protect lexer state.
 	private parse_value_nodes_in_range(start: number, end: number): number[] {
 		let saved_end = this.end
 		let saved_pos = this.lexer.save_position()
@@ -752,11 +739,10 @@ export class ValueNodeParser {
 
 		let nodes: number[] = []
 		while (this.lexer.pos < this.end) {
-			this.lexer.next_token_fast(false)
+			this.lexer.next_token_fast(true)
 			if (this.lexer.token_start >= this.end) break
 			let token_type = this.lexer.token_type
 			if (token_type === TOKEN_EOF) break
-			if (token_type === TOKEN_WHITESPACE) continue
 			let node = this.parse_value_node()
 			if (node !== null) nodes.push(node)
 		}
@@ -785,7 +771,7 @@ export class ValueNodeParser {
 		let paren_end = end
 
 		while (this.lexer.pos < this.end && paren_depth > 0) {
-			this.lexer.next_token_fast(false)
+			this.lexer.next_token_fast(true)
 
 			let token_type = this.lexer.token_type
 			if (token_type === TOKEN_EOF) break
@@ -801,9 +787,6 @@ export class ValueNodeParser {
 					break
 				}
 			}
-
-			// Skip whitespace
-			if (token_type === TOKEN_WHITESPACE) continue
 
 			// Parse child node
 			// Note: We don't track paren_depth for LEFT_PAREN or TOKEN_FUNCTION here

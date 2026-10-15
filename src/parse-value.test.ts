@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { parse } from './parse'
+import { parse_value } from './parse-value'
 import {
 	IDENTIFIER,
 	NUMBER,
@@ -1036,6 +1037,119 @@ describe('Value Node Types', () => {
 				expect(args.map((n) => n.type)).toEqual([NUMBER, OPERATOR, NUMBER, OPERATOR, NUMBER])
 				expect(args.map((n) => n.text)).toEqual(['255', ',', '0', ',', '0'])
 			})
+		})
+	})
+
+	describe('whitespace between value tokens', () => {
+		// Compact serialisation of a value subtree: TYPE:text@line:column, children in brackets
+		const names: Record<number, string> = {
+			[IDENTIFIER]: 'ident',
+			[NUMBER]: 'num',
+			[DIMENSION]: 'dim',
+			[STRING]: 'str',
+			[FUNCTION]: 'fn',
+			[OPERATOR]: 'op',
+			[PARENTHESIS]: 'paren',
+			[URL]: 'url',
+		}
+		type TreeNode = {
+			type: number
+			text: string
+			line: number
+			column: number
+			children: TreeNode[]
+		}
+		const ser = (node: TreeNode): string => {
+			const kids = node.children.map(ser).join(' ')
+			return `${names[node.type] ?? node.type}:${JSON.stringify(node.text)}@${node.line}:${node.column}${kids ? `[${kids}]` : ''}`
+		}
+		const valueOf = (css: string) => {
+			const decl = parse(css).first_child?.first_child?.next_sibling?.first_child
+			return decl!.first_child as unknown as TreeNode
+		}
+
+		test.each([
+			['a { margin: 1px   2px\t3px; }', ['dim:"1px"@1:13', 'dim:"2px"@1:19', 'dim:"3px"@1:23']],
+			['a { margin: 1px\n  2px\n\n  3px; }', ['dim:"1px"@1:13', 'dim:"2px"@2:3', 'dim:"3px"@4:3']],
+			['a { margin:\n\t1px\r\n2px; }', ['dim:"1px"@2:2', 'dim:"2px"@3:1']],
+			['a { margin: 1px 2px ; }', ['dim:"1px"@1:13', 'dim:"2px"@1:17']],
+		])('separates sibling tokens and tracks line/column: %j', (css, expected) => {
+			expect(valueOf(css).children.map(ser)).toEqual(expected)
+		})
+
+		test.each([
+			[
+				'a { color: rgb(  1  ,  2  ,  3  ); }',
+				'fn:"rgb(  1  ,  2  ,  3  )"@1:12[num:"1"@1:18 op:","@1:21 num:"2"@1:24 op:","@1:27 num:"3"@1:30]',
+			],
+			['a { transform: translate(\n 1px \n); }', 'fn:"translate(\\n 1px \\n)"@1:16[dim:"1px"@2:2]'],
+			['a { width: (  1px  2px  ) }', 'paren:"(  1px  2px  )"@1:12[dim:"1px"@1:15 dim:"2px"@1:20]'],
+			[
+				'a { width: calc(1px /* a */  +  /* b */ 2px); }',
+				'fn:"calc(1px /* a */  +  /* b */ 2px)"@1:12[dim:"1px"@1:17 op:"+"@1:30 dim:"2px"@1:41]',
+			],
+		])('skips whitespace and comments inside functions and parentheses: %j', (css, expected) => {
+			expect(valueOf(css).children.map(ser)).toEqual([expected])
+		})
+
+		test('skips whitespace in nested functions and parentheses', () => {
+			const [calc] = valueOf('a { width: calc( ( 1px + 2px )  *  3 ); }').children
+			expect(calc.children.map((n) => n.text)).toEqual(['( 1px + 2px )', '*', '3'])
+			expect(calc.children[0].children.map((n) => n.text)).toEqual(['1px', '+', '2px'])
+
+			const [f] = valueOf('a { x: f(g(  h(  1  )  )  ) }').children
+			expect(f.text).toBe('f(g(  h(  1  )  )  )')
+			expect(f.children[0].text).toBe('g(  h(  1  )  )')
+			expect(f.children[0].children[0].text).toBe('h(  1  )')
+			expect(f.children[0].children[0].children.map((n) => n.text)).toEqual(['1'])
+		})
+
+		test('stops at the closing parenthesis when whitespace precedes it', () => {
+			const value = valueOf('a { width: calc(1px ) ; height: 2px }')
+			expect(value.text).toBe('calc(1px )')
+			expect(value.children).toHaveLength(1)
+		})
+
+		test('keeps the argument list of an unterminated function', () => {
+			const value = valueOf('a { width: calc( 1px  ')
+			expect(value.children).toHaveLength(1)
+			expect(value.children[0].children.map((n) => n.text)).toEqual(['1px'])
+		})
+
+		test('unquoted url() keeps its raw content, quoted url() parses the string', () => {
+			const quoted = valueOf('a { background: url(  "x.png"  ) no-repeat; }').children
+			expect(quoted.map((n) => n.text)).toEqual(['url(  "x.png"  )', 'no-repeat'])
+			expect(quoted[0].children.map(ser)).toEqual(['str:"\\"x.png\\""@1:23'])
+
+			const unquoted = valueOf('a { background: url(  x.png  ) no-repeat; }').children
+			expect(unquoted.map((n) => n.text)).toEqual(['url(  x.png  )', 'no-repeat'])
+			expect(unquoted[0].children).toHaveLength(0)
+			expect((unquoted[0] as unknown as Url).value).toBe('x.png')
+		})
+
+		test('if() branches tolerate extra whitespace around conditions, colons and semicolons', () => {
+			const [fn] = valueOf('a { x: if(  style(--a: 1)  :  1px  ;  else  :  2px  ) }').children
+			const branches = fn.children
+			expect(branches.map((b) => b.type)).toEqual([IF_BRANCH, IF_BRANCH])
+			expect(branches.map((b) => b.children.map((c) => c.text))).toEqual([
+				['style(--a: 1)', '1px'],
+				['else', '2px'],
+			])
+		})
+
+		test('parse_value() ignores leading and trailing whitespace', () => {
+			const trailing = parse_value('1px   2px  ')
+			expect(trailing.text).toBe('1px   2px')
+			expect((trailing as unknown as TreeNode).children.map(ser)).toEqual([
+				'dim:"1px"@1:1',
+				'dim:"2px"@1:7',
+			])
+
+			const leading = parse_value('  1px  ')
+			expect(leading.text).toBe('1px')
+			expect((leading as unknown as TreeNode).children.map(ser)).toEqual(['dim:"1px"@1:3'])
+
+			expect(parse_value('').children).toHaveLength(0)
 		})
 	})
 

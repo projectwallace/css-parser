@@ -7,7 +7,6 @@ import {
 	is_whitespace,
 } from './string-utils'
 
-/** @internal */
 export function skip_whitespace_forward(source: string, pos: number, end: number): number {
 	while (pos < end && is_whitespace(source.charCodeAt(pos))) {
 		pos++
@@ -15,7 +14,6 @@ export function skip_whitespace_forward(source: string, pos: number, end: number
 	return pos
 }
 
-/** @internal */
 export function skip_whitespace_and_comments_forward(
 	source: string,
 	pos: number,
@@ -56,7 +54,6 @@ export function skip_whitespace_and_comments_forward(
 	return pos
 }
 
-/** @internal */
 export function skip_whitespace_and_comments_backward(
 	source: string,
 	pos: number,
@@ -93,10 +90,7 @@ export function skip_whitespace_and_comments_backward(
 	return pos
 }
 
-/**
- * Trims whitespace and CSS comments from both ends; returns null if the range is only whitespace/comments.
- * @internal
- */
+// Trims whitespace and CSS comments from both ends; returns null if the range is only whitespace/comments.
 export function trim_boundaries(
 	source: string,
 	start: number,
@@ -109,7 +103,7 @@ export function trim_boundaries(
 	return [start, end]
 }
 
-/** Find the position of the first ':' at parenthesis depth 0 in [start, end). Returns -1 if not found. @internal */
+// Find the position of the first ':' at parenthesis depth 0 in [start, end). Returns -1 if not found.
 export function find_colon_at_depth_zero(source: string, start: number, end: number): number {
 	let depth = 0
 	for (let i = start; i < end; i++) {

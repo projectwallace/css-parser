@@ -34,7 +34,10 @@ import {
 	TOKEN_COLON,
 	TOKEN_FUNCTION,
 } from './token-types'
-import { trim_boundaries, skip_whitespace_and_comments_backward } from './parse-utils'
+import {
+	skip_whitespace_and_comments_forward,
+	skip_whitespace_and_comments_backward,
+} from './parse-utils'
 import {
 	CHAR_PERIOD,
 	CHAR_GREATER_THAN,
@@ -436,24 +439,29 @@ export class Parser {
 		}
 
 		// Store prelude position (trimmed)
-		let trimmed = trim_boundaries(this.source, prelude_start, prelude_end)
+		let trimmed_start = skip_whitespace_and_comments_forward(
+			this.source,
+			prelude_start,
+			prelude_end,
+		)
+		let trimmed_end = skip_whitespace_and_comments_backward(this.source, prelude_end, trimmed_start)
 		let prelude_wrapper: number | null = null
-		if (trimmed) {
+		if (trimmed_start < trimmed_end) {
 			// Create AT_RULE_PRELUDE wrapper if prelude parsing is enabled
 			if (this.prelude_parser) {
 				// Parse prelude and add structured nodes as children
 				let prelude_nodes = this.prelude_parser.parse_prelude(
 					at_rule_name,
-					trimmed[0],
-					trimmed[1],
+					trimmed_start,
+					trimmed_end,
 					at_rule_line,
 					at_rule_column,
 				)
 				if (prelude_nodes.length > 0) {
 					prelude_wrapper = this.arena.create_node(
 						AT_RULE_PRELUDE,
-						trimmed[0],
-						trimmed[1] - trimmed[0],
+						trimmed_start,
+						trimmed_end - trimmed_start,
 						at_rule_line,
 						at_rule_column,
 					)
@@ -461,8 +469,8 @@ export class Parser {
 				} else {
 					prelude_wrapper = this.arena.create_node(
 						RAW,
-						trimmed[0],
-						trimmed[1] - trimmed[0],
+						trimmed_start,
+						trimmed_end - trimmed_start,
 						at_rule_line,
 						at_rule_column,
 					)
@@ -470,8 +478,8 @@ export class Parser {
 			} else {
 				prelude_wrapper = this.arena.create_node(
 					RAW,
-					trimmed[0],
-					trimmed[1] - trimmed[0],
+					trimmed_start,
+					trimmed_end - trimmed_start,
 					at_rule_line,
 					at_rule_column,
 				)
