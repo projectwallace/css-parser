@@ -78,7 +78,11 @@ bench.add('parse_declaration', () => {
 	parse_declaration('background: linear-gradient(to right, #fff 0%, rgb(0 0 0 / 50%) 100%)')
 })
 
-bench.add('parse_value', () => {
+bench.add('parse_value (simple)', () => {
+	parse_value('10px')
+})
+
+bench.add('parse_value (complex)', () => {
 	parse_value('calc(100% - var(--gap, 1rem) * 2) 10px 1.5em')
 })
 
