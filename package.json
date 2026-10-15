@@ -80,11 +80,12 @@
 		"test-coverage": "vitest --coverage",
 		"test-build": "pnpm run build && vitest run --config vitest.config.build.ts",
 		"build": "tsdown",
-		"benchmark": "pnpm run build && node --expose-gc benchmark/index.ts",
+		"benchmark:compare": "pnpm run build && node --expose-gc benchmark/comparison.ts",
+		"benchmark": "pnpm run build && node --expose-gc benchmark/parsing.ts",
 		"lint": "oxlint --config .oxlintrc.json && oxfmt --check",
 		"check": "tsc --noEmit",
 		"knip": "knip",
-		"precommit": "pnpm run test --run; pnpm run lint; pnpm run check"
+		"precommit": "pnpm run test --run && pnpm run lint && pnpm run check && pnpm knip"
 	},
 	"devDependencies": {
 		"@projectwallace/preset-oxlint": "^0.0.11",
