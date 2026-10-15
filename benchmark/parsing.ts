@@ -18,26 +18,34 @@ import { report } from './report.ts'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 
-const css = fs.readFileSync(path.resolve('benchmark/nerdy-dev.css'), 'utf-8')
-const ast = parse(css)
+const files = {
+	'Nerdy.dev': 'nerdy-dev.css',
+	'CSS Tricks': 'css-tricks.css',
+	Bootstrap: 'bootstrap.min.css',
+	Tailwind: 'tailwind.min.css',
+}
 
 const bench = new Bench({ warmup: true, retainSamples: true })
 
 // ─── Tokenizer & parser ────────────────────────────────────────────────────
 
-bench.add('tokenize', () => {
-	for (const _token of tokenize(css)) {
-		// iterate
-	}
-})
+for (const [name, file] of Object.entries(files)) {
+	const css = fs.readFileSync(path.resolve('benchmark', file), 'utf-8')
 
-bench.add('parse', () => {
-	parse(css)
-})
+	bench.add(`tokenize|${name}`, () => {
+		for (const _token of tokenize(css)) {
+			// iterate
+		}
+	})
 
-bench.add('parse (no sub-parsing)', () => {
-	parse(css, { parse_selectors: false, parse_values: false, parse_atrule_preludes: false })
-})
+	bench.add(`parse|${name}`, () => {
+		parse(css)
+	})
+
+	bench.add(`parse (no sub-parsing)|${name}`, () => {
+		parse(css, { parse_selectors: false, parse_values: false, parse_atrule_preludes: false })
+	})
+}
 
 // ─── Sub-parsers ───────────────────────────────────────────────────────────
 
@@ -79,28 +87,33 @@ bench.add('parse_dimension', () => {
 
 // ─── Walking ───────────────────────────────────────────────────────────────
 
-bench.add('walk (node.type)', () => {
-	walk(ast, (node) => {
-		void node.type
-	})
-})
+for (const [name, file] of Object.entries(files)) {
+	// Parse once up front so parse time doesn't pollute the walk timings
+	const ast = parse(fs.readFileSync(path.resolve('benchmark', file), 'utf-8'))
 
-bench.add('walk (node.type_name)', () => {
-	walk(ast, (node) => {
-		void node.type_name
+	bench.add(`walk (node.type)|${name}`, () => {
+		walk(ast, (node) => {
+			void node.type
+		})
 	})
-})
 
-bench.add('traverse', () => {
-	traverse(ast, {
-		enter(node) {
-			void node.type
-		},
-		leave(node) {
-			void node.type
-		},
+	bench.add(`walk (node.type_name)|${name}`, () => {
+		walk(ast, (node) => {
+			void node.type_name
+		})
 	})
-})
+
+	bench.add(`traverse|${name}`, () => {
+		traverse(ast, {
+			enter(node) {
+				void node.type
+			},
+			leave(node) {
+				void node.type
+			},
+		})
+	})
+}
 
 await bench.run()
 
