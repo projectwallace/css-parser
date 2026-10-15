@@ -316,6 +316,6 @@ if (hasGC) {
 	}
 } else {
 	console.log(
-		`\n── Table ${memTableNum}: Memory Usage – skipped (run with: node --expose-gc benchmark/index.js) ──\n`,
+		`\n── Table ${memTableNum}: Memory Usage – skipped (run with: node --expose-gc benchmark/comparison.ts) ──\n`,
 	)
 }
