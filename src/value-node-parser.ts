@@ -94,19 +94,15 @@ export class ValueNodeParser {
 		let last_node = 0
 
 		while (this.lexer.pos < this.end) {
-			// Get next token without skipping whitespace (whitespace matters in values)
-			this.lexer.next_token_fast(false)
+			// Whitespace is only a separator here, so let the lexer skip it instead of
+			// emitting a token we'd immediately discard
+			this.lexer.next_token_fast(true)
 
 			// Stop if we've reached the end of the range
 			if (this.lexer.token_start >= this.end) break
 
 			let token_type = this.lexer.token_type
 			if (token_type === TOKEN_EOF) break
-
-			// Skip whitespace tokens (they're separators, not value nodes)
-			if (token_type === TOKEN_WHITESPACE) {
-				continue
-			}
 
 			// Parse this token into a value node (token_type already cached in lexer.token_type)
 			let node = this.parse_value_node()
@@ -324,7 +320,7 @@ export class ValueNodeParser {
 		let content_end = end
 
 		while (this.lexer.pos < this.end && paren_depth > 0) {
-			this.lexer.next_token_fast(false)
+			this.lexer.next_token_fast(true)
 
 			let token_type = this.lexer.token_type
 			if (token_type === TOKEN_EOF) break
@@ -341,9 +337,6 @@ export class ValueNodeParser {
 					break
 				}
 			}
-
-			// Skip whitespace
-			if (token_type === TOKEN_WHITESPACE) continue
 
 			// Parse argument node
 			let arg_node = this.parse_value_node()
@@ -746,11 +739,10 @@ export class ValueNodeParser {
 
 		let nodes: number[] = []
 		while (this.lexer.pos < this.end) {
-			this.lexer.next_token_fast(false)
+			this.lexer.next_token_fast(true)
 			if (this.lexer.token_start >= this.end) break
 			let token_type = this.lexer.token_type
 			if (token_type === TOKEN_EOF) break
-			if (token_type === TOKEN_WHITESPACE) continue
 			let node = this.parse_value_node()
 			if (node !== null) nodes.push(node)
 		}
@@ -779,7 +771,7 @@ export class ValueNodeParser {
 		let paren_end = end
 
 		while (this.lexer.pos < this.end && paren_depth > 0) {
-			this.lexer.next_token_fast(false)
+			this.lexer.next_token_fast(true)
 
 			let token_type = this.lexer.token_type
 			if (token_type === TOKEN_EOF) break
@@ -795,9 +787,6 @@ export class ValueNodeParser {
 					break
 				}
 			}
-
-			// Skip whitespace
-			if (token_type === TOKEN_WHITESPACE) continue
 
 			// Parse child node
 			// Note: We don't track paren_depth for LEFT_PAREN or TOKEN_FUNCTION here
