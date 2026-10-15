@@ -14,13 +14,14 @@ import {
 	walk,
 	traverse,
 } from '../dist/index.js'
+import { report } from './report.ts'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 
 const css = fs.readFileSync(path.resolve('benchmark/nerdy-dev.css'), 'utf-8')
 const ast = parse(css)
 
-const bench = new Bench({ warmup: true })
+const bench = new Bench({ warmup: true, retainSamples: true })
 
 // ─── Tokenizer & parser ────────────────────────────────────────────────────
 
@@ -40,11 +41,19 @@ bench.add('parse (no sub-parsing)', () => {
 
 // ─── Sub-parsers ───────────────────────────────────────────────────────────
 
-bench.add('parse_selector', () => {
+bench.add('parse_selector (simple)', () => {
+	parse_selector('.link')
+})
+
+bench.add('parse_selector (complex)', () => {
 	parse_selector('a.link:not(.disabled):hover > span[data-x="1"]::before')
 })
 
-bench.add('parse_selector_list', () => {
+bench.add('parse_selector_list (simple)', () => {
+	parse_selector_list('h1, h2, .a, #b')
+})
+
+bench.add('parse_selector_list (complex)', () => {
 	parse_selector_list('h1, h2.title, .a > .b ~ .c + .d, :is(ul, ol) li:nth-child(2n + 1)')
 })
 
@@ -70,9 +79,15 @@ bench.add('parse_dimension', () => {
 
 // ─── Walking ───────────────────────────────────────────────────────────────
 
-bench.add('walk', () => {
+bench.add('walk (node.type)', () => {
 	walk(ast, (node) => {
 		void node.type
+	})
+})
+
+bench.add('walk (node.type_name)', () => {
+	walk(ast, (node) => {
+		void node.type_name
 	})
 })
 
@@ -89,14 +104,4 @@ bench.add('traverse', () => {
 
 await bench.run()
 
-console.table(
-	bench.tasks.map((task) => {
-		const result = task.result
-		const stats = result && 'latency' in result ? result : null
-		return {
-			Benchmark: task.name,
-			'ops/sec': stats ? stats.throughput.mean.toFixed(0) : 'N/A',
-			'avg (µs)': stats ? (stats.latency.mean * 1000).toFixed(3) : 'N/A',
-		}
-	}),
-)
+report(bench)

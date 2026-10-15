@@ -2,6 +2,7 @@
 // Benchmarks for the public string utilities.
 // Run with: pnpm run benchmark:string-utils
 import { Bench } from 'tinybench'
+import { report } from './report.ts'
 import {
 	is_custom,
 	is_vendor_prefixed,
@@ -10,7 +11,7 @@ import {
 	str_index_of,
 } from '../dist/index.js'
 
-const bench = new Bench({ warmup: true })
+const bench = new Bench({ warmup: true, retainSamples: true })
 
 // ─── String utils ──────────────────────────────────────────────────────────
 
@@ -42,14 +43,4 @@ bench.add('str_index_of', () => {
 
 await bench.run()
 
-console.table(
-	bench.tasks.map((task) => {
-		const result = task.result
-		const stats = result && 'latency' in result ? result : null
-		return {
-			Benchmark: task.name,
-			'ops/sec': stats ? stats.throughput.mean.toFixed(0) : 'N/A',
-			'avg (µs)': stats ? (stats.latency.mean * 1000).toFixed(3) : 'N/A',
-		}
-	}),
-)
+report(bench)
