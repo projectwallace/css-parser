@@ -3,8 +3,8 @@ import {
 	is_ident_start,
 	char_types,
 	CHAR_DIGIT,
-	CHAR_WHITESPACE,
 	CHAR_NEWLINE,
+	CHAR_WHITESPACE_OR_NEWLINE,
 	CHAR_IDENT,
 	CHAR_IDENT_START,
 } from './char-types'
@@ -174,7 +174,7 @@ export class Lexer {
 				let line_offset = this._line_offset
 				while (pos < source_length) {
 					let ch = source.charCodeAt(pos)
-					if (ch >= 128 || (char_types[ch] & (CHAR_WHITESPACE | CHAR_NEWLINE)) === 0) break
+					if (ch >= 128 || (char_types[ch] & CHAR_WHITESPACE_OR_NEWLINE) === 0) break
 					pos++
 					if ((char_types[ch] & CHAR_NEWLINE) !== 0) {
 						if (
@@ -198,8 +198,6 @@ export class Lexer {
 			}
 
 			let ch = source.charCodeAt(this.pos)
-			// One table read classifies ch for the dispatch below (non-ASCII → 0, handled via ch >= 128)
-			let ch_type = ch < 128 ? char_types[ch] : 0
 			let start = this.pos
 			let start_line = this._line
 			let start_column = this.pos - this._line_offset + 1
@@ -235,8 +233,13 @@ export class Lexer {
 					return this.make_token(TOKEN_RIGHT_PAREN, start, this.pos, start_line, start_column)
 			}
 
+			// One table read classifies ch for the dispatch below (non-ASCII → 0, handled via
+			// ch >= 128). Deferred until after the switch so the 9 single-char-token cases
+			// above — among the most common bytes in CSS ({ } : ; , [ ] ( )) — skip this lookup.
+			let ch_type = ch < 128 ? char_types[ch] : 0
+
 			// Whitespace
-			if ((ch_type & (CHAR_WHITESPACE | CHAR_NEWLINE)) !== 0) {
+			if ((ch_type & CHAR_WHITESPACE_OR_NEWLINE) !== 0) {
 				return this.consume_whitespace(start_line, start_column)
 			}
 
@@ -547,7 +550,7 @@ export class Lexer {
 		// Inline advance: read ch once, pos++, then track newlines with already-read value
 		while (pos < source_length) {
 			let ch = source.charCodeAt(pos)
-			if (ch >= 128 || (char_types[ch] & (CHAR_WHITESPACE | CHAR_NEWLINE)) === 0) break
+			if (ch >= 128 || (char_types[ch] & CHAR_WHITESPACE_OR_NEWLINE) === 0) break
 			pos++
 			if ((char_types[ch] & CHAR_NEWLINE) !== 0) {
 				if (
@@ -636,7 +639,7 @@ export class Lexer {
 		// Optional whitespace after hex escape (may be a newline — inline advance)
 		if (this.pos < source_length) {
 			let ch = source.charCodeAt(this.pos)
-			if (ch < 128 && (char_types[ch] & (CHAR_WHITESPACE | CHAR_NEWLINE)) !== 0) {
+			if (ch < 128 && (char_types[ch] & CHAR_WHITESPACE_OR_NEWLINE) !== 0) {
 				this.pos++
 				if ((char_types[ch] & CHAR_NEWLINE) !== 0) {
 					if (
@@ -775,7 +778,7 @@ export class Lexer {
 					// Consume optional whitespace after hex escape (may be newline)
 					if (this.pos < source_length) {
 						let ws = source.charCodeAt(this.pos)
-						if (ws < 128 && (char_types[ws] & (CHAR_WHITESPACE | CHAR_NEWLINE)) !== 0) {
+						if (ws < 128 && (char_types[ws] & CHAR_WHITESPACE_OR_NEWLINE) !== 0) {
 							this.advance()
 						}
 					}
@@ -1039,7 +1042,7 @@ export class Lexer {
 
 			// Skip whitespace (space, tab, and newlines — is_whitespace() from string-utils
 			// covers newlines too, but here we go straight to char_types to avoid the import)
-			if (ch < 128 && (char_types[ch] & (CHAR_WHITESPACE | CHAR_NEWLINE)) !== 0) {
+			if (ch < 128 && (char_types[ch] & CHAR_WHITESPACE_OR_NEWLINE) !== 0) {
 				this.advance()
 				continue
 			}
