@@ -25,7 +25,7 @@ npm install @projectwallace/css-parser
 ## Usage
 
 ```typescript
-import { parse, NODE_STYLE_RULE, NODE_DECLARATION } from '@projectwallace/css-parser'
+import { parse, STYLE_RULE, DECLARATION } from '@projectwallace/css-parser'
 
 const ast = parse(`
   body {
@@ -42,13 +42,13 @@ const ast = parse(`
 
 // Iterate over top-level rules
 for (const rule of ast) {
-	if (rule.type === NODE_STYLE_RULE) {
+	if (rule.type === STYLE_RULE) {
 		const selector = rule.first_child
 		console.log(`Selector: ${selector.text}`)
 
 		// Iterate over declarations
 		for (const node of rule) {
-			if (node.type === NODE_DECLARATION) {
+			if (node.type === DECLARATION) {
 				console.log(`  ${node.property}: ${node.value}`)
 			}
 		}
@@ -79,9 +79,172 @@ All sizes are minified and bundled with dependencies. Import only what you need 
 | `@projectwallace/css-parser/parse-dimension`      | Dimension parser             | 0.4 kB   | 0.3 kB  |
 | `@projectwallace/css-parser/tokenizer`            | Tokenizer                    | 9.8 kB   | 2.4 kB  |
 
-## Documentation
+## API
 
-See [API.md](./API.md) for complete documentation of all parser functions and nodes.
+Every function is exported from the package root and, where listed in [Bundle sizes](#bundle-sizes), from its own entry point. Node properties and return types ship as TypeScript types, so this section sticks to short examples.
+
+### `parse(source, options?)`
+
+Parses a full stylesheet and returns the root `StyleSheet` node. Nodes are iterable and expose `first_child`, `next_sibling`, `children`, `text`, `line`, `column`, `start`, `end` and `length`.
+
+```typescript
+import { parse } from '@projectwallace/css-parser'
+
+const ast = parse('body { color: red; }')
+const rule = ast.first_child
+rule.block.first_child.property // "color"
+rule.block.first_child.value.text // "red"
+```
+
+Options:
+
+- `parse_values` (default `true`) — parse declaration values into nodes
+- `parse_selectors` (default `true`) — parse selectors into nodes
+- `parse_atrule_preludes` (default `true`) — parse at-rule preludes into nodes
+- `on_comment` — called for every comment; comments are never part of the tree
+
+```typescript
+const comments = []
+parse('/* hi */ a { color: red }', {
+	parse_values: false,
+	on_comment: (info) => comments.push(info), // { start, end, length, line, column }
+})
+```
+
+### `parse_selector(source)` and `parse_selector_list(source)`
+
+`parse_selector` returns the first selector, `parse_selector_list` the whole `SelectorList`.
+
+```typescript
+import { parse_selector, parse_selector_list } from '@projectwallace/css-parser'
+
+parse_selector('a.b > c').children.map((part) => part.text) // ["a", ".b", ">", "c"]
+parse_selector_list('h1, h2').children.map((s) => s.text) // ["h1", "h2"]
+```
+
+### `parse_declaration(source)`
+
+```typescript
+import { parse_declaration } from '@projectwallace/css-parser'
+
+const decl = parse_declaration('color: red !important')
+decl.property // "color"
+decl.is_important // true
+decl.value.text // "red"
+```
+
+### `parse_value(source)`
+
+Parses a declaration value into a `Value` node with one child per component.
+
+```typescript
+import { parse_value } from '@projectwallace/css-parser'
+
+for (const node of parse_value('10px 20px')) {
+	console.log(node.type_name, node.value, node.unit) // "Dimension" 10 "px", then "Dimension" 20 "px"
+}
+```
+
+### `parse_atrule_prelude(name, prelude)`
+
+Returns an array of nodes for the prelude of the at-rule called `name` (without the `@`).
+
+```typescript
+import { parse_atrule_prelude } from '@projectwallace/css-parser'
+
+const [query] = parse_atrule_prelude('media', '(min-width: 768px)')
+query.type_name // "MediaQuery"
+```
+
+### `parse_dimension(text)`
+
+Splits a number from its unit. It works for anything shaped like a number followed by a unit: lengths (`100px`), percentages (`2%`), durations (`200ms`) and so on. It does not validate; text without a leading number gives `value: 0`.
+
+```typescript
+import { parse_dimension } from '@projectwallace/css-parser'
+
+parse_dimension('100px') // { value: 100, unit: "px" }
+parse_dimension('2%') // { value: 2, unit: "%" }
+parse_dimension('1.5e3s') // { value: 1500, unit: "s" }
+parse_dimension('5') // { value: 5, unit: "" }
+```
+
+### `walk(node, callback)` and `traverse(node, { enter, leave })`
+
+Both walk the tree depth-first. Return `SKIP` to skip the children of a node and `BREAK` to stop entirely. `walk` also passes a `depth` that counts rule and at-rule nesting. `traverse` calls `enter` before and `leave` after the children (`leave` still runs after `SKIP`, but not after `BREAK`).
+
+```typescript
+import {
+	parse,
+	walk,
+	traverse,
+	SKIP,
+	BREAK,
+	DECLARATION,
+	AT_RULE,
+} from '@projectwallace/css-parser'
+
+const ast = parse('@media screen { a { color: red; margin: 0 } }')
+
+walk(ast, (node) => {
+	if (node.type === DECLARATION) {
+		console.log(node.property) // "color"
+		return BREAK
+	}
+})
+
+traverse(ast, {
+	enter(node) {
+		if (node.type === AT_RULE) return SKIP // leave() still runs for this node
+	},
+	leave(node) {},
+})
+```
+
+### `tokenize(source, on_comment?)`
+
+A generator of tokens; comments are skipped and reported through `on_comment`.
+
+```typescript
+import { tokenize } from '@projectwallace/css-parser'
+
+for (const token of tokenize('a { color: red }')) {
+	console.log(token.type, token.start, token.end)
+}
+```
+
+### Node types, type guards and `clone()`
+
+Node type constants (`STYLE_RULE`, `DECLARATION`, `DIMENSION`, …), `TYPE_NAMES` and `NODE_TYPES` are exported from the root, as are type guards such as `is_declaration()` and `is_dimension()` that narrow a node to its specific type. `node.clone({ deep?, locations? })` returns a mutable plain-object copy of a node.
+
+```typescript
+import { parse, is_declaration, TYPE_NAMES, DECLARATION } from '@projectwallace/css-parser'
+
+const decl = parse('a { color: red }').first_child.block.first_child
+is_declaration(decl) // true
+TYPE_NAMES[DECLARATION] // "Declaration"
+decl.clone({ deep: false }).property // "color"
+```
+
+### String helpers
+
+Allocation-free helpers, handy when working with node names. The lowercase argument is the first one for `str_equals` and the second one for `str_starts_with` and `str_index_of`. This inconsistency will be fixed in a future breaking change.
+
+```typescript
+import {
+	is_custom,
+	is_vendor_prefixed,
+	str_equals,
+	str_starts_with,
+	str_index_of,
+} from '@projectwallace/css-parser'
+
+is_custom('--primary') // true
+is_vendor_prefixed('-webkit-transform') // true
+str_equals('media', 'MEDIA') // true
+str_starts_with('WEBKIT-transform', 'webkit') // true
+str_index_of('background-COLOR', 'color') // 11
+```
 
 ## Non-goals
 
