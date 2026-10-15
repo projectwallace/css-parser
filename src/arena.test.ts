@@ -269,6 +269,78 @@ describe('CSSDataArena', () => {
 		})
 	})
 
+	describe('flag and length storage', () => {
+		test('clear_flag clears only the requested flag', () => {
+			const arena = new CSSDataArena(10)
+			const node = arena.create_node(STYLESHEET, 0, 0, 1, 1)
+
+			arena.set_flag(node, FLAG_IMPORTANT)
+			arena.set_flag(node, FLAG_HAS_ERROR)
+			arena.clear_flag(node, FLAG_IMPORTANT)
+
+			expect(arena.has_flag(node, FLAG_IMPORTANT)).toBe(false)
+			expect(arena.has_flag(node, FLAG_HAS_ERROR)).toBe(true)
+			expect(arena.get_flags(node)).toBe(FLAG_HAS_ERROR)
+		})
+
+		test('set_flag and clear_flag do not touch neighbouring fields or nodes', () => {
+			const arena = new CSSDataArena(10)
+			const before = arena.create_node(DECLARATION, 5, 7, 2, 3)
+			const node = arena.create_node(STYLE_RULE, 11, 13, 4, 6)
+			const after = arena.create_node(DECLARATION, 17, 19, 8, 9)
+
+			arena.set_flag(node, FLAG_IMPORTANT | FLAG_HAS_ERROR)
+			arena.clear_flag(node, FLAG_HAS_ERROR)
+
+			expect(arena.get_type(node)).toBe(STYLE_RULE)
+			expect(arena.get_length(node)).toBe(13)
+			expect(arena.get_start_offset(node)).toBe(11)
+			expect(arena.get_start_line(node)).toBe(4)
+			expect(arena.get_start_column(node)).toBe(6)
+			expect(arena.get_flags(node)).toBe(FLAG_IMPORTANT)
+			expect(arena.get_flags(before)).toBe(0)
+			expect(arena.get_flags(after)).toBe(0)
+			expect(arena.get_length(before)).toBe(7)
+			expect(arena.get_length(after)).toBe(19)
+		})
+
+		test('create_node stores lengths up to 65535 inline without the overflow flag', () => {
+			const arena = new CSSDataArena(10)
+			const small = arena.create_node(DECLARATION, 0, 0, 1, 1)
+			const max = arena.create_node(DECLARATION, 0, 65535, 1, 1)
+
+			expect(arena.get_length(small)).toBe(0)
+			expect(arena.has_flag(small, FLAG_LENGTH_OVERFLOW)).toBe(false)
+			expect(arena.get_length(max)).toBe(65535)
+			expect(arena.has_flag(max, FLAG_LENGTH_OVERFLOW)).toBe(false)
+		})
+
+		test('create_node stores lengths above 65535 via the overflow map', () => {
+			const arena = new CSSDataArena(10)
+			const node = arena.create_node(DECLARATION, 42, 70000, 3, 4)
+
+			expect(arena.get_length(node)).toBe(70000)
+			expect(arena.has_flag(node, FLAG_LENGTH_OVERFLOW)).toBe(true)
+			expect(arena.get_start_offset(node)).toBe(42)
+			expect(arena.get_start_line(node)).toBe(3)
+			expect(arena.get_start_column(node)).toBe(4)
+		})
+
+		test('overflow does not affect other nodes and keeps other flags', () => {
+			const arena = new CSSDataArena(10)
+			const exact = arena.create_node(DECLARATION, 0, 65535, 1, 1)
+			const big = arena.create_node(DECLARATION, 0, 0, 1, 1)
+			arena.set_flag(big, FLAG_IMPORTANT)
+			arena.set_length(big, 100000)
+
+			expect(arena.get_length(big)).toBe(100000)
+			expect(arena.has_flag(big, FLAG_IMPORTANT)).toBe(true)
+			expect(arena.has_flag(big, FLAG_LENGTH_OVERFLOW)).toBe(true)
+			// A node whose real length is exactly the saturated value must not read the map
+			expect(arena.get_length(exact)).toBe(65535)
+		})
+	})
+
 	describe('growth tracking', () => {
 		test('should initialize growth count to zero', () => {
 			const arena = new CSSDataArena()
