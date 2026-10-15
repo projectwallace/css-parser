@@ -81,7 +81,7 @@
 		"test-build": "pnpm run build && vitest run --config vitest.config.build.ts",
 		"build": "tsdown",
 		"benchmark": "pnpm run build && node --expose-gc benchmark/comparison.ts",
-		"benchmark:parsing": "pnpm run build && node benchmark/parsing.ts",
+		"benchmark:parsing": "pnpm run build && node --expose-gc benchmark/parsing.ts",
 		"benchmark:string-utils": "pnpm run build && node benchmark/string-utils.ts",
 		"lint": "oxlint --config .oxlintrc.json && oxfmt --check",
 		"check": "tsc --noEmit",

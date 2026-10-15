@@ -1,6 +1,6 @@
 /// <reference types="node" />
 // Benchmarks for the tokenizer, parsers and walkers (this package only).
-// Run with: pnpm run benchmark:parsing
+// Run with: pnpm run benchmark:parsing (uses --expose-gc for the memory table)
 import { Bench } from 'tinybench'
 import {
 	parse,
@@ -131,3 +131,38 @@ for (const [name, file] of Object.entries(files)) {
 await bench.run()
 
 report(bench)
+
+// ─── Memory ────────────────────────────────────────────────────────────────
+
+const gc = (globalThis as { gc?: () => void }).gc
+
+if (gc) {
+	const measure_mb = (css: string, iterations = 3): number => {
+		let total = 0
+		for (let i = 0; i < iterations; i++) {
+			for (let j = 0; j < 5; j++) gc()
+			const before = process.memoryUsage()
+			const ast = parse(css)
+			walk(ast, (node) => {
+				void node.type
+			})
+			const after = process.memoryUsage()
+			total += after.heapUsed + after.external - (before.heapUsed + before.external)
+		}
+		return total / iterations / 1024 / 1024
+	}
+
+	console.log('\n── Parse+Walk memory ──\n')
+	console.table(
+		Object.entries(files).map(([name, file]) => {
+			const css = fs.readFileSync(path.resolve('benchmark', file), 'utf-8')
+			return {
+				File: name,
+				Size: `${(css.length / 1024).toFixed(0)} KB`,
+				Memory: `${measure_mb(css).toFixed(1)} MB`,
+			}
+		}),
+	)
+} else {
+	console.log('\n── Memory – skipped (run with: pnpm run benchmark:parsing) ──\n')
+}

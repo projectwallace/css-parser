@@ -1,7 +1,7 @@
 // oxlint-disable no-unused-vars
 /// <reference types="node" />
 import { Bench } from 'tinybench'
-import { parse, tokenize, walk } from '../dist/index.js'
+import { parse, walk } from '../dist/index.js'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 // @ts-expect-error: no type definitions for css-tree
@@ -31,39 +31,13 @@ const fileSizes: Record<CSSFile, number> = {
 	Tailwind: tailwindCSS.length,
 }
 
-// Pre-parse once for walk-only benchmarks so parse time doesn't pollute walk timings
-const parsedMap = {
-	'Nerdy.dev': parse(nerdyDevCSS),
-	'CSS Tricks': parse(cssTricksCSS),
-	Bootstrap: parse(bootstrapCSS),
-	Tailwind: parse(tailwindCSS),
-}
-
-const quick = process.argv.includes('--quick')
-
-// ─── Speed benchmarks ─────────────────────────────────────────────────────
-
 const bench = new Bench({ warmup: true })
 
 for (const file of files) {
 	const css = cssMap[file]
-	const parsed = parsedMap[file]
-
-	bench.add(`Tokenize|${file}`, () => {
-		for (const _token of tokenize(css)) {
-			// iterate
-		}
-	})
 
 	bench.add(`Parse|${file}`, () => {
 		parse(css)
-	})
-
-	bench.add(`Walk|${file}`, () => {
-		walk(parsed, (node, _depth) => {
-			void node.type
-			void node.line
-		})
 	})
 
 	bench.add(`Parse+Walk|${file}`, () => {
@@ -74,58 +48,56 @@ for (const file of files) {
 		})
 	})
 
-	if (!quick) {
-		bench.add(`Fair-Wallace|${file}`, () => {
-			let ast = parse(css, {
-				parse_selectors: false,
-				parse_values: false,
-				parse_atrule_preludes: false,
-			})
-			walk(ast, (node, _depth) => {
-				void node.type
-				void node.line
-			})
+	bench.add(`Fair-Wallace|${file}`, () => {
+		let ast = parse(css, {
+			parse_selectors: false,
+			parse_values: false,
+			parse_atrule_preludes: false,
 		})
+		walk(ast, (node, _depth) => {
+			void node.type
+			void node.line
+		})
+	})
 
-		bench.add(`Fair-CSSTree|${file}`, () => {
-			let ast = csstree.parse(css, {
-				positions: true,
-				parseValue: false,
-				parseAtrulePrelude: false,
-				parseRulePrelude: false,
-			})
-			// @ts-expect-error: no type definitions for css-tree
-			csstree.walk(ast, (node) => {
-				void node.type
-				void node.loc?.start.line
-			})
+	bench.add(`Fair-CSSTree|${file}`, () => {
+		let ast = csstree.parse(css, {
+			positions: true,
+			parseValue: false,
+			parseAtrulePrelude: false,
+			parseRulePrelude: false,
 		})
+		// @ts-expect-error: no type definitions for css-tree
+		csstree.walk(ast, (node) => {
+			void node.type
+			void node.loc?.start.line
+		})
+	})
 
-		bench.add(`CSSTree-Parse|${file}`, () => {
-			csstree.parse(css, { positions: true })
-		})
+	bench.add(`CSSTree-Parse|${file}`, () => {
+		csstree.parse(css, { positions: true })
+	})
 
-		bench.add(`PostCSS-Parse|${file}`, () => {
-			postcss.parse(css)
-		})
+	bench.add(`PostCSS-Parse|${file}`, () => {
+		postcss.parse(css)
+	})
 
-		bench.add(`CSSTree|${file}`, () => {
-			let ast = csstree.parse(css, { positions: true })
-			// @ts-expect-error: no type definitions for css-tree
-			csstree.walk(ast, (node) => {
-				void node.type
-				void node.loc?.start.line
-			})
+	bench.add(`CSSTree|${file}`, () => {
+		let ast = csstree.parse(css, { positions: true })
+		// @ts-expect-error: no type definitions for css-tree
+		csstree.walk(ast, (node) => {
+			void node.type
+			void node.loc?.start.line
 		})
+	})
 
-		bench.add(`PostCSS|${file}`, () => {
-			let root = postcss.parse(css)
-			root.walk((node) => {
-				void node.type
-				void node.source?.start?.line
-			})
+	bench.add(`PostCSS|${file}`, () => {
+		let root = postcss.parse(css)
+		root.walk((node) => {
+			void node.type
+			void node.source?.start?.line
 		})
-	}
+	})
 }
 
 await bench.run()
@@ -196,126 +168,97 @@ function measureMemoryMB(
 	return avg / 1024 / 1024
 }
 
-// ─── Table 1: Wallace metrics ──────────────────────────────────────────────
+// ─── Table 1: Parse speed comparison ────────────────────────────────────
 
-console.log('\n── Table 1: Wallace CSS Parser ──────────────────────────────────────────\n')
+console.log('\n── Table 1: Parse Speed – Wallace (baseline) vs CSSTree vs PostCSS ───────\n')
 
 console.table(
-	files.map((file) => ({
-		File: file,
-		Size: fmtSize(file),
-		'Tokenize (ops/sec)': fmtOps(ops(`Tokenize|${file}`)),
-		'Parse (ops/sec)': fmtOps(ops(`Parse|${file}`)),
-		'Walk (ops/sec)': fmtOps(ops(`Walk|${file}`)),
-		'Parse+Walk (ops/sec)': fmtOps(ops(`Parse+Walk|${file}`)),
-	})),
+	files.map((file) => {
+		const w = ops(`Parse|${file}`)
+		const c = ops(`CSSTree-Parse|${file}`)
+		const p = ops(`PostCSS-Parse|${file}`)
+		return {
+			File: file,
+			Size: fmtSize(file),
+			'Wallace (ops/sec)': fmtOps(w),
+			'CSSTree (ops/sec)': fmtOps(c),
+			'PostCSS (ops/sec)': fmtOps(p),
+			'vs CSSTree': c > 0 ? `${(w / c).toFixed(1)}x faster` : 'N/A',
+			'vs PostCSS': p > 0 ? `${(w / p).toFixed(1)}x faster` : 'N/A',
+		}
+	}),
 )
 
-if (!quick) {
-	// ─── Table 2: Parse speed comparison ────────────────────────────────────
+// ─── Table 2: Parse+Walk speed comparison ───────────────────────────────
 
-	console.log('\n── Table 2: Parse Speed – Wallace (baseline) vs CSSTree vs PostCSS ───────\n')
+console.log('\n── Table 2: Parse+Walk Speed – Wallace (baseline) vs CSSTree vs PostCSS ──\n')
 
-	console.table(
-		files.map((file) => {
-			const w = ops(`Parse|${file}`)
-			const c = ops(`CSSTree-Parse|${file}`)
-			const p = ops(`PostCSS-Parse|${file}`)
-			return {
-				File: file,
-				Size: fmtSize(file),
-				'Wallace (ops/sec)': fmtOps(w),
-				'CSSTree (ops/sec)': fmtOps(c),
-				'PostCSS (ops/sec)': fmtOps(p),
-				'vs CSSTree': c > 0 ? `${(w / c).toFixed(1)}x faster` : 'N/A',
-				'vs PostCSS': p > 0 ? `${(w / p).toFixed(1)}x faster` : 'N/A',
-			}
-		}),
-	)
+console.table(
+	files.map((file) => {
+		const w = ops(`Parse+Walk|${file}`)
+		const c = ops(`CSSTree|${file}`)
+		const p = ops(`PostCSS|${file}`)
+		return {
+			File: file,
+			Size: fmtSize(file),
+			'Wallace (ops/sec)': fmtOps(w),
+			'CSSTree (ops/sec)': fmtOps(c),
+			'PostCSS (ops/sec)': fmtOps(p),
+			'vs CSSTree': c > 0 ? `${(w / c).toFixed(1)}x faster` : 'N/A',
+			'vs PostCSS': p > 0 ? `${(w / p).toFixed(1)}x faster` : 'N/A',
+		}
+	}),
+)
 
-	// ─── Table 3: Parse+Walk speed comparison ───────────────────────────────
+// ─── Table 3: Fair Parse+Walk comparison (no sub-parsing) ───────────────
 
-	console.log('\n── Table 3: Parse+Walk Speed – Wallace (baseline) vs CSSTree vs PostCSS ──\n')
+console.log(
+	'\n── Table 3: Parse+Walk Speed (fair) – Wallace no sub-parsing vs CSSTree no sub-parsing vs PostCSS ──\n',
+)
 
-	console.table(
-		files.map((file) => {
-			const w = ops(`Parse+Walk|${file}`)
-			const c = ops(`CSSTree|${file}`)
-			const p = ops(`PostCSS|${file}`)
-			return {
-				File: file,
-				Size: fmtSize(file),
-				'Wallace (ops/sec)': fmtOps(w),
-				'CSSTree (ops/sec)': fmtOps(c),
-				'PostCSS (ops/sec)': fmtOps(p),
-				'vs CSSTree': c > 0 ? `${(w / c).toFixed(1)}x faster` : 'N/A',
-				'vs PostCSS': p > 0 ? `${(w / p).toFixed(1)}x faster` : 'N/A',
-			}
-		}),
-	)
-
-	// ─── Table 4: Fair Parse+Walk comparison (no sub-parsing) ───────────────
-
-	console.log(
-		'\n── Table 4: Parse+Walk Speed (fair) – Wallace no sub-parsing vs CSSTree no sub-parsing vs PostCSS ──\n',
-	)
-
-	console.table(
-		files.map((file) => {
-			const w = ops(`Fair-Wallace|${file}`)
-			const c = ops(`Fair-CSSTree|${file}`)
-			const p = ops(`PostCSS|${file}`)
-			return {
-				File: file,
-				Size: fmtSize(file),
-				'Wallace (ops/sec)': fmtOps(w),
-				'CSSTree (ops/sec)': fmtOps(c),
-				'PostCSS (ops/sec)': fmtOps(p),
-				'vs CSSTree': c > 0 ? `${(w / c).toFixed(1)}x faster` : 'N/A',
-				'vs PostCSS': p > 0 ? `${(w / p).toFixed(1)}x faster` : 'N/A',
-			}
-		}),
-	)
-}
+console.table(
+	files.map((file) => {
+		const w = ops(`Fair-Wallace|${file}`)
+		const c = ops(`Fair-CSSTree|${file}`)
+		const p = ops(`PostCSS|${file}`)
+		return {
+			File: file,
+			Size: fmtSize(file),
+			'Wallace (ops/sec)': fmtOps(w),
+			'CSSTree (ops/sec)': fmtOps(c),
+			'PostCSS (ops/sec)': fmtOps(p),
+			'vs CSSTree': c > 0 ? `${(w / c).toFixed(1)}x faster` : 'N/A',
+			'vs PostCSS': p > 0 ? `${(w / p).toFixed(1)}x faster` : 'N/A',
+		}
+	}),
+)
 
 // ─── Memory comparison ─────────────────────────────────────────────────────
 
 const hasGC = typeof (globalThis as { gc?: () => void }).gc === 'function'
-const memTableNum = quick ? 2 : 5
 
 if (hasGC) {
-	if (quick) {
-		console.log('\n── Table 2: Parse+Walk Memory – Wallace ─────────────────────────────────\n')
+	console.log('\n── Table 4: Parse+Walk Memory – Wallace (baseline) vs CSSTree vs PostCSS ─\n')
 
-		console.table(
-			files.map((file) => {
-				const w = measureMemoryMB(cssMap[file], 'wallace')
-				return { File: file, Size: fmtSize(file), Wallace: fmtMB(w) }
-			}),
-		)
-	} else {
-		console.log('\n── Table 5: Parse+Walk Memory – Wallace (baseline) vs CSSTree vs PostCSS ─\n')
-
-		console.table(
-			files.map((file) => {
-				const css = cssMap[file]
-				const w = measureMemoryMB(css, 'wallace')
-				const c = measureMemoryMB(css, 'csstree')
-				const p = measureMemoryMB(css, 'postcss')
-				return {
-					File: file,
-					Size: fmtSize(file),
-					Wallace: fmtMB(w),
-					CSSTree: fmtMB(c),
-					PostCSS: fmtMB(p),
-					'vs CSSTree': c > 0 ? `${(c / w).toFixed(1)}x less` : 'N/A',
-					'vs PostCSS': p > 0 ? `${(p / w).toFixed(1)}x less` : 'N/A',
-				}
-			}),
-		)
-	}
+	console.table(
+		files.map((file) => {
+			const css = cssMap[file]
+			const w = measureMemoryMB(css, 'wallace')
+			const c = measureMemoryMB(css, 'csstree')
+			const p = measureMemoryMB(css, 'postcss')
+			return {
+				File: file,
+				Size: fmtSize(file),
+				Wallace: fmtMB(w),
+				CSSTree: fmtMB(c),
+				PostCSS: fmtMB(p),
+				'vs CSSTree': c > 0 ? `${(c / w).toFixed(1)}x less` : 'N/A',
+				'vs PostCSS': p > 0 ? `${(p / w).toFixed(1)}x less` : 'N/A',
+			}
+		}),
+	)
 } else {
 	console.log(
-		`\n── Table ${memTableNum}: Memory Usage – skipped (run with: node --expose-gc benchmark/comparison.ts) ──\n`,
+		'\n── Table 4: Memory Usage – skipped (run with: node --expose-gc benchmark/comparison.ts) ──\n',
 	)
 }
