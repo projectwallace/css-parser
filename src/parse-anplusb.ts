@@ -228,7 +228,7 @@ export class ANplusBParser {
 
 		// Handle simple integer (b only, no 'a')
 		if (this.lexer.token_type === TOKEN_NUMBER) {
-			let num_text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
+			const num_text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
 			b = num_text
 			b_start = this.lexer.token_start
 			b_end = this.lexer.token_end

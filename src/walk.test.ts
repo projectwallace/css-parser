@@ -294,7 +294,7 @@ describe('walk', () => {
 	})
 
 	test('export types', () => {
-		let ast = parse('a{}')
+		const ast = parse('a{}')
 		walk(ast, (node, _depth) => {
 			expectTypeOf(node.type).toBeNumber()
 			if (node.type === SELECTOR_LIST) {

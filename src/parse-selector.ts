@@ -106,19 +106,19 @@ export class SelectorParser {
 		// common case.
 		let first_selector = 0
 		let last_selector = 0
-		let list_start = this.lexer.pos
-		let list_line = this.lexer.line
-		let list_column = this.lexer.column
+		const list_start = this.lexer.pos
+		const list_line = this.lexer.line
+		const list_column = this.lexer.column
 
 		while (this.lexer.pos < this.selector_end) {
-			let selector_start = this.lexer.pos
-			let selector_line = this.lexer.line
-			let selector_column = this.lexer.column
+			const selector_start = this.lexer.pos
+			const selector_line = this.lexer.line
+			const selector_column = this.lexer.column
 
-			let complex_selector = this.parse_complex_selector(allow_relative)
+			const complex_selector = this.parse_complex_selector(allow_relative)
 			if (complex_selector !== null) {
 				// Wrap the complex selector (chain of components) in a NODE_SELECTOR
-				let selector_wrapper = this.arena.create_node(
+				const selector_wrapper = this.arena.create_node(
 					SELECTOR,
 					selector_start,
 					this.lexer.pos - selector_start,
@@ -145,7 +145,7 @@ export class SelectorParser {
 
 			// Check for comma (comments are auto-skipped by lexer)
 			this.lexer.next_token_fast(false)
-			let token_type: TokenType = this.lexer.token_type
+			const token_type: TokenType = this.lexer.token_type
 
 			if (token_type === TOKEN_COMMA) {
 				// Skip whitespace after the comma
@@ -159,7 +159,7 @@ export class SelectorParser {
 
 		// Always wrap in selector list node, even for single selectors
 		if (first_selector !== 0) {
-			let list_node = this.arena.create_node(
+			const list_node = this.arena.create_node(
 				SELECTOR_LIST,
 				list_start,
 				this.lexer.pos - list_start,
@@ -195,14 +195,14 @@ export class SelectorParser {
 			const saved = this.lexer.save_position()
 
 			this.lexer.next_token_fast(false)
-			let token_type = this.lexer.token_type
+			const token_type = this.lexer.token_type
 
 			// Check if token is a combinator
 			if (token_type === TOKEN_DELIM) {
-				let ch = this.source.charCodeAt(this.lexer.token_start)
+				const ch = this.source.charCodeAt(this.lexer.token_start)
 				if (ch === CHAR_GREATER_THAN || ch === CHAR_PLUS || ch === CHAR_TILDE) {
 					// Found leading combinator (>, +, ~) - this is a relative selector
-					let combinator = this.create_node(
+					const combinator = this.create_node(
 						COMBINATOR,
 						this.lexer.token_start,
 						this.lexer.token_end,
@@ -223,7 +223,7 @@ export class SelectorParser {
 
 		while (this.lexer.pos < this.selector_end) {
 			// Parse compound selector first
-			let compound = this.parse_compound_selector()
+			const compound = this.parse_compound_selector()
 			if (compound === null) {
 				break
 			}
@@ -235,7 +235,7 @@ export class SelectorParser {
 			chain_tail = this.arena.get_last_sibling(compound)
 
 			// After a compound selector, check if there's a combinator
-			let combinator = this.try_parse_combinator()
+			const combinator = this.try_parse_combinator()
 			if (combinator !== null) {
 				this.arena.set_next_sibling(chain_tail, combinator)
 				chain_tail = combinator
@@ -267,10 +267,10 @@ export class SelectorParser {
 
 			if (this.lexer.token_start >= this.selector_end) break
 
-			let token_type = this.lexer.token_type
+			const token_type = this.lexer.token_type
 			if (token_type === TOKEN_EOF) break
 
-			let part = this.parse_simple_selector()
+			const part = this.parse_simple_selector()
 			if (part === null) {
 				// Not a simple selector part, restore lexer state and break
 				this.lexer.restore_position(saved)
@@ -289,9 +289,9 @@ export class SelectorParser {
 
 	// Parse a simple selector (single component)
 	private parse_simple_selector(): number | null {
-		let token_type = this.lexer.token_type
-		let start = this.lexer.token_start
-		let end = this.lexer.token_end
+		const token_type = this.lexer.token_type
+		const start = this.lexer.token_start
+		const end = this.lexer.token_end
 
 		switch (token_type) {
 			case TOKEN_IDENT:
@@ -305,7 +305,7 @@ export class SelectorParser {
 
 			case TOKEN_DELIM: {
 				// Could be: . (class), * (universal), & (nesting), | (namespace)
-				let ch = this.source.charCodeAt(start)
+				const ch = this.source.charCodeAt(start)
 				if (ch === CHAR_PERIOD) {
 					// . - class selector
 					return this.parse_class_selector(start)
@@ -376,9 +376,9 @@ export class SelectorParser {
 			return null
 		}
 
-		let local_start = this.lexer.token_start
-		let local_end = this.lexer.token_end
-		let node = this.create_node(node_type, selector_start, local_end)
+		const local_start = this.lexer.token_start
+		const local_end = this.lexer.token_end
+		const node = this.create_node(node_type, selector_start, local_end)
 		// FLAG: has namespace qualifier (even if empty like |E)
 		this.arena.set_flag(node, FLAG_HAS_NAMESPACE)
 		// Content = local element name (after |)
@@ -415,7 +415,7 @@ export class SelectorParser {
 			this.source.charCodeAt(this.lexer.pos) === CHAR_PIPE
 		) {
 			this.lexer.pos++ // skip |
-			let node = this.parse_namespace_local_part(start, start, end - start)
+			const node = this.parse_namespace_local_part(start, start, end - start)
 			if (node !== null) return node
 		}
 		// Invalid or no pipe found - restore position
@@ -440,7 +440,7 @@ export class SelectorParser {
 			this.source.charCodeAt(this.lexer.pos) === CHAR_PIPE
 		) {
 			this.lexer.pos++ // skip |
-			let node = this.parse_namespace_local_part(start, start, end - start)
+			const node = this.parse_namespace_local_part(start, start, end - start)
 			if (node !== null) return node
 		}
 		// Invalid or no pipe found - restore position
@@ -482,7 +482,7 @@ export class SelectorParser {
 
 		// Check for explicit combinators
 		if (this.lexer.token_type === TOKEN_DELIM) {
-			let ch = this.source.charCodeAt(this.lexer.token_start)
+			const ch = this.source.charCodeAt(this.lexer.token_start)
 			if (is_combinator(ch)) {
 				// > + ~ (combinator text excludes leading whitespace)
 				// Use token's line and column for the combinator position
@@ -530,13 +530,13 @@ export class SelectorParser {
 	private parse_attribute_selector(start: number): number | null {
 		let bracket_depth = 1
 		let end = this.lexer.token_end
-		let content_start = start + 1 // Position after '['
+		const content_start = start + 1 // Position after '['
 		let content_end = content_start
 
 		// Find matching ]
 		while (this.lexer.pos < this.selector_end && bracket_depth > 0) {
 			this.lexer.next_token_fast(false)
-			let token_type = this.lexer.token_type
+			const token_type = this.lexer.token_type
 			if (token_type === TOKEN_LEFT_BRACKET) {
 				bracket_depth++
 			} else if (token_type === TOKEN_RIGHT_BRACKET) {
@@ -549,7 +549,7 @@ export class SelectorParser {
 			}
 		}
 
-		let node = this.create_node(ATTRIBUTE_SELECTOR, start, end)
+		const node = this.create_node(ATTRIBUTE_SELECTOR, start, end)
 
 		// Parse the content inside brackets to extract name, operator, and value
 		this.parse_attribute_content(node, content_start, content_end)
@@ -568,7 +568,7 @@ export class SelectorParser {
 		if (start >= end) return
 
 		// Find attribute name (up to operator or end)
-		let name_start = start
+		const name_start = start
 		let name_end = start
 		let operator_end = -1
 		let value_start = -1
@@ -576,7 +576,7 @@ export class SelectorParser {
 
 		// Scan for attribute name
 		while (name_end < end) {
-			let ch = this.source.charCodeAt(name_end)
+			const ch = this.source.charCodeAt(name_end)
 			if (
 				is_whitespace(ch) ||
 				ch === CHAR_EQUALS /* = */ ||
@@ -606,8 +606,8 @@ export class SelectorParser {
 		}
 
 		// Parse operator
-		let ch1 = this.source.charCodeAt(pos)
-		let ch2 = pos + 1 < end ? this.source.charCodeAt(pos + 1) : 0 // Cache second character to avoid repeated calls
+		const ch1 = this.source.charCodeAt(pos)
+		const ch2 = pos + 1 < end ? this.source.charCodeAt(pos + 1) : 0 // Cache second character to avoid repeated calls
 
 		if (ch1 === CHAR_EQUALS) {
 			// =
@@ -642,16 +642,16 @@ export class SelectorParser {
 
 		// Parse value (can be quoted or unquoted)
 		value_start = pos
-		let ch = this.source.charCodeAt(pos)
+		const ch = this.source.charCodeAt(pos)
 
 		if (ch === CHAR_SINGLE_QUOTE || ch === CHAR_DOUBLE_QUOTE) {
 			// " or '
 			// Quoted string - find matching quote
-			let quote = ch
+			const quote = ch
 			value_start = pos // Include quotes in value
 			pos++
 			while (pos < end) {
-				let c = this.source.charCodeAt(pos)
+				const c = this.source.charCodeAt(pos)
 				if (c === quote) {
 					pos++
 					break
@@ -666,7 +666,7 @@ export class SelectorParser {
 		} else {
 			// Unquoted identifier
 			while (pos < end) {
-				let c = this.source.charCodeAt(pos)
+				const c = this.source.charCodeAt(pos)
 				if (is_whitespace(c)) {
 					break
 				}
@@ -709,9 +709,9 @@ export class SelectorParser {
 		// Next token should be identifier or function
 		this.lexer.next_token_fast(false)
 
-		let token_type = this.lexer.token_type
+		const token_type = this.lexer.token_type
 		if (token_type === TOKEN_IDENT) {
-			let node = this.create_node(
+			const node = this.create_node(
 				is_pseudo_element ? PSEUDO_ELEMENT_SELECTOR : PSEUDO_CLASS_SELECTOR,
 				start,
 				this.lexer.token_end,
@@ -742,11 +742,11 @@ export class SelectorParser {
 		start: number,
 		is_pseudo_element: boolean,
 	): number | null {
-		let func_name_start = this.lexer.token_start
-		let func_name_end = this.lexer.token_end - 1 // Exclude the '('
+		const func_name_start = this.lexer.token_start
+		const func_name_end = this.lexer.token_end - 1 // Exclude the '('
 
 		// Capture content start (right after the '(')
-		let content_start = this.lexer.pos
+		const content_start = this.lexer.pos
 		let content_end = content_start
 
 		// Find matching )
@@ -755,7 +755,7 @@ export class SelectorParser {
 
 		while (this.lexer.pos < this.selector_end && paren_depth > 0) {
 			this.lexer.next_token_fast(false)
-			let token_type = this.lexer.token_type
+			const token_type = this.lexer.token_type
 			if (token_type === TOKEN_LEFT_PAREN || token_type === TOKEN_FUNCTION) {
 				paren_depth++
 			} else if (token_type === TOKEN_RIGHT_PAREN) {
@@ -768,7 +768,7 @@ export class SelectorParser {
 			}
 		}
 
-		let node = this.create_node(
+		const node = this.create_node(
 			is_pseudo_element ? PSEUDO_ELEMENT_SELECTOR : PSEUDO_CLASS_SELECTOR,
 			start,
 			end,
@@ -787,7 +787,7 @@ export class SelectorParser {
 			// substring for every parenthesized pseudo-class, e.g. :not(), :is(), :nth-child())
 			if (this.is_nth_pseudo(func_name_start, func_name_end)) {
 				// Parse as An+B expression
-				let child = this.parse_nth_expression(content_start, content_end)
+				const child = this.parse_nth_expression(content_start, content_end)
 				if (child !== null) {
 					this.arena.set_first_child(node, child)
 				}
@@ -797,13 +797,13 @@ export class SelectorParser {
 			} else {
 				// Parse as selector (for :is(), :where(), :has(), etc.)
 				// Save current lexer state and selector_end
-				let saved_selector_end = this.selector_end
+				const saved_selector_end = this.selector_end
 				const saved = this.lexer.save_position()
 
 				// Recursively parse the content as a selector
 				// Only :has() accepts relative selectors (starting with combinator)
-				let allow_relative = str_equals_range(this.source, func_name_start, func_name_end, 'has')
-				let child_selector = this.parse_selector(
+				const allow_relative = str_equals_range(this.source, func_name_start, func_name_end, 'has')
+				const child_selector = this.parse_selector(
 					content_start,
 					content_end,
 					this.lexer.line,
@@ -843,7 +843,7 @@ export class SelectorParser {
 		const saved_position = this.lexer.save_position()
 		this.lexer.seek(start, this.lexer.line, this.lexer.column)
 
-		let saved_selector_end = this.selector_end
+		const saved_selector_end = this.selector_end
 		this.selector_end = end
 
 		let first_child: number | null = null
@@ -851,9 +851,9 @@ export class SelectorParser {
 
 		while (this.lexer.pos < end) {
 			this.lexer.next_token_fast(false)
-			let token_type = this.lexer.token_type
-			let token_start = this.lexer.token_start
-			let token_end = this.lexer.token_end
+			const token_type = this.lexer.token_type
+			const token_start = this.lexer.token_start
+			const token_end = this.lexer.token_end
 
 			// Skip whitespace
 			if (token_type === TOKEN_WHITESPACE) {
@@ -868,7 +868,7 @@ export class SelectorParser {
 			// Accept both strings and identifiers
 			if (token_type === TOKEN_STRING || token_type === TOKEN_IDENT) {
 				// Create language identifier node
-				let lang_node = this.create_node(LANG_SELECTOR, token_start, token_end)
+				const lang_node = this.create_node(LANG_SELECTOR, token_start, token_end)
 
 				// Link as child of :lang() pseudo-class
 				if (first_child === null) {
@@ -900,9 +900,9 @@ export class SelectorParser {
 	private parse_nth_expression(start: number, end: number): number | null {
 		// Check for "of <selector>" syntax
 		// e.g., "2n+1 of .active, .disabled"
-		let of_index = this.find_of_keyword(start, end)
+		const of_index = this.find_of_keyword(start, end)
 
-		let anplusb_parser = this.anplusb_parser
+		const anplusb_parser = this.anplusb_parser
 
 		if (of_index === -1) {
 			// Just An+B, no "of" clause
@@ -910,7 +910,7 @@ export class SelectorParser {
 		}
 
 		// Parse An+B part before "of"
-		let anplusb_node = anplusb_parser.parse_anplusb(start, of_index, this.lexer.line)
+		const anplusb_node = anplusb_parser.parse_anplusb(start, of_index, this.lexer.line)
 
 		// Parse selector list after "of"
 		let selector_start = of_index + 2 // skip "of"
@@ -918,20 +918,20 @@ export class SelectorParser {
 		selector_start = skip_whitespace_forward(this.source, selector_start, end)
 
 		// Save current state
-		let saved_selector_end = this.selector_end
+		const saved_selector_end = this.selector_end
 		const saved = this.lexer.save_position()
 
 		// Parse selector list
 		this.selector_end = end
 		this.lexer.pos = selector_start
-		let selector_list = this.parse_selector_list()
+		const selector_list = this.parse_selector_list()
 
 		// Restore state
 		this.selector_end = saved_selector_end
 		this.lexer.restore_position(saved)
 
 		// Create NTH_OF wrapper
-		let of_node = this.arena.create_node(NTH_OF_SELECTOR, start, end - start, this.lexer.line, 1)
+		const of_node = this.arena.create_node(NTH_OF_SELECTOR, start, end - start, this.lexer.line, 1)
 
 		// Link An+B and selector list
 		if (anplusb_node !== null && selector_list !== null) {
@@ -951,13 +951,13 @@ export class SelectorParser {
 			i = skip_whitespace_and_comments_forward(this.source, i, end)
 			if (i >= end - 1) break
 
-			let ch1 = this.source.charCodeAt(i)
-			let ch2 = this.source.charCodeAt(i + 1)
+			const ch1 = this.source.charCodeAt(i)
+			const ch2 = this.source.charCodeAt(i + 1)
 			// Check for 'o' or 'O' (0x6f or 0x4f) followed by 'f' or 'F' (0x66 or 0x46)
 			if ((ch1 === 0x6f || ch1 === 0x4f) && (ch2 === 0x66 || ch2 === 0x46)) {
 				// Check it's a word boundary
-				let before_ok = i === start || is_whitespace(this.source.charCodeAt(i - 1))
-				let after_ok = i + 2 >= end || is_whitespace(this.source.charCodeAt(i + 2))
+				const before_ok = i === start || is_whitespace(this.source.charCodeAt(i - 1))
+				const after_ok = i + 2 >= end || is_whitespace(this.source.charCodeAt(i + 2))
 
 				if (before_ok && after_ok) {
 					return i
@@ -978,7 +978,7 @@ export class SelectorParser {
 		line: number = this.lexer.token_line,
 		column: number = this.lexer.token_column,
 	): number {
-		let node = this.arena.create_node(type, start, end - start, line, column)
+		const node = this.arena.create_node(type, start, end - start, line, column)
 		this.arena.set_content_start_delta(node, 0)
 		this.arena.set_content_length(node, end - start)
 		return node

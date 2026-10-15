@@ -314,8 +314,8 @@ export class CSSNode {
 	}
 
 	private get_content(): string {
-		let start = this.arena.get_content_start(this.index)
-		let length = this.arena.get_content_length(this.index)
+		const start = this.arena.get_content_start(this.index)
+		const length = this.arena.get_content_length(this.index)
 		if (length === 0) return ''
 		return this.source.substring(start, start + length)
 	}
@@ -332,34 +332,34 @@ export class CSSNode {
 
 	/** Get the full text of this node from source */
 	get text(): string {
-		let start = this.arena.get_start_offset(this.index)
-		let length = this.arena.get_length(this.index)
+		const start = this.arena.get_start_offset(this.index)
+		const length = this.arena.get_length(this.index)
 		return this.source.substring(start, start + length)
 	}
 
 	/** Get the "content" text (at-rule name for at-rules, layer name for import layers) */
 	get name(): string | null | undefined {
 		if (!nodes_with_name.has(this.type)) return
-		let { type } = this
+		const { type } = this
 		if (type === UNIVERSAL_SELECTOR) return null
-		let content = this.get_content()
+		const content = this.get_content()
 		if (type === LANG_SELECTOR && content === '') return null
 		return content
 	}
 
 	/** Namespace prefix for type/universal selectors: null (none), '' (`|div`), 'ns' (`ns|div`), or '*' (`*|div`). */
 	get namespace(): string | null | undefined {
-		let { type } = this
+		const { type } = this
 		if (type !== TYPE_SELECTOR && type !== UNIVERSAL_SELECTOR) return undefined
 		if (!this.arena.has_flag(this.index, FLAG_HAS_NAMESPACE)) return null
-		let start = this.arena.get_value_start(this.index)
-		let length = this.arena.get_value_length(this.index)
+		const start = this.arena.get_value_start(this.index)
+		const length = this.arena.get_value_length(this.index)
 		return this.source.substring(start, start + length)
 	}
 
 	/** Alias for `name` on declarations ("color" in "color: blue"), more semantic than `name` there. */
 	get property(): string | undefined {
-		let { type } = this
+		const { type } = this
 		if (type !== DECLARATION && type !== MEDIA_FEATURE && type !== SUPPORTS_DECLARATION) return
 		return this.get_content()
 	}
@@ -369,7 +369,7 @@ export class CSSNode {
 	 * String: content without quotes. URL: quoted string keeps quotes, unquoted URL doesn't.
 	 */
 	get value(): CSSNode | string | number | null | undefined {
-		let { type, text, first_child } = this
+		const { type, text, first_child } = this
 
 		if (type === AT_RULE) return undefined
 
@@ -397,7 +397,7 @@ export class CSSNode {
 
 		if (type === DIMENSION) {
 			// Slice only the numeric part — avoids parse_dimension's extra unit substring + object
-			let num_str = text.substring(0, dimension_number_end(text))
+			const num_str = text.substring(0, dimension_number_end(text))
 			// oxlint-disable-next-line prefer-number-coercion
 			return num_str ? Number.parseFloat(num_str) : 0
 		}
@@ -416,10 +416,10 @@ export class CSSNode {
 			// Handle both url("...") and url('...') and just "..." or '...'
 			if (str_starts_with(text, 'url(')) {
 				// url("...") or url('...') or url(...) - extract content between parens
-				let open_paren = text.indexOf('(')
-				let close_paren = text.lastIndexOf(')')
+				const open_paren = text.indexOf('(')
+				const close_paren = text.lastIndexOf(')')
 				if (open_paren !== -1 && close_paren !== -1 && close_paren > open_paren) {
-					let content = text.substring(open_paren + 1, close_paren).trim()
+					const content = text.substring(open_paren + 1, close_paren).trim()
 					return content
 				}
 			} else if (text.startsWith('"') || text.startsWith("'")) {
@@ -445,8 +445,8 @@ export class CSSNode {
 			return undefined
 		}
 
-		let start = this.arena.get_value_start(this.index)
-		let length = this.arena.get_value_length(this.index)
+		const start = this.arena.get_value_start(this.index)
+		const length = this.arena.get_value_length(this.index)
 		if (length === 0) return null
 		return this.source.substring(start, start + length)
 	}
@@ -454,7 +454,7 @@ export class CSSNode {
 	/** At-rules: AT_RULE_PRELUDE wrapper (media queries, layer names, …). Style rules: SELECTOR_LIST/SELECTOR. Null if none. */
 	get prelude(): CSSNode | null | undefined {
 		if (this.type === AT_RULE) {
-			let first = this.first_child
+			const first = this.first_child
 			if (first?.type === AT_RULE_PRELUDE || first?.type === RAW) {
 				return first
 			}
@@ -471,10 +471,10 @@ export class CSSNode {
 	get attr_operator(): string | null | undefined {
 		if (this.type !== ATTRIBUTE_SELECTOR) return undefined
 
-		let content_start = this.arena.get_content_start(this.index)
-		let content_end = content_start + this.arena.get_content_length(this.index)
-		let node_start = this.arena.get_start_offset(this.index)
-		let node_end = node_start + this.arena.get_length(this.index)
+		const content_start = this.arena.get_content_start(this.index)
+		const content_end = content_start + this.arena.get_content_length(this.index)
+		const node_start = this.arena.get_start_offset(this.index)
+		const node_end = node_start + this.arena.get_length(this.index)
 
 		// Skip whitespace after attribute name
 		let pos = content_end
@@ -482,8 +482,8 @@ export class CSSNode {
 
 		if (pos >= node_end) return null
 
-		let ch1 = this.source.charCodeAt(pos)
-		let ch2 = pos + 1 < node_end ? this.source.charCodeAt(pos + 1) : 0
+		const ch1 = this.source.charCodeAt(pos)
+		const ch2 = pos + 1 < node_end ? this.source.charCodeAt(pos + 1) : 0
 
 		if (ch1 === CHAR_EQUALS) return this.source.at(pos)!
 		if (ch1 === CHAR_TILDE && ch2 === CHAR_EQUALS) return this.source.substring(pos, pos + 2)
@@ -498,20 +498,20 @@ export class CSSNode {
 	get attr_flags(): string | null | undefined {
 		if (this.type !== ATTRIBUTE_SELECTOR) return undefined
 
-		let value_len = this.arena.get_value_length(this.index)
+		const value_len = this.arena.get_value_length(this.index)
 		if (value_len === 0) return null
 
-		let value_start = this.arena.get_value_start(this.index)
-		let value_end = value_start + value_len
-		let node_start = this.arena.get_start_offset(this.index)
-		let node_end = node_start + this.arena.get_length(this.index)
+		const value_start = this.arena.get_value_start(this.index)
+		const value_end = value_start + value_len
+		const node_start = this.arena.get_start_offset(this.index)
+		const node_end = node_start + this.arena.get_length(this.index)
 
 		// Skip whitespace after value
 		let pos = value_end
 		while (pos < node_end && is_whitespace(this.source.charCodeAt(pos))) pos++
 
 		if (pos >= node_end) return null
-		let flag_ch = this.source.charCodeAt(pos)
+		const flag_ch = this.source.charCodeAt(pos)
 		if (flag_ch === 0x69 || flag_ch === 0x49 || flag_ch === 0x73 || flag_ch === 0x53) {
 			return this.source.at(pos)!
 		}
@@ -521,7 +521,7 @@ export class CSSNode {
 	/** Get the unit for dimension nodes (e.g., "px" from "100px", "%" from "50%") */
 	get unit(): string | undefined {
 		if (this.type !== DIMENSION) return undefined
-		let text = this.text
+		const text = this.text
 		return text.substring(dimension_number_end(text))
 	}
 
@@ -597,7 +597,7 @@ export class CSSNode {
 
 	/** Check if this node has a prelude (at-rules and style rules) */
 	get has_prelude(): boolean {
-		let { type } = this
+		const { type } = this
 		if (type === AT_RULE) {
 			return this.first_child !== null && this.first_child.type !== BLOCK
 		}
@@ -614,20 +614,20 @@ export class CSSNode {
 
 	/** Check if this style rule has declarations */
 	get has_declarations(): boolean | undefined {
-		let { type } = this
+		const { type } = this
 		if (type !== AT_RULE && type !== STYLE_RULE) return undefined
 		return this.arena.has_flag(this.index, FLAG_HAS_DECLARATIONS)
 	}
 
 	/** Get the block node (for style rules and at-rules with blocks) */
 	get block(): CSSNode | null {
-		let { type } = this
+		const { type } = this
 		// For StyleRule: block is sibling after selector list
 		if (type === STYLE_RULE) {
-			let first = this.first_child
+			const first = this.first_child
 			if (!first) return null
 			// Block is the sibling after selector list
-			let block_node = first.next_sibling
+			const block_node = first.next_sibling
 			if (block_node?.type === BLOCK) {
 				return block_node
 			}
@@ -698,27 +698,27 @@ export class CSSNode {
 
 	/** Get first child node */
 	get first_child(): CSSNode | null {
-		let child_index = this.arena.get_first_child(this.index)
+		const child_index = this.arena.get_first_child(this.index)
 		if (child_index === 0) return null
 		return new CSSNode(this.arena, this.source, child_index)
 	}
 
 	/** Get next sibling node */
 	get next_sibling(): CSSNode | null {
-		let sibling_index = this.arena.get_next_sibling(this.index)
+		const sibling_index = this.arena.get_next_sibling(this.index)
 		if (sibling_index === 0) return null
 		return new CSSNode(this.arena, this.source, sibling_index)
 	}
 
 	/** Check if this node has a next sibling */
 	get has_next(): boolean {
-		let sibling_index = this.arena.get_next_sibling(this.index)
+		const sibling_index = this.arena.get_next_sibling(this.index)
 		return sibling_index !== 0
 	}
 
 	/** Whether this node has children. For pseudo-class/element functions, tracks FLAG_HAS_PARENS so formatters can tell `:lang()` from `:hover`. */
 	get has_children(): boolean {
-		let { type } = this
+		const { type } = this
 		// For pseudo-class/pseudo-element nodes, check if they have function syntax
 		if (type === PSEUDO_CLASS_SELECTOR || type === PSEUDO_ELEMENT_SELECTOR) {
 			// If FLAG_HAS_PARENS is set, return true even if no actual children
@@ -743,7 +743,7 @@ export class CSSNode {
 
 	/** Get all children as an array */
 	get children(): CSSNode[] | undefined {
-		let result: CSSNode[] = []
+		const result: CSSNode[] = []
 		let child = this.first_child
 		while (child) {
 			result.push(child)
@@ -765,30 +765,30 @@ export class CSSNode {
 
 	/** Get the 'a' coefficient from An+B expression (e.g., "2n" from "2n+1", "odd" from "odd") */
 	get nth_a(): string | null | undefined {
-		let { type, arena, index } = this
+		const { type, arena, index } = this
 		if (type !== NTH_SELECTOR && type !== NTH_OF_SELECTOR) return undefined
 
-		let len = arena.get_content_length(index)
+		const len = arena.get_content_length(index)
 		if (len === 0) return null
-		let start = arena.get_content_start(index)
+		const start = arena.get_content_start(index)
 		return this.source.substring(start, start + len)
 	}
 
 	/** Get the 'b' coefficient from An+B expression (e.g., "+1" from "2n+1") */
 	get nth_b(): string | null | undefined {
-		let { type, arena, index, source } = this
+		const { type, arena, index, source } = this
 		if (type !== NTH_SELECTOR && type !== NTH_OF_SELECTOR) return undefined
 
-		let len = arena.get_value_length(index)
+		const len = arena.get_value_length(index)
 		if (len === 0) return null
-		let start = arena.get_value_start(index)
+		const start = arena.get_value_start(index)
 		let value = source.substring(start, start + len)
 
 		// Check if there's a - or + sign before this position (handling "2n - 1" or "2n + 1" with spaces)
 		// Look backwards for a - or + sign, skipping whitespace
 		let check_pos = start - 1
 		while (check_pos >= 0) {
-			let ch = source.charCodeAt(check_pos)
+			const ch = source.charCodeAt(check_pos)
 			if (is_whitespace(ch)) {
 				check_pos--
 				continue
@@ -816,7 +816,7 @@ export class CSSNode {
 	/** Get the selector list from :nth-child(2n+1 of .foo) */
 	get selector(): CSSNode | undefined {
 		if (this.type !== NTH_OF_SELECTOR) return undefined
-		let first = this.first_child
+		const first = this.first_child
 		return first?.next_sibling ?? undefined // Second child is NODE_SELECTOR_LIST
 	}
 
@@ -828,16 +828,16 @@ export class CSSNode {
 	 */
 	clone(options: CloneOptions = {}): PlainCSSNode {
 		const { deep = true, locations = false } = options
-		let { type } = this
+		const { type } = this
 
-		let plain: any = {
+		const plain: any = {
 			type,
 			type_name: this.type_name,
 			text: this.text,
 		}
 
-		for (let key of enumerable_properties) {
-			let val = this[key]
+		for (const key of enumerable_properties) {
+			const val = this[key]
 			if (val instanceof CSSNode) {
 				plain[key] = val.clone({ deep, locations })
 			} else if (val !== undefined && val !== false) {
@@ -858,9 +858,9 @@ export class CSSNode {
 			plain.child_count = this.child_count
 			plain.has_children = this.has_children
 
-			let children = this.children
+			const children = this.children
 			if (children) {
-				for (let child of children) {
+				for (const child of children) {
 					plain.children.push(child.clone({ deep: true, locations }))
 				}
 			}

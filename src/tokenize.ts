@@ -173,7 +173,7 @@ export class Lexer {
 				let line = this._line
 				let line_offset = this._line_offset
 				while (pos < source_length) {
-					let ch = source.charCodeAt(pos)
+					const ch = source.charCodeAt(pos)
 					if (ch >= 128 || (char_types[ch] & CHAR_WHITESPACE_OR_NEWLINE) === 0) break
 					pos++
 					if ((char_types[ch] & CHAR_NEWLINE) !== 0) {
@@ -197,10 +197,10 @@ export class Lexer {
 				return this.make_token(TOKEN_EOF, this.pos, this.pos)
 			}
 
-			let ch = source.charCodeAt(this.pos)
-			let start = this.pos
-			let start_line = this._line
-			let start_column = this.pos - this._line_offset + 1
+			const ch = source.charCodeAt(this.pos)
+			const start = this.pos
+			const start_line = this._line
+			const start_column = this.pos - this._line_offset + 1
 
 			// Fast path for single-character tokens — pos++ safe (none are newlines)
 			switch (ch) {
@@ -236,7 +236,7 @@ export class Lexer {
 			// One table read classifies ch for the dispatch below (non-ASCII → 0, handled via
 			// ch >= 128). Deferred until after the switch so the 9 single-char-token cases
 			// above — among the most common bytes in CSS ({ } : ; , [ ] ( )) — skip this lookup.
-			let ch_type = ch < 128 ? char_types[ch] : 0
+			const ch_type = ch < 128 ? char_types[ch] : 0
 
 			// Whitespace
 			if ((ch_type & CHAR_WHITESPACE_OR_NEWLINE) !== 0) {
@@ -266,7 +266,7 @@ export class Lexer {
 			// legacy --> CDC token — consolidated into one block sharing a single lookahead read.
 			// CDC must be checked first: "-->" would otherwise read as identifier "--" plus ">".
 			if (ch === CHAR_HYPHEN) {
-				let next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
+				const next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
 
 				if (
 					next === CHAR_HYPHEN &&
@@ -286,7 +286,7 @@ export class Lexer {
 					return this.consume_number(start_line, start_column)
 				}
 				if (next === CHAR_DOT) {
-					let next2 = this.pos + 2 < source_length ? source.charCodeAt(this.pos + 2) : 0
+					const next2 = this.pos + 2 < source_length ? source.charCodeAt(this.pos + 2) : 0
 					if (next2 < 128 && (char_types[next2] & CHAR_DIGIT) !== 0) {
 						return this.consume_number(start_line, start_column)
 					}
@@ -295,7 +295,7 @@ export class Lexer {
 
 			// Backslash: escape sequence starting an identifier
 			if (ch === CHAR_BACKSLASH) {
-				let next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
+				const next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
 				if (next !== 0 && !is_newline(next)) {
 					return this.consume_ident_or_function(start_line, start_column)
 				}
@@ -307,7 +307,7 @@ export class Lexer {
 			}
 
 			if (ch === CHAR_DOT) {
-				let next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
+				const next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
 				if (next < 128 && (char_types[next] & CHAR_DIGIT) !== 0) {
 					return this.consume_number(start_line, start_column)
 				}
@@ -315,12 +315,12 @@ export class Lexer {
 
 			// Plus: could be a signed number like +5 (the hyphen-led case is handled above)
 			if (ch === CHAR_PLUS) {
-				let next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
+				const next = this.pos + 1 < source_length ? source.charCodeAt(this.pos + 1) : 0
 				if (next < 128 && (char_types[next] & CHAR_DIGIT) !== 0) {
 					return this.consume_number(start_line, start_column)
 				}
 				if (next === CHAR_DOT) {
-					let next2 = this.pos + 2 < source_length ? source.charCodeAt(this.pos + 2) : 0
+					const next2 = this.pos + 2 < source_length ? source.charCodeAt(this.pos + 2) : 0
 					if (next2 < 128 && (char_types[next2] & CHAR_DIGIT) !== 0) {
 						return this.consume_number(start_line, start_column)
 					}
@@ -366,7 +366,7 @@ export class Lexer {
 	private _scan_newlines(from: number, to: number): void {
 		const source = this.source
 		for (let i = from; i < to; i++) {
-			let c = source.charCodeAt(i)
+			const c = source.charCodeAt(i)
 			if (c === CHAR_LINE_FEED) {
 				this._line++
 				this._line_offset = i + 1
@@ -388,16 +388,16 @@ export class Lexer {
 	private _skip_comment(): void {
 		const source = this.source
 		const source_length = source.length
-		let comment_start = this.pos
-		let comment_line = this._line
-		let comment_column = this.pos - this._line_offset + 1
+		const comment_start = this.pos
+		const comment_line = this._line
+		const comment_column = this.pos - this._line_offset + 1
 
 		// Neither / nor * are newlines — safe to skip without newline tracking
 		this.pos += 2
 
 		// Use native string search to find */ — dramatically faster than a JS loop
 		// for typical comment bodies (SIMD-accelerated in V8).
-		let end_idx = source.indexOf('*/', this.pos)
+		const end_idx = source.indexOf('*/', this.pos)
 		if (end_idx < 0) {
 			// Unterminated comment: scan tail for newlines, advance to EOF
 			this._scan_newlines(this.pos, source_length)
@@ -436,7 +436,7 @@ export class Lexer {
 		let pos = this.pos
 
 		while (pos < source_length) {
-			let ch = source.charCodeAt(pos)
+			const ch = source.charCodeAt(pos)
 
 			if (ch === target) {
 				this.pos = pos
@@ -496,7 +496,7 @@ export class Lexer {
 		let pos = this.pos
 
 		while (pos < end) {
-			let ch = source.charCodeAt(pos)
+			const ch = source.charCodeAt(pos)
 
 			if (ch < 128 && DECL_VALUE_STOP[ch] !== 0) {
 				this.pos = pos
@@ -542,14 +542,14 @@ export class Lexer {
 	consume_whitespace(start_line: number, start_column: number): TokenType {
 		const source = this.source
 		const source_length = source.length
-		let start = this.pos
+		const start = this.pos
 		// Hoisted to locals (synced back once), same as next_token_fast's inline skip.
 		let pos = start
 		let line = this._line
 		let line_offset = this._line_offset
 		// Inline advance: read ch once, pos++, then track newlines with already-read value
 		while (pos < source_length) {
-			let ch = source.charCodeAt(pos)
+			const ch = source.charCodeAt(pos)
 			if (ch >= 128 || (char_types[ch] & CHAR_WHITESPACE_OR_NEWLINE) === 0) break
 			pos++
 			if ((char_types[ch] & CHAR_NEWLINE) !== 0) {
@@ -573,11 +573,11 @@ export class Lexer {
 	consume_string(quote: number, start_line: number, start_column: number): TokenType {
 		const source = this.source
 		const source_length = source.length
-		let start = this.pos
+		const start = this.pos
 		this.pos++ // Skip opening quote — quote chars are never newlines
 
 		while (this.pos < source_length) {
-			let ch = source.charCodeAt(this.pos)
+			const ch = source.charCodeAt(this.pos)
 
 			// Closing quote
 			if (ch === quote) {
@@ -594,7 +594,7 @@ export class Lexer {
 			if (ch === CHAR_BACKSLASH) {
 				this.pos++ // \ is never a newline
 				if (this.pos < source_length) {
-					let next = source.charCodeAt(this.pos)
+					const next = source.charCodeAt(this.pos)
 					if (is_hex_digit(next)) {
 						this.consume_hex_escape()
 					} else if (next < 128 && (char_types[next] & CHAR_NEWLINE) !== 0) {
@@ -631,14 +631,14 @@ export class Lexer {
 		// Consume up to 6 hex digits — hex digits are never newlines, use pos++
 		let count = 0
 		while (count < 6 && this.pos < source_length) {
-			let ch = source.charCodeAt(this.pos)
+			const ch = source.charCodeAt(this.pos)
 			if (!is_hex_digit(ch)) break
 			this.pos++ // hex digits: 0-9, a-f, A-F — never newlines
 			count++
 		}
 		// Optional whitespace after hex escape (may be a newline — inline advance)
 		if (this.pos < source_length) {
-			let ch = source.charCodeAt(this.pos)
+			const ch = source.charCodeAt(this.pos)
 			if (ch < 128 && (char_types[ch] & CHAR_WHITESPACE_OR_NEWLINE) !== 0) {
 				this.pos++
 				if ((char_types[ch] & CHAR_NEWLINE) !== 0) {
@@ -659,31 +659,31 @@ export class Lexer {
 	consume_number(start_line: number, start_column: number): TokenType {
 		const source = this.source
 		const source_length = source.length
-		let start = this.pos
+		const start = this.pos
 		// Numbers never contain newlines, so the whole scan can run on a local var —
 		// no line/column bookkeeping to keep in sync with this.pos along the way.
 		let pos = start
 
 		// Optional sign — + and - are never newlines
-		let ch = source.charCodeAt(pos)
+		const ch = source.charCodeAt(pos)
 		if (ch === CHAR_PLUS || ch === CHAR_HYPHEN) {
 			pos++
 		}
 
 		// Integer part — digits are never newlines, use pos++
 		while (pos < source_length) {
-			let ch = source.charCodeAt(pos)
+			const ch = source.charCodeAt(pos)
 			if (ch >= 128 || (char_types[ch] & CHAR_DIGIT) === 0) break
 			pos++
 		}
 
 		// Decimal part
 		if (pos < source_length && source.charCodeAt(pos) === CHAR_DOT && pos + 1 < source_length) {
-			let next = source.charCodeAt(pos + 1)
+			const next = source.charCodeAt(pos + 1)
 			if (next < 128 && (char_types[next] & CHAR_DIGIT) !== 0) {
 				pos++ // . is never a newline
 				while (pos < source_length) {
-					let ch = source.charCodeAt(pos)
+					const ch = source.charCodeAt(pos)
 					if (ch >= 128 || (char_types[ch] & CHAR_DIGIT) === 0) break
 					pos++ // digits: never newlines
 				}
@@ -692,22 +692,22 @@ export class Lexer {
 
 		// Exponent: e or E
 		if (pos < source_length) {
-			let ch = source.charCodeAt(pos)
+			const ch = source.charCodeAt(pos)
 			if (ch === CHAR_LOWERCASE_E || ch === CHAR_UPPERCASE_E) {
-				let next = pos + 1 < source_length ? source.charCodeAt(pos + 1) : 0
-				let is_next_digit = next < 128 && (char_types[next] & CHAR_DIGIT) !== 0
-				let next2 = pos + 2 < source_length ? source.charCodeAt(pos + 2) : 0
-				let is_next2_digit = next2 < 128 && (char_types[next2] & CHAR_DIGIT) !== 0
+				const next = pos + 1 < source_length ? source.charCodeAt(pos + 1) : 0
+				const is_next_digit = next < 128 && (char_types[next] & CHAR_DIGIT) !== 0
+				const next2 = pos + 2 < source_length ? source.charCodeAt(pos + 2) : 0
+				const is_next2_digit = next2 < 128 && (char_types[next2] & CHAR_DIGIT) !== 0
 				if (is_next_digit || ((next === CHAR_PLUS || next === CHAR_HYPHEN) && is_next2_digit)) {
 					pos++ // e/E — never a newline
 					if (pos < source_length) {
-						let sign = source.charCodeAt(pos)
+						const sign = source.charCodeAt(pos)
 						if (sign === CHAR_PLUS || sign === CHAR_HYPHEN) {
 							pos++ // +/- — never a newline
 						}
 					}
 					while (pos < source_length) {
-						let ch = source.charCodeAt(pos)
+						const ch = source.charCodeAt(pos)
 						if (ch >= 128 || (char_types[ch] & CHAR_DIGIT) === 0) break
 						pos++ // digits: never newlines
 					}
@@ -717,7 +717,7 @@ export class Lexer {
 
 		// Check for unit (dimension) or percentage
 		if (pos < source_length) {
-			let ch = source.charCodeAt(pos)
+			const ch = source.charCodeAt(pos)
 			if (ch === CHAR_PERCENT) {
 				pos++ // % is never a newline
 				this.pos = pos
@@ -730,7 +730,7 @@ export class Lexer {
 			) {
 				// Unit: px, em, rem, etc — ident chars and non-ASCII are never newlines
 				while (pos < source_length) {
-					let ch = source.charCodeAt(pos)
+					const ch = source.charCodeAt(pos)
 					if (ch < 0x80 && (char_types[ch] & CHAR_IDENT) === 0) break
 					pos++
 				}
@@ -746,7 +746,7 @@ export class Lexer {
 	consume_ident_or_function(start_line: number, start_column: number): TokenType {
 		const source = this.source
 		const source_length = source.length
-		let start = this.pos
+		const start = this.pos
 		// Hoisted to a local: the common case below (plain ident chars, no escapes) never
 		// touches line/column, so it can advance a local var instead of this.pos on every
 		// char, syncing back only when the rare backslash-escape path needs this.pos (which
@@ -755,14 +755,14 @@ export class Lexer {
 
 		// Consume identifier (with escape sequence support)
 		while (pos < source_length) {
-			let ch = source.charCodeAt(pos)
+			const ch = source.charCodeAt(pos)
 
 			// Handle escape sequences: \ followed by hex digits or any character
 			if (ch === CHAR_BACKSLASH) {
 				this.pos = pos
 				if (this.pos + 1 >= source_length) break
 
-				let next = source.charCodeAt(this.pos + 1)
+				const next = source.charCodeAt(this.pos + 1)
 
 				if (is_newline(next)) break
 
@@ -777,7 +777,7 @@ export class Lexer {
 					}
 					// Consume optional whitespace after hex escape (may be newline)
 					if (this.pos < source_length) {
-						let ws = source.charCodeAt(this.pos)
+						const ws = source.charCodeAt(this.pos)
 						if (ws < 128 && (char_types[ws] & CHAR_WHITESPACE_OR_NEWLINE) !== 0) {
 							this.advance()
 						}
@@ -800,7 +800,7 @@ export class Lexer {
 
 		// Check for unicode-range: u+ or U+
 		if (this.pos - start === 1) {
-			let first_ch = source.charCodeAt(start)
+			const first_ch = source.charCodeAt(start)
 			if (
 				(first_ch === CHAR_LOWERCASE_U || first_ch === CHAR_UPPERCASE_U) &&
 				this.pos < source_length &&
@@ -831,7 +831,7 @@ export class Lexer {
 		// Consume hex digits and/or question marks (up to 6 total)
 		// Hex digits and ? are never newlines — use pos++
 		while (this.pos < source_length && hex_digits < 6) {
-			let ch = source.charCodeAt(this.pos)
+			const ch = source.charCodeAt(this.pos)
 			if (is_hex_digit(ch)) {
 				if (has_question) break
 				this.pos++
@@ -856,7 +856,7 @@ export class Lexer {
 
 				let end_hex_digits = 0
 				while (this.pos < source_length && end_hex_digits < 6) {
-					let ch = source.charCodeAt(this.pos)
+					const ch = source.charCodeAt(this.pos)
 					if (is_hex_digit(ch)) {
 						this.pos++ // hex digits: never newlines
 						end_hex_digits++
@@ -873,12 +873,12 @@ export class Lexer {
 	consume_at_keyword(start_line: number, start_column: number): TokenType {
 		const source = this.source
 		const source_length = source.length
-		let start = this.pos
+		const start = this.pos
 		let pos = start + 1 // Skip @ — never a newline
 
 		// Ident chars (a-z,A-Z,0-9,-,_) and non-ASCII are never newlines — use pos++
 		while (pos < source_length) {
-			let ch = source.charCodeAt(pos)
+			const ch = source.charCodeAt(pos)
 			if (ch < 0x80 && (char_types[ch] & CHAR_IDENT) === 0) break
 			pos++
 		}
@@ -890,12 +890,12 @@ export class Lexer {
 	consume_hash(start_line: number, start_column: number): TokenType {
 		const source = this.source
 		const source_length = source.length
-		let start = this.pos
+		const start = this.pos
 		let pos = start + 1 // Skip # — never a newline
 
 		// Ident chars and non-ASCII are never newlines — use pos++
 		while (pos < source_length) {
-			let ch = source.charCodeAt(pos)
+			const ch = source.charCodeAt(pos)
 			if (ch < 0x80 && (char_types[ch] & CHAR_IDENT) === 0) break
 			pos++
 		}
@@ -909,7 +909,7 @@ export class Lexer {
 		if (count === 1) {
 			if (this.pos >= this.source.length) return
 
-			let ch = this.source.charCodeAt(this.pos)
+			const ch = this.source.charCodeAt(this.pos)
 			this.pos++
 
 			// Inline newline check - only update on newline
@@ -932,7 +932,7 @@ export class Lexer {
 		for (let i = 0; i < count; i++) {
 			if (this.pos >= this.source.length) break
 
-			let ch = this.source.charCodeAt(this.pos)
+			const ch = this.source.charCodeAt(this.pos)
 			this.pos++
 
 			// Inline newline check - only update on newline
@@ -953,7 +953,7 @@ export class Lexer {
 	}
 
 	peek(offset: number = 1): number {
-		let index = this.pos + offset
+		const index = this.pos + offset
 		if (index >= this.source.length) return 0
 		return this.source.charCodeAt(index)
 	}
@@ -1038,7 +1038,7 @@ export class Lexer {
 	 */
 	skip_whitespace_in_range(end: number): void {
 		while (this.pos < end) {
-			let ch = this.source.charCodeAt(this.pos)
+			const ch = this.source.charCodeAt(this.pos)
 
 			// Skip whitespace (space, tab, and newlines — is_whitespace() from string-utils
 			// covers newlines too, but here we go straight to char_types to avoid the import)

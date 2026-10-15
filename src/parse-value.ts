@@ -17,20 +17,20 @@ export class ValueParser {
 	// Parse a declaration value range into a VALUE wrapper node
 	// Returns single VALUE node index
 	parse_value(start: number, end: number, start_line: number, start_column: number): number {
-		let first_node = this.nodes.parse_chain(start, end, start_line, start_column)
+		const first_node = this.nodes.parse_chain(start, end, start_line, start_column)
 
 		if (first_node === 0) {
 			// Empty value - create VALUE node with no children
 			return this.arena.create_node(VALUE, start, 0, start_line, start_column)
 		}
 
-		let last_node = this.nodes.last_chain_node
+		const last_node = this.nodes.last_chain_node
 
 		// Create VALUE wrapper node spanning all value tokens
-		let first_node_start = this.arena.get_start_offset(first_node)
-		let last_node_end = this.arena.get_start_offset(last_node) + this.arena.get_length(last_node)
+		const first_node_start = this.arena.get_start_offset(first_node)
+		const last_node_end = this.arena.get_start_offset(last_node) + this.arena.get_length(last_node)
 
-		let value_node = this.arena.create_node(
+		const value_node = this.arena.create_node(
 			VALUE,
 			first_node_start,
 			last_node_end - first_node_start,

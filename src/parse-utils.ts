@@ -20,7 +20,7 @@ export function skip_whitespace_and_comments_forward(
 	end: number,
 ): number {
 	while (pos < end) {
-		let ch = source.charCodeAt(pos)
+		const ch = source.charCodeAt(pos)
 
 		// Skip whitespace
 		if (is_whitespace(ch)) {
@@ -60,7 +60,7 @@ export function skip_whitespace_and_comments_backward(
 	start: number,
 ): number {
 	while (pos > start) {
-		let ch = source.charCodeAt(pos - 1)
+		const ch = source.charCodeAt(pos - 1)
 
 		// Skip whitespace
 		if (is_whitespace(ch)) {
@@ -107,7 +107,7 @@ export function trim_boundaries(
 export function find_colon_at_depth_zero(source: string, start: number, end: number): number {
 	let depth = 0
 	for (let i = start; i < end; i++) {
-		let ch = source.charCodeAt(i)
+		const ch = source.charCodeAt(i)
 		if (ch === CHAR_LEFT_PAREN) depth++
 		else if (ch === CHAR_RIGHT_PAREN) depth--
 		else if (ch === CHAR_COLON && depth === 0) return i

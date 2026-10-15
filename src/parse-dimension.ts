@@ -10,14 +10,14 @@ import { is_digit, CHAR_MINUS_HYPHEN, CHAR_PLUS, CHAR_PERIOD } from './string-ut
 export function dimension_number_end(text: string): number {
 	let num_end = 0
 	for (let i = 0; i < text.length; i++) {
-		let ch = text.charCodeAt(i)
+		const ch = text.charCodeAt(i)
 
 		// Check for e/E (scientific notation)
 		if (ch === 0x65 || ch === 0x45) {
 			// e or E
 			// Only allow e/E if followed by digit or sign+digit
 			if (i + 1 < text.length) {
-				let next_ch = text.charCodeAt(i + 1)
+				const next_ch = text.charCodeAt(i + 1)
 				// Check if next is digit
 				if (is_digit(next_ch)) {
 					num_end = i + 1
@@ -25,7 +25,7 @@ export function dimension_number_end(text: string): number {
 				}
 				// Check if next is sign followed by digit
 				if ((next_ch === 0x2b || next_ch === 0x2d) && i + 2 < text.length) {
-					let afterSign = text.charCodeAt(i + 2)
+					const afterSign = text.charCodeAt(i + 2)
 					if (is_digit(afterSign)) {
 						num_end = i + 1
 						continue
@@ -49,11 +49,11 @@ export function dimension_number_end(text: string): number {
 
 /** Parse a dimension string into value and unit, e.g. "100px" → { value: 100, unit: "px" } or "2%" → { value: 2, unit: "%" } */
 export function parse_dimension(text: string): { value: number; unit: string } {
-	let num_end = dimension_number_end(text)
-	let num_str = text.substring(0, num_end)
-	let unit = text.substring(num_end)
+	const num_end = dimension_number_end(text)
+	const num_str = text.substring(0, num_end)
+	const unit = text.substring(num_end)
 	// oxlint-disable-next-line prefer-number-coercion
-	let value = num_str ? Number.parseFloat(num_str) : 0
+	const value = num_str ? Number.parseFloat(num_str) : 0
 
 	return { value, unit }
 }

@@ -7,6 +7,7 @@
 	},
 	"rules": {
 		"no-null": "off", // AST's need null
+		"prefer-const": "error",
 		"jest/no-conditional-in-test": "off",
 		"vitest/no-conditional-in-test": "off",
 		"jest/no-conditional-expect": "off",

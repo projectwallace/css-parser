@@ -80,7 +80,7 @@ export class AtRulePreludeParser {
 	// Dispatch to appropriate parser based on at-rule type
 	private parse_prelude_dispatch(at_rule_name: string): number[] {
 		// Strip vendor prefix to treat @-webkit-keyframes same as @keyframes
-		let normalized_name = strip_vendor_prefix(at_rule_name).toLowerCase()
+		const normalized_name = strip_vendor_prefix(at_rule_name).toLowerCase()
 
 		switch (normalized_name) {
 			case 'media':
@@ -119,13 +119,13 @@ export class AtRulePreludeParser {
 
 	// Parse media query list: screen, (min-width: 768px), ...
 	private parse_media_query_list(): number[] {
-		let nodes: number[] = []
+		const nodes: number[] = []
 
 		while (this.lexer.pos < this.prelude_end) {
 			this.skip_whitespace()
 			if (this.lexer.pos >= this.prelude_end) break
 
-			let query = this.parse_single_media_query()
+			const query = this.parse_single_media_query()
 			if (query !== null) {
 				nodes.push(query)
 			}
@@ -169,7 +169,7 @@ export class AtRulePreludeParser {
 		let close_end = this.lexer.token_end
 
 		while (this.lexer.pos < this.prelude_end && depth > 0) {
-			let token_type = this.next_token()
+			const token_type = this.next_token()
 			if (token_type === TOKEN_LEFT_PAREN || token_type === TOKEN_FUNCTION) {
 				depth++
 			} else if (token_type === TOKEN_RIGHT_PAREN) {
@@ -190,7 +190,7 @@ export class AtRulePreludeParser {
 
 	// Parse a single media query: screen and (min-width: 768px)
 	private parse_single_media_query(): number | null {
-		let query_start = this.lexer.pos
+		const query_start = this.lexer.pos
 
 		// Skip whitespace
 		this.skip_whitespace()
@@ -207,14 +207,14 @@ export class AtRulePreludeParser {
 		this.next_token()
 
 		if (this.lexer.token_type === TOKEN_IDENT) {
-			let source = this.source
-			let token_start = this.lexer.token_start
-			let token_end = this.lexer.token_end
+			const source = this.source
+			const token_start = this.lexer.token_start
+			const token_end = this.lexer.token_end
 			if (
 				str_equals_range(source, token_start, token_end, 'only') ||
 				str_equals_range(source, token_start, token_end, 'not')
 			) {
-				let modifier = this.create_node(PRELUDE_OPERATOR, token_start, token_end)
+				const modifier = this.create_node(PRELUDE_OPERATOR, token_start, token_end)
 				first_component = modifier
 				last_component = modifier
 			} else {
@@ -234,7 +234,7 @@ export class AtRulePreludeParser {
 
 			this.next_token()
 
-			let token_type = this.lexer.token_type
+			const token_type = this.lexer.token_type
 			let component: number | null = null
 
 			// Media feature: (min-width: 768px)
@@ -252,8 +252,8 @@ export class AtRulePreludeParser {
 			}
 			// Identifier: media type or operator (and, or, not)
 			else if (token_type === TOKEN_IDENT) {
-				let token_start = this.lexer.token_start
-				let token_end = this.lexer.token_end
+				const token_start = this.lexer.token_start
+				const token_end = this.lexer.token_end
 				if (is_and_or_not_range(this.source, token_start, token_end)) {
 					// Logical operator
 					component = this.create_node(PRELUDE_OPERATOR, token_start, token_end)
@@ -279,7 +279,7 @@ export class AtRulePreludeParser {
 		if (first_component === 0) return null
 
 		// Create media query node
-		let query_node = this.create_node(MEDIA_QUERY, query_start, this.lexer.pos)
+		const query_node = this.create_node(MEDIA_QUERY, query_start, this.lexer.pos)
 
 		// Link components as children
 		this.arena.set_first_child(query_node, first_component)
@@ -289,7 +289,7 @@ export class AtRulePreludeParser {
 
 	// Parse container query: [name] and (min-width: 400px)
 	private parse_container_query(): number[] {
-		let query_start = this.lexer.pos
+		const query_start = this.lexer.pos
 
 		// Parse components (identifiers, operators, features), chained as siblings without an
 		// intermediate array — most container queries have a single component.
@@ -302,7 +302,7 @@ export class AtRulePreludeParser {
 
 			this.next_token()
 
-			let token_type = this.lexer.token_type
+			const token_type = this.lexer.token_type
 			let component: number | null = null
 
 			// Container feature: (min-width: 400px)
@@ -329,8 +329,8 @@ export class AtRulePreludeParser {
 			}
 			// Identifier: operator (and, or, not) or container name
 			else if (token_type === TOKEN_IDENT) {
-				let token_start = this.lexer.token_start
-				let token_end = this.lexer.token_end
+				const token_start = this.lexer.token_start
+				const token_end = this.lexer.token_end
 				if (is_and_or_not_range(this.source, token_start, token_end)) {
 					// Logical operator
 					component = this.create_node(PRELUDE_OPERATOR, token_start, token_end)
@@ -353,7 +353,7 @@ export class AtRulePreludeParser {
 		if (first_component === 0) return []
 
 		// Create container query node
-		let query_node = this.create_node(CONTAINER_QUERY, query_start, this.lexer.pos)
+		const query_node = this.create_node(CONTAINER_QUERY, query_start, this.lexer.pos)
 
 		// Link components as children
 		this.arena.set_first_child(query_node, first_component)
@@ -375,7 +375,7 @@ export class AtRulePreludeParser {
 	// A single name may be dotted for nested layers: base.normalize
 	// <layer-name> = <ident> ['.' <ident>]* with no whitespace around the dots.
 	private parse_layer_names(): number[] {
-		let nodes: number[] = []
+		const nodes: number[] = []
 
 		while (this.lexer.pos < this.prelude_end) {
 			this.skip_whitespace()
@@ -383,16 +383,16 @@ export class AtRulePreludeParser {
 
 			this.next_token()
 
-			let token_type = this.lexer.token_type
+			const token_type = this.lexer.token_type
 			if (token_type === TOKEN_IDENT) {
-				let name_start = this.lexer.token_start
+				const name_start = this.lexer.token_start
 				let name_end = this.lexer.token_end
 
 				// Glue on '.' ident segments immediately following, with no gaps.
 				while (this.lexer.pos < this.prelude_end) {
-					let saved = this.lexer.save_position()
+					const saved = this.lexer.save_position()
 
-					let dot_token_type = this.next_token()
+					const dot_token_type = this.next_token()
 					if (
 						dot_token_type !== TOKEN_DELIM ||
 						this.source.charCodeAt(this.lexer.token_start) !== CHAR_PERIOD ||
@@ -401,9 +401,9 @@ export class AtRulePreludeParser {
 						this.lexer.restore_position(saved)
 						break
 					}
-					let dot_end = this.lexer.token_end
+					const dot_end = this.lexer.token_end
 
-					let segment_token_type = this.next_token()
+					const segment_token_type = this.next_token()
 					if (segment_token_type !== TOKEN_IDENT || this.lexer.token_start !== dot_end) {
 						this.lexer.restore_position(saved)
 						break
@@ -413,7 +413,7 @@ export class AtRulePreludeParser {
 				}
 
 				// Layer name (possibly dotted)
-				let layer = this.create_node(LAYER_NAME, name_start, name_end)
+				const layer = this.create_node(LAYER_NAME, name_start, name_end)
 				this.arena.set_content_start_delta(layer, 0)
 				this.arena.set_content_length(layer, name_end - name_start)
 				nodes.push(layer)
@@ -443,8 +443,8 @@ export class AtRulePreludeParser {
 		if (this.lexer.token_type !== TOKEN_FUNCTION) return []
 
 		// Create an IDENTIFIER node for just the function name (without '(')
-		let name_start = this.lexer.token_start
-		let name_end = this.lexer.token_end - 1 // Exclude '('
+		const name_start = this.lexer.token_start
+		const name_end = this.lexer.token_end - 1 // Exclude '('
 
 		return [this.create_node(IDENTIFIER, name_start, name_end)]
 	}
@@ -459,7 +459,7 @@ export class AtRulePreludeParser {
 		if (this.lexer.token_type !== TOKEN_IDENT) return []
 
 		// Create identifier node
-		let ident = this.create_node(IDENTIFIER, this.lexer.token_start, this.lexer.token_end)
+		const ident = this.create_node(IDENTIFIER, this.lexer.token_start, this.lexer.token_end)
 
 		return [ident]
 	}
@@ -474,7 +474,7 @@ export class AtRulePreludeParser {
 		if (this.lexer.token_type !== TOKEN_STRING) return []
 
 		// Create string node
-		let str = this.create_node(STRING, this.lexer.token_start, this.lexer.token_end)
+		const str = this.create_node(STRING, this.lexer.token_start, this.lexer.token_end)
 
 		return [str]
 	}
@@ -482,13 +482,13 @@ export class AtRulePreludeParser {
 	// Parse @import prelude: url() [layer] [supports()] [media-query-list]
 	// @import url("styles.css") layer(base) supports(display: grid) screen and (min-width: 768px);
 	private parse_import_prelude(): number[] {
-		let nodes: number[] = []
+		const nodes: number[] = []
 
 		// 1. Parse URL (required) - url("...") or "..."
 		this.skip_whitespace()
 		if (this.lexer.pos >= this.prelude_end) return []
 
-		let url_node = this.parse_import_url()
+		const url_node = this.parse_import_url()
 		if (url_node === null) {
 			return [] // URL is required, fail if not found
 		}
@@ -499,7 +499,7 @@ export class AtRulePreludeParser {
 		this.skip_whitespace()
 		if (this.lexer.pos >= this.prelude_end) return nodes
 
-		let layer_node = this.parse_import_layer()
+		const layer_node = this.parse_import_layer()
 		if (layer_node !== null) {
 			nodes.push(layer_node)
 		}
@@ -508,7 +508,7 @@ export class AtRulePreludeParser {
 		this.skip_whitespace()
 		if (this.lexer.pos >= this.prelude_end) return nodes
 
-		let supports_node = this.parse_import_supports()
+		const supports_node = this.parse_import_supports()
 		if (supports_node !== null) {
 			nodes.push(supports_node)
 		}
@@ -518,7 +518,7 @@ export class AtRulePreludeParser {
 		if (this.lexer.pos >= this.prelude_end) return nodes
 
 		// Parse media queries (reuse existing parser)
-		let media_nodes = this.parse_media_query_list()
+		const media_nodes = this.parse_media_query_list()
 		nodes.push(...media_nodes)
 
 		return nodes
@@ -538,18 +538,18 @@ export class AtRulePreludeParser {
 		}
 
 		// For url() function, we need to consume all tokens until the closing paren
-		let url_start = this.lexer.token_start
+		const url_start = this.lexer.token_start
 		let url_end = this.lexer.token_end
 
 		if (this.lexer.token_type === TOKEN_FUNCTION) {
 			// It's url( ... we need to find the matching )
 			this.scan_matching_paren()
-			let close_end = this.paren_close_end
+			const close_end = this.paren_close_end
 			url_end = close_end
 		}
 
 		// Create URL node
-		let url_node = this.create_node(URL, url_start, url_end)
+		const url_node = this.create_node(URL, url_start, url_end)
 		return url_node
 	}
 
@@ -563,11 +563,11 @@ export class AtRulePreludeParser {
 		// Check for 'layer' keyword or 'layer(' function
 		if (this.lexer.token_type === TOKEN_IDENT || this.lexer.token_type === TOKEN_FUNCTION) {
 			// For function tokens, exclude the trailing '('
-			let name_end =
+			const name_end =
 				this.lexer.token_type === TOKEN_FUNCTION ? this.lexer.token_end - 1 : this.lexer.token_end
 
 			if (str_equals_range(this.source, this.lexer.token_start, name_end, 'layer')) {
-				let layer_start = this.lexer.token_start
+				const layer_start = this.lexer.token_start
 				let layer_end = this.lexer.token_end
 				let content_start = 0
 				let content_length = 0
@@ -576,9 +576,9 @@ export class AtRulePreludeParser {
 				if (this.lexer.token_type === TOKEN_FUNCTION) {
 					// Track the content inside the parentheses
 					content_start = this.lexer.pos
-					let matched = this.scan_matching_paren()
-					let content_end = this.paren_content_end
-					let close_end = this.paren_close_end
+					const matched = this.scan_matching_paren()
+					const content_end = this.paren_content_end
+					const close_end = this.paren_close_end
 					if (matched) {
 						content_length = content_end - content_start
 						layer_end = close_end
@@ -586,11 +586,15 @@ export class AtRulePreludeParser {
 				}
 
 				// Create layer node
-				let layer_node = this.create_node(LAYER_NAME, layer_start, layer_end)
+				const layer_node = this.create_node(LAYER_NAME, layer_start, layer_end)
 
 				// Store the layer name (content inside parentheses), trimmed
 				if (content_length > 0) {
-					let trimmed = trim_boundaries(this.source, content_start, content_start + content_length)
+					const trimmed = trim_boundaries(
+						this.source,
+						content_start,
+						content_start + content_length,
+					)
 					if (trimmed) {
 						this.arena.set_content_start_delta(layer_node, trimmed[0] - layer_start)
 						this.arena.set_content_length(layer_node, trimmed[1] - trimmed[0])
@@ -619,25 +623,25 @@ export class AtRulePreludeParser {
 			if (
 				str_equals_range(this.source, this.lexer.token_start, this.lexer.token_end - 1, 'supports')
 			) {
-				let supports_start = this.lexer.token_start
-				let content_start = this.lexer.token_end // After the opening '('
+				const supports_start = this.lexer.token_start
+				const content_start = this.lexer.token_end // After the opening '('
 
 				// Find matching closing parenthesis
 				this.scan_matching_paren()
-				let content_end = this.paren_content_end
-				let supports_end = this.paren_close_end
+				const content_end = this.paren_content_end
+				const supports_end = this.paren_close_end
 
 				// Create supports node
-				let supports_node = this.create_node(SUPPORTS_QUERY, supports_start, supports_end)
+				const supports_node = this.create_node(SUPPORTS_QUERY, supports_start, supports_end)
 
 				// Store query content in value fields, trimmed
-				let trimmed = trim_boundaries(this.source, content_start, content_end)
+				const trimmed = trim_boundaries(this.source, content_start, content_end)
 				if (trimmed) {
 					this.arena.set_value_start_delta(supports_node, trimmed[0] - supports_start)
 					this.arena.set_value_length(supports_node, trimmed[1] - trimmed[0])
 
 					// Check for simple declaration: supports(property: value)
-					let decl_child = this.condition_parser.parse_supports_declaration_content(
+					const decl_child = this.condition_parser.parse_supports_declaration_content(
 						trimmed[0],
 						trimmed[1],
 					)
@@ -665,7 +669,7 @@ export class AtRulePreludeParser {
 		const saved = this.lexer.save_position()
 
 		this.next_token()
-		let type = this.lexer.token_type
+		const type = this.lexer.token_type
 
 		this.lexer.restore_position(saved)
 
@@ -685,7 +689,7 @@ export class AtRulePreludeParser {
 	// e.g. @namespace url("http://www.w3.org/1999/xhtml");
 	// e.g. @namespace svg url("http://www.w3.org/2000/svg");
 	private parse_namespace_prelude(): number[] {
-		let nodes: number[] = []
+		const nodes: number[] = []
 		this.skip_whitespace()
 		if (this.lexer.pos >= this.prelude_end) return []
 
@@ -709,7 +713,7 @@ export class AtRulePreludeParser {
 	// Parse @scope prelude: [(<scope-start>)] [to (<scope-end>)]
 	// e.g. @scope (.parent) to (.child) { }
 	private parse_scope_prelude(): number[] {
-		let nodes: number[] = []
+		const nodes: number[] = []
 
 		while (this.lexer.pos < this.prelude_end) {
 			this.skip_whitespace()
@@ -719,15 +723,15 @@ export class AtRulePreludeParser {
 
 			if (token_type === TOKEN_LEFT_PAREN) {
 				this.next_token() // consume '('
-				let paren_start = this.lexer.token_start
-				let content_start = this.lexer.pos
+				const paren_start = this.lexer.token_start
+				const content_start = this.lexer.pos
 
 				this.scan_matching_paren()
-				let content_end = this.paren_content_end
-				let paren_end = this.paren_close_end
+				const content_end = this.paren_content_end
+				const paren_end = this.paren_close_end
 
-				let scope_node = this.create_node(PRELUDE_SELECTORLIST, paren_start, paren_end)
-				let trimmed = trim_boundaries(this.source, content_start, content_end)
+				const scope_node = this.create_node(PRELUDE_SELECTORLIST, paren_start, paren_end)
+				const trimmed = trim_boundaries(this.source, content_start, content_end)
 				if (trimmed) {
 					this.arena.set_value_start_delta(scope_node, trimmed[0] - paren_start)
 					this.arena.set_value_length(scope_node, trimmed[1] - trimmed[0])
@@ -751,7 +755,7 @@ export class AtRulePreludeParser {
 	// Parse @custom-media prelude: --name <media-condition>
 	// e.g. @custom-media --small (max-width: 30em);
 	private parse_custom_media_prelude(): number[] {
-		let nodes: number[] = []
+		const nodes: number[] = []
 		this.skip_whitespace()
 		if (this.lexer.pos >= this.prelude_end) return []
 

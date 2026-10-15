@@ -1075,9 +1075,9 @@ describe('Selector Nodes', () => {
 				if (!root) return
 
 				expect(root.type).toBe(SELECTOR_LIST)
-				let selector = root.first_child! as Selector
+				const selector = root.first_child! as Selector
 				expect(selector.type).toBe(SELECTOR)
-				let attr = selector.first_child! as AttributeSelector
+				const attr = selector.first_child! as AttributeSelector
 				expect(attr.type).toBe(ATTRIBUTE_SELECTOR)
 				expect(attr.attr_flags).toBe('i')
 				expect(attr.attr_operator).toBe('=')
@@ -2226,39 +2226,39 @@ describe('Selector Nodes', () => {
 
 		describe('keyframes selectors', () => {
 			test('simple percentage', () => {
-				let root = parse_selector_list('50%')
+				const root = parse_selector_list('50%')
 				expect(root.type_name).toBe('SelectorList')
 				expect(root.first_child?.type_name).toBe('Selector')
 				expect(root.first_child?.text).toBe('50%')
 				expect(root.first_child?.first_child?.type_name).toBe('Dimension')
 			})
 			test('fraction percentage', () => {
-				let root = parse_selector_list('50.1%')
+				const root = parse_selector_list('50.1%')
 				expect(root.type_name).toBe('SelectorList')
 				expect(root.first_child?.type_name).toBe('Selector')
 				expect(root.first_child?.text).toBe('50.1%')
 				expect(root.first_child?.first_child?.type_name).toBe('Dimension')
 			})
 			test('scientific percentage', () => {
-				let root = parse_selector_list('50e1%')
+				const root = parse_selector_list('50e1%')
 				expect(root.type_name).toBe('SelectorList')
 				expect(root.first_child?.type_name).toBe('Selector')
 				expect(root.first_child?.text).toBe('50e1%')
 				expect(root.first_child?.first_child?.type_name).toBe('Dimension')
 			})
 			test('from keyword', () => {
-				let root = parse_selector_list('from')
+				const root = parse_selector_list('from')
 				expect(root.type_name).toBe('SelectorList')
 				expect(root.first_child?.type_name).toBe('Selector')
 				expect(root.first_child?.text).toBe('from')
 				expect(root.first_child?.first_child?.type_name).toBe('TypeSelector')
 			})
 			test('90%, to', () => {
-				let root = parse_selector_list('90%, to')
+				const root = parse_selector_list('90%, to')
 				expect(root.type_name).toBe('SelectorList')
 				expect(root.text).toBe('90%, to')
 
-				let [percentage, to] = root.children
+				const [percentage, to] = root.children
 				expect(percentage.type_name).toBe('Selector')
 				expect(percentage.text).toBe('90%')
 				expect(percentage.first_child?.type_name).toBe('Dimension')
@@ -2705,15 +2705,15 @@ describe('Selector Nodes', () => {
 			})
 
 			test('should parse unknown pseudo-class without parens', () => {
-				let root = parse_selector_list(':hello')
-				let pseudo = root.first_child?.first_child
+				const root = parse_selector_list(':hello')
+				const pseudo = root.first_child?.first_child
 				expect(pseudo?.type).toBe(PSEUDO_CLASS_SELECTOR)
 				expect((pseudo as PseudoClassSelector | null | undefined)?.has_children).toBe(false)
 			})
 
 			test('should parse unknown pseudo-class with empty parens', () => {
-				let root = parse_selector_list(':hello()')
-				let pseudo = root.first_child?.first_child
+				const root = parse_selector_list(':hello()')
+				const pseudo = root.first_child?.first_child
 				expect(pseudo?.type).toBe(PSEUDO_CLASS_SELECTOR)
 				expect((pseudo as PseudoClassSelector | null | undefined)?.has_children).toBe(true)
 				expect((pseudo as PseudoClassSelector | null | undefined)?.children.length).toBe(0)

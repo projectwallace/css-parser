@@ -292,7 +292,7 @@ describe('Parser Options', () => {
 				['@layer base, components;', 'base, components'],
 				['@supports (display: flex) { }', '(display: flex)'],
 			]
-			for (let [css, expectedText] of cases) {
+			for (const [css, expectedText] of cases) {
 				const root = parse(css, { parse_atrule_preludes: false })
 				const atrule = root.first_child! as Atrule
 				expect(atrule.prelude?.type).toBe(RAW)
