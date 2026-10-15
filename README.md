@@ -228,7 +228,7 @@ decl.clone({ deep: false }).property // "color"
 
 ### String helpers
 
-Allocation-free helpers, handy when working with node names. The lowercase argument is the first one for `str_equals` and the second one for `str_starts_with` and `str_index_of`.
+Allocation-free helpers, handy when working with node names. The lowercase argument is the first one for `str_equals` and the second one for `str_starts_with` and `str_index_of`. This inconsistency will be fixed in a future breaking change.
 
 ```typescript
 import {
