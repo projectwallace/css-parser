@@ -110,7 +110,7 @@ export class ConditionParser {
 		let close_end = this.lexer.token_end
 
 		while (this.lexer.pos < this.end && depth > 0) {
-			let token_type = this.next_token()
+			const token_type = this.next_token()
 			if (token_type === TOKEN_LEFT_PAREN || token_type === TOKEN_FUNCTION) {
 				depth++
 			} else if (token_type === TOKEN_RIGHT_PAREN) {
@@ -141,20 +141,20 @@ export class ConditionParser {
 	private wrap_ratio_value(first_node: number): number {
 		if (this.arena.get_type(first_node) !== NUMBER) return first_node
 
-		let op_node = this.arena.get_next_sibling(first_node)
+		const op_node = this.arena.get_next_sibling(first_node)
 		if (op_node === 0 || this.arena.get_type(op_node) !== OPERATOR) return first_node
 		if (this.arena.get_length(op_node) !== 1) return first_node
 		if (this.source.charCodeAt(this.arena.get_start_offset(op_node)) !== CHAR_FORWARD_SLASH) {
 			return first_node
 		}
 
-		let second_node = this.arena.get_next_sibling(op_node)
+		const second_node = this.arena.get_next_sibling(op_node)
 		if (second_node === 0 || this.arena.get_type(second_node) !== NUMBER) return first_node
 		if (this.arena.get_next_sibling(second_node) !== 0) return first_node
 
-		let start = this.arena.get_start_offset(first_node)
-		let end = this.arena.get_start_offset(second_node) + this.arena.get_length(second_node)
-		let ratio_node = this.arena.create_node(
+		const start = this.arena.get_start_offset(first_node)
+		const end = this.arena.get_start_offset(second_node) + this.arena.get_length(second_node)
+		const ratio_node = this.arena.create_node(
 			RATIO,
 			start,
 			end - start,
@@ -174,24 +174,24 @@ export class ConditionParser {
 		content_end: number,
 		colon_pos: number,
 	): number {
-		let prop_trimmed = trim_boundaries(this.source, content_start, colon_pos)
-		let val_trimmed = trim_boundaries(this.source, colon_pos + 1, content_end)
+		const prop_trimmed = trim_boundaries(this.source, content_start, colon_pos)
+		const val_trimmed = trim_boundaries(this.source, colon_pos + 1, content_end)
 
 		if (!prop_trimmed) {
 			// No property name — degenerate input, return a bare SUPPORTS_DECLARATION
-			let bare = this.create_node(SUPPORTS_DECLARATION, content_start, content_end)
+			const bare = this.create_node(SUPPORTS_DECLARATION, content_start, content_end)
 			return bare
 		}
 
 		// DECLARATION spans from property start to value end (or colon if no value)
-		let decl_start = prop_trimmed[0]
-		let decl_end = val_trimmed ? val_trimmed[1] : colon_pos + 1
-		let decl = this.create_node(DECLARATION, decl_start, decl_end)
+		const decl_start = prop_trimmed[0]
+		const decl_end = val_trimmed ? val_trimmed[1] : colon_pos + 1
+		const decl = this.create_node(DECLARATION, decl_start, decl_end)
 		this.arena.set_content_start_delta(decl, 0) // property starts at node start
 		this.arena.set_content_length(decl, prop_trimmed[1] - prop_trimmed[0])
 
 		if (val_trimmed) {
-			let value_first = this.parse_feature_value(val_trimmed[0], val_trimmed[1])
+			const value_first = this.parse_feature_value(val_trimmed[0], val_trimmed[1])
 			let value_node: number
 			if (value_first === 0) {
 				value_node = this.arena.create_node(
@@ -214,7 +214,7 @@ export class ConditionParser {
 			this.arena.set_first_child(decl, value_node)
 		}
 
-		let supports_decl = this.create_node(SUPPORTS_DECLARATION, content_start, content_end)
+		const supports_decl = this.create_node(SUPPORTS_DECLARATION, content_start, content_end)
 		// Mirror the property name onto the wrapper so .property doesn't need the inner Declaration
 		this.arena.set_content_start_delta(supports_decl, prop_trimmed[0] - content_start)
 		this.arena.set_content_length(supports_decl, prop_trimmed[1] - prop_trimmed[0])
@@ -229,7 +229,7 @@ export class ConditionParser {
 		content_start: number,
 		content_end: number,
 	): number {
-		let range_node = this.create_node(FEATURE_RANGE, feature_start, feature_end)
+		const range_node = this.create_node(FEATURE_RANGE, feature_start, feature_end)
 		let first_child = 0
 		let last_child = 0
 		let feature_name_start = -1
@@ -241,16 +241,16 @@ export class ConditionParser {
 			pos = skip_whitespace_and_comments_forward(this.source, pos, content_end)
 			if (pos >= content_end) break
 
-			let ch = this.source.charCodeAt(pos)
+			const ch = this.source.charCodeAt(pos)
 
 			// Comparison operator
 			if (ch === CHAR_LESS_THAN || ch === CHAR_GREATER_THAN || ch === CHAR_EQUALS) {
-				let op_start = pos++
+				const op_start = pos++
 				if (pos < content_end && this.source.charCodeAt(pos) === CHAR_EQUALS) {
 					pos++
 				}
 
-				let op = this.create_node(PRELUDE_OPERATOR, op_start, pos)
+				const op = this.create_node(PRELUDE_OPERATOR, op_start, pos)
 				if (first_child === 0) {
 					first_child = op
 				} else {
@@ -259,7 +259,7 @@ export class ConditionParser {
 				last_child = op
 			} else {
 				// Value or feature name
-				let saved = this.lexer.save_position()
+				const saved = this.lexer.save_position()
 				this.lexer.pos = pos
 				this.next_token()
 
@@ -269,7 +269,7 @@ export class ConditionParser {
 					feature_name_end = this.lexer.token_end
 				} else {
 					// Value (may itself be a short chain, e.g. a single dimension node)
-					let value_first = this.parse_feature_value(this.lexer.token_start, this.lexer.token_end)
+					const value_first = this.parse_feature_value(this.lexer.token_start, this.lexer.token_end)
 					if (value_first !== 0) {
 						if (first_child === 0) {
 							first_child = value_first
@@ -323,7 +323,7 @@ export class ConditionParser {
 			i = skip_whitespace_and_comments_forward(this.source, i, content_end)
 			if (i >= content_end) break
 
-			let ch = this.source.charCodeAt(i)
+			const ch = this.source.charCodeAt(i)
 			if (ch === CHAR_LESS_THAN || ch === CHAR_GREATER_THAN || ch === CHAR_EQUALS) {
 				has_comparison = true
 				break
@@ -336,7 +336,7 @@ export class ConditionParser {
 		}
 
 		// Standard feature or boolean feature
-		let feature = this.create_node(MEDIA_FEATURE, feature_start, feature_end)
+		const feature = this.create_node(MEDIA_FEATURE, feature_start, feature_end)
 
 		// Find colon to separate name from value
 		let colon_pos = -1
@@ -354,23 +354,23 @@ export class ConditionParser {
 
 		if (colon_pos === -1) {
 			// Boolean feature: (hover), (color)
-			let trimmed = trim_boundaries(this.source, content_start, content_end)
+			const trimmed = trim_boundaries(this.source, content_start, content_end)
 			if (trimmed) {
 				this.arena.set_content_start_delta(feature, trimmed[0] - feature_start)
 				this.arena.set_content_length(feature, trimmed[1] - trimmed[0])
 			}
 		} else {
 			// Standard feature: (name: value)
-			let name_trimmed = trim_boundaries(this.source, content_start, colon_pos)
+			const name_trimmed = trim_boundaries(this.source, content_start, colon_pos)
 			if (name_trimmed) {
 				this.arena.set_content_start_delta(feature, name_trimmed[0] - feature_start)
 				this.arena.set_content_length(feature, name_trimmed[1] - name_trimmed[0])
 			}
 
 			// Parse value portion
-			let value_trimmed = trim_boundaries(this.source, colon_pos + 1, content_end)
+			const value_trimmed = trim_boundaries(this.source, colon_pos + 1, content_end)
 			if (value_trimmed) {
-				let value_first = this.parse_feature_value(value_trimmed[0], value_trimmed[1])
+				const value_first = this.parse_feature_value(value_trimmed[0], value_trimmed[1])
 				if (value_first !== 0) {
 					this.arena.set_first_child(feature, this.wrap_ratio_value(value_first))
 				}
@@ -395,12 +395,12 @@ export class ConditionParser {
 		this.lexer.seek(open_paren_start, line, column)
 		this.next_token() // consume '('
 
-		let feature_start = this.lexer.token_start
-		let content_start = this.lexer.pos
+		const feature_start = this.lexer.token_start
+		const content_start = this.lexer.pos
 
-		let matched = this.scan_matching_paren()
-		let content_end = this.paren_content_end
-		let feature_end = this.paren_close_end
+		const matched = this.scan_matching_paren()
+		const content_end = this.paren_content_end
+		const feature_end = this.paren_close_end
 		if (!matched) return null
 
 		return this.parse_media_feature_content(feature_start, feature_end, content_start, content_end)
@@ -414,17 +414,17 @@ export class ConditionParser {
 		this.lexer.seek(func_start, line, column)
 		this.next_token() // consume the function token, up to and including '('
 
-		let func_name_start = this.lexer.token_start
-		let func_name_end = this.lexer.token_end - 1 // -1 to exclude '('
-		let content_start = this.lexer.token_end // After '('
+		const func_name_start = this.lexer.token_start
+		const func_name_end = this.lexer.token_end - 1 // -1 to exclude '('
+		const content_start = this.lexer.token_end // After '('
 
 		// Find matching closing paren
 		this.scan_matching_paren()
-		let content_end = this.paren_content_end
-		let func_end = this.paren_close_end
+		const content_end = this.paren_content_end
+		const func_end = this.paren_close_end
 
 		// Create function node
-		let func_node = this.create_node(FUNCTION, func_start, func_end)
+		const func_node = this.create_node(FUNCTION, func_start, func_end)
 		// Set content fields to function name
 		this.arena.set_content_start_delta(func_node, 0)
 		this.arena.set_content_length(func_node, func_name_end - func_name_start)
@@ -434,7 +434,7 @@ export class ConditionParser {
 
 		// selector()'s argument is a <complex-selector> — parse it into a real SelectorList
 		if (str_equals_range(this.source, func_name_start, func_name_end, 'selector')) {
-			let selector_list = this.selector_parser.parse_selector(
+			const selector_list = this.selector_parser.parse_selector(
 				content_start,
 				content_end,
 				this.lexer.line,
@@ -446,7 +446,7 @@ export class ConditionParser {
 		}
 		// style()'s argument is a <declaration> — parse it into the same tree as (property: value)
 		else if (str_equals_range(this.source, func_name_start, func_name_end, 'style')) {
-			let decl_child = this.parse_supports_declaration_content(content_start, content_end)
+			const decl_child = this.parse_supports_declaration_content(content_start, content_end)
 			if (decl_child !== null) {
 				this.arena.set_first_child(func_node, decl_child)
 			}
@@ -459,7 +459,7 @@ export class ConditionParser {
 	// `<style-feature>`/`<supports-feature>` grammar shared by `style()`, `@supports (…)`, and
 	// `@import … supports(…)`. Returns null if no top-level ':' is found.
 	parse_supports_declaration_content(content_start: number, content_end: number): number | null {
-		let colon_pos = find_colon_at_depth_zero(this.source, content_start, content_end)
+		const colon_pos = find_colon_at_depth_zero(this.source, content_start, content_end)
 		if (colon_pos === -1) return null
 		return this.create_supports_declaration(content_start, content_end, colon_pos)
 	}
@@ -471,11 +471,11 @@ export class ConditionParser {
 	// `start`/`end` bound the range to scan; the caller has already positioned nothing — this
 	// seeks its own lexer, so it's safe to call with any sub-range of the source.
 	parse_supports_condition(start: number, end: number, line: number, column: number): number[] {
-		let saved_end = this.end
+		const saved_end = this.end
 		this.end = end
 		this.lexer.seek(start, line, column)
 
-		let nodes: number[] = []
+		const nodes: number[] = []
 
 		while (this.lexer.pos < this.end) {
 			this.lexer.skip_whitespace_in_range(this.end)
@@ -483,25 +483,25 @@ export class ConditionParser {
 
 			this.next_token()
 
-			let token_type = this.lexer.token_type
+			const token_type = this.lexer.token_type
 			// Feature query: (property: value)
 			if (token_type === TOKEN_LEFT_PAREN) {
-				let feature_start = this.lexer.token_start
-				let content_start = this.lexer.pos
+				const feature_start = this.lexer.token_start
+				const content_start = this.lexer.pos
 
-				let matched = this.scan_matching_paren()
-				let content_end = this.paren_content_end
-				let feature_end = this.paren_close_end
+				const matched = this.scan_matching_paren()
+				const content_end = this.paren_content_end
+				const feature_end = this.paren_close_end
 
 				if (matched) {
-					let query = this.create_node(SUPPORTS_QUERY, feature_start, feature_end)
+					const query = this.create_node(SUPPORTS_QUERY, feature_start, feature_end)
 
-					let trimmed = trim_boundaries(this.source, content_start, content_end)
+					const trimmed = trim_boundaries(this.source, content_start, content_end)
 					if (trimmed) {
 						this.arena.set_value_start_delta(query, trimmed[0] - feature_start)
 						this.arena.set_value_length(query, trimmed[1] - trimmed[0])
 
-						let decl_child = this.parse_supports_declaration_content(trimmed[0], trimmed[1])
+						const decl_child = this.parse_supports_declaration_content(trimmed[0], trimmed[1])
 						if (decl_child !== null) {
 							this.arena.set_first_child(query, decl_child)
 						}
@@ -512,10 +512,10 @@ export class ConditionParser {
 			}
 			// Identifier: operator (and, or, not)
 			else if (token_type === TOKEN_IDENT) {
-				let token_start = this.lexer.token_start
-				let token_end = this.lexer.token_end
+				const token_start = this.lexer.token_start
+				const token_end = this.lexer.token_end
 				if (is_and_or_not_range(this.source, token_start, token_end)) {
-					let op = this.create_node(PRELUDE_OPERATOR, token_start, token_end)
+					const op = this.create_node(PRELUDE_OPERATOR, token_start, token_end)
 					nodes.push(op)
 				}
 			}

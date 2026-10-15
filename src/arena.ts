@@ -38,7 +38,7 @@
 //    lastChild field saved another 4 bytes. startColumn was changed from Uint16 to Uint32 to avoid
 //    overflow on long lines (common in minified CSS).
 
-let BYTES_PER_NODE = 32
+const BYTES_PER_NODE = 32
 
 // Node type constants
 export const STYLESHEET = 1
@@ -141,10 +141,10 @@ export class CSSDataArena {
 
 	// Calculate recommended initial capacity based on CSS source size
 	static capacity_for_source(source_length: number): number {
-		let size_in_kb = source_length / 1024
-		let estimated_nodes = Math.ceil(size_in_kb * CSSDataArena.NODES_PER_KB)
+		const size_in_kb = source_length / 1024
+		const estimated_nodes = Math.ceil(size_in_kb * CSSDataArena.NODES_PER_KB)
 		// Add 15% buffer to avoid growth during parsing
-		let capacity = Math.ceil(estimated_nodes * CSSDataArena.CAPACITY_BUFFER)
+		const capacity = Math.ceil(estimated_nodes * CSSDataArena.CAPACITY_BUFFER)
 		// Ensure minimum capacity of 16 nodes (even for empty stylesheets)
 		return Math.max(16, capacity)
 	}
@@ -313,8 +313,8 @@ export class CSSDataArena {
 	// Grow the arena by 1.3x when capacity is exceeded
 	private grow(): void {
 		this.growth_count++
-		let new_capacity = Math.ceil(this.capacity * CSSDataArena.GROWTH_FACTOR)
-		let new_buffer = new ArrayBuffer(new_capacity * BYTES_PER_NODE)
+		const new_capacity = Math.ceil(this.capacity * CSSDataArena.GROWTH_FACTOR)
+		const new_buffer = new ArrayBuffer(new_capacity * BYTES_PER_NODE)
 
 		// Copy existing data to new buffer
 		new Uint8Array(new_buffer).set(new Uint8Array(this.buffer))
@@ -375,8 +375,8 @@ export class CSSDataArena {
 	/** Shrink the buffer to the live node count, releasing wasted capacity. Call once after parsing; no-op if already tight. */
 	trim(): void {
 		if (this.count === this.capacity) return
-		let byte_count = this.count * BYTES_PER_NODE
-		let new_buffer = new ArrayBuffer(byte_count)
+		const byte_count = this.count * BYTES_PER_NODE
+		const new_buffer = new ArrayBuffer(byte_count)
 		new Uint8Array(new_buffer).set(new Uint8Array(this.buffer, 0, byte_count))
 		this.buffer = new_buffer
 		this.view = new DataView(new_buffer)

@@ -55,7 +55,7 @@ export interface ParserOptions {
 }
 
 // Static at-rule lookup sets for fast classification
-let DECLARATION_AT_RULES = new Set([
+const DECLARATION_AT_RULES = new Set([
 	'font-face',
 	'font-feature-values',
 	'page',
@@ -82,7 +82,7 @@ export class Parser {
 	constructor(source: string, options?: ParserOptions) {
 		this.source = source
 
-		let opts: ParserOptions = options || {}
+		const opts: ParserOptions = options || {}
 
 		this.parse_values_enabled = opts.parse_values ?? true
 		this.parse_selectors_enabled = opts.parse_selectors ?? true
@@ -90,7 +90,7 @@ export class Parser {
 
 		this.lexer = new Lexer(source, opts.on_comment)
 		// Calculate optimal capacity based on source size
-		let capacity = CSSDataArena.capacity_for_source(source.length)
+		const capacity = CSSDataArena.capacity_for_source(source.length)
 		this.arena = new CSSDataArena(capacity)
 
 		// Only create parsers if needed
@@ -134,13 +134,13 @@ export class Parser {
 		this.next_token()
 
 		// Create the root stylesheet node
-		let stylesheet = this.arena.create_node(STYLESHEET, 0, this.source.length, 1, 1)
+		const stylesheet = this.arena.create_node(STYLESHEET, 0, this.source.length, 1, 1)
 
 		// Parse all rules at the top level, chained as siblings without an intermediate array
 		let first_rule = 0
 		let last_rule = 0
 		while (!this.is_eof()) {
-			let rule = this.parse_rule()
+			const rule = this.parse_rule()
 			if (rule === null) {
 				// Skip unknown tokens
 				this.next_token()
@@ -191,7 +191,7 @@ export class Parser {
 		let last_child = 0
 
 		while (!this.is_eof()) {
-			let token_type = this.peek_type()
+			const token_type = this.peek_type()
 			if (token_type === TOKEN_RIGHT_BRACE) break
 
 			let child: number | null = null
@@ -233,12 +233,12 @@ export class Parser {
 	private parse_style_rule(): number | null {
 		if (this.is_eof()) return null
 
-		let rule_start = this.lexer.token_start
-		let rule_line = this.lexer.token_line
-		let rule_column = this.lexer.token_column
+		const rule_start = this.lexer.token_start
+		const rule_line = this.lexer.token_line
+		const rule_column = this.lexer.token_column
 
 		// Create the style rule node (length will be set later)
-		let style_rule = this.arena.create_node(
+		const style_rule = this.arena.create_node(
 			STYLE_RULE,
 			rule_start,
 			0, // length unknown yet
@@ -247,7 +247,7 @@ export class Parser {
 		)
 
 		// Parse selector (everything until '{')
-		let selector = this.parse_selector()
+		const selector = this.parse_selector()
 
 		// Expect '{'
 		if (this.peek_type() !== TOKEN_LEFT_BRACE) {
@@ -255,14 +255,14 @@ export class Parser {
 			return null
 		}
 		// Capture block start position (right after '{') before consuming the token
-		let block_start = this.lexer.token_end
+		const block_start = this.lexer.token_end
 		this.next_token() // consume '{'
 		this.arena.set_flag(style_rule, FLAG_HAS_BLOCK) // Style rules always have blocks
 
 		// Create block node (length will be set later)
-		let block_line = this.lexer.token_line
-		let block_column = this.lexer.token_column
-		let block_node = this.arena.create_node(
+		const block_line = this.lexer.token_line
+		const block_column = this.lexer.token_column
+		const block_node = this.arena.create_node(
 			BLOCK,
 			block_start,
 			0, // length unknown yet
@@ -271,7 +271,7 @@ export class Parser {
 		)
 
 		// Parse declarations block (and nested rules for CSS Nesting)
-		let first_child = this.parse_block_children(style_rule, false)
+		const first_child = this.parse_block_children(style_rule, false)
 
 		// Expect '}' and calculate lengths (block excludes brace, rule includes it)
 		let block_end = this.lexer.token_start
@@ -304,9 +304,9 @@ export class Parser {
 	private parse_selector(): number | null {
 		if (this.is_eof()) return null
 
-		let selector_start = this.lexer.token_start
-		let selector_line = this.lexer.token_line
-		let selector_column = this.lexer.token_column
+		const selector_start = this.lexer.token_start
+		const selector_line = this.lexer.token_line
+		const selector_column = this.lexer.token_column
 
 		let last_end = this.lexer.token_end
 		if (this.peek_type() !== TOKEN_LEFT_BRACE) {
@@ -320,7 +320,7 @@ export class Parser {
 
 		// If detailed selector parsing is enabled, use SelectorParser
 		if (this.parse_selectors_enabled && this.selector_parser) {
-			let selector = this.selector_parser.parse_selector(
+			const selector = this.selector_parser.parse_selector(
 				selector_start,
 				last_end,
 				selector_line,
@@ -332,8 +332,8 @@ export class Parser {
 		}
 
 		// Create node: RAW when parsing disabled, SELECTOR_LIST as error fallback
-		let node_type = this.parse_selectors_enabled ? SELECTOR_LIST : RAW
-		let selector_node = this.arena.create_node(
+		const node_type = this.parse_selectors_enabled ? SELECTOR_LIST : RAW
+		const selector_node = this.arena.create_node(
 			node_type,
 			selector_start,
 			last_end - selector_start,
@@ -389,19 +389,19 @@ export class Parser {
 			return null
 		}
 
-		let at_rule_start = this.lexer.token_start
-		let at_rule_line = this.lexer.token_line
-		let at_rule_column = this.lexer.token_column
+		const at_rule_start = this.lexer.token_start
+		const at_rule_line = this.lexer.token_line
+		const at_rule_column = this.lexer.token_column
 
 		// Extract at-rule name (skip the '@')
-		let name_start = this.lexer.token_start + 1
-		let name_length = this.lexer.token_end - name_start
-		let at_rule_name = this.source.substring(name_start, this.lexer.token_end)
+		const name_start = this.lexer.token_start + 1
+		const name_length = this.lexer.token_end - name_start
+		const at_rule_name = this.source.substring(name_start, this.lexer.token_end)
 
 		this.next_token() // consume @keyword
 
 		// Create at-rule node (length will be set later)
-		let at_rule = this.arena.create_node(
+		const at_rule = this.arena.create_node(
 			AT_RULE,
 			at_rule_start,
 			0, // length unknown yet
@@ -414,7 +414,7 @@ export class Parser {
 		this.arena.set_content_length(at_rule, name_length)
 
 		// Track prelude start and end
-		let prelude_start = this.lexer.token_start
+		const prelude_start = this.lexer.token_start
 		let prelude_end = prelude_start
 		// Track parenthesis depth to handle semicolons inside functions (e.g., url(data:image/png;base64,...))
 		// NOTE: Same pattern exists in parse-declaration.ts for value parsing - keep in sync
@@ -422,7 +422,7 @@ export class Parser {
 
 		// Parse prelude (everything before '{' or ';')
 		while (!this.is_eof()) {
-			let token_type = this.peek_type()
+			const token_type = this.peek_type()
 
 			// Track parenthesis depth
 			if (token_type === TOKEN_LEFT_PAREN || token_type === TOKEN_FUNCTION) {
@@ -439,18 +439,22 @@ export class Parser {
 		}
 
 		// Store prelude position (trimmed)
-		let trimmed_start = skip_whitespace_and_comments_forward(
+		const trimmed_start = skip_whitespace_and_comments_forward(
 			this.source,
 			prelude_start,
 			prelude_end,
 		)
-		let trimmed_end = skip_whitespace_and_comments_backward(this.source, prelude_end, trimmed_start)
+		const trimmed_end = skip_whitespace_and_comments_backward(
+			this.source,
+			prelude_end,
+			trimmed_start,
+		)
 		let prelude_wrapper: number | null = null
 		if (trimmed_start < trimmed_end) {
 			// Create AT_RULE_PRELUDE wrapper if prelude parsing is enabled
 			if (this.prelude_parser) {
 				// Parse prelude and add structured nodes as children
-				let prelude_nodes = this.prelude_parser.parse_prelude(
+				const prelude_nodes = this.prelude_parser.parse_prelude(
 					at_rule_name,
 					trimmed_start,
 					trimmed_end,
@@ -491,14 +495,14 @@ export class Parser {
 		// Check if this at-rule has a block or is a statement
 		if (this.peek_type() === TOKEN_LEFT_BRACE) {
 			// Capture block start position (right after '{') before consuming the token
-			let block_start = this.lexer.token_end
+			const block_start = this.lexer.token_end
 			this.next_token() // consume '{'
 			this.arena.set_flag(at_rule, FLAG_HAS_BLOCK) // At-rule has a block
 
 			// Create block node (length will be set later)
-			let block_line = this.lexer.token_line
-			let block_column = this.lexer.token_column
-			let block_node = this.arena.create_node(
+			const block_line = this.lexer.token_line
+			const block_column = this.lexer.token_column
+			const block_node = this.arena.create_node(
 				BLOCK,
 				block_start,
 				0, // length unknown yet
@@ -509,12 +513,12 @@ export class Parser {
 			// Determine what to parse inside the block based on the at-rule name:
 			// declarations only (like @font-face, @page), or declarations + rules + at-rules
 			// (like @media, @keyframes, unknown at-rules, and nested conditional groups)
-			let declarations_only = this.atrule_has_declarations(at_rule_name)
-			let first_child = this.parse_block_children(at_rule, declarations_only)
+			const declarations_only = this.atrule_has_declarations(at_rule_name)
+			const first_child = this.parse_block_children(at_rule, declarations_only)
 
 			// Consume '}' (block excludes closing brace, but at-rule includes it)
 			if (this.peek_type() === TOKEN_RIGHT_BRACE) {
-				let block_end = this.lexer.token_start // Position of '}' (not included in block)
+				const block_end = this.lexer.token_start // Position of '}' (not included in block)
 				last_end = this.lexer.token_end // Position after '}' (included in at-rule)
 				this.next_token()
 

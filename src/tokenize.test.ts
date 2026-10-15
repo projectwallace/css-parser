@@ -52,8 +52,8 @@ describe('Lexer', () => {
 		})
 
 		test('should tokenize comma', () => {
-			let lexer = new Lexer(',')
-			let token = lexer.next_token()
+			const lexer = new Lexer(',')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_COMMA)
 		})
 
@@ -80,27 +80,27 @@ describe('Lexer', () => {
 
 	describe('whitespace', () => {
 		test('should tokenize spaces', () => {
-			let lexer = new Lexer('   ')
-			let token = lexer.next_token()
+			const lexer = new Lexer('   ')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_WHITESPACE)
 			expect(token!.end - token!.start).toBe(3)
 		})
 
 		test('should tokenize tabs', () => {
-			let lexer = new Lexer('\t\t')
-			let token = lexer.next_token()
+			const lexer = new Lexer('\t\t')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_WHITESPACE)
 		})
 
 		test('should tokenize newlines', () => {
-			let lexer = new Lexer('\n\r\n')
-			let token = lexer.next_token()
+			const lexer = new Lexer('\n\r\n')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_WHITESPACE)
 			expect(lexer.line).toBe(3)
 		})
 
 		test('should track line', () => {
-			let lexer = new Lexer('a\nb')
+			const lexer = new Lexer('a\nb')
 			let token = lexer.next_token() // a
 			expect(token?.line).toBe(1)
 
@@ -146,67 +146,67 @@ describe('Lexer', () => {
 
 	describe('strings', () => {
 		test('should tokenize double-quoted strings', () => {
-			let lexer = new Lexer('"hello"')
-			let token = lexer.next_token()
+			const lexer = new Lexer('"hello"')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_STRING)
 			expect(lexer.source.slice(token!.start, token!.end)).toBe('"hello"')
 		})
 
 		test('should tokenize single-quoted strings', () => {
-			let lexer = new Lexer("'hello'")
-			let token = lexer.next_token()
+			const lexer = new Lexer("'hello'")
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_STRING)
 		})
 
 		test('should handle escaped quotes', () => {
-			let lexer = new Lexer('"hello \\"world\\""')
-			let token = lexer.next_token()
+			const lexer = new Lexer('"hello \\"world\\""')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_STRING)
 		})
 
 		test('should handle hex escapes', () => {
-			let lexer = new Lexer('"\\20\\000020"')
-			let token = lexer.next_token()
+			const lexer = new Lexer('"\\20\\000020"')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_STRING)
 		})
 
 		test('should handle escaped newlines', () => {
-			let lexer = new Lexer('"line\\\ncontinued"')
-			let token = lexer.next_token()
+			const lexer = new Lexer('"line\\\ncontinued"')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_STRING)
 		})
 
 		test('should mark unclosed strings as bad', () => {
-			let lexer = new Lexer('"unclosed\n')
-			let token = lexer.next_token()
+			const lexer = new Lexer('"unclosed\n')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_BAD_STRING)
 		})
 
 		test('should mark EOF unclosed strings as bad', () => {
-			let lexer = new Lexer('"unclosed')
-			let token = lexer.next_token()
+			const lexer = new Lexer('"unclosed')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_BAD_STRING)
 		})
 	})
 
 	describe('numbers', () => {
 		test('should tokenize integers', () => {
-			let lexer = new Lexer('123')
-			let token = lexer.next_token()
+			const lexer = new Lexer('123')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_NUMBER)
 			expect(lexer.source.slice(token!.start, token!.end)).toBe('123')
 		})
 
 		test('should tokenize decimals', () => {
-			let lexer = new Lexer('123.456')
-			let token = lexer.next_token()
+			const lexer = new Lexer('123.456')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_NUMBER)
 			expect(lexer.source.slice(token!.start, token!.end)).toBe('123.456')
 		})
 
 		test('should tokenize decimals starting with dot', () => {
-			let lexer = new Lexer('.5')
-			let token = lexer.next_token()
+			const lexer = new Lexer('.5')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_NUMBER)
 		})
 
@@ -234,36 +234,36 @@ describe('Lexer', () => {
 
 	describe('percentages', () => {
 		test('should tokenize percentages', () => {
-			let lexer = new Lexer('50%')
-			let token = lexer.next_token()
+			const lexer = new Lexer('50%')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_PERCENTAGE)
 			expect(lexer.source.slice(token!.start, token!.end)).toBe('50%')
 		})
 
 		test('should tokenize negative percentages', () => {
-			let lexer = new Lexer('-50%')
-			let token = lexer.next_token()
+			const lexer = new Lexer('-50%')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_PERCENTAGE)
 			expect(lexer.source.slice(token!.start, token!.end)).toBe('-50%')
 		})
 
 		test('should tokenize positive percentages', () => {
-			let lexer = new Lexer('+50%')
-			let token = lexer.next_token()
+			const lexer = new Lexer('+50%')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_PERCENTAGE)
 			expect(lexer.source.slice(token!.start, token!.end)).toBe('+50%')
 		})
 
 		test('should tokenize fraction percentages', () => {
-			let lexer = new Lexer('+5.5%')
-			let token = lexer.next_token()
+			const lexer = new Lexer('+5.5%')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_PERCENTAGE)
 			expect(lexer.source.slice(token!.start, token!.end)).toBe('+5.5%')
 		})
 
 		test('should tokenize scientific fraction percentages', () => {
-			let lexer = new Lexer('+5.2e-10%')
-			let token = lexer.next_token()
+			const lexer = new Lexer('+5.2e-10%')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_PERCENTAGE)
 			expect(lexer.source.slice(token!.start, token!.end)).toBe('+5.2e-10%')
 		})
@@ -271,17 +271,17 @@ describe('Lexer', () => {
 
 	describe('dimensions', () => {
 		test('should tokenize pixel dimensions', () => {
-			let lexer = new Lexer('10px')
-			let token = lexer.next_token()
+			const lexer = new Lexer('10px')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_DIMENSION)
 			expect(lexer.source.slice(token!.start, token!.end)).toBe('10px')
 		})
 
 		test('should tokenize various units', () => {
 			const units = ['em', 'rem', 'vh', 'vw', 'ch', 'ex', 'cm', 'mm', 'in', 'pt', 'pc']
-			for (let unit of units) {
-				let lexer = new Lexer(`10${unit}`)
-				let token = lexer.next_token()
+			for (const unit of units) {
+				const lexer = new Lexer(`10${unit}`)
+				const token = lexer.next_token()
 				expect(token?.type).toBe(TOKEN_DIMENSION)
 			}
 		})
@@ -289,30 +289,30 @@ describe('Lexer', () => {
 
 	describe('identifiers', () => {
 		test('should tokenize identifiers', () => {
-			let lexer = new Lexer('color')
-			let token = lexer.next_token()
+			const lexer = new Lexer('color')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_IDENT)
 			expect(lexer.source.slice(token!.start, token!.end)).toBe('color')
 		})
 
 		test('should tokenize vendor prefixes', () => {
-			let lexer = new Lexer('-webkit-transform')
-			let token = lexer.next_token()
+			const lexer = new Lexer('-webkit-transform')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_IDENT)
 			expect(lexer.source.slice(token!.start, token!.end)).toBe('-webkit-transform')
 		})
 
 		test('should tokenize CSS custom properties (variables)', () => {
 			let lexer = new Lexer('--test')
-			let token = lexer.next_token()
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_IDENT)
 			expect(lexer.source.slice(token!.start, token!.end)).toBe('--test')
 
 			// Test in context: a{--custom-prop:1}
 			lexer = new Lexer('a{--custom-prop:1}')
-			let tokens = []
+			const tokens = []
 			while (true) {
-				let t = lexer.next_token()
+				const t = lexer.next_token()
 				if (!t || t.type === TOKEN_EOF) break
 				tokens.push(t)
 			}
@@ -331,30 +331,30 @@ describe('Lexer', () => {
 		})
 
 		test('should tokenize identifiers with underscores', () => {
-			let lexer = new Lexer('_private')
-			let token = lexer.next_token()
+			const lexer = new Lexer('_private')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_IDENT)
 		})
 
 		test('should tokenize identifiers with digits', () => {
-			let lexer = new Lexer('grid2')
-			let token = lexer.next_token()
+			const lexer = new Lexer('grid2')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_IDENT)
 		})
 
 		describe('escape sequences', () => {
 			test('should handle hex escape sequences', () => {
 				// \32 = character code 0x32 (the digit '2')
-				let lexer = new Lexer('\\32xl')
-				let token = lexer.next_token()
+				const lexer = new Lexer('\\32xl')
+				const token = lexer.next_token()
 				expect(token?.type).toBe(TOKEN_IDENT)
 				expect(lexer.source.slice(token!.start, token!.end)).toBe('\\32xl')
 			})
 
 			test('should handle character escape sequences', () => {
 				// \: = escaped colon
-				let lexer = new Lexer('\\:ease-in')
-				let token = lexer.next_token()
+				const lexer = new Lexer('\\:ease-in')
+				const token = lexer.next_token()
 				expect(token?.type).toBe(TOKEN_IDENT)
 				expect(lexer.source.slice(token!.start, token!.end)).toBe('\\:ease-in')
 			})
@@ -362,10 +362,10 @@ describe('Lexer', () => {
 			test('should handle combined escape sequences (Tailwind CSS)', () => {
 				// This is the exact case from the bug report: .\\32xl\\:ease-in{}
 				// Should tokenize as: DELIM(.) + IDENT(\32xl\:ease-in) + LEFT_BRACE + RIGHT_BRACE
-				let lexer = new Lexer('.\\32xl\\:ease-in{}')
-				let tokens = []
+				const lexer = new Lexer('.\\32xl\\:ease-in{}')
+				const tokens = []
 				while (true) {
-					let t = lexer.next_token()
+					const t = lexer.next_token()
 					if (!t || t.type === TOKEN_EOF) break
 					tokens.push(t)
 				}
@@ -381,52 +381,52 @@ describe('Lexer', () => {
 			test('should handle whitespace after hex escapes', () => {
 				// Per CSS spec, hex escapes can be followed by optional whitespace
 				// \32 xl = character 0x32 followed by 'xl'
-				let lexer = new Lexer('\\32 xl')
-				let token = lexer.next_token()
+				const lexer = new Lexer('\\32 xl')
+				const token = lexer.next_token()
 				expect(token?.type).toBe(TOKEN_IDENT)
 				expect(lexer.source.slice(token!.start, token!.end)).toBe('\\32 xl')
 			})
 
 			test('should handle 6-digit hex escapes', () => {
 				// Maximum 6 hex digits per escape
-				let lexer = new Lexer('\\000032xl')
-				let token = lexer.next_token()
+				const lexer = new Lexer('\\000032xl')
+				const token = lexer.next_token()
 				expect(token?.type).toBe(TOKEN_IDENT)
 				expect(lexer.source.slice(token!.start, token!.end)).toBe('\\000032xl')
 			})
 
 			test('should handle multiple escapes in sequence', () => {
-				let lexer = new Lexer('\\32\\33\\34')
-				let token = lexer.next_token()
+				const lexer = new Lexer('\\32\\33\\34')
+				const token = lexer.next_token()
 				expect(token?.type).toBe(TOKEN_IDENT)
 				expect(lexer.source.slice(token!.start, token!.end)).toBe('\\32\\33\\34')
 			})
 
 			test('should handle escape at start of identifier', () => {
-				let lexer = new Lexer('\\:hover')
-				let token = lexer.next_token()
+				const lexer = new Lexer('\\:hover')
+				const token = lexer.next_token()
 				expect(token?.type).toBe(TOKEN_IDENT)
 				expect(lexer.source.slice(token!.start, token!.end)).toBe('\\:hover')
 			})
 
 			test('should handle escape at end of identifier', () => {
-				let lexer = new Lexer('ease-in\\:')
-				let token = lexer.next_token()
+				const lexer = new Lexer('ease-in\\:')
+				const token = lexer.next_token()
 				expect(token?.type).toBe(TOKEN_IDENT)
 				expect(lexer.source.slice(token!.start, token!.end)).toBe('ease-in\\:')
 			})
 
 			test('should stop at newline after backslash', () => {
 				// Backslash followed by newline is invalid in identifier
-				let lexer = new Lexer('test\\\nmore')
-				let token = lexer.next_token()
+				const lexer = new Lexer('test\\\nmore')
+				const token = lexer.next_token()
 				expect(token?.type).toBe(TOKEN_IDENT)
 				expect(lexer.source.slice(token!.start, token!.end)).toBe('test')
 			})
 
 			test('should handle escapes in functions', () => {
-				let lexer = new Lexer('\\32xl\\:fn(')
-				let token = lexer.next_token()
+				const lexer = new Lexer('\\32xl\\:fn(')
+				const token = lexer.next_token()
 				expect(token?.type).toBe(TOKEN_FUNCTION)
 				expect(lexer.source.slice(token!.start, token!.end)).toBe('\\32xl\\:fn(')
 			})
@@ -435,96 +435,96 @@ describe('Lexer', () => {
 
 	describe('functions', () => {
 		test('should tokenize functions', () => {
-			let lexer = new Lexer('rgb(')
-			let token = lexer.next_token()
+			const lexer = new Lexer('rgb(')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_FUNCTION)
 			expect(lexer.source.slice(token!.start, token!.end)).toBe('rgb(')
 		})
 
 		test('should tokenize vendor-prefixed functions', () => {
-			let lexer = new Lexer('-webkit-calc(')
-			let token = lexer.next_token()
+			const lexer = new Lexer('-webkit-calc(')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_FUNCTION)
 		})
 	})
 
 	describe('at-keywords', () => {
 		test('should tokenize @media', () => {
-			let lexer = new Lexer('@media')
-			let token = lexer.next_token()
+			const lexer = new Lexer('@media')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_AT_KEYWORD)
 			expect(lexer.source.slice(token!.start, token!.end)).toBe('@media')
 		})
 
 		test('should tokenize @keyframes', () => {
-			let lexer = new Lexer('@keyframes')
-			let token = lexer.next_token()
+			const lexer = new Lexer('@keyframes')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_AT_KEYWORD)
 		})
 
 		test('should tokenize @-webkitkeyframes', () => {
-			let lexer = new Lexer('@-webkitkeyframes')
-			let token = lexer.next_token()
+			const lexer = new Lexer('@-webkitkeyframes')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_AT_KEYWORD)
 		})
 	})
 
 	describe('hash', () => {
 		test('should tokenize hash colors', () => {
-			let lexer = new Lexer('#fff')
-			let token = lexer.next_token()
+			const lexer = new Lexer('#fff')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_HASH)
 			expect(lexer.source.slice(token!.start, token!.end)).toBe('#fff')
 		})
 
 		test('should tokenize hash IDs', () => {
-			let lexer = new Lexer('#main-content')
-			let token = lexer.next_token()
+			const lexer = new Lexer('#main-content')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_HASH)
 		})
 	})
 
 	describe('CDO/CDC', () => {
 		test('should tokenize CDO', () => {
-			let lexer = new Lexer('<!--')
-			let token = lexer.next_token()
+			const lexer = new Lexer('<!--')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_CDO)
 		})
 
 		test('should tokenize CDC', () => {
-			let lexer = new Lexer('-->')
-			let token = lexer.next_token()
+			const lexer = new Lexer('-->')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_CDC)
 		})
 	})
 
 	describe('delimiters', () => {
 		test('should tokenize unknown characters as delimiters', () => {
-			let lexer = new Lexer('~')
-			let token = lexer.next_token()
+			const lexer = new Lexer('~')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_DELIM)
 		})
 
 		test('should tokenize + as delimiter when not part of number', () => {
-			let lexer = new Lexer('+ ')
-			let token = lexer.next_token()
+			const lexer = new Lexer('+ ')
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_DELIM)
 		})
 	})
 
 	describe('EOF', () => {
 		test('should return EOF token at end', () => {
-			let lexer = new Lexer('a')
+			const lexer = new Lexer('a')
 			lexer.next_token() // a
-			let token = lexer.next_token()
+			const token = lexer.next_token()
 			expect(token?.type).toBe(TOKEN_EOF)
 		})
 	})
 
 	describe('real CSS', () => {
 		test('should tokenize a CSS rule', () => {
-			let lexer = new Lexer('.class { color: red; }')
-			let tokens = []
+			const lexer = new Lexer('.class { color: red; }')
+			const tokens = []
 			let token
 			while ((token = lexer.next_token()) && token.type !== TOKEN_EOF) {
 				tokens.push(token.type)
@@ -546,8 +546,8 @@ describe('Lexer', () => {
 		})
 
 		test('should tokenize declaration with number and unit', () => {
-			let lexer = new Lexer('width: 100px')
-			let tokens = []
+			const lexer = new Lexer('width: 100px')
+			const tokens = []
 			let token
 			while ((token = lexer.next_token()) && token.type !== TOKEN_EOF) {
 				if (token.type !== TOKEN_WHITESPACE) {
@@ -560,7 +560,7 @@ describe('Lexer', () => {
 
 	describe('column tracking', () => {
 		test('should track column for single line tokens', () => {
-			let lexer = new Lexer('body { color: red; }')
+			const lexer = new Lexer('body { color: red; }')
 			let token
 
 			token = lexer.next_token() // 'body'
@@ -585,7 +585,7 @@ describe('Lexer', () => {
 		})
 
 		test('should track column across multiple lines', () => {
-			let lexer = new Lexer('body {\n  color: red;\n}')
+			const lexer = new Lexer('body {\n  color: red;\n}')
 			let token
 
 			token = lexer.next_token() // 'body'
@@ -614,7 +614,7 @@ describe('Lexer', () => {
 		})
 
 		test('should reset column to 1 after newline', () => {
-			let lexer = new Lexer('a\nb')
+			const lexer = new Lexer('a\nb')
 			let token
 
 			token = lexer.next_token() // 'a'
@@ -631,7 +631,7 @@ describe('Lexer', () => {
 		})
 
 		test('should track column for multi-character tokens', () => {
-			let lexer = new Lexer('font-size: 16px;')
+			const lexer = new Lexer('font-size: 16px;')
 			let token
 
 			token = lexer.next_token() // 'font-size'
@@ -653,7 +653,7 @@ describe('Lexer', () => {
 		})
 
 		test('should track column for strings', () => {
-			let lexer = new Lexer('content: "hello world";')
+			const lexer = new Lexer('content: "hello world";')
 			let token
 
 			token = lexer.next_token() // 'content'
@@ -670,7 +670,7 @@ describe('Lexer', () => {
 		})
 
 		test('should track column for comments', () => {
-			let lexer = new Lexer('/* comment */ body')
+			const lexer = new Lexer('/* comment */ body')
 			let token
 
 			token = lexer.next_token() // ' '
@@ -685,7 +685,7 @@ describe('Lexer', () => {
 		})
 
 		test('should track column for multi-line comments', () => {
-			let lexer = new Lexer('/* line1\nline2 */ a')
+			const lexer = new Lexer('/* line1\nline2 */ a')
 			let token
 
 			token = lexer.next_token() // ' '
@@ -699,7 +699,7 @@ describe('Lexer', () => {
 		})
 
 		test('should track column for numbers with decimals', () => {
-			let lexer = new Lexer('opacity: 0.5;')
+			const lexer = new Lexer('opacity: 0.5;')
 			let token
 
 			token = lexer.next_token() // 'opacity'
@@ -715,7 +715,7 @@ describe('Lexer', () => {
 		})
 
 		test('should track column for at-keywords', () => {
-			let lexer = new Lexer('@media screen')
+			const lexer = new Lexer('@media screen')
 			let token
 
 			token = lexer.next_token() // '@media'
@@ -730,7 +730,7 @@ describe('Lexer', () => {
 		})
 
 		test('should handle \\r\\n as single newline for column counting', () => {
-			let lexer = new Lexer('a\r\nb')
+			const lexer = new Lexer('a\r\nb')
 			let token
 
 			token = lexer.next_token() // 'a'
@@ -756,7 +756,7 @@ describe('Lexer', () => {
 		const oracle_digit = (c: number) => c >= 0x30 && c <= 0x39
 
 		test('is_ident_start matches letters, underscore and non-ASCII for every code unit', () => {
-			let mismatches: string[] = []
+			const mismatches: string[] = []
 			for (let c = 0; c <= 0xffff; c++) {
 				if (is_ident_start(c) !== oracle_ident_start(c)) mismatches.push(`0x${c.toString(16)}`)
 			}
@@ -775,12 +775,12 @@ describe('Lexer', () => {
 				0xfeff,
 				0xffff,
 			]
-			let mismatches: string[] = []
-			for (let c of codes) {
-				let lexer = new Lexer(String.fromCharCode(c))
+			const mismatches: string[] = []
+			for (const c of codes) {
+				const lexer = new Lexer(String.fromCharCode(c))
 				lexer.next_token_fast(false)
-				let type = lexer.token_type
-				let ok =
+				const type = lexer.token_type
+				const ok =
 					(type === TOKEN_IDENT) === oracle_ident_start(c) &&
 					(type === TOKEN_WHITESPACE) === oracle_whitespace(c) &&
 					(type === TOKEN_NUMBER) === oracle_digit(c) &&
@@ -793,8 +793,8 @@ describe('Lexer', () => {
 		})
 
 		test('skip_whitespace=true lands on the same token as an explicit whitespace token', () => {
-			let source = ' \t\n\r\f_x'
-			let lexer = new Lexer(source)
+			const source = ' \t\n\r\f_x'
+			const lexer = new Lexer(source)
 			lexer.next_token_fast(true)
 			expect(lexer.token_type).toBe(TOKEN_IDENT)
 			expect(source.slice(lexer.token_start, lexer.token_end)).toBe('_x')
@@ -802,8 +802,8 @@ describe('Lexer', () => {
 		})
 
 		test('identifiers may start with underscore, a letter or a non-ASCII character', () => {
-			for (let source of ['_a', 'a', 'Z', 'é', '日本', '\u{1F600}x']) {
-				let lexer = new Lexer(source)
+			for (const source of ['_a', 'a', 'Z', 'é', '日本', '\u{1F600}x']) {
+				const lexer = new Lexer(source)
 				lexer.next_token_fast(false)
 				expect(lexer.token_type).toBe(TOKEN_IDENT)
 				expect(lexer.token_end).toBe(source.length)
@@ -811,8 +811,8 @@ describe('Lexer', () => {
 		})
 
 		test('digits start numbers and are not identifiers', () => {
-			for (let source of ['0', '9', '5px', '.5']) {
-				let lexer = new Lexer(source)
+			for (const source of ['0', '9', '5px', '.5']) {
+				const lexer = new Lexer(source)
 				lexer.next_token_fast(false)
 				expect(lexer.token_type === TOKEN_IDENT).toBe(false)
 			}

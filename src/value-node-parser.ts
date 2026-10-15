@@ -101,11 +101,11 @@ export class ValueNodeParser {
 			// Stop if we've reached the end of the range
 			if (this.lexer.token_start >= this.end) break
 
-			let token_type = this.lexer.token_type
+			const token_type = this.lexer.token_type
 			if (token_type === TOKEN_EOF) break
 
 			// Parse this token into a value node (token_type already cached in lexer.token_type)
-			let node = this.parse_value_node()
+			const node = this.parse_value_node()
 			if (node !== null) {
 				if (first_node === 0) {
 					first_node = node
@@ -121,9 +121,9 @@ export class ValueNodeParser {
 	}
 
 	private parse_value_node(): number | null {
-		let token_type = this.lexer.token_type
-		let start = this.lexer.token_start
-		let end = this.lexer.token_end
+		const token_type = this.lexer.token_type
+		const start = this.lexer.token_start
+		const end = this.lexer.token_end
 
 		switch (token_type) {
 			case TOKEN_IDENT:
@@ -166,7 +166,7 @@ export class ValueNodeParser {
 	}
 
 	private create_node(node_type: number, start: number, end: number): number {
-		let node = this.arena.create_node(
+		const node = this.arena.create_node(
 			node_type,
 			start,
 			end - start,
@@ -180,7 +180,7 @@ export class ValueNodeParser {
 
 	private parse_operator_node(start: number, end: number): number | null {
 		// Only create operator nodes for specific delimiters: + - * /
-		let ch = this.source.charCodeAt(start)
+		const ch = this.source.charCodeAt(start)
 		if (
 			ch === CHAR_PLUS ||
 			ch === CHAR_MINUS_HYPHEN ||
@@ -212,7 +212,7 @@ export class ValueNodeParser {
 
 		while ((!bounded || this.lexer.pos < this.end) && depth > 0) {
 			this.lexer.next_token_fast(false)
-			let token_type = this.lexer.token_type
+			const token_type = this.lexer.token_type
 			if (token_type === TOKEN_EOF) break
 			if (bounded && this.lexer.token_start >= this.end) break
 
@@ -235,7 +235,7 @@ export class ValueNodeParser {
 	private parse_function_node(start: number, end: number): number {
 		// Function name is everything before the '('
 		// The lexer's TOKEN_FUNCTION includes the '(' at the end
-		let name_end = end - 1 // Exclude the '('
+		const name_end = end - 1 // Exclude the '('
 
 		// Check function name for special handling without allocating a substring — most
 		// function calls (calc(), var(), rgb(), translate(), ...) aren't any of these, and
@@ -246,10 +246,10 @@ export class ValueNodeParser {
 			return this.parse_if_function_node(start, end)
 		}
 
-		let is_url = str_equals_range(this.source, start, name_end, 'url')
+		const is_url = str_equals_range(this.source, start, name_end, 'url')
 
 		// Create URL or function node based on function name (length will be set later)
-		let node = this.arena.create_node(
+		const node = this.arena.create_node(
 			is_url ? URL : FUNCTION,
 			start,
 			0, // length unknown yet
@@ -266,7 +266,7 @@ export class ValueNodeParser {
 		if (is_url || str_equals_range(this.source, start, name_end, 'src')) {
 			// Peek at the next token to see if it's a string
 			// If it's a string, parse normally. Otherwise, skip parsing children.
-			let save_pos = this.lexer.save_position()
+			const save_pos = this.lexer.save_position()
 			this.lexer.next_token_fast(false)
 
 			// Skip whitespace
@@ -274,7 +274,7 @@ export class ValueNodeParser {
 				this.lexer.next_token_fast(false)
 			}
 
-			let first_token_type = this.lexer.token_type
+			const first_token_type = this.lexer.token_type
 
 			// Restore lexer position
 			this.lexer.restore_position(save_pos)
@@ -288,12 +288,12 @@ export class ValueNodeParser {
 				// that confuse the declaration parser (e.g., data:image/png;base64,...)
 				// So we consume tokens until we find the matching ')' regardless of `end`
 				let func_end = end
-				let content_start = end // Position after 'url('
+				const content_start = end // Position after 'url('
 				let content_end = end
 
-				let matched = this.scan_matching_paren(false)
-				let scanned_content_end = this.paren_content_end
-				let scanned_func_end = this.paren_close_end
+				const matched = this.scan_matching_paren(false)
+				const scanned_content_end = this.paren_content_end
+				const scanned_func_end = this.paren_close_end
 				if (matched) {
 					content_end = scanned_content_end
 					func_end = scanned_func_end
@@ -316,13 +316,13 @@ export class ValueNodeParser {
 		let last_arg = 0
 		let paren_depth = 1
 		let func_end = end
-		let content_start = end // Position after function name and '('
+		const content_start = end // Position after function name and '('
 		let content_end = end
 
 		while (this.lexer.pos < this.end && paren_depth > 0) {
 			this.lexer.next_token_fast(true)
 
-			let token_type = this.lexer.token_type
+			const token_type = this.lexer.token_type
 			if (token_type === TOKEN_EOF) break
 			if (this.lexer.token_start >= this.end) break
 
@@ -339,7 +339,7 @@ export class ValueNodeParser {
 			}
 
 			// Parse argument node
-			let arg_node = this.parse_value_node()
+			const arg_node = this.parse_value_node()
 			if (arg_node !== null) {
 				if (first_arg === 0) {
 					first_arg = arg_node
@@ -375,23 +375,23 @@ export class ValueNodeParser {
 	// Each branch becomes an IF_BRANCH child (see the `IfBranch` type in node-types.ts
 	// for its shape). Colons/semicolons here are structural separators, not OPERATOR nodes.
 	private parse_if_function_node(start: number, end: number): number {
-		let name_end = end - 1 // exclude '('
-		let save_line = this.lexer.token_line
-		let save_col = this.lexer.token_column
+		const name_end = end - 1 // exclude '('
+		const save_line = this.lexer.token_line
+		const save_col = this.lexer.token_column
 
-		let node = this.arena.create_node(FUNCTION, start, 0, save_line, save_col)
+		const node = this.arena.create_node(FUNCTION, start, 0, save_line, save_col)
 		this.arena.set_content_start_delta(node, 0)
 		this.arena.set_content_length(node, name_end - start) // length of "if"
 
-		let branches: number[] = []
+		const branches: number[] = []
 		let func_end = end
-		let content_start = end // right after 'if('
+		const content_start = end // right after 'if('
 		let content_end = end
 		let if_closed = false
 
 		while (this.lexer.pos < this.end && !if_closed) {
 			this.lexer.next_token_fast(false)
-			let tt = this.lexer.token_type
+			const tt = this.lexer.token_type
 
 			if (tt === TOKEN_EOF) break
 			if (this.lexer.token_start >= this.end) break
@@ -406,21 +406,21 @@ export class ValueNodeParser {
 			if (tt === TOKEN_WHITESPACE || tt === TOKEN_SEMICOLON || tt === TOKEN_COLON) continue
 
 			// ── Condition ──────────────────────────────────────────────────────
-			let branch_start = this.lexer.token_start
-			let branch_line = this.lexer.token_line
-			let branch_col = this.lexer.token_column
+			const branch_start = this.lexer.token_start
+			const branch_line = this.lexer.token_line
+			const branch_col = this.lexer.token_column
 
-			let condition_node = this.parse_if_condition()
+			const condition_node = this.parse_if_condition()
 			if (condition_node === null) continue
 
-			let condition_end_pos =
+			const condition_end_pos =
 				this.arena.get_start_offset(condition_node) + this.arena.get_length(condition_node)
 
 			// ── Find the ':' separator ─────────────────────────────────────────
 			let colon_found = false
 			while (this.lexer.pos < this.end) {
 				this.lexer.next_token_fast(false)
-				let t = this.lexer.token_type
+				const t = this.lexer.token_type
 				if (t === TOKEN_EOF) break
 				if (this.lexer.token_start >= this.end) break
 				if (t === TOKEN_WHITESPACE) continue
@@ -439,7 +439,7 @@ export class ValueNodeParser {
 			}
 
 			// ── Value tokens until ';' or end of if() ────────────────────────
-			let value_tokens: number[] = []
+			const value_tokens: number[] = []
 			let value_start = -1
 			let value_last_end = condition_end_pos
 			let value_line = 0
@@ -448,7 +448,7 @@ export class ValueNodeParser {
 			if (colon_found && !if_closed) {
 				while (this.lexer.pos < this.end) {
 					this.lexer.next_token_fast(false)
-					let t = this.lexer.token_type
+					const t = this.lexer.token_type
 					if (t === TOKEN_EOF) break
 					if (this.lexer.token_start >= this.end) break
 					if (t === TOKEN_WHITESPACE) continue
@@ -462,9 +462,9 @@ export class ValueNodeParser {
 						break
 					}
 
-					let vnode = this.parse_value_node()
+					const vnode = this.parse_value_node()
 					if (vnode !== null) {
-						let ns = this.arena.get_start_offset(vnode)
+						const ns = this.arena.get_start_offset(vnode)
 						if (value_start === -1) {
 							value_start = ns
 							value_line = this.arena.get_start_line(vnode)
@@ -490,8 +490,8 @@ export class ValueNodeParser {
 			}
 
 			// ── Create IF_BRANCH node ──────────────────────────────────────────
-			let branch_end = value_node === null ? condition_end_pos : value_last_end
-			let branch_node = this.arena.create_node(
+			const branch_end = value_node === null ? condition_end_pos : value_last_end
+			const branch_node = this.arena.create_node(
 				IF_BRANCH,
 				branch_start,
 				branch_end - branch_start,
@@ -506,7 +506,7 @@ export class ValueNodeParser {
 				this.arena.set_value_length(branch_node, value_last_end - value_start)
 			}
 
-			let branch_children: number[] = [condition_node]
+			const branch_children: number[] = [condition_node]
 			if (value_node !== null) branch_children.push(value_node)
 			this.arena.append_children(branch_node, branch_children)
 			branches.push(branch_node)
@@ -557,15 +557,15 @@ export class ValueNodeParser {
 		let compound = false
 
 		for (;;) {
-			let tt = this.lexer.token_type
+			const tt = this.lexer.token_type
 			let component: number | null = null
 			let is_operator = false
 
 			if (tt === TOKEN_FUNCTION) {
 				component = this.parse_if_condition_function(this.lexer.token_start, this.lexer.token_end)
 			} else if (tt === TOKEN_IDENT) {
-				let token_start = this.lexer.token_start
-				let token_end = this.lexer.token_end
+				const token_start = this.lexer.token_start
+				const token_end = this.lexer.token_end
 				if (is_and_or_not_range(this.source, token_start, token_end)) {
 					is_operator = true
 					component = this.arena.create_node(
@@ -593,8 +593,8 @@ export class ValueNodeParser {
 			// condition; anything else ends the condition here.
 			if (tt !== TOKEN_FUNCTION && !is_operator) break
 
-			let saved = this.lexer.save_position()
-			let next_tt = this.next_significant_token()
+			const saved = this.lexer.save_position()
+			const next_tt = this.next_significant_token()
 			if (next_tt === TOKEN_FUNCTION) {
 				compound = true
 				continue
@@ -613,11 +613,11 @@ export class ValueNodeParser {
 		if (component_count === 1 && !compound) return first
 
 		// Compound condition — wrap the flat not/and/or/function chain in an IF_CONDITION node
-		let wrapper_start = this.arena.get_start_offset(first)
-		let last_sibling = this.arena.get_last_sibling(first)
-		let wrapper_end =
+		const wrapper_start = this.arena.get_start_offset(first)
+		const last_sibling = this.arena.get_last_sibling(first)
+		const wrapper_end =
 			this.arena.get_start_offset(last_sibling) + this.arena.get_length(last_sibling)
-		let wrapper = this.arena.create_node(
+		const wrapper = this.arena.create_node(
 			IF_CONDITION,
 			wrapper_start,
 			wrapper_end - wrapper_start,
@@ -640,25 +640,25 @@ export class ValueNodeParser {
 	// @param func_start  Offset of the function name's first char.
 	// @param token_end   Offset right after '(' (== lexer.token_end here).
 	private parse_if_condition_function(func_start: number, token_end: number): number {
-		let func_name_end = token_end - 1 // before '('
-		let func_line = this.lexer.token_line
-		let func_col = this.lexer.token_column
+		const func_name_end = token_end - 1 // before '('
+		const func_line = this.lexer.token_line
+		const func_col = this.lexer.token_column
 
-		let content_start = token_end // right after '('
+		const content_start = token_end // right after '('
 		let content_end = content_start
 		let func_end = content_start
 
 		// Scan for matching ')' to find the full function extent
-		let matched = this.scan_matching_paren(true)
-		let scanned_content_end = this.paren_content_end
-		let scanned_func_end = this.paren_close_end
+		const matched = this.scan_matching_paren(true)
+		const scanned_content_end = this.paren_content_end
+		const scanned_func_end = this.paren_close_end
 		if (matched) {
 			content_end = scanned_content_end
 			func_end = scanned_func_end
 		}
 
 		// Create FUNCTION node spanning the full function text
-		let func_node = this.arena.create_node(
+		const func_node = this.arena.create_node(
 			FUNCTION,
 			func_start,
 			func_end - func_start,
@@ -677,7 +677,7 @@ export class ValueNodeParser {
 			// style(<style-query>): a bare single declaration when the content has a top-level
 			// ':' (style(--x: 1)); otherwise the full compound and/or/not grammar over
 			// parenthesized declarations, same as `@supports` — style((--a: 1) or (--a: 2)).
-			let decl = this.condition_parser.parse_supports_declaration_content(
+			const decl = this.condition_parser.parse_supports_declaration_content(
 				content_start,
 				content_end,
 			)
@@ -696,7 +696,7 @@ export class ValueNodeParser {
 			// top-level ':' (matching style()'s shorthand — supports(display: grid), no extra
 			// parens needed); otherwise the full compound grammar, same as `@supports`'s own
 			// prelude — supports((a) and (b)), supports(not (c)), nested style()/selector()/…
-			let decl = this.condition_parser.parse_supports_declaration_content(
+			const decl = this.condition_parser.parse_supports_declaration_content(
 				content_start,
 				content_end,
 			)
@@ -713,7 +713,7 @@ export class ValueNodeParser {
 		} else if (str_equals_range(this.source, func_start, func_name_end, 'media')) {
 			// media()'s own parens delimit the feature; there's no separate inner paren pair,
 			// so the feature span equals the content span (see parse_media_feature_content's docs)
-			let feature = this.condition_parser.parse_media_feature_content(
+			const feature = this.condition_parser.parse_media_feature_content(
 				content_start,
 				content_end,
 				content_start,
@@ -731,19 +731,19 @@ export class ValueNodeParser {
 
 	// Parse value tokens in a source sub-range using save/restore to protect lexer state.
 	private parse_value_nodes_in_range(start: number, end: number): number[] {
-		let saved_end = this.end
-		let saved_pos = this.lexer.save_position()
+		const saved_end = this.end
+		const saved_pos = this.lexer.save_position()
 
 		this.end = end
 		this.lexer.seek(start, this.lexer.line, this.lexer.column)
 
-		let nodes: number[] = []
+		const nodes: number[] = []
 		while (this.lexer.pos < this.end) {
 			this.lexer.next_token_fast(true)
 			if (this.lexer.token_start >= this.end) break
-			let token_type = this.lexer.token_type
+			const token_type = this.lexer.token_type
 			if (token_type === TOKEN_EOF) break
-			let node = this.parse_value_node()
+			const node = this.parse_value_node()
 			if (node !== null) nodes.push(node)
 		}
 
@@ -755,7 +755,7 @@ export class ValueNodeParser {
 
 	private parse_parenthesis_node(start: number, end: number): number {
 		// Create parenthesis node (length will be set later)
-		let node = this.arena.create_node(
+		const node = this.arena.create_node(
 			PARENTHESIS,
 			start,
 			0, // length unknown yet
@@ -773,7 +773,7 @@ export class ValueNodeParser {
 		while (this.lexer.pos < this.end && paren_depth > 0) {
 			this.lexer.next_token_fast(true)
 
-			let token_type = this.lexer.token_type
+			const token_type = this.lexer.token_type
 			if (token_type === TOKEN_EOF) break
 			if (this.lexer.token_start >= this.end) break
 
@@ -791,7 +791,7 @@ export class ValueNodeParser {
 			// Parse child node
 			// Note: We don't track paren_depth for LEFT_PAREN or TOKEN_FUNCTION here
 			// because parse_value_node() will recursively handle them
-			let child_node = this.parse_value_node()
+			const child_node = this.parse_value_node()
 			if (child_node !== null) {
 				if (first_child === 0) {
 					first_child = child_node

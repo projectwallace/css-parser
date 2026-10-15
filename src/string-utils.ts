@@ -59,7 +59,7 @@ export function str_equals(a: string, b: string): boolean {
 	}
 
 	for (let i = 0; i < a.length; i++) {
-		let ca = a.charCodeAt(i)
+		const ca = a.charCodeAt(i)
 		let cb = b.charCodeAt(i)
 
 		// normalize ASCII uppercase A-Z → a-z
@@ -101,7 +101,7 @@ export function str_equals_range(
 
 // True if `source[start, end)` is and/or/not (case-insensitive)
 export function is_and_or_not_range(source: string, start: number, end: number): boolean {
-	let length = end - start
+	const length = end - start
 	if (length === 3) {
 		return (
 			str_equals_range(source, start, end, 'and') || str_equals_range(source, start, end, 'not')
@@ -118,7 +118,7 @@ export function str_starts_with(str: string, prefix: string): boolean {
 
 	for (let i = 0; i < prefix.length; i++) {
 		let ca = str.charCodeAt(i)
-		let cb = prefix.charCodeAt(i)
+		const cb = prefix.charCodeAt(i)
 
 		// normalize only the string char (prefix is already lowercase)
 		if (ca >= 65 && ca <= 90) ca |= 32 // A-Z → a-z
@@ -156,7 +156,7 @@ export function str_index_of(str: string, searchChar: string): number {
 		let match = true
 		for (let j = 0; j < searchChar.length; j++) {
 			let ca = str.charCodeAt(i + j)
-			let cb = searchChar.charCodeAt(j)
+			const cb = searchChar.charCodeAt(j)
 			if (ca >= 65 && ca <= 90) ca |= 32 // A-Z → a-z
 			if (ca !== cb) {
 				match = false
@@ -193,7 +193,7 @@ export function is_vendor_prefixed(source: string, start?: number, end?: number)
 	}
 
 	// Must be at least 3 chars (-o- is shortest vendor prefix)
-	let length = end - start
+	const length = end - start
 	if (length < 3) {
 		return false
 	}

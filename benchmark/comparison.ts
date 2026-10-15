@@ -41,7 +41,7 @@ for (const file of files) {
 	})
 
 	bench.add(`Parse+Walk|${file}`, () => {
-		let ast = parse(css)
+		const ast = parse(css)
 		walk(ast, (node, _depth) => {
 			void node.type
 			void node.line
@@ -49,7 +49,7 @@ for (const file of files) {
 	})
 
 	bench.add(`Fair-Wallace|${file}`, () => {
-		let ast = parse(css, {
+		const ast = parse(css, {
 			parse_selectors: false,
 			parse_values: false,
 			parse_atrule_preludes: false,
@@ -61,7 +61,7 @@ for (const file of files) {
 	})
 
 	bench.add(`Fair-CSSTree|${file}`, () => {
-		let ast = csstree.parse(css, {
+		const ast = csstree.parse(css, {
 			positions: true,
 			parseValue: false,
 			parseAtrulePrelude: false,
@@ -83,7 +83,7 @@ for (const file of files) {
 	})
 
 	bench.add(`CSSTree|${file}`, () => {
-		let ast = csstree.parse(css, { positions: true })
+		const ast = csstree.parse(css, { positions: true })
 		// @ts-expect-error: no type definitions for css-tree
 		csstree.walk(ast, (node) => {
 			void node.type
@@ -92,7 +92,7 @@ for (const file of files) {
 	})
 
 	bench.add(`PostCSS|${file}`, () => {
-		let root = postcss.parse(css)
+		const root = postcss.parse(css)
 		root.walk((node) => {
 			void node.type
 			void node.source?.start?.line
@@ -140,20 +140,20 @@ function measureMemoryMB(
 		const before = process.memoryUsage()
 
 		if (parser === 'wallace') {
-			let ast = parse(css)
+			const ast = parse(css)
 			walk(ast, (node, _depth) => {
 				void node.type
 				void node.line
 			})
 		} else if (parser === 'csstree') {
-			let ast = csstree.parse(css, { positions: true })
+			const ast = csstree.parse(css, { positions: true })
 			// @ts-expect-error: no type definitions for css-tree
 			csstree.walk(ast, (node) => {
 				void node.type
 				void node.loc?.start.line
 			})
 		} else {
-			let root = postcss.parse(css)
+			const root = postcss.parse(css)
 			root.walk((node) => {
 				void node.type
 				void node.source?.start?.line

@@ -954,25 +954,25 @@ describe('Core Nodes', () => {
 
 			describe('Special at-rules', () => {
 				test('@charset', () => {
-					let source = '@charset "UTF-8"; body { color: red; }'
-					let root = parse(source)
+					const source = '@charset "UTF-8"; body { color: red; }'
+					const root = parse(source)
 
-					let [charset, _body] = root.children as Atrule[]
+					const [charset, _body] = root.children as Atrule[]
 					expect(charset.type).toBe(AT_RULE)
 					expect(charset.name).toBe('charset')
 				})
 
 				test('@import with media query', () => {
-					let source = '@import url("print.css") print;'
-					let root = parse(source)
+					const source = '@import url("print.css") print;'
+					const root = parse(source)
 
-					let import_rule = root.first_child! as Atrule
+					const import_rule = root.first_child! as Atrule
 					expect(import_rule.type).toBe(AT_RULE)
 					expect(import_rule.name).toBe('import')
 				})
 
 				test('@font-face with multiple descriptors', () => {
-					let source = `
+					const source = `
 						@font-face {
 							font-family: "Custom";
 							src: url("font.woff2") format("woff2"),
@@ -982,132 +982,133 @@ describe('Core Nodes', () => {
 							font-display: swap;
 						}
 					`
-					let root = parse(source)
+					const root = parse(source)
 
-					let font_face = root.first_child! as Atrule
+					const font_face = root.first_child! as Atrule
 					expect(font_face.name).toBe('font-face')
-					let block = font_face.block!
+					const block = font_face.block!
 					expect(block.children.length).toBeGreaterThan(3)
 				})
 
 				test('@counter-style', () => {
-					let source = '@counter-style custom { system: cyclic; symbols: "⚫" "⚪"; suffix: " "; }'
-					let root = parse(source)
+					const source =
+						'@counter-style custom { system: cyclic; symbols: "⚫" "⚪"; suffix: " "; }'
+					const root = parse(source)
 
-					let counter = root.first_child! as Atrule
+					const counter = root.first_child! as Atrule
 					expect(counter.name).toBe('counter-style')
-					let block = counter.block!
+					const block = counter.block!
 					expect(block.children.length).toBeGreaterThan(1)
 				})
 
 				test('@property', () => {
-					let source =
+					const source =
 						'@property --my-color { syntax: "<color>"; inherits: false; initial-value: #c0ffee; }'
-					let root = parse(source)
+					const root = parse(source)
 
-					let property = root.first_child! as Atrule
+					const property = root.first_child! as Atrule
 					expect(property.name).toBe('property')
 				})
 			})
 
 			describe('At-rule preludes', () => {
 				test('media query prelude', () => {
-					let source = '@media (min-width: 768px) { }'
-					let root = parse(source)
+					const source = '@media (min-width: 768px) { }'
+					const root = parse(source)
 
-					let atrule = root.first_child! as Atrule
+					const atrule = root.first_child! as Atrule
 					expect(atrule.type).toBe(AT_RULE)
 					expect(atrule.name).toBe('media')
 					expect(atrule.prelude?.text).toBe('(min-width: 768px)')
 				})
 
 				test('complex media query prelude', () => {
-					let source = '@media screen and (min-width: 768px) and (max-width: 1024px) { }'
-					let root = parse(source)
+					const source = '@media screen and (min-width: 768px) and (max-width: 1024px) { }'
+					const root = parse(source)
 
-					let atrule = root.first_child! as Atrule
+					const atrule = root.first_child! as Atrule
 					expect(atrule.name).toBe('media')
 					expect(atrule.prelude?.text).toBe('screen and (min-width: 768px) and (max-width: 1024px)')
 				})
 
 				test('container query prelude', () => {
-					let source = '@container (width >= 200px) { }'
-					let root = parse(source)
+					const source = '@container (width >= 200px) { }'
+					const root = parse(source)
 
-					let atrule = root.first_child! as Atrule
+					const atrule = root.first_child! as Atrule
 					expect(atrule.name).toBe('container')
 					expect(atrule.prelude?.text).toBe('(width >= 200px)')
 				})
 
 				test('supports query prelude', () => {
-					let source = '@supports (display: grid) { }'
-					let root = parse(source)
+					const source = '@supports (display: grid) { }'
+					const root = parse(source)
 
-					let atrule = root.first_child! as Atrule
+					const atrule = root.first_child! as Atrule
 					expect(atrule.name).toBe('supports')
 					expect(atrule.prelude?.text).toBe('(display: grid)')
 				})
 
 				test('import prelude', () => {
-					let source = '@import url("styles.css");'
-					let root = parse(source)
+					const source = '@import url("styles.css");'
+					const root = parse(source)
 
-					let atrule = root.first_child! as Atrule
+					const atrule = root.first_child! as Atrule
 					expect(atrule.name).toBe('import')
 					expect(atrule.prelude?.text).toBe('url("styles.css")')
 				})
 
 				test('at-rule without prelude', () => {
-					let source = '@font-face { font-family: MyFont; }'
-					let root = parse(source)
+					const source = '@font-face { font-family: MyFont; }'
+					const root = parse(source)
 
-					let atrule = root.first_child! as Atrule
+					const atrule = root.first_child! as Atrule
 					expect(atrule.name).toBe('font-face')
 					expect(atrule.prelude).toBe(null)
 				})
 
 				test('layer prelude', () => {
-					let source = '@layer utilities { }'
-					let root = parse(source)
+					const source = '@layer utilities { }'
+					const root = parse(source)
 
-					let atrule = root.first_child! as Atrule
+					const atrule = root.first_child! as Atrule
 					expect(atrule.name).toBe('layer')
 					expect(atrule.prelude?.text).toBe('utilities')
 				})
 
 				test('keyframes prelude', () => {
-					let source = '@keyframes slide-in { }'
-					let root = parse(source)
+					const source = '@keyframes slide-in { }'
+					const root = parse(source)
 
-					let atrule = root.first_child! as Atrule
+					const atrule = root.first_child! as Atrule
 					expect(atrule.name).toBe('keyframes')
 					expect(atrule.prelude?.text).toBe('slide-in')
 				})
 
 				test('prelude with extra whitespace', () => {
-					let source = '@media   (min-width: 768px)   { }'
-					let root = parse(source)
+					const source = '@media   (min-width: 768px)   { }'
+					const root = parse(source)
 
-					let atrule = root.first_child! as Atrule
+					const atrule = root.first_child! as Atrule
 					expect(atrule.name).toBe('media')
 					expect(atrule.prelude?.text).toBe('(min-width: 768px)')
 				})
 
 				test('charset prelude', () => {
-					let source = '@charset "UTF-8";'
-					let root = parse(source)
+					const source = '@charset "UTF-8";'
+					const root = parse(source)
 
-					let atrule = root.first_child! as Atrule
+					const atrule = root.first_child! as Atrule
 					expect(atrule.name).toBe('charset')
 					expect(atrule.prelude).not.toBeNull()
 					expect(atrule.prelude?.text).toBe('"UTF-8"')
 				})
 
 				test('namespace prelude', () => {
-					let source = '@namespace svg url(http://www.w3.org/2000/svg);'
-					let root = parse(source)
+					const source = '@namespace svg url(http://www.w3.org/2000/svg);'
+					const root = parse(source)
 
-					let atrule = root.first_child! as Atrule
+					const atrule = root.first_child! as Atrule
 					expect(atrule.name).toBe('namespace')
 					// @namespace doesn't have structured prelude parsing, but prelude wrapper exists
 					expect(atrule.prelude).not.toBeNull()
@@ -1115,10 +1116,10 @@ describe('Core Nodes', () => {
 				})
 
 				test('unknown at-rule has prelude with accessible text', () => {
-					let source = '@imaginary-atrule prelude-stuff;'
-					let root = parse(source)
+					const source = '@imaginary-atrule prelude-stuff;'
+					const root = parse(source)
 
-					let atrule = root.first_child! as Atrule
+					const atrule = root.first_child! as Atrule
 					expect(atrule.name).toBe('imaginary-atrule')
 					// Unknown at-rules get a RAW prelude (not AT_RULE_PRELUDE)
 					expect(atrule.prelude).not.toBeNull()
@@ -1127,10 +1128,10 @@ describe('Core Nodes', () => {
 				})
 
 				test('unknown at-rule without block has RAW prelude and no block', () => {
-					let source = '@custom prelude;'
-					let root = parse(source)
+					const source = '@custom prelude;'
+					const root = parse(source)
 
-					let atrule = root.first_child! as Atrule
+					const atrule = root.first_child! as Atrule
 					expect(atrule.name).toBe('custom')
 					expect(atrule.prelude?.type).toBe(RAW)
 					expect(atrule.prelude?.text).toBe('prelude')
@@ -1138,94 +1139,94 @@ describe('Core Nodes', () => {
 				})
 
 				test('unknown at-rule block can contain declarations', () => {
-					let source = '@custom { color: red }'
-					let root = parse(source)
+					const source = '@custom { color: red }'
+					const root = parse(source)
 
-					let atrule = root.first_child! as Atrule
+					const atrule = root.first_child! as Atrule
 					expect(atrule.name).toBe('custom')
-					let block = atrule.block!
+					const block = atrule.block!
 					expect(block).not.toBeNull()
-					let declaration = block.first_child! as Declaration
+					const declaration = block.first_child! as Declaration
 					expect(declaration.type).toBe(DECLARATION)
 					expect(declaration.property).toBe('color')
 				})
 
 				test('unknown at-rule block can contain style rules', () => {
-					let source = '@custom { .a { color: red } }'
-					let root = parse(source)
+					const source = '@custom { .a { color: red } }'
+					const root = parse(source)
 
-					let atrule = root.first_child! as Atrule
-					let block = atrule.block!
-					let rule = block.first_child!
+					const atrule = root.first_child! as Atrule
+					const block = atrule.block!
+					const rule = block.first_child!
 					expect(rule.type).toBe(STYLE_RULE)
 				})
 
 				test('unknown at-rule with prelude block can contain style rules', () => {
-					let source = '@custom test { .a { color: red } }'
-					let root = parse(source)
+					const source = '@custom test { .a { color: red } }'
+					const root = parse(source)
 
-					let atrule = root.first_child! as Atrule
-					let block = atrule.block!
-					let rule = block.first_child!
+					const atrule = root.first_child! as Atrule
+					const block = atrule.block!
+					const rule = block.first_child!
 					expect(rule.type).toBe(STYLE_RULE)
 
 					expect((atrule as any).value).toBeUndefined()
 
-					let prelude = atrule.prelude!
+					const prelude = atrule.prelude!
 					expect(prelude.type).toBe(RAW)
 				})
 
 				test('unknown at-rule block can contain nested at-rules', () => {
-					let source = '@custom { @media (width) { } }'
-					let root = parse(source)
+					const source = '@custom { @media (width) { } }'
+					const root = parse(source)
 
-					let atrule = root.first_child! as Atrule
-					let block = atrule.block!
-					let nested = block.first_child! as Atrule
+					const atrule = root.first_child! as Atrule
+					const block = atrule.block!
+					const nested = block.first_child! as Atrule
 					expect(nested.type).toBe(AT_RULE)
 					expect(nested.name).toBe('media')
 				})
 
 				test('known at-rule @keyframes still has AT_RULE_PRELUDE and correctly parsed frames', () => {
-					let source = '@keyframes foo { from { opacity: 0 } to { opacity: 1 } }'
-					let root = parse(source)
+					const source = '@keyframes foo { from { opacity: 0 } to { opacity: 1 } }'
+					const root = parse(source)
 
-					let atrule = root.first_child! as Atrule
+					const atrule = root.first_child! as Atrule
 					expect(atrule.name).toBe('keyframes')
 					expect(atrule.prelude?.type).toBe(AT_RULE_PRELUDE)
 					expect(atrule.prelude?.text).toBe('foo')
-					let block = atrule.block!
-					let from_rule = block.first_child!
+					const block = atrule.block!
+					const from_rule = block.first_child!
 					expect(from_rule.type).toBe(STYLE_RULE)
 				})
 
 				test('value string matches prelude text for at-rules', () => {
-					let source = '@media (min-width: 768px) { }'
-					let root = parse(source)
+					const source = '@media (min-width: 768px) { }'
+					const root = parse(source)
 
-					let atrule = root.first_child! as Atrule
+					const atrule = root.first_child! as Atrule
 					expect(atrule.prelude?.text).toBe('(min-width: 768px)')
 				})
 
 				test('at-rule prelude line tracking', () => {
-					let source = 'body { color: red; }\n\n@media screen { }'
-					let root = parse(source)
+					const source = 'body { color: red; }\n\n@media screen { }'
+					const root = parse(source)
 
-					let [_rule1, atRule] = root.children as Atrule[]
+					const [_rule1, atRule] = root.children as Atrule[]
 					expect(atRule.line).toBe(3)
 
 					// Check that prelude wrapper inherits the correct line
-					let preludeWrapper = atRule.prelude
+					const preludeWrapper = atRule.prelude
 					expect(preludeWrapper).toBeTruthy()
 					expect(preludeWrapper!.line).toBe(3) // Should be line 3, not line 1
 				})
 			})
 
 			describe('At-rule block children', () => {
-				let css = `@layer test { a {} }`
-				let sheet = parse(css)
-				let atrule = sheet?.first_child as Atrule | undefined
-				let rule = atrule?.block?.first_child as Rule | undefined
+				const css = `@layer test { a {} }`
+				const sheet = parse(css)
+				const atrule = sheet?.first_child as Atrule | undefined
+				const rule = atrule?.block?.first_child as Rule | undefined
 
 				test('atrule should have block', () => {
 					expect(sheet.type).toBe(STYLESHEET)
@@ -1247,7 +1248,7 @@ describe('Core Nodes', () => {
 				})
 
 				test('has correct nested selectors', () => {
-					let list = rule?.first_child as SelectorList | null
+					const list = rule?.first_child as SelectorList | null
 					expect(list!.type).toBe(SELECTOR_LIST)
 					expect(list!.children).toHaveLength(1)
 					expect(list?.first_child?.type).toEqual(SELECTOR)
@@ -1358,60 +1359,60 @@ describe('Core Nodes', () => {
 
 			describe('Declaration values', () => {
 				test('extract simple value', () => {
-					let source = 'a { color: blue; }'
-					let root = parse(source)
+					const source = 'a { color: blue; }'
+					const root = parse(source)
 
-					let rule = root.first_child!
+					const rule = root.first_child!
 					const block = (rule as Rule).block!
-					let decl = block.first_child! as Declaration
+					const decl = block.first_child! as Declaration
 
 					expect(decl.property).toBe('color')
 					expect(decl.first_child!.text).toBe('blue')
 				})
 
 				test('extract value with spaces', () => {
-					let source = 'a { padding: 1rem 2rem 3rem 4rem; }'
-					let root = parse(source)
+					const source = 'a { padding: 1rem 2rem 3rem 4rem; }'
+					const root = parse(source)
 
-					let rule = root.first_child!
+					const rule = root.first_child!
 					const block = (rule as Rule).block!
-					let decl = block.first_child! as Declaration
+					const decl = block.first_child! as Declaration
 
 					expect(decl.property).toBe('padding')
 					expect(decl.first_child!.text).toBe('1rem 2rem 3rem 4rem')
 				})
 
 				test('extract function value', () => {
-					let source = 'a { background: linear-gradient(to bottom, red, blue); }'
-					let root = parse(source)
+					const source = 'a { background: linear-gradient(to bottom, red, blue); }'
+					const root = parse(source)
 
-					let rule = root.first_child!
+					const rule = root.first_child!
 					const block = (rule as Rule).block!
-					let decl = block.first_child! as Declaration
+					const decl = block.first_child! as Declaration
 
 					expect(decl.property).toBe('background')
 					expect(decl.first_child!.text).toBe('linear-gradient(to bottom, red, blue)')
 				})
 
 				test('extract calc value', () => {
-					let source = 'a { width: calc(100% - 2rem); }'
-					let root = parse(source)
+					const source = 'a { width: calc(100% - 2rem); }'
+					const root = parse(source)
 
-					let rule = root.first_child!
+					const rule = root.first_child!
 					const block = (rule as Rule).block!
-					let decl = block.first_child! as Declaration
+					const decl = block.first_child! as Declaration
 
 					expect(decl.property).toBe('width')
 					expect(decl.first_child!.text).toBe('calc(100% - 2rem)')
 				})
 
 				test('exclude !important from value', () => {
-					let source = 'a { color: blue !important; }'
-					let root = parse(source)
+					const source = 'a { color: blue !important; }'
+					const root = parse(source)
 
-					let rule = root.first_child!
+					const rule = root.first_child!
 					const block = (rule as Rule).block!
-					let decl = block.first_child! as Declaration
+					const decl = block.first_child! as Declaration
 
 					expect(decl.property).toBe('color')
 					expect(decl.first_child!.text).toBe('blue')
@@ -1419,84 +1420,84 @@ describe('Core Nodes', () => {
 				})
 
 				test('value with extra whitespace', () => {
-					let source = 'a { color:    blue   ; }'
-					let root = parse(source)
+					const source = 'a { color:    blue   ; }'
+					const root = parse(source)
 
-					let rule = root.first_child!
+					const rule = root.first_child!
 					const block = (rule as Rule).block!
-					let decl = block.first_child! as Declaration
+					const decl = block.first_child! as Declaration
 
 					expect(decl.property).toBe('color')
 					expect(decl.first_child!.text).toBe('blue')
 				})
 
 				test('CSS custom property value', () => {
-					let source = ':root { --brand-color: rgb(0% 10% 50% / 0.5); }'
-					let root = parse(source)
+					const source = ':root { --brand-color: rgb(0% 10% 50% / 0.5); }'
+					const root = parse(source)
 
-					let rule = root.first_child!
+					const rule = root.first_child!
 					const block = (rule as Rule).block!
-					let decl = block.first_child! as Declaration
+					const decl = block.first_child! as Declaration
 
 					expect(decl.property).toBe('--brand-color')
 					expect(decl.first_child!.text).toBe('rgb(0% 10% 50% / 0.5)')
 				})
 
 				test('var() reference value', () => {
-					let source = 'a { color: var(--primary-color); }'
-					let root = parse(source)
+					const source = 'a { color: var(--primary-color); }'
+					const root = parse(source)
 
-					let rule = root.first_child!
+					const rule = root.first_child!
 					const block = (rule as Rule).block!
-					let decl = block.first_child! as Declaration
+					const decl = block.first_child! as Declaration
 
 					expect(decl.property).toBe('color')
 					expect(decl.first_child!.text).toBe('var(--primary-color)')
 				})
 
 				test('nested function value', () => {
-					let source = 'a { transform: translate(calc(50% - 1rem), 0); }'
-					let root = parse(source)
+					const source = 'a { transform: translate(calc(50% - 1rem), 0); }'
+					const root = parse(source)
 
-					let rule = root.first_child!
+					const rule = root.first_child!
 					const block = (rule as Rule).block!
-					let decl = block.first_child! as Declaration
+					const decl = block.first_child! as Declaration
 
 					expect(decl.property).toBe('transform')
 					expect(decl.first_child!.text).toBe('translate(calc(50% - 1rem), 0)')
 				})
 
 				test('value without semicolon', () => {
-					let source = 'a { color: blue }'
-					let root = parse(source)
+					const source = 'a { color: blue }'
+					const root = parse(source)
 
-					let rule = root.first_child!
+					const rule = root.first_child!
 					const block = (rule as Rule).block!
-					let decl = block.first_child! as Declaration
+					const decl = block.first_child! as Declaration
 
 					expect(decl.property).toBe('color')
 					expect(decl.first_child!.text).toBe('blue')
 				})
 
 				test('empty value', () => {
-					let source = 'a { color: ; }'
-					let root = parse(source)
+					const source = 'a { color: ; }'
+					const root = parse(source)
 
-					let rule = root.first_child!
+					const rule = root.first_child!
 					const block = (rule as Rule).block!
-					let decl = block.first_child! as Declaration
+					const decl = block.first_child! as Declaration
 
 					expect(decl.property).toBe('color')
 					expect(decl.first_child!.text).toBe('')
 				})
 
 				test('URL value', () => {
-					let source = 'a { background: url("image.png"); }'
-					let root = parse(source)
+					const source = 'a { background: url("image.png"); }'
+					const root = parse(source)
 
-					let rule = root.first_child!
+					const rule = root.first_child!
 					const block = (rule as Rule).block!
-					let decl = block.first_child! as Declaration
+					const decl = block.first_child! as Declaration
 
 					expect(decl.property).toBe('background')
 					expect(decl.first_child!.text).toBe('url("image.png")')
@@ -1505,90 +1506,90 @@ describe('Core Nodes', () => {
 
 			describe('Vendor prefix detection', () => {
 				test('-webkit- vendor prefix', () => {
-					let source = '.box { -webkit-transform: scale(1); }'
-					let root = parse(source)
+					const source = '.box { -webkit-transform: scale(1); }'
+					const root = parse(source)
 
-					let rule = root.first_child!
+					const rule = root.first_child!
 					const block = (rule as Rule).block!
-					let decl = block.first_child! as Declaration
+					const decl = block.first_child! as Declaration
 					expect(decl.property).toBe('-webkit-transform')
 					expect(decl.is_vendor_prefixed).toBe(true)
 				})
 
 				test('-moz- vendor prefix', () => {
-					let source = '.box { -moz-transform: scale(1); }'
-					let root = parse(source)
+					const source = '.box { -moz-transform: scale(1); }'
+					const root = parse(source)
 
-					let rule = root.first_child!
+					const rule = root.first_child!
 					const block = (rule as Rule).block!
-					let decl = block.first_child! as Declaration
+					const decl = block.first_child! as Declaration
 					expect(decl.property).toBe('-moz-transform')
 					expect(decl.is_vendor_prefixed).toBe(true)
 				})
 
 				test('-ms- vendor prefix', () => {
-					let source = '.box { -ms-transform: scale(1); }'
-					let root = parse(source)
+					const source = '.box { -ms-transform: scale(1); }'
+					const root = parse(source)
 
-					let rule = root.first_child!
+					const rule = root.first_child!
 					const block = (rule as Rule).block!
-					let decl = block.first_child! as Declaration
+					const decl = block.first_child! as Declaration
 					expect(decl.property).toBe('-ms-transform')
 					expect(decl.is_vendor_prefixed).toBe(true)
 				})
 
 				test('-o- vendor prefix', () => {
-					let source = '.box { -o-transform: scale(1); }'
-					let root = parse(source)
+					const source = '.box { -o-transform: scale(1); }'
+					const root = parse(source)
 
-					let rule = root.first_child!
+					const rule = root.first_child!
 					const block = (rule as Rule).block!
-					let decl = block.first_child! as Declaration
+					const decl = block.first_child! as Declaration
 					expect(decl.property).toBe('-o-transform')
 					expect(decl.is_vendor_prefixed).toBe(true)
 				})
 
 				test('no vendor prefix for standard properties', () => {
-					let source = '.box { transform: scale(1); }'
-					let root = parse(source)
+					const source = '.box { transform: scale(1); }'
+					const root = parse(source)
 
-					let rule = root.first_child!
+					const rule = root.first_child!
 					const block = (rule as Rule).block!
-					let decl = block.first_child! as Declaration
+					const decl = block.first_child! as Declaration
 					expect(decl.property).toBe('transform')
 					expect(decl.is_vendor_prefixed).toBe(false)
 				})
 
 				test('no vendor prefix for properties with hyphens', () => {
-					let source = '.box { background-color: red; }'
-					let root = parse(source)
+					const source = '.box { background-color: red; }'
+					const root = parse(source)
 
-					let rule = root.first_child!
+					const rule = root.first_child!
 					const block = (rule as Rule).block!
-					let decl = block.first_child! as Declaration
+					const decl = block.first_child! as Declaration
 					expect(decl.property).toBe('background-color')
 					expect(decl.is_vendor_prefixed).toBe(false)
 				})
 
 				test('no vendor prefix for custom properties', () => {
-					let source = ':root { --primary-color: blue; }'
-					let root = parse(source)
+					const source = ':root { --primary-color: blue; }'
+					const root = parse(source)
 
-					let rule = root.first_child!
+					const rule = root.first_child!
 					const block = (rule as Rule).block!
-					let decl = block.first_child! as Declaration
+					const decl = block.first_child! as Declaration
 					expect(decl.property).toBe('--primary-color')
 					expect(decl.is_vendor_prefixed).toBe(false)
 				})
 
 				test('multiple vendor-prefixed properties', () => {
-					let source =
+					const source =
 						'.box { -webkit-transform: scale(1); -moz-transform: scale(1); transform: scale(1); }'
-					let root = parse(source)
+					const root = parse(source)
 
-					let rule = root.first_child!
+					const rule = root.first_child!
 					const block = (rule as Rule).block!
-					let [webkit, moz, standard] = block.children as Declaration[]
+					const [webkit, moz, standard] = block.children as Declaration[]
 
 					expect(webkit.property).toBe('-webkit-transform')
 					expect(webkit.is_vendor_prefixed).toBe(true)
@@ -1601,196 +1602,197 @@ describe('Core Nodes', () => {
 				})
 
 				test('complex property names with vendor prefix', () => {
-					let source = '.box { -webkit-border-top-left-radius: 5px; }'
-					let root = parse(source)
+					const source = '.box { -webkit-border-top-left-radius: 5px; }'
+					const root = parse(source)
 
-					let rule = root.first_child!
+					const rule = root.first_child!
 					const block = (rule as Rule).block!
-					let decl = block.first_child! as Declaration
+					const decl = block.first_child! as Declaration
 					expect(decl.property).toBe('-webkit-border-top-left-radius')
 					expect(decl.is_vendor_prefixed).toBe(true)
 				})
 
 				test('no vendor prefix for similar but non-vendor properties', () => {
-					let source = '.box { border-radius: 5px; }'
-					let root = parse(source)
+					const source = '.box { border-radius: 5px; }'
+					const root = parse(source)
 
-					let rule = root.first_child!
+					const rule = root.first_child!
 					const block = (rule as Rule).block!
-					let decl = block.first_child! as Declaration
+					const decl = block.first_child! as Declaration
 					expect(decl.property).toBe('border-radius')
 					expect(decl.is_vendor_prefixed).toBe(false)
 				})
 
 				test('false for nodes without names', () => {
-					let source = 'body { }'
-					let root = parse(source)
+					const source = 'body { }'
+					const root = parse(source)
 
-					let rule = root.first_child!
-					let selector = rule.first_child!
+					const rule = root.first_child!
+					const selector = rule.first_child!
 					expect(selector.is_vendor_prefixed).toBe(false)
 				})
 			})
 
 			describe('Vendor prefix detection for selectors', () => {
 				test('-webkit- vendor prefix in pseudo-class', () => {
-					let source = 'input:-webkit-autofill { color: black; }'
-					let root = parse(source)
+					const source = 'input:-webkit-autofill { color: black; }'
+					const root = parse(source)
 
-					let rule = root.first_child!
-					let selectorList = rule.first_child!
-					let selector = selectorList.first_child!
-					let typeSelector = selector.first_child!
-					let pseudoClass = typeSelector.next_sibling! as PseudoClassSelector
+					const rule = root.first_child!
+					const selectorList = rule.first_child!
+					const selector = selectorList.first_child!
+					const typeSelector = selector.first_child!
+					const pseudoClass = typeSelector.next_sibling! as PseudoClassSelector
 					expect(pseudoClass.name).toBe('-webkit-autofill')
 					expect(pseudoClass.is_vendor_prefixed).toBe(true)
 				})
 
 				test('-moz- vendor prefix in pseudo-class', () => {
-					let source = 'button:-moz-focusring { outline: 2px solid blue; }'
-					let root = parse(source)
+					const source = 'button:-moz-focusring { outline: 2px solid blue; }'
+					const root = parse(source)
 
-					let rule = root.first_child!
-					let selectorList = rule.first_child!
-					let selector = selectorList.first_child!
-					let typeSelector = selector.first_child!
-					let pseudoClass = typeSelector.next_sibling! as PseudoClassSelector
+					const rule = root.first_child!
+					const selectorList = rule.first_child!
+					const selector = selectorList.first_child!
+					const typeSelector = selector.first_child!
+					const pseudoClass = typeSelector.next_sibling! as PseudoClassSelector
 					expect(pseudoClass.name).toBe('-moz-focusring')
 					expect(pseudoClass.is_vendor_prefixed).toBe(true)
 				})
 
 				test('-ms- vendor prefix in pseudo-class', () => {
-					let source = 'input:-ms-input-placeholder { color: gray; }'
-					let root = parse(source)
+					const source = 'input:-ms-input-placeholder { color: gray; }'
+					const root = parse(source)
 
-					let rule = root.first_child!
-					let selectorList = rule.first_child!
-					let selector = selectorList.first_child!
-					let typeSelector = selector.first_child!
-					let pseudoClass = typeSelector.next_sibling! as PseudoClassSelector
+					const rule = root.first_child!
+					const selectorList = rule.first_child!
+					const selector = selectorList.first_child!
+					const typeSelector = selector.first_child!
+					const pseudoClass = typeSelector.next_sibling! as PseudoClassSelector
 					expect(pseudoClass.name).toBe('-ms-input-placeholder')
 					expect(pseudoClass.is_vendor_prefixed).toBe(true)
 				})
 
 				test('-webkit- vendor prefix in pseudo-element', () => {
-					let source = 'div::-webkit-scrollbar { width: 10px; }'
-					let root = parse(source)
+					const source = 'div::-webkit-scrollbar { width: 10px; }'
+					const root = parse(source)
 
-					let rule = root.first_child!
-					let selectorList = rule.first_child!
-					let selector = selectorList.first_child!
-					let typeSelector = selector.first_child!
-					let pseudoElement = typeSelector.next_sibling! as PseudoElementSelector
+					const rule = root.first_child!
+					const selectorList = rule.first_child!
+					const selector = selectorList.first_child!
+					const typeSelector = selector.first_child!
+					const pseudoElement = typeSelector.next_sibling! as PseudoElementSelector
 					expect(pseudoElement.name).toBe('-webkit-scrollbar')
 					expect(pseudoElement.is_vendor_prefixed).toBe(true)
 				})
 
 				test('-moz- vendor prefix in pseudo-element', () => {
-					let source = 'div::-moz-selection { background: yellow; }'
-					let root = parse(source)
+					const source = 'div::-moz-selection { background: yellow; }'
+					const root = parse(source)
 
-					let rule = root.first_child!
-					let selectorList = rule.first_child!
-					let selector = selectorList.first_child!
-					let typeSelector = selector.first_child!
-					let pseudoElement = typeSelector.next_sibling! as PseudoElementSelector
+					const rule = root.first_child!
+					const selectorList = rule.first_child!
+					const selector = selectorList.first_child!
+					const typeSelector = selector.first_child!
+					const pseudoElement = typeSelector.next_sibling! as PseudoElementSelector
 					expect(pseudoElement.name).toBe('-moz-selection')
 					expect(pseudoElement.is_vendor_prefixed).toBe(true)
 				})
 
 				test('-webkit- vendor prefix in pseudo-element with multiple parts', () => {
-					let source = 'input::-webkit-input-placeholder { color: gray; }'
-					let root = parse(source)
+					const source = 'input::-webkit-input-placeholder { color: gray; }'
+					const root = parse(source)
 
-					let rule = root.first_child!
-					let selectorList = rule.first_child!
-					let selector = selectorList.first_child!
-					let typeSelector = selector.first_child!
-					let pseudoElement = typeSelector.next_sibling! as PseudoElementSelector
+					const rule = root.first_child!
+					const selectorList = rule.first_child!
+					const selector = selectorList.first_child!
+					const typeSelector = selector.first_child!
+					const pseudoElement = typeSelector.next_sibling! as PseudoElementSelector
 					expect(pseudoElement.name).toBe('-webkit-input-placeholder')
 					expect(pseudoElement.is_vendor_prefixed).toBe(true)
 				})
 
 				test('-webkit- vendor prefix in pseudo-class function', () => {
-					let source = 'input:-webkit-any(input, button) { margin: 0; }'
-					let root = parse(source)
+					const source = 'input:-webkit-any(input, button) { margin: 0; }'
+					const root = parse(source)
 
-					let rule = root.first_child!
-					let selectorList = rule.first_child!
-					let selector = selectorList.first_child!
-					let typeSelector = selector.first_child!
-					let pseudoClass = typeSelector.next_sibling! as PseudoClassSelector
+					const rule = root.first_child!
+					const selectorList = rule.first_child!
+					const selector = selectorList.first_child!
+					const typeSelector = selector.first_child!
+					const pseudoClass = typeSelector.next_sibling! as PseudoClassSelector
 					expect(pseudoClass.name).toBe('-webkit-any')
 					expect(pseudoClass.is_vendor_prefixed).toBe(true)
 				})
 
 				test('no vendor prefix for standard pseudo-classes', () => {
-					let source = 'a:hover { color: blue; }'
-					let root = parse(source)
+					const source = 'a:hover { color: blue; }'
+					const root = parse(source)
 
-					let rule = root.first_child!
-					let selectorList = rule.first_child!
-					let selector = selectorList.first_child!
-					let typeSelector = selector.first_child!
-					let pseudoClass = typeSelector.next_sibling! as PseudoClassSelector
+					const rule = root.first_child!
+					const selectorList = rule.first_child!
+					const selector = selectorList.first_child!
+					const typeSelector = selector.first_child!
+					const pseudoClass = typeSelector.next_sibling! as PseudoClassSelector
 					expect(pseudoClass.name).toBe('hover')
 					expect(pseudoClass.is_vendor_prefixed).toBe(false)
 				})
 
 				test('no vendor prefix for standard pseudo-elements', () => {
-					let source = 'div::before { content: ""; }'
-					let root = parse(source)
+					const source = 'div::before { content: ""; }'
+					const root = parse(source)
 
-					let rule = root.first_child!
-					let selectorList = rule.first_child!
-					let selector = selectorList.first_child!
-					let typeSelector = selector.first_child!
-					let pseudoElement = typeSelector.next_sibling! as PseudoElementSelector
+					const rule = root.first_child!
+					const selectorList = rule.first_child!
+					const selector = selectorList.first_child!
+					const typeSelector = selector.first_child!
+					const pseudoElement = typeSelector.next_sibling! as PseudoElementSelector
 					expect(pseudoElement.name).toBe('before')
 					expect(pseudoElement.is_vendor_prefixed).toBe(false)
 				})
 
 				test('multiple vendor-prefixed pseudo-elements', () => {
-					let source = 'div::-webkit-scrollbar { } div::-webkit-scrollbar-thumb { } div::after { }'
-					let root = parse(source)
+					const source =
+						'div::-webkit-scrollbar { } div::-webkit-scrollbar-thumb { } div::after { }'
+					const root = parse(source)
 
-					let [rule1, rule2, rule3] = root.children
+					const [rule1, rule2, rule3] = root.children
 
-					let selectorList1 = rule1.first_child!
-					let selector1 = selectorList1.first_child!
-					let typeSelector1 = selector1.first_child!
-					let pseudo1 = typeSelector1.next_sibling! as PseudoElementSelector
+					const selectorList1 = rule1.first_child!
+					const selector1 = selectorList1.first_child!
+					const typeSelector1 = selector1.first_child!
+					const pseudo1 = typeSelector1.next_sibling! as PseudoElementSelector
 					expect(pseudo1.name).toBe('-webkit-scrollbar')
 					expect(pseudo1.is_vendor_prefixed).toBe(true)
 
-					let selectorList2 = rule2.first_child!
-					let selector2 = selectorList2.first_child!
-					let typeSelector2 = selector2.first_child!
-					let pseudo2 = typeSelector2.next_sibling! as PseudoElementSelector
+					const selectorList2 = rule2.first_child!
+					const selector2 = selectorList2.first_child!
+					const typeSelector2 = selector2.first_child!
+					const pseudo2 = typeSelector2.next_sibling! as PseudoElementSelector
 					expect(pseudo2.name).toBe('-webkit-scrollbar-thumb')
 					expect(pseudo2.is_vendor_prefixed).toBe(true)
 
-					let selectorList3 = rule3.first_child!
-					let selector3 = selectorList3.first_child!
-					let typeSelector3 = selector3.first_child!
-					let pseudo3 = typeSelector3.next_sibling! as PseudoElementSelector
+					const selectorList3 = rule3.first_child!
+					const selector3 = selectorList3.first_child!
+					const typeSelector3 = selector3.first_child!
+					const pseudo3 = typeSelector3.next_sibling! as PseudoElementSelector
 					expect(pseudo3.name).toBe('after')
 					expect(pseudo3.is_vendor_prefixed).toBe(false)
 				})
 
 				test('vendor prefix in complex selector', () => {
-					let source = 'input:-webkit-autofill:focus { color: black; }'
-					let root = parse(source)
+					const source = 'input:-webkit-autofill:focus { color: black; }'
+					const root = parse(source)
 
-					let rule = root.first_child!
-					let selectorList = rule.first_child!
-					let selector = selectorList.first_child!
-					let typeSelector = selector.first_child!
-					let webkitPseudo = typeSelector.next_sibling! as PseudoClassSelector
+					const rule = root.first_child!
+					const selectorList = rule.first_child!
+					const selector = selectorList.first_child!
+					const typeSelector = selector.first_child!
+					const webkitPseudo = typeSelector.next_sibling! as PseudoClassSelector
 					expect(webkitPseudo.name).toBe('-webkit-autofill')
 					expect(webkitPseudo.is_vendor_prefixed).toBe(true)
 
-					let focusPseudo = webkitPseudo.next_sibling! as PseudoClassSelector
+					const focusPseudo = webkitPseudo.next_sibling! as PseudoClassSelector
 					expect(focusPseudo.name).toBe('focus')
 					expect(focusPseudo.is_vendor_prefixed).toBe(false)
 				})
@@ -1885,126 +1887,126 @@ describe('Core Nodes', () => {
 
 		describe('CSS Nesting', () => {
 			test('nested rule with & selector', () => {
-				let source = '.parent { color: red; & .child { color: blue; } }'
-				let root = parse(source)
+				const source = '.parent { color: red; & .child { color: blue; } }'
+				const root = parse(source)
 
-				let parent = root.first_child!
+				const parent = root.first_child!
 				expect(parent.type).toBe(STYLE_RULE)
 
 				const block = (parent as Rule).block!
-				let [decl, nested_rule] = block.children as [Declaration, CSSNode]
+				const [decl, nested_rule] = block.children as [Declaration, CSSNode]
 				expect(decl.type).toBe(DECLARATION)
 				expect(decl.property).toBe('color')
 
 				expect(nested_rule.type).toBe(STYLE_RULE)
-				let nested_selector = nested_rule.first_child!
+				const nested_selector = nested_rule.first_child!
 				expect(nested_selector.text).toBe('& .child')
 			})
 
 			test('nested rule without & selector', () => {
-				let source = '.parent { color: red; .child { color: blue; } }'
-				let root = parse(source)
+				const source = '.parent { color: red; .child { color: blue; } }'
+				const root = parse(source)
 
-				let parent = root.first_child! as Rule
+				const parent = root.first_child! as Rule
 				const block = parent.block!
-				let [_decl, nested_rule] = block.children
+				const [_decl, nested_rule] = block.children
 
 				expect(nested_rule.type).toBe(STYLE_RULE)
-				let nested_selector = nested_rule.first_child!
+				const nested_selector = nested_rule.first_child!
 				expect(nested_selector.text).toBe('.child')
 			})
 
 			test('multiple nested rules', () => {
-				let source = '.parent { .child1 { } .child2 { } }'
-				let root = parse(source)
+				const source = '.parent { .child1 { } .child2 { } }'
+				const root = parse(source)
 
-				let parent = root.first_child! as Rule
+				const parent = root.first_child! as Rule
 				const block = parent.block!
-				let [nested1, nested2] = block.children
+				const [nested1, nested2] = block.children
 
 				expect(nested1.type).toBe(STYLE_RULE)
 				expect(nested2.type).toBe(STYLE_RULE)
 			})
 
 			test('deeply nested rules', () => {
-				let source = '.a { .b { .c { color: red; } } }'
-				let root = parse(source)
+				const source = '.a { .b { .c { color: red; } } }'
+				const root = parse(source)
 
-				let a = root.first_child!
+				const a = root.first_child!
 				expect(a.length).toBe(32)
 				const block_a = (a as Rule).block!
-				let b = block_a.first_child!
+				const b = block_a.first_child!
 				expect(b.type).toBe(STYLE_RULE)
 				expect(b.length).toBe(25)
 
 				const block_b = (b as Rule).block!
-				let c = block_b.first_child!
+				const c = block_b.first_child!
 				expect(c.type).toBe(STYLE_RULE)
 				expect(c.length).toBe(18)
 
 				const block_c = (c as Rule).block!
-				let decl = block_c.first_child! as Declaration
+				const decl = block_c.first_child! as Declaration
 				expect(decl.type).toBe(DECLARATION)
 				expect(decl.property).toBe('color')
 			})
 
 			test('nested @media inside rule', () => {
-				let source = '.card { color: red; @media (min-width: 768px) { padding: 2rem; } }'
-				let root = parse(source, { parse_atrule_preludes: false })
+				const source = '.card { color: red; @media (min-width: 768px) { padding: 2rem; } }'
+				const root = parse(source, { parse_atrule_preludes: false })
 
-				let card = root.first_child!
+				const card = root.first_child!
 				const block = (card as Rule).block!
-				let [decl, media] = block.children as [Declaration, Atrule]
+				const [decl, media] = block.children as [Declaration, Atrule]
 
 				expect(decl.type).toBe(DECLARATION)
 				expect(media.type).toBe(AT_RULE)
 				expect(media.name).toBe('media')
 
-				let media_block = media.block!
-				let nested_decl = media_block.first_child! as Declaration
+				const media_block = media.block!
+				const nested_decl = media_block.first_child! as Declaration
 				expect(nested_decl.type).toBe(DECLARATION)
 				expect(nested_decl.property).toBe('padding')
 			})
 
 			test(':is() pseudo-class', () => {
-				let source = ':is(.a, .b) { color: red; }'
-				let root = parse(source)
+				const source = ':is(.a, .b) { color: red; }'
+				const root = parse(source)
 
-				let rule = root.first_child!
-				let selector = rule.first_child!
+				const rule = root.first_child!
+				const selector = rule.first_child!
 				expect(selector.text).toBe(':is(.a, .b)')
 			})
 
 			test(':where() pseudo-class', () => {
-				let source = ':where(h1, h2, h3) { margin: 0; }'
-				let root = parse(source)
+				const source = ':where(h1, h2, h3) { margin: 0; }'
+				const root = parse(source)
 
-				let rule = root.first_child!
-				let selector = rule.first_child!
+				const rule = root.first_child!
+				const selector = rule.first_child!
 				expect(selector.text).toBe(':where(h1, h2, h3)')
 			})
 
 			test(':has() pseudo-class', () => {
-				let source = 'div:has(> img) { display: flex; }'
-				let root = parse(source)
+				const source = 'div:has(> img) { display: flex; }'
+				const root = parse(source)
 
-				let rule = root.first_child!
-				let selector = rule.first_child!
+				const rule = root.first_child!
+				const selector = rule.first_child!
 				expect(selector.text).toBe('div:has(> img)')
 			})
 
 			test('complex nesting with mixed declarations and rules', () => {
-				let source = `.card {
+				const source = `.card {
 					color: red;
 					.title { font-size: 2rem; }
 					padding: 1rem;
 					.body { line-height: 1.5; }
 				}`
-				let root = parse(source)
+				const root = parse(source)
 
-				let card = root.first_child!
+				const card = root.first_child!
 				const block = (card as Rule).block!
-				let [decl1, title, decl2, body] = block.children as [
+				const [decl1, title, decl2, body] = block.children as [
 					Declaration,
 					CSSNode,
 					Declaration,
@@ -2024,57 +2026,57 @@ describe('Core Nodes', () => {
 
 			describe('Relaxed nesting (CSS Nesting Module Level 1)', () => {
 				test('nested rule with leading child combinator', () => {
-					let source = '.parent { > a { color: red; } }'
-					let root = parse(source)
+					const source = '.parent { > a { color: red; } }'
+					const root = parse(source)
 
-					let parent = root.first_child!
+					const parent = root.first_child!
 					expect(parent.type).toBe(STYLE_RULE)
 
 					const block = (parent as Rule).block!
-					let nested_rule = block.first_child!
+					const nested_rule = block.first_child!
 					expect(nested_rule.type).toBe(STYLE_RULE)
 
-					let nested_selector = nested_rule.first_child! as SelectorList
+					const nested_selector = nested_rule.first_child! as SelectorList
 					expect(nested_selector.text).toBe('> a')
 					expect(nested_selector.has_children).toBe(true)
 				})
 
 				test('nested rule with leading next-sibling combinator', () => {
-					let source = '.parent { + span { color: blue; } }'
-					let root = parse(source)
+					const source = '.parent { + span { color: blue; } }'
+					const root = parse(source)
 
-					let parent = root.first_child!
+					const parent = root.first_child!
 					const block = (parent as Rule).block!
-					let nested_rule = block.first_child!
+					const nested_rule = block.first_child!
 					expect(nested_rule.type).toBe(STYLE_RULE)
 
-					let nested_selector = nested_rule.first_child! as SelectorList
+					const nested_selector = nested_rule.first_child! as SelectorList
 					expect(nested_selector.text).toBe('+ span')
 					expect(nested_selector.has_children).toBe(true)
 				})
 
 				test('nested rule with leading subsequent-sibling combinator', () => {
-					let source = '.parent { ~ div { color: green; } }'
-					let root = parse(source)
+					const source = '.parent { ~ div { color: green; } }'
+					const root = parse(source)
 
-					let parent = root.first_child!
+					const parent = root.first_child!
 					const block = (parent as Rule).block!
-					let nested_rule = block.first_child!
+					const nested_rule = block.first_child!
 					expect(nested_rule.type).toBe(STYLE_RULE)
 
-					let nested_selector = nested_rule.first_child! as SelectorList
+					const nested_selector = nested_rule.first_child! as SelectorList
 					expect(nested_selector.text).toBe('~ div')
 					expect(nested_selector.has_children).toBe(true)
 				})
 
 				test('multiple nested rules with different leading combinators', () => {
-					let source =
+					const source =
 						'.parent { > a { color: red; } ~ span { color: blue; } + div { color: green; } }'
-					let root = parse(source)
+					const root = parse(source)
 
-					let parent = root.first_child!
+					const parent = root.first_child!
 					const block = (parent as Rule).block!
-					let [rule1, rule2, rule3] = block.children
+					const [rule1, rule2, rule3] = block.children
 
 					expect(rule1.type).toBe(STYLE_RULE)
 					expect(rule1.first_child!.text).toBe('> a')
@@ -2090,43 +2092,43 @@ describe('Core Nodes', () => {
 				})
 
 				test('complex selector after leading combinator', () => {
-					let source = '.parent { > a.link#nav[href]:hover { color: red; } }'
-					let root = parse(source)
+					const source = '.parent { > a.link#nav[href]:hover { color: red; } }'
+					const root = parse(source)
 
-					let parent = root.first_child!
+					const parent = root.first_child!
 					const block = (parent as Rule).block!
-					let nested_rule = block.first_child!
+					const nested_rule = block.first_child!
 
-					let nested_selector = nested_rule.first_child! as SelectorList
+					const nested_selector = nested_rule.first_child! as SelectorList
 					expect(nested_selector.text).toBe('> a.link#nav[href]:hover')
 					expect(nested_selector.has_children).toBe(true)
 				})
 
 				test('deeply nested rules with leading combinators', () => {
-					let source = '.a { > .b { > .c { color: red; } } }'
-					let root = parse(source)
+					const source = '.a { > .b { > .c { color: red; } } }'
+					const root = parse(source)
 
-					let a = root.first_child!
+					const a = root.first_child!
 					const block_a = (a as Rule).block!
-					let b = block_a.first_child!
+					const b = block_a.first_child!
 					expect(b.type).toBe(STYLE_RULE)
 					expect(b.first_child!.text).toBe('> .b')
 					expect((b.first_child! as SelectorList).has_children).toBe(true)
 
 					const block_b = (b as Rule).block!
-					let c = block_b.first_child!
+					const c = block_b.first_child!
 					expect(c.type).toBe(STYLE_RULE)
 					expect(c.first_child!.text).toBe('> .c')
 					expect((c.first_child! as SelectorList).has_children).toBe(true)
 				})
 
 				test('mixed nested rules with and without leading combinators', () => {
-					let source = '.parent { .normal { } > .combinator { } }'
-					let root = parse(source)
+					const source = '.parent { .normal { } > .combinator { } }'
+					const root = parse(source)
 
-					let parent = root.first_child!
+					const parent = root.first_child!
 					const block = (parent as Rule).block!
-					let [normal, combinator] = block.children
+					const [normal, combinator] = block.children
 
 					expect(normal.type).toBe(STYLE_RULE)
 					expect(normal.first_child!.text).toBe('.normal')
@@ -2140,93 +2142,94 @@ describe('Core Nodes', () => {
 
 		describe('@keyframes parsing', () => {
 			test('@keyframes with from/to', () => {
-				let source = '@keyframes fade { from { opacity: 0; } to { opacity: 1; } }'
-				let root = parse(source, { parse_atrule_preludes: false })
+				const source = '@keyframes fade { from { opacity: 0; } to { opacity: 1; } }'
+				const root = parse(source, { parse_atrule_preludes: false })
 
-				let keyframes = root.first_child! as Atrule
+				const keyframes = root.first_child! as Atrule
 				expect(keyframes.type).toBe(AT_RULE)
 				expect(keyframes.name).toBe('keyframes')
 
-				let block = keyframes.block!
-				let [from_rule, to_rule] = block.children
+				const block = keyframes.block!
+				const [from_rule, to_rule] = block.children
 				expect(from_rule.type).toBe(STYLE_RULE)
 				expect(to_rule.type).toBe(STYLE_RULE)
 
-				let from_selector = from_rule.first_child!
+				const from_selector = from_rule.first_child!
 				expect(from_selector.text).toBe('from')
 
-				let to_selector = to_rule.first_child!
+				const to_selector = to_rule.first_child!
 				expect(to_selector.text).toBe('to')
 			})
 
 			test('@keyframes with percentages', () => {
-				let source = '@keyframes slide { 0% { left: 0; } 50% { left: 50%; } 100% { left: 100%; } }'
-				let root = parse(source, { parse_atrule_preludes: false })
+				const source =
+					'@keyframes slide { 0% { left: 0; } 50% { left: 50%; } 100% { left: 100%; } }'
+				const root = parse(source, { parse_atrule_preludes: false })
 
-				let keyframes = root.first_child! as Atrule
-				let block = keyframes.block!
-				let [rule0, rule50, rule100] = block.children
+				const keyframes = root.first_child! as Atrule
+				const block = keyframes.block!
+				const [rule0, rule50, rule100] = block.children
 
 				expect(rule0.type).toBe(STYLE_RULE)
 				expect(rule50.type).toBe(STYLE_RULE)
 				expect(rule100.type).toBe(STYLE_RULE)
 
-				let selector0 = rule0.first_child!
+				const selector0 = rule0.first_child!
 				expect(selector0.text).toBe('0%')
 			})
 
 			test('@keyframes with multiple selectors', () => {
-				let source = '@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }'
-				let root = parse(source, { parse_atrule_preludes: false })
+				const source = '@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }'
+				const root = parse(source, { parse_atrule_preludes: false })
 
-				let keyframes = root.first_child! as Atrule
-				let block = keyframes.block!
-				let [rule1, _rule2] = block.children
+				const keyframes = root.first_child! as Atrule
+				const block = keyframes.block!
+				const [rule1, _rule2] = block.children
 
-				let selector1 = rule1.first_child!
+				const selector1 = rule1.first_child!
 				expect(selector1.text).toBe('0%, 100%')
 			})
 
 			test('@keyframes with mixed percentages and keywords', () => {
-				let source =
+				const source =
 					'@keyframes slide { from { left: 0; } 25%, 75% { left: 50%; } to { left: 100%; } }'
-				let root = parse(source, { parse_atrule_preludes: false })
+				const root = parse(source, { parse_atrule_preludes: false })
 
-				let keyframes = root.first_child! as Atrule
-				let block = keyframes.block!
+				const keyframes = root.first_child! as Atrule
+				const block = keyframes.block!
 				expect(block.children.length).toBe(3)
 			})
 		})
 
 		describe('@function at-rule', () => {
 			test('@function basic', () => {
-				let source =
+				const source =
 					'@function --transparent(--color, --alpha) { result: oklch(from var(--color) l c h / var(--alpha)); }'
-				let root = parse(source, { parse_atrule_preludes: false })
+				const root = parse(source, { parse_atrule_preludes: false })
 
-				let fn = root.first_child! as Atrule
+				const fn = root.first_child! as Atrule
 				expect(fn.type).toBe(AT_RULE)
 				expect(fn.name).toBe('function')
 				expect(fn.has_block).toBe(true)
 
-				let block = fn.block!
+				const block = fn.block!
 				expect(block.children.length).toBe(1)
 
-				let result_decl = block.first_child! as Declaration
+				const result_decl = block.first_child! as Declaration
 				expect(result_decl.type).toBe(DECLARATION)
 				expect(result_decl.property).toBe('result')
 			})
 
 			test('@function with local custom properties', () => {
-				let source =
+				const source =
 					'@function --anim(--animation, --count) { --duration: 1s; --easing: linear; result: var(--animation) var(--duration) var(--count) var(--easing); }'
-				let root = parse(source, { parse_atrule_preludes: false })
+				const root = parse(source, { parse_atrule_preludes: false })
 
-				let fn = root.first_child! as Atrule
-				let block = fn.block!
+				const fn = root.first_child! as Atrule
+				const block = fn.block!
 				expect(block.children.length).toBe(3)
 
-				let [dur, ease, result_decl] = block.children as Declaration[]
+				const [dur, ease, result_decl] = block.children as Declaration[]
 				expect(dur.type).toBe(DECLARATION)
 				expect(dur.property).toBe('--duration')
 				expect(ease.property).toBe('--easing')
@@ -2234,15 +2237,15 @@ describe('Core Nodes', () => {
 			})
 
 			test('@function with nested @media', () => {
-				let source =
+				const source =
 					'@function --narrow-wide(--narrow, --wide) { result: var(--wide); @media (width < 700px) { result: var(--narrow); } }'
-				let root = parse(source, { parse_atrule_preludes: false })
+				const root = parse(source, { parse_atrule_preludes: false })
 
-				let fn = root.first_child! as Atrule
-				let block = fn.block!
+				const fn = root.first_child! as Atrule
+				const block = fn.block!
 				expect(block.child_count).toBeGreaterThan(0)
 
-				let [result_decl, media] = block.children as [Declaration, Atrule]
+				const [result_decl, media] = block.children as [Declaration, Atrule]
 				expect(result_decl.type).toBe(DECLARATION)
 				expect(result_decl.property).toBe('result')
 				expect(media.type).toBe(AT_RULE)
@@ -2250,10 +2253,10 @@ describe('Core Nodes', () => {
 			})
 
 			test('@function with no parameters', () => {
-				let source = '@function --my-func() { result: 42px; }'
-				let root = parse(source, { parse_atrule_preludes: false })
+				const source = '@function --my-func() { result: 42px; }'
+				const root = parse(source, { parse_atrule_preludes: false })
 
-				let fn = root.first_child! as Atrule
+				const fn = root.first_child! as Atrule
 				expect(fn.type).toBe(AT_RULE)
 				expect(fn.name).toBe('function')
 				expect(fn.has_block).toBe(true)
@@ -2262,13 +2265,13 @@ describe('Core Nodes', () => {
 			test('multiple @function rules with result: descriptor are all parsed (#187)', () => {
 				// Regression test: @function blocks with result: descriptor caused subsequent
 				// @function rules to be skipped (every other rule was silently dropped)
-				let source =
+				const source =
 					'@function --a() { result: red; }\n@function --b() { result: blue; }\n@function --c() { result: green; }'
-				let root = parse(source)
+				const root = parse(source)
 
 				expect(root.children.length).toBe(3)
 
-				let [a, b, c] = root.children as Atrule[]
+				const [a, b, c] = root.children as Atrule[]
 				expect(a.type).toBe(AT_RULE)
 				expect(a.name).toBe('function')
 				expect(b.type).toBe(AT_RULE)
@@ -2288,30 +2291,30 @@ describe('Core Nodes', () => {
 
 		describe('@nest at-rule', () => {
 			test('@nest with & selector', () => {
-				let source = '.parent { @nest & .child { color: blue; } }'
-				let root = parse(source)
+				const source = '.parent { @nest & .child { color: blue; } }'
+				const root = parse(source)
 
-				let parent = root.first_child! as Rule
+				const parent = root.first_child! as Rule
 				const block = parent.block!
-				let nest = block.first_child! as Atrule
+				const nest = block.first_child! as Atrule
 
 				expect(nest.type).toBe(AT_RULE)
 				expect(nest.name).toBe('nest')
 				expect(nest.has_prelude || nest.has_block).toBe(true)
 
-				let nest_block = nest.block!
-				let decl = nest_block.first_child! as Declaration
+				const nest_block = nest.block!
+				const decl = nest_block.first_child! as Declaration
 				expect(decl.type).toBe(DECLARATION)
 				expect(decl.property).toBe('color')
 			})
 
 			test('@nest with complex selector', () => {
-				let source = '.a { @nest :not(&) { color: red; } }'
-				let root = parse(source)
+				const source = '.a { @nest :not(&) { color: red; } }'
+				const root = parse(source)
 
-				let a = root.first_child!
+				const a = root.first_child!
 				const block = (a as Rule).block!
-				let nest = block.first_child! as Atrule
+				const nest = block.first_child! as Atrule
 
 				expect(nest.type).toBe(AT_RULE)
 				expect(nest.name).toBe('nest')
@@ -2320,129 +2323,129 @@ describe('Core Nodes', () => {
 
 		describe('Error recovery and edge cases', () => {
 			test('malformed rule without opening brace', () => {
-				let source = 'body color: red; } div { margin: 0; }'
-				let root = parse(source)
+				const source = 'body color: red; } div { margin: 0; }'
+				const root = parse(source)
 
 				expect(root.children.length).toBeGreaterThan(0)
 			})
 
 			test('rule without closing brace', () => {
-				let source = 'body { color: red; div { margin: 0; }'
-				let root = parse(source)
+				const source = 'body { color: red; div { margin: 0; }'
+				const root = parse(source)
 
 				expect(root.has_children).toBe(true)
 			})
 
 			test('empty rule block', () => {
-				let source = '.empty { }'
-				let root = parse(source)
+				const source = '.empty { }'
+				const root = parse(source)
 
-				let rule = root.first_child!
+				const rule = root.first_child!
 				expect(rule.type).toBe(STYLE_RULE)
 				expect((rule as Rule).block).not.toBeNull()
 			})
 
 			test('declaration without value', () => {
-				let source = 'body { color: }'
-				let root = parse(source)
+				const source = 'body { color: }'
+				const root = parse(source)
 
-				let rule = root.first_child! as Rule
+				const rule = root.first_child! as Rule
 				const block = rule.block!
-				let decl = block.first_child! as Declaration
+				const decl = block.first_child! as Declaration
 				expect(decl.type).toBe(DECLARATION)
 			})
 
 			test('multiple semicolons', () => {
-				let source = 'body { color: red;;; margin: 0;; }'
-				let root = parse(source)
+				const source = 'body { color: red;;; margin: 0;; }'
+				const root = parse(source)
 
-				let rule = root.first_child!
+				const rule = root.first_child!
 				expect((rule as Rule).block).not.toBeNull()
 			})
 
 			test('invalid tokens in declaration block', () => {
-				let source = 'body { color: red; @@@; margin: 0; }'
-				let root = parse(source)
+				const source = 'body { color: red; @@@; margin: 0; }'
+				const root = parse(source)
 
-				let rule = root.first_child!
+				const rule = root.first_child!
 				expect((rule as Rule).block).not.toBeNull()
 			})
 
 			test('declaration without colon', () => {
-				let source = 'body { color red; margin: 0; }'
-				let root = parse(source)
+				const source = 'body { color red; margin: 0; }'
+				const root = parse(source)
 
-				let rule = root.first_child!
+				const rule = root.first_child!
 				expect((rule as Rule).block).not.toBeNull()
 			})
 
 			test('at-rule without name', () => {
-				let source = '@ { color: red; } body { margin: 0; }'
-				let root = parse(source)
+				const source = '@ { color: red; } body { margin: 0; }'
+				const root = parse(source)
 
 				expect(root.children.length).toBeGreaterThan(0)
 			})
 
 			test('nested empty blocks', () => {
-				let source = '.a { .b { .c { } } }'
-				let root = parse(source)
+				const source = '.a { .b { .c { } } }'
+				const root = parse(source)
 
-				let a = root.first_child!
+				const a = root.first_child!
 				expect(a.type).toBe(STYLE_RULE)
 			})
 
 			test('trailing comma in selector', () => {
-				let source = '.a, .b, { color: red; }'
-				let root = parse(source)
+				const source = '.a, .b, { color: red; }'
+				const root = parse(source)
 
-				let rule = root.first_child!
+				const rule = root.first_child!
 				expect(rule.type).toBe(STYLE_RULE)
 			})
 		})
 
 		describe('Comment handling', () => {
 			test('skip comments at top level', () => {
-				let source = '/* comment */ body { color: red; } /* another comment */'
-				let root = parse(source)
+				const source = '/* comment */ body { color: red; } /* another comment */'
+				const root = parse(source)
 
 				expect(root.children.length).toBe(1)
-				let rule = root.first_child!
+				const rule = root.first_child!
 				expect(rule.type).toBe(STYLE_RULE)
 			})
 
 			test('skip comments in declaration block', () => {
-				let source = 'body { color: red; /* comment */ margin: 0; }'
-				let root = parse(source)
+				const source = 'body { color: red; /* comment */ margin: 0; }'
+				const root = parse(source)
 
-				let rule = root.first_child!
+				const rule = root.first_child!
 				expect(rule.type).toBe(STYLE_RULE)
 				expect((rule as Rule).block).not.toBeNull()
 			})
 
 			test('skip comments in selector', () => {
-				let source = 'body /* comment */ , /* comment */ div { color: red; }'
-				let root = parse(source)
+				const source = 'body /* comment */ , /* comment */ div { color: red; }'
+				const root = parse(source)
 
-				let rule = root.first_child!
+				const rule = root.first_child!
 				expect(rule.type).toBe(STYLE_RULE)
 			})
 
 			test('comment between property and colon', () => {
-				let source = 'body { color /* comment */ : red; }'
-				let root = parse(source)
+				const source = 'body { color /* comment */ : red; }'
+				const root = parse(source)
 
 				expect(root.has_children).toBe(true)
 			})
 
 			test('multi-line comments', () => {
-				let source = `
+				const source = `
 					/*
 					 * Multi-line
 					 * comment
 					 */
 					body { color: red; }
 				`
-				let root = parse(source)
+				const root = parse(source)
 
 				expect(root.children.length).toBe(1)
 			})
@@ -2450,28 +2453,28 @@ describe('Core Nodes', () => {
 
 		describe('Whitespace handling', () => {
 			test('excessive whitespace', () => {
-				let source = '  body  {  color  :  red  ;  }  '
-				let root = parse(source)
+				const source = '  body  {  color  :  red  ;  }  '
+				const root = parse(source)
 
-				let rule = root.first_child!
+				const rule = root.first_child!
 				expect(rule.type).toBe(STYLE_RULE)
 			})
 
 			test('tabs and newlines', () => {
-				let source = 'body\t{\n\tcolor:\tred;\n}\n'
-				let root = parse(source)
+				const source = 'body\t{\n\tcolor:\tred;\n}\n'
+				const root = parse(source)
 
-				let rule = root.first_child!
+				const rule = root.first_child!
 				expect(rule.type).toBe(STYLE_RULE)
 			})
 
 			test('no whitespace', () => {
-				let source = 'body{color:red;margin:0}'
-				let root = parse(source)
+				const source = 'body{color:red;margin:0}'
+				const root = parse(source)
 
-				let rule = root.first_child! as Rule
+				const rule = root.first_child! as Rule
 				const block = rule.block!
-				let [decl1, decl2] = block.children as Declaration[]
+				const [decl1, decl2] = block.children as Declaration[]
 				expect(decl1.property).toBe('color')
 				expect(decl2.property).toBe('margin')
 			})
@@ -2479,7 +2482,7 @@ describe('Core Nodes', () => {
 
 		describe('Complex real-world scenarios', () => {
 			test('complex nested structure', () => {
-				let source = `
+				const source = `
 					.card {
 						display: flex;
 						padding: 1rem;
@@ -2506,15 +2509,15 @@ describe('Core Nodes', () => {
 						}
 					}
 				`
-				let root = parse(source)
+				const root = parse(source)
 
-				let card = root.first_child!
+				const card = root.first_child!
 				expect(card.type).toBe(STYLE_RULE)
 				expect((card as Rule).block).not.toBeNull()
 			})
 
 			test('multiple at-rules with nesting', () => {
-				let source = `
+				const source = `
 					@layer base {
 						body { margin: 0; }
 					}
@@ -2529,39 +2532,39 @@ describe('Core Nodes', () => {
 						}
 					}
 				`
-				let root = parse(source)
+				const root = parse(source)
 
-				let [layer1, layer2] = root.children
+				const [layer1, layer2] = root.children
 				expect(layer1.type).toBe(AT_RULE)
 				expect(layer2.type).toBe(AT_RULE)
 			})
 
 			test('vendor prefixed properties', () => {
-				let source =
+				const source =
 					'.box { -webkit-transform: scale(1); -moz-transform: scale(1); transform: scale(1); }'
-				let root = parse(source)
+				const root = parse(source)
 
-				let rule = root.first_child! as Rule
+				const rule = root.first_child! as Rule
 				const block = rule.block!
-				let [decl1, decl2, decl3] = block.children as Declaration[]
+				const [decl1, decl2, decl3] = block.children as Declaration[]
 				expect(decl1.property).toBe('-webkit-transform')
 				expect(decl2.property).toBe('-moz-transform')
 				expect(decl3.property).toBe('transform')
 			})
 
 			test('complex selector list', () => {
-				let source =
+				const source =
 					'h1, h2, h3, h4, h5, h6, .heading, [role="heading"] { font-family: sans-serif; }'
-				let root = parse(source)
+				const root = parse(source)
 
-				let rule = root.first_child!
-				let selector = rule.first_child!
+				const rule = root.first_child!
+				const selector = rule.first_child!
 				expect(selector.text).toContain('h1')
 				expect(selector.text).toContain('[role="heading"]')
 			})
 
 			test('deeply nested at-rules', () => {
-				let source = `
+				const source = `
 					@supports (display: grid) {
 						@media (min-width: 768px) {
 							@layer utilities {
@@ -2570,68 +2573,68 @@ describe('Core Nodes', () => {
 						}
 					}
 				`
-				let root = parse(source, { parse_atrule_preludes: false })
+				const root = parse(source, { parse_atrule_preludes: false })
 
-				let supports = root.first_child! as Atrule
-				let supports_block = supports.block!
-				let media = supports_block.first_child! as Atrule
-				let media_block = media.block!
-				let layer = media_block.first_child! as Atrule
+				const supports = root.first_child! as Atrule
+				const supports_block = supports.block!
+				const media = supports_block.first_child! as Atrule
+				const media_block = media.block!
+				const layer = media_block.first_child! as Atrule
 				expect(supports.name).toBe('supports')
 				expect(media.name).toBe('media')
 				expect(layer.name).toBe('layer')
 			})
 
 			test('CSS with calc() and other functions', () => {
-				let source =
+				const source =
 					'.box { width: calc(100% - 2rem); background: linear-gradient(to right, red, blue); }'
-				let root = parse(source)
+				const root = parse(source)
 
-				let rule = root.first_child! as Rule
+				const rule = root.first_child! as Rule
 				const block = rule.block!
-				let [width_decl, bg_decl] = block.children as Declaration[]
+				const [width_decl, bg_decl] = block.children as Declaration[]
 				expect(width_decl.property).toBe('width')
 				expect(bg_decl.property).toBe('background')
 			})
 
 			test('custom properties', () => {
-				let source =
+				const source =
 					':root { --primary-color: #007bff; --spacing: 1rem; } body { color: var(--primary-color); }'
-				let root = parse(source)
+				const root = parse(source)
 
 				expect(root.children.length).toBeGreaterThan(0)
-				let first_rule = root.first_child!
+				const first_rule = root.first_child!
 				expect(first_rule.type).toBe(STYLE_RULE)
 			})
 
 			test('attribute selectors with operators', () => {
-				let source = '[href^="https"][href$=".pdf"][class*="doc"] { color: red; }'
-				let root = parse(source)
+				const source = '[href^="https"][href$=".pdf"][class*="doc"] { color: red; }'
+				const root = parse(source)
 
-				let rule = root.first_child!
-				let selector = rule.first_child!
+				const rule = root.first_child!
+				const selector = rule.first_child!
 				expect(selector.text).toContain('^=')
 				expect(selector.text).toContain('$=')
 				expect(selector.text).toContain('*=')
 			})
 
 			test('pseudo-elements', () => {
-				let source = '.text::before { content: "→"; } .text::after { content: "←"; }'
-				let root = parse(source)
+				const source = '.text::before { content: "→"; } .text::after { content: "←"; }'
+				const root = parse(source)
 
-				let [rule1, rule2] = root.children
+				const [rule1, rule2] = root.children
 				expect(rule1.type).toBe(STYLE_RULE)
 				expect(rule2.type).toBe(STYLE_RULE)
 			})
 
 			test('multiple !important declarations', () => {
-				let source = '.override { color: red !important; margin: 0 !important; padding: 0 !ie; }'
-				let root = parse(source)
+				const source = '.override { color: red !important; margin: 0 !important; padding: 0 !ie; }'
+				const root = parse(source)
 
-				let rule = root.first_child! as Rule
-				let block = rule.block!
+				const rule = root.first_child! as Rule
+				const block = rule.block!
 				expect(block.children.length).toBeGreaterThan(1)
-				let declarations = (block.children as Declaration[]).filter((c) => c.type === DECLARATION)
+				const declarations = (block.children as Declaration[]).filter((c) => c.type === DECLARATION)
 				expect(declarations.length).toBeGreaterThan(0)
 				expect(declarations[0].is_important).toBe(true)
 			})
@@ -2639,8 +2642,8 @@ describe('Core Nodes', () => {
 
 		describe('Deeply nested modern CSS', () => {
 			test('@container should parse nested style rules', () => {
-				let css = `@container (width > 0) { div { color: red; } }`
-				let ast = parse(css)
+				const css = `@container (width > 0) { div { color: red; } }`
+				const ast = parse(css)
 
 				const container = ast.first_child! as Atrule
 				expect(container.type).toBe(AT_RULE)
@@ -2652,8 +2655,8 @@ describe('Core Nodes', () => {
 			})
 
 			test('@container should parse rules with :has() selector', () => {
-				let css = `@container (width > 0) { ul:has(li) { color: red; } }`
-				let ast = parse(css)
+				const css = `@container (width > 0) { ul:has(li) { color: red; } }`
+				const ast = parse(css)
 
 				const container = ast.first_child! as Atrule
 				const containerBlock = container.block!
@@ -2662,7 +2665,7 @@ describe('Core Nodes', () => {
 			})
 
 			test('modern CSS example by Vadim Makeev', () => {
-				let css = `
+				const css = `
 					@layer what {
 						@container (width > 0) {
 							ul:has(:nth-child(1 of li)) {
@@ -2674,7 +2677,7 @@ describe('Core Nodes', () => {
 							}
 						}
 					}`
-				let ast = parse(css)
+				const ast = parse(css)
 
 				expect(ast.type).toBe(STYLESHEET)
 				expect(ast.has_children).toBe(true)
@@ -2733,8 +2736,8 @@ describe('Core Nodes', () => {
 
 	describe('Regression tests', () => {
 		test('issue #170: pseudo-class selector at start of rule inside at-rule should not be parsed as TypeSelector', () => {
-			let source = `@media all {\n\t:focus-visible {}\n}`
-			let ast = parse(source)
+			const source = `@media all {\n\t:focus-visible {}\n}`
+			const ast = parse(source)
 
 			const mediaRule = ast.first_child! as Atrule
 			expect(mediaRule.type).toBe(AT_RULE)

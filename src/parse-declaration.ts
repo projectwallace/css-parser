@@ -136,11 +136,11 @@ export class DeclarationParser {
 			return null
 		}
 
-		let prop_start = has_browser_hack ? browser_hack_start : lexer.token_start
-		let prop_end = lexer.token_end
+		const prop_start = has_browser_hack ? browser_hack_start : lexer.token_start
+		const prop_end = lexer.token_end
 		// CRITICAL: Capture line/column BEFORE consuming property token
-		let decl_line = has_browser_hack ? browser_hack_line : lexer.token_line
-		let decl_column = has_browser_hack ? browser_hack_column : lexer.token_column
+		const decl_line = has_browser_hack ? browser_hack_line : lexer.token_line
+		const decl_column = has_browser_hack ? browser_hack_column : lexer.token_column
 
 		// Lookahead: save lexer state before consuming
 		const saved = lexer.save_position_into(this.lookahead_position)
@@ -162,7 +162,7 @@ export class DeclarationParser {
 		lexer.skip_whitespace_in_range(this.source.length)
 
 		// Create declaration node (length will be set later)
-		let declaration = this.arena.create_node(
+		const declaration = this.arena.create_node(
 			DECLARATION,
 			prop_start,
 			0, // length unknown yet
@@ -175,9 +175,9 @@ export class DeclarationParser {
 		this.arena.set_content_length(declaration, prop_end - prop_start)
 
 		// Value start (after colon/whitespace) - lexer is positioned at the first, untokenized char.
-		let value_start = lexer.pos
-		let value_start_line = lexer.line
-		let value_start_column = lexer.column
+		const value_start = lexer.pos
+		const value_start_line = lexer.line
+		const value_start_column = lexer.column
 		let value_end = value_start
 
 		// Parse value (everything until ';' or EOF)
@@ -191,7 +191,7 @@ export class DeclarationParser {
 		// re-tokenizes the span afterward. Loop relies only on explicit break/return, since a
 		// paren_depth adjustment can land exactly on `end` without the "ran out" case firing.
 		while (true) {
-			let stop_ch = lexer.skip_to_declaration_stop(end)
+			const stop_ch = lexer.skip_to_declaration_stop(end)
 
 			if (stop_ch === CHAR_LEFT_PAREN) {
 				paren_depth++
@@ -239,7 +239,7 @@ export class DeclarationParser {
 				value_end = lexer.pos
 				lexer.pos++ // consume '!'
 				// Check if next token is an identifier (doesn't verify it's literally "important")
-				let next_type = lexer.next_token_fast(true) // skip whitespace
+				const next_type = lexer.next_token_fast(true) // skip whitespace
 				if (next_type === TOKEN_IDENT) {
 					has_important = true
 					last_end = lexer.token_end
@@ -267,8 +267,8 @@ export class DeclarationParser {
 		}
 
 		// Store value position (trimmed) and parse value nodes
-		let trimmed_start = skip_whitespace_and_comments_forward(this.source, value_start, value_end)
-		let trimmed_end = skip_whitespace_and_comments_backward(this.source, value_end, trimmed_start)
+		const trimmed_start = skip_whitespace_and_comments_forward(this.source, value_start, value_end)
+		const trimmed_end = skip_whitespace_and_comments_backward(this.source, value_end, trimmed_start)
 		if (trimmed_start < trimmed_end) {
 			// Store raw value string offsets (for fast string access)
 			this.arena.set_value_start_delta(declaration, trimmed_start - prop_start)
@@ -277,7 +277,7 @@ export class DeclarationParser {
 			// Parse value into structured nodes (only if enabled)
 			if (this.value_parser) {
 				// CRITICAL: Pass value_start_line and value_start_column to value parser
-				let valueNode = this.value_parser.parse_value(
+				const valueNode = this.value_parser.parse_value(
 					value_start,
 					trimmed_end,
 					value_start_line,
@@ -288,7 +288,7 @@ export class DeclarationParser {
 				this.arena.set_first_child(declaration, valueNode)
 			} else {
 				// Create RAW node for unparsed value text
-				let rawNode = this.arena.create_node(
+				const rawNode = this.arena.create_node(
 					RAW,
 					trimmed_start,
 					trimmed_end - trimmed_start,
@@ -304,7 +304,7 @@ export class DeclarationParser {
 
 			// Create empty VALUE node for consistency
 			if (this.value_parser) {
-				let valueNode = this.value_parser.parse_value(
+				const valueNode = this.value_parser.parse_value(
 					value_start,
 					value_start,
 					value_start_line,
