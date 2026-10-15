@@ -1,6 +1,6 @@
 /// <reference types="node" />
 // Benchmarks for the tokenizer, parsers and walkers (this package only).
-// Run with: pnpm run benchmark:parsing (uses --expose-gc for the memory table)
+// Run with: pnpm run benchmark (uses --expose-gc for the memory table)
 import { Bench } from 'tinybench'
 import {
 	parse,

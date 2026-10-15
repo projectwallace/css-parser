@@ -15,7 +15,9 @@ function mode_latency(samples: ArrayLike<number>, p99: number, bins = 50): numbe
 	return min + (counts.indexOf(Math.max(...counts)) + 0.5) * width
 }
 
-export function report(bench: Bench): void {
+// `batch` is the number of real operations folded into each measured cycle
+// (see benchmark/string-utils.ts) - divide out latency, multiply out throughput.
+export function report(bench: Bench, batch = 1): void {
 	console.table(
 		bench.tasks.map((task) => {
 			const result = task.result
@@ -28,12 +30,12 @@ export function report(bench: Bench): void {
 					'mean (ops/sec)': 'N/A',
 				}
 			}
-			const mode = mode_latency(stats.latency.samples, stats.latency.p99)
+			const mode = mode_latency(stats.latency.samples, stats.latency.p99) / batch
 			return {
 				Benchmark: task.name,
 				'mode (ops/sec)': (1000 / mode).toFixed(0),
 				'mode (µs)': (mode * 1000).toFixed(3),
-				'mean (ops/sec)': stats.throughput.mean.toFixed(0),
+				'mean (ops/sec)': (stats.throughput.mean * batch).toFixed(0),
 			}
 		}),
 	)
