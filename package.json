@@ -85,7 +85,7 @@
 		"lint": "oxlint --config .oxlintrc.json && oxfmt --check",
 		"check": "tsc --noEmit",
 		"knip": "knip",
-		"precommit": "pnpm run test --run; pnpm run lint; pnpm run check"
+		"precommit": "pnpm run test --run && pnpm run lint && pnpm run check && pnpm knip"
 	},
 	"devDependencies": {
 		"@projectwallace/preset-oxlint": "^0.0.11",
