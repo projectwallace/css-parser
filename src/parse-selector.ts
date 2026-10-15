@@ -244,23 +244,8 @@ export class SelectorParser {
 				continue
 			}
 
-			// Peek ahead for comma or end
-			const saved = this.lexer.save_position()
-			this.skip_whitespace()
-			if (this.lexer.pos >= this.selector_end) {
-				this.lexer.restore_position(saved)
-				break
-			}
-
-			this.lexer.next_token_fast(false)
-			let token_type = this.lexer.token_type
-			if (token_type === TOKEN_COMMA || this.lexer.pos >= this.selector_end) {
-				// Reset position for comma handling
-				this.lexer.restore_position(saved)
-				break
-			}
-			// Reset for next iteration
-			this.lexer.restore_position(saved)
+			// No combinator follows: the complex selector ends here. The caller
+			// (parse_selector_list) handles any trailing whitespace and comma.
 			break
 		}
 
@@ -487,6 +472,13 @@ export class SelectorParser {
 		}
 
 		this.lexer.next_token_fast(false)
+
+		// A comma ends the selector: whitespace before it separates selectors, it is not a
+		// descendant combinator (`a , b` is `a` and `b`, not `a<space>` and `b`)
+		if (this.lexer.token_type === TOKEN_COMMA) {
+			this.lexer.restore_position(saved_whitespace_start)
+			return null
+		}
 
 		// Check for explicit combinators
 		if (this.lexer.token_type === TOKEN_DELIM) {
