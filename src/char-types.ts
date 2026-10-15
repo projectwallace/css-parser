@@ -27,6 +27,7 @@ let CHAR_HEX = 1 << 2 // 4
 export let CHAR_WHITESPACE = 1 << 3 // 8
 export let CHAR_NEWLINE = 1 << 4 // 16
 export let CHAR_IDENT = 1 << 5 // 32
+export let CHAR_IDENT_START = 1 << 6 // 64: ASCII letters and underscore (non-ASCII handled by callers via ch >= 0x80)
 
 // Lookup table for ASCII characters (0-127)
 export let char_types = new Uint8Array(128)
@@ -74,17 +75,19 @@ for (let i = 0; i < 128; i++) {
 char_types[0x2d] |= CHAR_IDENT // hyphen -
 char_types[0x5f] |= CHAR_IDENT // underscore _
 
+// Ident-start: letters and underscore. Single-bit test replaces is_alpha() + '_' compare.
+for (let i = 0; i < 128; i++) {
+	if (char_types[i] & CHAR_ALPHA) {
+		char_types[i] |= CHAR_IDENT_START
+	}
+}
+char_types[0x5f] |= CHAR_IDENT_START // underscore _
+
 export function is_hex_digit(ch: number): boolean {
 	return ch < 128 && (char_types[ch] & CHAR_HEX) !== 0
 }
 
-function is_alpha(ch: number): boolean {
-	return ch < 128 && (char_types[ch] & CHAR_ALPHA) !== 0
-}
-
 // CSS ident start: letter, underscore, or non-ASCII (>= 0x80)
 export function is_ident_start(ch: number): boolean {
-	if (ch >= 0x80) return true // Non-ASCII
-	if (ch === 0x5f) return true // _
-	return is_alpha(ch)
+	return ch >= 0x80 || (char_types[ch] & CHAR_IDENT_START) !== 0
 }
