@@ -13,6 +13,7 @@ import {
 	tokenize,
 	walk,
 	traverse,
+	STYLE_RULE,
 } from '../dist/index.js'
 import { report } from './report.ts'
 import * as fs from 'node:fs'
@@ -92,15 +93,23 @@ for (const [name, file] of Object.entries(files)) {
 	const ast = parse(fs.readFileSync(path.resolve('benchmark', file), 'utf-8'))
 
 	bench.add(`walk (node.type)|${name}`, () => {
+		let count = 0
 		walk(ast, (node) => {
-			void node.type
+			if (node.type === STYLE_RULE) {
+				count++
+			}
 		})
+		return count
 	})
 
 	bench.add(`walk (node.type_name)|${name}`, () => {
+		let count = 0
 		walk(ast, (node) => {
-			void node.type_name
+			if (node.type_name === 'Rule') {
+				count++
+			}
 		})
+		return count
 	})
 
 	bench.add(`traverse|${name}`, () => {
