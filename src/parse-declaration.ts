@@ -39,6 +39,9 @@ export class DeclarationParser {
 	private value_parser: ValueParser | null
 	// Reused lookahead snapshot (never nested) to avoid an allocation per declaration
 	private lookahead_position: LexerPosition = new Lexer('').save_position()
+	// Separate scratch slot: the browser-hack delimiter-prefix snapshot (below) stays live
+	// at the same time as lookahead_position, so it can't reuse that field.
+	private delim_prefix_position: LexerPosition = new Lexer('').save_position()
 
 	constructor(arena: CSSDataArena, source: string, parse_values: boolean = true) {
 		this.arena = arena
@@ -111,7 +114,7 @@ export class DeclarationParser {
 			lexer.token_type === TOKEN_COLON
 		) {
 			// Browser hacks can use various token types as prefixes (e.g., * hack)
-			const delim_saved = lexer.save_position()
+			const delim_saved = lexer.save_position_into(this.delim_prefix_position)
 			browser_hack_start = lexer.token_start
 			browser_hack_line = lexer.token_line
 			browser_hack_column = lexer.token_column

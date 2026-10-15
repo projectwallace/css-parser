@@ -4,7 +4,7 @@
 // Much inspiration taken from CSSTree (Roman Dvornov) - MIT License
 // https://github.com/csstree/csstree/blob/56afb6dd761149099cd3cdfb0a38e15e8cc0a71a/lib/syntax/node/AnPlusB.js#L106-L271
 
-import { Lexer } from './tokenize'
+import { Lexer, type LexerPosition } from './tokenize'
 import { NTH_SELECTOR, CSSDataArena } from './arena'
 import {
 	TOKEN_IDENT,
@@ -23,6 +23,8 @@ export class ANplusBParser {
 	private arena: CSSDataArena
 	private source: string
 	private expr_end: number
+	// Reused "+n" lookahead snapshot (single use per parse_anplusb call, never nested)
+	private plus_n_lookahead_position: LexerPosition = new Lexer('').save_position()
 
 	constructor(arena: CSSDataArena, source: string) {
 		this.arena = arena
@@ -152,7 +154,7 @@ export class ANplusBParser {
 			this.source.charCodeAt(this.lexer.token_start) === CHAR_PLUS
 		) {
 			// Look ahead for 'n'
-			const saved = this.lexer.save_position()
+			const saved = this.lexer.save_position_into(this.plus_n_lookahead_position)
 			this.lexer.next_token_fast(true)
 
 			if ((this.lexer.token_type as TokenType) === TOKEN_IDENT) {

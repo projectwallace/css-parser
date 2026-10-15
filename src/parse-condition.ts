@@ -8,7 +8,7 @@
 // own (a plain `import { ValueNodeParser } from './value-node-parser'` here would be
 // circular, since value-node-parser.ts imports this file). The type-only import below is
 // erased at build time and creates no runtime dependency in either direction.
-import { Lexer } from './tokenize'
+import { Lexer, type LexerPosition } from './tokenize'
 import {
 	CSSDataArena,
 	MEDIA_FEATURE,
@@ -61,6 +61,9 @@ export class ConditionParser {
 	// Deep-parses selector()'s argument into a real SelectorList. No cycle risk (SelectorParser
 	// doesn't depend on ValueNodeParser/AtRulePreludeParser), so this is safely owned here.
 	private selector_parser: SelectorParser
+	// Reused peek snapshot for parse_feature_range's token-type probe (never nested — resolved
+	// within the same loop iteration, before the next save).
+	private feature_range_peek_position: LexerPosition = new Lexer('').save_position()
 
 	constructor(arena: CSSDataArena, source: string, value_node_parser: ValueNodeParser) {
 		this.arena = arena
@@ -259,7 +262,7 @@ export class ConditionParser {
 				last_child = op
 			} else {
 				// Value or feature name
-				let saved = this.lexer.save_position()
+				let saved = this.lexer.save_position_into(this.feature_range_peek_position)
 				this.lexer.pos = pos
 				this.next_token()
 

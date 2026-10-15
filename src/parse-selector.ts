@@ -1,5 +1,5 @@
 // Selector Parser - Parses CSS selectors into structured AST nodes
-import { Lexer } from './tokenize'
+import { Lexer, type LexerPosition } from './tokenize'
 import { CSSDataArena } from './arena'
 import {
 	SELECTOR,
@@ -71,6 +71,30 @@ export class SelectorParser {
 	private source: string
 	private selector_end: number
 	private anplusb_parser: ANplusBParser
+	// Reused lookahead snapshots for the save/restore sites that are never live across a
+	// recursive re-entry into the selector grammar (unlike parse_compound_selector's,
+	// parse_pseudo_function_after_colon's, and parse_nth_expression's own saves, which stay
+	// allocating for now — see the recursive :is()/:has()/:nth-child(of) call chain).
+	// Resolved entirely before parse_complex_selector's compound-selector loop runs.
+	private complex_selector_lookahead_position: LexerPosition = new Lexer('').save_position()
+	// Live only inside parse_namespace_local_part itself, never during its own call into
+	// anything else — but concurrently live with whichever of the two fields below called it,
+	// so it must stay distinct from both.
+	private namespace_local_part_lookahead_position: LexerPosition = new Lexer('').save_position()
+	// Shared by parse_type_or_namespace_selector and parse_universal_or_namespace_selector:
+	// alternative call paths (type selector vs universal selector) that are never both active,
+	// each held live across its own call into parse_namespace_local_part.
+	private namespace_selector_lookahead_position: LexerPosition = new Lexer('').save_position()
+	// try_parse_combinator: fully resolved within one call, no nested saves.
+	private combinator_lookahead_position: LexerPosition = new Lexer('').save_position()
+	// parse_class_selector: fully resolved within one call, no nested saves.
+	private class_selector_lookahead_position: LexerPosition = new Lexer('').save_position()
+	// parse_pseudo's two concurrent saves (`saved` persists longer, discarded rather than
+	// re-read on the path that recurses into parse_pseudo_function_after_colon).
+	private pseudo_lookahead_position: LexerPosition = new Lexer('').save_position()
+	private pseudo_double_colon_lookahead_position: LexerPosition = new Lexer('').save_position()
+	// parse_lang_identifiers: fully resolved within one call, no nested saves.
+	private lang_identifiers_lookahead_position: LexerPosition = new Lexer('').save_position()
 
 	constructor(arena: CSSDataArena, source: string) {
 		this.arena = arena
@@ -192,7 +216,7 @@ export class SelectorParser {
 
 		// Check for leading combinator (relative selector) if allowed
 		if (allow_relative && this.lexer.pos < this.selector_end) {
-			const saved = this.lexer.save_position()
+			const saved = this.lexer.save_position_into(this.complex_selector_lookahead_position)
 
 			this.lexer.next_token_fast(false)
 			let token_type = this.lexer.token_type
@@ -357,7 +381,7 @@ export class SelectorParser {
 		namespace_start: number,
 		namespace_prefix_length: number,
 	): number | null {
-		const saved = this.lexer.save_position()
+		const saved = this.lexer.save_position_into(this.namespace_local_part_lookahead_position)
 		this.lexer.next_token_fast(false)
 
 		let node_type: number
@@ -404,7 +428,7 @@ export class SelectorParser {
 		}
 
 		// Save position before skipping whitespace/comments
-		const saved = this.lexer.save_position()
+		const saved = this.lexer.save_position_into(this.namespace_selector_lookahead_position)
 
 		// Skip whitespace and comments before checking for |
 		this.skip_whitespace()
@@ -429,7 +453,7 @@ export class SelectorParser {
 	// Called when we've seen a * DELIM token
 	private parse_universal_or_namespace_selector(start: number, end: number): number | null {
 		// Save position before skipping whitespace/comments
-		const saved = this.lexer.save_position()
+		const saved = this.lexer.save_position_into(this.namespace_selector_lookahead_position)
 
 		// Skip whitespace and comments before checking for |
 		this.skip_whitespace()
@@ -459,7 +483,7 @@ export class SelectorParser {
 
 	// Parse combinator (>, +, ~, or descendant space)
 	private try_parse_combinator(): number | null {
-		const saved_whitespace_start = this.lexer.save_position()
+		const saved_whitespace_start = this.lexer.save_position_into(this.combinator_lookahead_position)
 		let has_whitespace = this.lexer.pos < this.selector_end
 
 		// Skip whitespace and comments
@@ -513,7 +537,7 @@ export class SelectorParser {
 	// Parse class selector (.classname)
 	private parse_class_selector(dot_pos: number): number | null {
 		// Save lexer state for potential restoration
-		const saved = this.lexer.save_position()
+		const saved = this.lexer.save_position_into(this.class_selector_lookahead_position)
 
 		// Next token should be identifier
 		this.lexer.next_token_fast(false)
@@ -685,10 +709,10 @@ export class SelectorParser {
 	// Parse pseudo-class or pseudo-element (:hover, ::before)
 	private parse_pseudo(start: number): number | null {
 		// Save lexer state for potential restoration
-		const saved = this.lexer.save_position()
+		const saved = this.lexer.save_position_into(this.pseudo_lookahead_position)
 
 		// Save position before skipping whitespace/comments
-		const saved_ws = this.lexer.save_position()
+		const saved_ws = this.lexer.save_position_into(this.pseudo_double_colon_lookahead_position)
 
 		// Skip whitespace and comments before checking for second colon
 		this.skip_whitespace()
@@ -840,7 +864,7 @@ export class SelectorParser {
 	// Parse :lang() content - comma-separated language identifiers
 	// Accepts both quoted strings: :lang("en", "fr") and unquoted: :lang(en, fr)
 	private parse_lang_identifiers(start: number, end: number, parent_node: number): void {
-		const saved_position = this.lexer.save_position()
+		const saved_position = this.lexer.save_position_into(this.lang_identifiers_lookahead_position)
 		this.lexer.seek(start, this.lexer.line, this.lexer.column)
 
 		let saved_selector_end = this.selector_end

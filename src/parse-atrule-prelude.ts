@@ -1,5 +1,5 @@
 // At-Rule Prelude Parser - Parses at-rule preludes into structured AST nodes
-import { Lexer } from './tokenize'
+import { Lexer, type LexerPosition } from './tokenize'
 import {
 	CSSDataArena,
 	MEDIA_QUERY,
@@ -50,6 +50,11 @@ export class AtRulePreludeParser {
 	// Shared media-feature/supports-condition/style()-selector() parsing, also used by ValueNodeParser
 	// for if()'s condition functions — see parse-condition.ts for why value_node_parser is injected
 	private condition_parser: ConditionParser
+	// Reused lookahead snapshot shared by all save/restore sites in this class — none of
+	// them stay live across a call that could itself need this slot (verified: none here
+	// recurse back into this class, and the two @import helpers resolve their save before
+	// delegating further parsing elsewhere).
+	private lookahead_position: LexerPosition = new Lexer('').save_position()
 
 	constructor(arena: CSSDataArena, source: string) {
 		this.arena = arena
@@ -132,7 +137,7 @@ export class AtRulePreludeParser {
 
 			// Skip comma separator
 			this.skip_whitespace()
-			const saved = this.lexer.save_position()
+			const saved = this.lexer.save_position_into(this.lookahead_position)
 			this.next_token()
 			if (this.lexer.token_type !== TOKEN_COMMA) {
 				// Not a comma, restore position
@@ -203,7 +208,7 @@ export class AtRulePreludeParser {
 		let last_component = 0
 
 		// Leading modifier (only/not) — emit as PRELUDE_OPERATOR like the and/or/not combinators below
-		const saved_token_start = this.lexer.save_position()
+		const saved_token_start = this.lexer.save_position_into(this.lookahead_position)
 		this.next_token()
 
 		if (this.lexer.token_type === TOKEN_IDENT) {
@@ -390,7 +395,7 @@ export class AtRulePreludeParser {
 
 				// Glue on '.' ident segments immediately following, with no gaps.
 				while (this.lexer.pos < this.prelude_end) {
-					let saved = this.lexer.save_position()
+					let saved = this.lexer.save_position_into(this.lookahead_position)
 
 					let dot_token_type = this.next_token()
 					if (
@@ -556,7 +561,7 @@ export class AtRulePreludeParser {
 	// Parse import layer: layer or layer(name)
 	private parse_import_layer(): number | null {
 		// Peek at next token
-		const saved = this.lexer.save_position()
+		const saved = this.lexer.save_position_into(this.lookahead_position)
 
 		this.next_token()
 
@@ -609,7 +614,7 @@ export class AtRulePreludeParser {
 	// Parse import supports: supports(condition)
 	private parse_import_supports(): number | null {
 		// Peek at next token
-		const saved = this.lexer.save_position()
+		const saved = this.lexer.save_position_into(this.lookahead_position)
 
 		this.next_token()
 
@@ -662,7 +667,7 @@ export class AtRulePreludeParser {
 
 	// Helper: Peek at next token type without consuming
 	private peek_token_type(): number {
-		const saved = this.lexer.save_position()
+		const saved = this.lexer.save_position_into(this.lookahead_position)
 
 		this.next_token()
 		let type = this.lexer.token_type
@@ -690,7 +695,7 @@ export class AtRulePreludeParser {
 		if (this.lexer.pos >= this.prelude_end) return []
 
 		// Peek: if it's an IDENT it's an optional prefix, otherwise let parse_import_url() take it
-		const saved = this.lexer.save_position()
+		const saved = this.lexer.save_position_into(this.lookahead_position)
 		this.next_token()
 
 		if (this.lexer.token_type === TOKEN_IDENT) {

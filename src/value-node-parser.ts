@@ -1,7 +1,7 @@
 // Value Node Parser - shared recursive value-token parsing, used by both ValueParser
 // (declaration values) and AtRulePreludeParser (feature values), so calc()/env()/var()
 // get the same structured tree everywhere instead of an opaque text span.
-import { Lexer } from './tokenize'
+import { Lexer, type LexerPosition } from './tokenize'
 import {
 	CSSDataArena,
 	IDENTIFIER,
@@ -66,6 +66,13 @@ export class ValueNodeParser {
 	// try to build another ValueNodeParser to inject, forever. The helper's own condition_parser is
 	// simply never accessed (it's only ever used via parse_chain), so the recursion stops there.
 	private _condition_parser: ConditionParser | null = null
+	// Reused peek snapshots. Two distinct fields: parse_function_node's url()/src() peek and
+	// parse_if_condition's and/or/not continuation peek are each resolved before anything else
+	// in this class could save again, so neither is ever live at the same time as the other —
+	// but parse_value_nodes_in_range's own save (elsewhere) CAN be live across a recursive
+	// descent into this class, so it deliberately does not share either of these.
+	private url_peek_position: LexerPosition = new Lexer('').save_position()
+	private if_condition_peek_position: LexerPosition = new Lexer('').save_position()
 
 	private get condition_parser(): ConditionParser {
 		if (this._condition_parser === null) {
@@ -266,7 +273,7 @@ export class ValueNodeParser {
 		if (is_url || str_equals_range(this.source, start, name_end, 'src')) {
 			// Peek at the next token to see if it's a string
 			// If it's a string, parse normally. Otherwise, skip parsing children.
-			let save_pos = this.lexer.save_position()
+			let save_pos = this.lexer.save_position_into(this.url_peek_position)
 			this.lexer.next_token_fast(false)
 
 			// Skip whitespace
@@ -593,7 +600,7 @@ export class ValueNodeParser {
 			// condition; anything else ends the condition here.
 			if (tt !== TOKEN_FUNCTION && !is_operator) break
 
-			let saved = this.lexer.save_position()
+			let saved = this.lexer.save_position_into(this.if_condition_peek_position)
 			let next_tt = this.next_significant_token()
 			if (next_tt === TOKEN_FUNCTION) {
 				compound = true
