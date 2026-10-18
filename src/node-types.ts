@@ -543,15 +543,16 @@ export type MediaQuery = WithClone<
 		}
 >
 
-export type MediaFeature = Leaf<
-	typeof MEDIA_FEATURE,
-	'Feature',
-	{
-		/** Feature name, e.g. "min-width" */
-		readonly property: string
-		/** Feature value node (e.g. Dimension, Number, Identifier, Ratio), or null for boolean features like (hover) */
-		readonly value: CSSNode | null
-	}
+export type MediaFeature = WithClone<
+	CSSNode &
+		WithChildren<Identifier | Number | Dimension | Ratio> & {
+			readonly type: typeof MEDIA_FEATURE
+			readonly type_name: 'Feature'
+			/** Feature name, e.g. "min-width" */
+			readonly property: string
+			/** Feature value node (Dimension, Number, Identifier or Ratio), or null for boolean features like (hover). Hacks like `0\0` add further children after it. */
+			readonly value: Identifier | Number | Dimension | Ratio | null
+		}
 >
 
 export type MediaType = Leaf<

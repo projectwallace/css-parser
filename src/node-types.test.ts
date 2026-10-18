@@ -40,6 +40,7 @@ import type {
 	PseudoElementSelector,
 	NthSelector,
 	MediaFeature,
+	MediaQuery,
 	LayerName,
 	Combinator,
 	Identifier,
@@ -339,6 +340,18 @@ describe('type narrowing — compile-time', () => {
 		const [op, dim] = range.children
 		expect(op.type_name).toBe('Operator')
 		expect(dim.type_name).toBe('Dimension')
+	})
+
+	test('MediaFeature exposes children, including extra hack nodes like 0\\0', () => {
+		const atrule = parse('@media (min-width:0\\0) {}').first_child! as Atrule
+		const query = atrule.prelude!.first_child! as MediaQuery
+		const feature = query.first_child as MediaFeature
+		expect(feature.has_children).toBeTypeOf('boolean')
+		expect(feature.child_count).toBeTypeOf('number')
+		expect(feature.has_children).toBe(true)
+		expect(feature.child_count).toBe(2)
+		expect([...feature].map((c) => c.type_name)).toEqual(['Number', 'Identifier'])
+		expect(feature.value?.type_name).toBe('Number')
 	})
 
 	test('ContainerQuery children include PreludeOperator for and/or/not, without casting', () => {
