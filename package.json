@@ -99,7 +99,7 @@
 		"postcss": "^8.5.29",
 		"publint": "^0.3.25",
 		"tinybench": "^6.2.1",
-		"tsdown": "^0.23.0",
+		"tsdown": "^0.23.1",
 		"typescript": "^7.0.2",
 		"vite": "^8.3.4",
 		"vitest": "^5.0.3"
@@ -107,6 +107,6 @@
 	"engines": {
 		"pnpm": ">=11.0.0"
 	},
-	"packageManager": "pnpm@11.1.1",
+	"packageManager": "pnpm@11.16.0",
 	"issues": "https://github.com/projectwallace/css-parser/issues"
 }
