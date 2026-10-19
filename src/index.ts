@@ -15,7 +15,7 @@ export {
 	str_equals,
 	str_starts_with,
 	str_index_of,
-} from './string-utils'
+} from './string-helpers'
 
 // Advanced/class-based API
 export { type ParserOptions } from './parse'

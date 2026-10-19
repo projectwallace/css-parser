@@ -75,8 +75,8 @@
 			"import": "./dist/node-types.js"
 		},
 		"./string-utils": {
-			"types": "./dist/string-utils.d.ts",
-			"import": "./dist/string-utils.js"
+			"types": "./dist/string-helpers.d.ts",
+			"import": "./dist/string-helpers.js"
 		},
 		"./token-types": {
 			"types": "./dist/token-types.d.ts",

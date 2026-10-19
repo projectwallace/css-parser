@@ -17,6 +17,7 @@ const SOURCE_OVERRIDES: Record<string, string> = {
 	'./tokenizer': 'src/tokenize.ts',
 	'./walker': 'src/walk.ts',
 	'./nodes': 'src/constants.ts',
+	'./string-utils': 'src/string-helpers.ts',
 }
 
 const DESCRIPTIONS: Record<string, string> = {

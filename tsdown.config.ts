@@ -14,7 +14,7 @@ export default defineConfig({
 		'./src/walk.ts',
 		'./src/constants.ts',
 		'./src/node-types.ts',
-		'./src/string-utils.ts',
+		'./src/string-helpers.ts',
 		'./src/token-types.ts',
 	],
 	platform: 'neutral',
