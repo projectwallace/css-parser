@@ -71,7 +71,7 @@ Everything is exported from the package root. Each part is also available from i
 
 | Import                                            | Exports                                                                                                   |
 | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `@projectwallace/css-parser`                      | Everything below, except the `Lexer` and `Parser` classes                                                 |     |
+| `@projectwallace/css-parser`                      | Everything below, except the `Lexer` and `Parser` classes                                                 |
 | `@projectwallace/css-parser/parse`                | `parse`, `Parser`, `ParserOptions`                                                                        |
 | `@projectwallace/css-parser/parse-selector`       | `parse_selector`, `parse_selector_list`                                                                   |
 | `@projectwallace/css-parser/parse-atrule-prelude` | `parse_atrule_prelude`                                                                                    |
