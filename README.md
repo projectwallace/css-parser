@@ -81,7 +81,7 @@ Everything is exported from the package root. Each part is also available from i
 | `@projectwallace/css-parser/parse-dimension`      | `parse_dimension`                                                                                         |
 | `@projectwallace/css-parser/tokenizer`            | `tokenize`, `Lexer`                                                                                       |
 | `@projectwallace/css-parser/walker`               | `walk`, `traverse`, `SKIP`, `BREAK`                                                                       |
-| `@projectwallace/css-parser/nodes`                | Node type constants (`STYLE_RULE`, `DECLARATION`, …), `NODE_TYPES`, `TYPE_NAMES`                          |
+| `@projectwallace/css-parser/nodes`                | Node type constants (`STYLE_RULE`, `DECLARATION`, …), `NODE_TYPES`                                        |
 | `@projectwallace/css-parser/node-types`           | Type guards (`is_declaration`, `is_rule`, …) and node types (`CSSNode`, `Rule`, `Declaration`, …)         |
 | `@projectwallace/css-parser/string-utils`         | `is_custom`, `is_vendor_prefixed`, `strip_vendor_prefix`, `str_equals`, `str_starts_with`, `str_index_of` |
 | `@projectwallace/css-parser/token-types`          | Token type constants (`TOKEN_*`)                                                                          |
