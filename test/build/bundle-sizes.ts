@@ -17,6 +17,7 @@ const SOURCE_OVERRIDES: Record<string, string> = {
 	'./tokenizer': 'src/tokenize.ts',
 	'./walker': 'src/walk.ts',
 	'./nodes': 'src/constants.ts',
+	'./string-utils': 'src/string-helpers.ts',
 }
 
 const DESCRIPTIONS: Record<string, string> = {
@@ -31,6 +32,9 @@ const DESCRIPTIONS: Record<string, string> = {
 	'./parse-dimension': 'Dimension parser',
 	'./walker': 'AST walker',
 	'./nodes': 'Node type constants',
+	'./node-types': 'Node type guards',
+	'./string-utils': 'String helpers',
+	'./token-types': 'Token type constants',
 }
 
 const exports_to_measure = Object.keys(pkg.exports).filter((k: string) => k !== './package.json')

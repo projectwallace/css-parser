@@ -17,6 +17,8 @@
 // Type predicates compile to a single integer comparison each.
 
 import type { CSSNodeType, TypeName, CloneOptions, PlainCSSNode } from './css-node'
+
+export type { CloneOptions, PlainCSSNode }
 import {
 	STYLESHEET,
 	STYLE_RULE,

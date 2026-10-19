@@ -69,6 +69,18 @@
 		"./nodes": {
 			"types": "./dist/constants.d.ts",
 			"import": "./dist/constants.js"
+		},
+		"./node-types": {
+			"types": "./dist/node-types.d.ts",
+			"import": "./dist/node-types.js"
+		},
+		"./string-utils": {
+			"types": "./dist/string-helpers.d.ts",
+			"import": "./dist/string-helpers.js"
+		},
+		"./token-types": {
+			"types": "./dist/token-types.d.ts",
+			"import": "./dist/token-types.js"
 		}
 	},
 	"publishConfig": {

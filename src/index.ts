@@ -12,10 +12,11 @@ export { walk, traverse, SKIP, BREAK } from './walk'
 export {
 	is_custom,
 	is_vendor_prefixed,
+	strip_vendor_prefix,
 	str_equals,
 	str_starts_with,
 	str_index_of,
-} from './string-utils'
+} from './string-helpers'
 
 // Advanced/class-based API
 export { type ParserOptions } from './parse'
