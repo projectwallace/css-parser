@@ -63,25 +63,28 @@ for (const rule of ast) {
 - **Location tracking with no penalty** — full line, column, and offset data without slowing the parser down
 - **No syntax validation** — skipping spec checks and MDN data means nothing gets in the way of speed
 
-### Bundle sizes
-
-All sizes are minified and bundled with dependencies. Import only what you need — bundlers will tree-shake the rest.
-
-| Import                                            | Description                  | Minified | Gzip    |
-| ------------------------------------------------- | ---------------------------- | -------- | ------- |
-| `@projectwallace/css-parser`                      | Full parser (all subparsers) | 68.9 kB  | 15.5 kB |
-| `@projectwallace/css-parser/parse`                | CSS stylesheet parser        | 62.2 kB  | 13.3 kB |
-| `@projectwallace/css-parser/parse-atrule-prelude` | At-rule prelude parser       | 35.4 kB  | 8.4 kB  |
-| `@projectwallace/css-parser/parse-selector`       | Selector parser              | 37.7 kB  | 8.9 kB  |
-| `@projectwallace/css-parser/parse-anplusb`        | An+B syntax parser           | 26.1 kB  | 6.6 kB  |
-| `@projectwallace/css-parser/parse-declaration`    | Declaration parser           | 28.3 kB  | 7.3 kB  |
-| `@projectwallace/css-parser/parse-value`          | Value parser                 | 25.2 kB  | 6.6 kB  |
-| `@projectwallace/css-parser/parse-dimension`      | Dimension parser             | 0.4 kB   | 0.3 kB  |
-| `@projectwallace/css-parser/tokenizer`            | Tokenizer                    | 9.8 kB   | 2.4 kB  |
-
 ## API
 
-Every function is exported from the package root and, where listed in [Bundle sizes](#bundle-sizes), from its own entry point. Node properties and return types ship as TypeScript types, so this section sticks to short examples.
+Everything is exported from the package root. Each part is also available from its own entry point, so you can import only what you need and skip evaluating the rest of the package. Node properties and return types ship as TypeScript types, so this section sticks to short examples.
+
+### Entry points
+
+| Import                                            | Exports                                                                                                   |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `@projectwallace/css-parser`                      | Everything below, except the `Lexer` and `Parser` classes                                                 |     |
+| `@projectwallace/css-parser/parse`                | `parse`, `Parser`, `ParserOptions`                                                                        |
+| `@projectwallace/css-parser/parse-selector`       | `parse_selector`, `parse_selector_list`                                                                   |
+| `@projectwallace/css-parser/parse-atrule-prelude` | `parse_atrule_prelude`                                                                                    |
+| `@projectwallace/css-parser/parse-declaration`    | `parse_declaration`                                                                                       |
+| `@projectwallace/css-parser/parse-value`          | `parse_value`                                                                                             |
+| `@projectwallace/css-parser/parse-anplusb`        | `parse_anplusb`                                                                                           |
+| `@projectwallace/css-parser/parse-dimension`      | `parse_dimension`                                                                                         |
+| `@projectwallace/css-parser/tokenizer`            | `tokenize`, `Lexer`                                                                                       |
+| `@projectwallace/css-parser/walker`               | `walk`, `traverse`, `SKIP`, `BREAK`                                                                       |
+| `@projectwallace/css-parser/nodes`                | Node type constants (`STYLE_RULE`, `DECLARATION`, …), `NODE_TYPES`, `TYPE_NAMES`                          |
+| `@projectwallace/css-parser/node-types`           | Type guards (`is_declaration`, `is_rule`, …) and node types (`CSSNode`, `Rule`, `Declaration`, …)         |
+| `@projectwallace/css-parser/string-utils`         | `is_custom`, `is_vendor_prefixed`, `strip_vendor_prefix`, `str_equals`, `str_starts_with`, `str_index_of` |
+| `@projectwallace/css-parser/token-types`          | Token type constants (`TOKEN_*`)                                                                          |
 
 ### `parse(source, options?)`
 
