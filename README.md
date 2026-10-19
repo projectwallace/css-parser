@@ -234,6 +234,7 @@ Allocation-free helpers, handy when working with node names. Also available from
 import {
 	is_custom,
 	is_vendor_prefixed,
+	strip_vendor_prefix,
 	str_equals,
 	str_starts_with,
 	str_index_of,
@@ -241,6 +242,7 @@ import {
 
 is_custom('--primary') // true
 is_vendor_prefixed('-webkit-transform') // true
+strip_vendor_prefix('-webkit-transform') // "transform"
 str_equals('media', 'MEDIA') // true
 str_starts_with('WEBKIT-transform', 'webkit') // true
 str_index_of('background-COLOR', 'color') // 11
