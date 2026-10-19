@@ -215,14 +215,14 @@ for (const token of tokenize('a { color: red }')) {
 
 ### Node types, type guards and `clone()`
 
-Node type constants (`STYLE_RULE`, `DECLARATION`, `DIMENSION`, …), `TYPE_NAMES` and `NODE_TYPES` are exported from the root, as are type guards such as `is_declaration()` and `is_dimension()` that narrow a node to its specific type. `node.clone({ deep?, locations? })` returns a mutable plain-object copy of a node.
+Node type constants (`STYLE_RULE`, `DECLARATION`, `DIMENSION`, …) and `NODE_TYPES` are exported from the root, as are type guards such as `is_declaration()` and `is_dimension()` that narrow a node to its specific type. `node.clone({ deep?, locations? })` returns a mutable plain-object copy of a node.
 
 ```typescript
-import { parse, is_declaration, TYPE_NAMES, DECLARATION } from '@projectwallace/css-parser'
+import { parse, is_declaration } from '@projectwallace/css-parser'
 
 const decl = parse('a { color: red }').first_child.block.first_child
 is_declaration(decl) // true
-TYPE_NAMES[DECLARATION] // "Declaration"
+decl.type_name // "Declaration"
 decl.clone({ deep: false }).property // "color"
 ```
 

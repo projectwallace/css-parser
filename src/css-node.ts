@@ -72,57 +72,54 @@ import {
 } from './string-utils'
 import { dimension_number_end } from './parse-dimension'
 
-// Type name lookup table - maps numeric type to CSSTree-compatible strings
-export const TYPE_NAMES = {
-	[STYLESHEET]: 'StyleSheet',
-	[STYLE_RULE]: 'Rule',
-	[AT_RULE]: 'Atrule',
-	[DECLARATION]: 'Declaration',
-	[SELECTOR]: 'Selector',
-	[COMMENT]: 'Comment',
-	[BLOCK]: 'Block',
-	[RAW]: 'Raw',
-	[IDENTIFIER]: 'Identifier',
-	[NUMBER]: 'Number',
-	[DIMENSION]: 'Dimension',
-	[STRING]: 'String',
-	[HASH]: 'Hash',
-	[FUNCTION]: 'Function',
-	[OPERATOR]: 'Operator',
-	[PARENTHESIS]: 'Parentheses',
-	[URL]: 'Url',
-	[UNICODE_RANGE]: 'UnicodeRange',
-	[VALUE]: 'Value',
-	[SELECTOR_LIST]: 'SelectorList',
-	[TYPE_SELECTOR]: 'TypeSelector',
-	[CLASS_SELECTOR]: 'ClassSelector',
-	[ID_SELECTOR]: 'IdSelector',
-	[ATTRIBUTE_SELECTOR]: 'AttributeSelector',
-	[PSEUDO_CLASS_SELECTOR]: 'PseudoClassSelector',
-	[PSEUDO_ELEMENT_SELECTOR]: 'PseudoElementSelector',
-	[COMBINATOR]: 'Combinator',
-	[UNIVERSAL_SELECTOR]: 'UniversalSelector',
-	[NESTING_SELECTOR]: 'NestingSelector',
-	[NTH_SELECTOR]: 'Nth',
-	[NTH_OF_SELECTOR]: 'NthOf',
-	[LANG_SELECTOR]: 'Lang',
-	[MEDIA_QUERY]: 'MediaQuery',
-	[MEDIA_FEATURE]: 'Feature',
-	[MEDIA_TYPE]: 'MediaType',
-	[CONTAINER_QUERY]: 'ContainerQuery',
-	[SUPPORTS_QUERY]: 'SupportsQuery',
-	[SUPPORTS_DECLARATION]: 'SupportsDeclaration',
-	[LAYER_NAME]: 'Layer',
-	[PRELUDE_OPERATOR]: 'Operator',
-	[FEATURE_RANGE]: 'MediaFeatureRange',
-	[AT_RULE_PRELUDE]: 'AtrulePrelude',
-	[PRELUDE_SELECTORLIST]: 'PreludeSelectorList',
-	[RATIO]: 'Ratio',
-	[IF_BRANCH]: 'IfBranch',
-	[IF_CONDITION]: 'IfCondition',
-} as const
-
-export type TypeName = (typeof TYPE_NAMES)[keyof typeof TYPE_NAMES] | 'unknown'
+// CSSTree-compatible node type names
+export type TypeName =
+	| 'StyleSheet'
+	| 'Rule'
+	| 'Atrule'
+	| 'Declaration'
+	| 'Selector'
+	| 'Comment'
+	| 'Block'
+	| 'Raw'
+	| 'Identifier'
+	| 'Number'
+	| 'Dimension'
+	| 'String'
+	| 'Hash'
+	| 'Function'
+	| 'Operator'
+	| 'Parentheses'
+	| 'Url'
+	| 'UnicodeRange'
+	| 'Value'
+	| 'SelectorList'
+	| 'TypeSelector'
+	| 'ClassSelector'
+	| 'IdSelector'
+	| 'AttributeSelector'
+	| 'PseudoClassSelector'
+	| 'PseudoElementSelector'
+	| 'Combinator'
+	| 'UniversalSelector'
+	| 'NestingSelector'
+	| 'Nth'
+	| 'NthOf'
+	| 'Lang'
+	| 'MediaQuery'
+	| 'Feature'
+	| 'MediaType'
+	| 'ContainerQuery'
+	| 'SupportsQuery'
+	| 'SupportsDeclaration'
+	| 'Layer'
+	| 'MediaFeatureRange'
+	| 'AtrulePrelude'
+	| 'PreludeSelectorList'
+	| 'Ratio'
+	| 'IfBranch'
+	| 'IfCondition'
+	| 'unknown'
 
 // Node type constants (numeric for performance)
 export type CSSNodeType =
@@ -328,7 +325,6 @@ export class CSSNode {
 	/** Get node type as human-readable string */
 	get type_name(): TypeName {
 		// A switch compiles to a jump table, which is faster than an object lookup
-		// NOTE: keep in sync with TYPE_NAMES (enforced by a test)
 		switch (this.type) {
 			case STYLESHEET:
 				return 'StyleSheet'
