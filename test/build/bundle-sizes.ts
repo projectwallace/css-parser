@@ -31,6 +31,9 @@ const DESCRIPTIONS: Record<string, string> = {
 	'./parse-dimension': 'Dimension parser',
 	'./walker': 'AST walker',
 	'./nodes': 'Node type constants',
+	'./node-types': 'Node type guards',
+	'./string-utils': 'String helpers',
+	'./token-types': 'Token type constants',
 }
 
 const exports_to_measure = Object.keys(pkg.exports).filter((k: string) => k !== './package.json')

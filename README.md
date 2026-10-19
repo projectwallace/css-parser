@@ -215,7 +215,7 @@ for (const token of tokenize('a { color: red }')) {
 
 ### Node types, type guards and `clone()`
 
-Node type constants (`STYLE_RULE`, `DECLARATION`, `DIMENSION`, …) and `NODE_TYPES` are exported from the root, as are type guards such as `is_declaration()` and `is_dimension()` that narrow a node to its specific type. `node.clone({ deep?, locations? })` returns a mutable plain-object copy of a node.
+Node type constants (`STYLE_RULE`, `DECLARATION`, `DIMENSION`, …) and `NODE_TYPES` are exported from the root and from `@projectwallace/css-parser/nodes`. Type guards such as `is_declaration()` and `is_dimension()` that narrow a node to its specific type are exported from the root and from `@projectwallace/css-parser/node-types`. `node.clone({ deep?, locations? })` returns a mutable plain-object copy of a node.
 
 ```typescript
 import { parse, is_declaration } from '@projectwallace/css-parser'
@@ -228,7 +228,7 @@ decl.clone({ deep: false }).property // "color"
 
 ### String helpers
 
-Allocation-free helpers, handy when working with node names. The lowercase argument is the first one for `str_equals` and the second one for `str_starts_with` and `str_index_of`. This inconsistency will be fixed in a future breaking change.
+Allocation-free helpers, handy when working with node names. Also available from `@projectwallace/css-parser/string-utils`; token type constants (`TOKEN_*`) are available from `@projectwallace/css-parser/token-types`. The lowercase argument is the first one for `str_equals` and the second one for `str_starts_with` and `str_index_of`. This inconsistency will be fixed in a future breaking change.
 
 ```typescript
 import {
