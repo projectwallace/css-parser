@@ -327,7 +327,104 @@ export class CSSNode {
 
 	/** Get node type as human-readable string */
 	get type_name(): TypeName {
-		return TYPE_NAMES[this.type] || 'unknown'
+		// A switch compiles to a jump table, which is faster than an object lookup
+		// NOTE: keep in sync with TYPE_NAMES (enforced by a test)
+		switch (this.type) {
+			case STYLESHEET:
+				return 'StyleSheet'
+			case STYLE_RULE:
+				return 'Rule'
+			case AT_RULE:
+				return 'Atrule'
+			case DECLARATION:
+				return 'Declaration'
+			case SELECTOR:
+				return 'Selector'
+			case COMMENT:
+				return 'Comment'
+			case BLOCK:
+				return 'Block'
+			case RAW:
+				return 'Raw'
+			case IDENTIFIER:
+				return 'Identifier'
+			case NUMBER:
+				return 'Number'
+			case DIMENSION:
+				return 'Dimension'
+			case STRING:
+				return 'String'
+			case HASH:
+				return 'Hash'
+			case FUNCTION:
+				return 'Function'
+			case OPERATOR:
+				return 'Operator'
+			case PARENTHESIS:
+				return 'Parentheses'
+			case URL:
+				return 'Url'
+			case UNICODE_RANGE:
+				return 'UnicodeRange'
+			case VALUE:
+				return 'Value'
+			case SELECTOR_LIST:
+				return 'SelectorList'
+			case TYPE_SELECTOR:
+				return 'TypeSelector'
+			case CLASS_SELECTOR:
+				return 'ClassSelector'
+			case ID_SELECTOR:
+				return 'IdSelector'
+			case ATTRIBUTE_SELECTOR:
+				return 'AttributeSelector'
+			case PSEUDO_CLASS_SELECTOR:
+				return 'PseudoClassSelector'
+			case PSEUDO_ELEMENT_SELECTOR:
+				return 'PseudoElementSelector'
+			case COMBINATOR:
+				return 'Combinator'
+			case UNIVERSAL_SELECTOR:
+				return 'UniversalSelector'
+			case NESTING_SELECTOR:
+				return 'NestingSelector'
+			case NTH_SELECTOR:
+				return 'Nth'
+			case NTH_OF_SELECTOR:
+				return 'NthOf'
+			case LANG_SELECTOR:
+				return 'Lang'
+			case MEDIA_QUERY:
+				return 'MediaQuery'
+			case MEDIA_FEATURE:
+				return 'Feature'
+			case MEDIA_TYPE:
+				return 'MediaType'
+			case CONTAINER_QUERY:
+				return 'ContainerQuery'
+			case SUPPORTS_QUERY:
+				return 'SupportsQuery'
+			case SUPPORTS_DECLARATION:
+				return 'SupportsDeclaration'
+			case LAYER_NAME:
+				return 'Layer'
+			case PRELUDE_OPERATOR:
+				return 'Operator'
+			case FEATURE_RANGE:
+				return 'MediaFeatureRange'
+			case AT_RULE_PRELUDE:
+				return 'AtrulePrelude'
+			case PRELUDE_SELECTORLIST:
+				return 'PreludeSelectorList'
+			case RATIO:
+				return 'Ratio'
+			case IF_BRANCH:
+				return 'IfBranch'
+			case IF_CONDITION:
+				return 'IfCondition'
+			default:
+				return 'unknown'
+		}
 	}
 
 	/** Get the full text of this node from source */
