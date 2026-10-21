@@ -947,6 +947,41 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(fn.children[0].type).toBe(SUPPORTS_DECLARATION)
 			})
 
+			test('should parse a boolean group inside style() into child nodes', () => {
+				const css = '@container style((--a: 1) and (--b: 2)) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const query = (atRule.prelude as AtrulePrelude).children[0] as ContainerQuery
+				const fn = query.children[0] as Function
+
+				expect(fn.type).toBe(FUNCTION)
+				// Only children are added: text and value are unchanged
+				expect(fn.text).toBe('style((--a: 1) and (--b: 2))')
+				expect(fn.value).toBe('(--a: 1) and (--b: 2)')
+				expect(fn.children.map((c) => c.type)).toEqual([
+					SUPPORTS_QUERY,
+					PRELUDE_OPERATOR,
+					SUPPORTS_QUERY,
+				])
+				expect(fn.children.map((c) => c.text)).toEqual(['(--a: 1)', 'and', '(--b: 2)'])
+				expect(fn.children[0].first_child?.type).toBe(SUPPORTS_DECLARATION)
+				expect(fn.children[2].first_child?.type).toBe(SUPPORTS_DECLARATION)
+			})
+
+			test('should parse a named container with style(not (...)) into child nodes', () => {
+				const css = '@container name style(not (--a: 1)) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const query = (atRule.prelude as AtrulePrelude).children[0] as ContainerQuery
+				const fn = query.children[1] as Function
+
+				expect(fn.type).toBe(FUNCTION)
+				expect(fn.text).toBe('style(not (--a: 1))')
+				expect(fn.children.map((c) => c.type)).toEqual([PRELUDE_OPERATOR, SUPPORTS_QUERY])
+				expect(fn.children[1].text).toBe('(--a: 1)')
+				expect(fn.children[1].first_child?.type).toBe(SUPPORTS_DECLARATION)
+			})
+
 			test('should parse container query with name only (no conditions)', () => {
 				// Container conditions are optional when a container name is specified
 				// See https://bugzilla.mozilla.org/show_bug.cgi?id=2016474
@@ -1109,6 +1144,118 @@ describe('At-Rule Prelude Nodes', () => {
 
 				expect(children.map((c) => c.type)).toEqual([PRELUDE_OPERATOR, FUNCTION])
 				expect(children[1].text).toBe('selector([popover]:open)')
+			})
+
+			test('should parse a nested boolean group into child nodes', () => {
+				const css = '@supports ((display: grid) and (display: flex)) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const children = (atRule.prelude as AtrulePrelude).children
+				const outer = children[0] as SupportsQuery
+
+				expect(children.length).toBe(1)
+				expect(outer.type).toBe(SUPPORTS_QUERY)
+				// Only children are added: text and value are unchanged
+				expect(outer.text).toBe('((display: grid) and (display: flex))')
+				expect(outer.value).toBe('(display: grid) and (display: flex)')
+				expect(outer.children.map((c) => c.type)).toEqual([
+					SUPPORTS_QUERY,
+					PRELUDE_OPERATOR,
+					SUPPORTS_QUERY,
+				])
+				expect(outer.children.map((c) => c.text)).toEqual([
+					'(display: grid)',
+					'and',
+					'(display: flex)',
+				])
+				expect(outer.children[0].first_child?.type).toBe(SUPPORTS_DECLARATION)
+				expect(outer.children[2].first_child?.type).toBe(SUPPORTS_DECLARATION)
+			})
+
+			test('should parse "not" before a nested boolean group', () => {
+				const css = '@supports not ((a: 1) or (b: 2)) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const children = (atRule.prelude as AtrulePrelude).children
+
+				expect(children.map((c) => c.type)).toEqual([PRELUDE_OPERATOR, SUPPORTS_QUERY])
+				const group = children[1] as SupportsQuery
+				expect(group.text).toBe('((a: 1) or (b: 2))')
+				expect(group.children.map((c) => c.text)).toEqual(['(a: 1)', 'or', '(b: 2)'])
+			})
+
+			test('should parse three levels of nested boolean groups', () => {
+				const css = '@supports (((a: 1) and (b: 2)) or (c: 3)) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const outer = (atRule.prelude as AtrulePrelude).children[0] as SupportsQuery
+
+				expect(outer.children.map((c) => c.text)).toEqual(['((a: 1) and (b: 2))', 'or', '(c: 3)'])
+				const middle = outer.children[0] as SupportsQuery
+				expect(middle.type).toBe(SUPPORTS_QUERY)
+				expect(middle.children.map((c) => c.text)).toEqual(['(a: 1)', 'and', '(b: 2)'])
+				expect(middle.children[0].first_child?.type).toBe(SUPPORTS_DECLARATION)
+				expect(outer.children[2].first_child?.type).toBe(SUPPORTS_DECLARATION)
+			})
+
+			test('should parse a function condition inside a nested group', () => {
+				const css = '@supports ((selector(:hover)) and (display: grid)) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const outer = (atRule.prelude as AtrulePrelude).children[0] as SupportsQuery
+
+				expect(outer.children.map((c) => c.type)).toEqual([
+					SUPPORTS_QUERY,
+					PRELUDE_OPERATOR,
+					SUPPORTS_QUERY,
+				])
+				const fn = outer.children[0].first_child as Function
+				expect(fn.type).toBe(FUNCTION)
+				expect(fn.text).toBe('selector(:hover)')
+				expect(fn.first_child?.type).toBe(SELECTOR_LIST)
+			})
+
+			test('should keep a simple declaration group as SupportsQuery > SupportsDeclaration', () => {
+				for (const css of ['@supports (display: grid) { }', '@supports not (display: grid) { }']) {
+					const ast = parse(css)
+					const atRule = ast.first_child! as Atrule
+					const children = (atRule.prelude as AtrulePrelude).children
+					const query = children.at(-1) as SupportsQuery
+
+					expect(query.text).toBe('(display: grid)')
+					expect(query.child_count).toBe(1)
+					expect(query.first_child?.type).toBe(SUPPORTS_DECLARATION)
+				}
+			})
+
+			test('should keep a non-nested style() argument as a single SupportsDeclaration', () => {
+				const css = '@supports style(--custom: 1) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const fn = (atRule.prelude as AtrulePrelude).children[0] as Function
+
+				expect(fn.child_count).toBe(1)
+				expect(fn.first_child?.type).toBe(SUPPORTS_DECLARATION)
+			})
+
+			test('should slice nested nodes back to the right source substrings', () => {
+				const css = '@supports (\n  (a: 1) and /* c */\n  ((b: 2) or (c: 3))\n) { }'
+				const ast = parse(css)
+				const atRule = ast.first_child! as Atrule
+				const outer = (atRule.prelude as AtrulePrelude).children[0] as SupportsQuery
+
+				type Sliceable = { start: number; end: number; text: string; children?: Sliceable[] }
+				const check = (node: Sliceable) => {
+					expect(css.slice(node.start, node.end)).toBe(node.text)
+					for (const child of node.children ?? []) check(child)
+				}
+				check(outer)
+				expect(outer.children.map((c) => c.text)).toEqual(['(a: 1)', 'and', '((b: 2) or (c: 3))'])
+				expect((outer.children[2] as SupportsQuery).children.map((c) => c.text)).toEqual([
+					'(b: 2)',
+					'or',
+					'(c: 3)',
+				])
 			})
 
 			test('should have a SupportsDeclaration as direct child of SupportsQuery', () => {

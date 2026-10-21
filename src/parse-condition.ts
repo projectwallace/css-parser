@@ -428,6 +428,8 @@ export class ConditionParser {
 		const func_name_start = this.lexer.token_start
 		const func_name_end = this.lexer.token_end - 1 // -1 to exclude '('
 		const content_start = this.lexer.token_end // After '('
+		const content_line = this.lexer.line
+		const content_column = this.lexer.column
 
 		// Find matching closing paren
 		this.scan_matching_paren()
@@ -458,7 +460,16 @@ export class ConditionParser {
 		// style()'s argument is a <declaration> — parse it into the same tree as (property: value)
 		else if (str_equals_range(this.source, func_name_start, func_name_end, 'style')) {
 			const decl_child = this.parse_supports_declaration_content(content_start, content_end)
-			if (decl_child !== null) {
+			if (decl_child === null) {
+				// Not a plain declaration: a boolean condition like `(--a: 1) and (--b: 2)`
+				this.append_nested_condition(
+					func_node,
+					content_start,
+					content_end,
+					content_line,
+					content_column,
+				)
+			} else {
 				this.arena.set_first_child(func_node, decl_child)
 			}
 		}
@@ -473,6 +484,23 @@ export class ConditionParser {
 		const colon_pos = find_colon_at_depth_zero(this.source, content_start, content_end)
 		if (colon_pos === -1) return null
 		return this.create_supports_declaration(content_start, content_end, colon_pos)
+	}
+
+	// Parse the content of a `style()` or parenthesized group that is not a single declaration as
+	// a nested <supports-condition> and attach the result as `parent`'s children. `line`/`column`
+	// locate `start`. This re-seeks the lexer, so the position is restored afterwards for callers
+	// that keep scanning from where they left off.
+	private append_nested_condition(
+		parent: number,
+		start: number,
+		end: number,
+		line: number,
+		column: number,
+	): void {
+		const saved = this.lexer.save_position()
+		const children = this.parse_supports_condition(start, end, line, column)
+		this.lexer.restore_position(saved)
+		this.arena.append_children(parent, children)
 	}
 
 	// Parse a `<supports-condition>` — the compound and/or/not grammar shared by `@supports`
@@ -499,6 +527,8 @@ export class ConditionParser {
 			if (token_type === TOKEN_LEFT_PAREN) {
 				const feature_start = this.lexer.token_start
 				const content_start = this.lexer.pos
+				const content_line = this.lexer.line
+				const content_column = this.lexer.column
 
 				const matched = this.scan_matching_paren()
 				const content_end = this.paren_content_end
@@ -513,7 +543,16 @@ export class ConditionParser {
 						this.arena.set_value_length(query, trimmed[1] - trimmed[0])
 
 						const decl_child = this.parse_supports_declaration_content(trimmed[0], trimmed[1])
-						if (decl_child !== null) {
+						if (decl_child === null) {
+							// A nested boolean group like `((a: 1) and (b: 2))`
+							this.append_nested_condition(
+								query,
+								content_start,
+								content_end,
+								content_line,
+								content_column,
+							)
+						} else {
 							this.arena.set_first_child(query, decl_child)
 						}
 					}
