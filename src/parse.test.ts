@@ -885,6 +885,23 @@ describe('Core Nodes', () => {
 					expect(decl2.type).toBe(DECLARATION)
 				})
 
+				test('@font-feature-values with nested at-rules', () => {
+					const root = parse(
+						'@font-feature-values Font One { @styleset { nice-style: 12; } @swash { fancy: 1 } } a {}',
+					)
+					const rule = root.first_child! as Atrule
+					expect(rule.name).toBe('font-feature-values')
+					expect(rule.next_sibling!.type).toBe(STYLE_RULE)
+					expect(rule.next_sibling!.next_sibling).toBeNull()
+
+					const [styleset, swash] = rule.block!.children
+					expect(styleset.type).toBe(AT_RULE)
+					expect((styleset as Atrule).name).toBe('styleset')
+					expect(styleset.block!.first_child!.type).toBe(DECLARATION)
+					expect((swash as Atrule).name).toBe('swash')
+					expect(swash.block!.first_child!.type).toBe(DECLARATION)
+				})
+
 				test('@page', () => {
 					const source = '@page { margin: 1in; }'
 					const root = parse(source)

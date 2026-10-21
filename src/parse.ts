@@ -57,7 +57,12 @@ export interface ParserOptions {
 // Static at-rule lookup sets for fast classification
 const DECLARATION_AT_RULES = new Set([
 	'font-face',
-	'font-feature-values',
+	'styleset',
+	'stylistic',
+	'character-variant',
+	'swash',
+	'ornaments',
+	'annotation',
 	'page',
 	'property',
 	'counter-style',
