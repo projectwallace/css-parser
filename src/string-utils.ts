@@ -111,7 +111,7 @@ export function is_and_or_not_range(source: string, start: number, end: number):
 }
 
 /** Case-insensitive ASCII prefix check without allocations. `prefix` MUST be lowercase. */
-export function str_starts_with(str: string, prefix: string): boolean {
+export function str_starts_with(prefix: string, str: string): boolean {
 	if (str.length < prefix.length) {
 		return false
 	}
@@ -132,7 +132,7 @@ export function str_starts_with(str: string, prefix: string): boolean {
 }
 
 /** Case-insensitive substring search without allocations, or -1 if not found. `searchChar` MUST be lowercase. */
-export function str_index_of(str: string, searchChar: string): number {
+export function str_index_of(searchChar: string, str: string): number {
 	if (searchChar.length === 0) {
 		return -1
 	}

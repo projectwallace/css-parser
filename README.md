@@ -231,7 +231,7 @@ decl.clone({ deep: false }).property // "color"
 
 ### String helpers
 
-Allocation-free helpers, handy when working with node names. Also available from `@projectwallace/css-parser/string-utils`; token type constants (`TOKEN_*`) are available from `@projectwallace/css-parser/token-types`. The lowercase argument is the first one for `str_equals` and the second one for `str_starts_with` and `str_index_of`. This inconsistency will be fixed in a future breaking change.
+Allocation-free helpers, handy when working with node names. Also available from `@projectwallace/css-parser/string-utils`; token type constants (`TOKEN_*`) are available from `@projectwallace/css-parser/token-types`. The lowercase argument is always the first one.
 
 ```typescript
 import {
@@ -247,8 +247,8 @@ is_custom('--primary') // true
 is_vendor_prefixed('-webkit-transform') // true
 strip_vendor_prefix('-webkit-transform') // "transform"
 str_equals('media', 'MEDIA') // true
-str_starts_with('WEBKIT-transform', 'webkit') // true
-str_index_of('background-COLOR', 'color') // 11
+str_starts_with('webkit', 'WEBKIT-transform') // true
+str_index_of('color', 'background-COLOR') // 11
 ```
 
 ## Non-goals
