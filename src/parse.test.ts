@@ -894,11 +894,11 @@ describe('Core Nodes', () => {
 					expect(rule.next_sibling!.type).toBe(STYLE_RULE)
 					expect(rule.next_sibling!.next_sibling).toBeNull()
 
-					const [styleset, swash] = rule.block!.children
+					const [styleset, swash] = rule.block!.children as Atrule[]
 					expect(styleset.type).toBe(AT_RULE)
-					expect((styleset as Atrule).name).toBe('styleset')
+					expect(styleset.name).toBe('styleset')
 					expect(styleset.block!.first_child!.type).toBe(DECLARATION)
-					expect((swash as Atrule).name).toBe('swash')
+					expect(swash.name).toBe('swash')
 					expect(swash.block!.first_child!.type).toBe(DECLARATION)
 				})
 
@@ -910,11 +910,11 @@ describe('Core Nodes', () => {
 					expect(page.name).toBe('page')
 					expect(page.next_sibling!.type).toBe(STYLE_RULE)
 
-					const [margin, top_left, bottom_right] = page.block!.children
+					const [margin, top_left, bottom_right] = page.block!.children as Atrule[]
 					expect(margin.type).toBe(DECLARATION)
-					expect((top_left as Atrule).name).toBe('top-left')
+					expect(top_left.name).toBe('top-left')
 					expect(top_left.block!.first_child!.type).toBe(DECLARATION)
-					expect((bottom_right as Atrule).name).toBe('bottom-right-corner')
+					expect(bottom_right.name).toBe('bottom-right-corner')
 					expect(bottom_right.block!.first_child!.type).toBe(DECLARATION)
 				})
 
