@@ -592,12 +592,14 @@ export class AtRulePreludeParser {
 
 				const trimmed = matched ? trim_boundaries(this.source, content_start, content_end) : null
 				if (trimmed) {
-					this.arena.set_value_start_delta(func_node, trimmed[0] - layer_start)
-					this.arena.set_value_length(func_node, trimmed[1] - trimmed[0])
+					const name_start = trimmed[0]
+					const name_length = trimmed[1] - name_start
+					this.arena.set_value_start_delta(func_node, name_start - layer_start)
+					this.arena.set_value_length(func_node, name_length)
 
-					const name_node = this.create_node(LAYER_NAME, trimmed[0], trimmed[1])
+					const name_node = this.create_node(LAYER_NAME, name_start, trimmed[1])
 					this.arena.set_content_start_delta(name_node, 0)
-					this.arena.set_content_length(name_node, trimmed[1] - trimmed[0])
+					this.arena.set_content_length(name_node, name_length)
 					this.arena.set_first_child(func_node, name_node)
 				}
 
@@ -646,25 +648,28 @@ export class AtRulePreludeParser {
 
 				const trimmed = trim_boundaries(this.source, content_start, content_end)
 				if (trimmed) {
-					this.arena.set_value_start_delta(func_node, trimmed[0] - supports_start)
-					this.arena.set_value_length(func_node, trimmed[1] - trimmed[0])
+					const condition_start = trimmed[0]
+					const condition_end = trimmed[1]
+					const condition_length = condition_end - condition_start
+					this.arena.set_value_start_delta(func_node, condition_start - supports_start)
+					this.arena.set_value_length(func_node, condition_length)
 
 					const decl_child = this.condition_parser.parse_supports_declaration_content(
-						trimmed[0],
-						trimmed[1],
+						condition_start,
+						condition_end,
 					)
 					if (decl_child === null) {
 						const children = this.condition_parser.parse_supports_condition(
-							trimmed[0],
-							trimmed[1],
+							condition_start,
+							condition_end,
 							line,
 							column,
 						)
 						this.arena.append_children(func_node, children)
 					} else {
-						const query = this.create_node(SUPPORTS_QUERY, trimmed[0], trimmed[1])
+						const query = this.create_node(SUPPORTS_QUERY, condition_start, condition_end)
 						this.arena.set_value_start_delta(query, 0)
-						this.arena.set_value_length(query, trimmed[1] - trimmed[0])
+						this.arena.set_value_length(query, condition_length)
 						this.arena.set_first_child(query, decl_child)
 						this.arena.set_first_child(func_node, query)
 					}
