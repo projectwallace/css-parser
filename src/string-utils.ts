@@ -29,7 +29,7 @@ export const CHAR_LEFT_PAREN = 0x28 // (
 export const CHAR_RIGHT_PAREN = 0x29 // )
 export const CHAR_EXCLAMATION = 0x21 // !
 
-// Check if a character code is whitespace (space, tab, newline, CR, or FF)
+/** True if the character code is whitespace (space, tab, newline, CR, or FF). */
 export function is_whitespace(ch: number): boolean {
 	return (
 		ch === CHAR_SPACE ||
@@ -49,10 +49,7 @@ export function is_digit(ch: number): boolean {
 	return ch >= 0x30 && ch <= 0x39 // 0-9
 }
 
-/**
- * @param a Base string, MUST be lowercase!
- * @param b Compare string
- */
+/** Case-insensitive ASCII equality without allocations. `a` MUST be lowercase. */
 export function str_equals(a: string, b: string): boolean {
 	if (a.length !== b.length) {
 		return false
@@ -73,9 +70,10 @@ export function str_equals(a: string, b: string): boolean {
 	return true
 }
 
-// Case-insensitive equality between `source[start, end)` and `literal`, without allocating
-// a substring first. Same semantics as `str_equals(literal, source.substring(start, end))`.
-// `literal` MUST be lowercase.
+/**
+ * Case-insensitive equality between `source[start, end)` and `literal`, without allocating a substring first.
+ * Same semantics as `str_equals(literal, source.substring(start, end))`. `literal` MUST be lowercase.
+ */
 export function str_equals_range(
 	source: string,
 	start: number,
@@ -99,7 +97,7 @@ export function str_equals_range(
 	return true
 }
 
-// True if `source[start, end)` is and/or/not (case-insensitive)
+/** True if `source[start, end)` is and/or/not (case-insensitive). */
 export function is_and_or_not_range(source: string, start: number, end: number): boolean {
 	const length = end - start
 	if (length === 3) {
@@ -131,20 +129,20 @@ export function str_starts_with(prefix: string, str: string): boolean {
 	return true
 }
 
-/** Case-insensitive substring search without allocations, or -1 if not found. `searchChar` MUST be lowercase. */
-export function str_index_of(searchChar: string, str: string): number {
-	if (searchChar.length === 0) {
+/** Case-insensitive substring search without allocations, or -1 if not found. `search_char` MUST be lowercase. */
+export function str_index_of(search_char: string, str: string): number {
+	if (search_char.length === 0) {
 		return -1
 	}
 
 	// Optimize for single character search
-	if (searchChar.length === 1) {
-		const searchCode = searchChar.charCodeAt(0)
+	if (search_char.length === 1) {
+		const search_code = search_char.charCodeAt(0)
 		for (let i = 0; i < str.length; i++) {
 			let ca = str.charCodeAt(i)
-			// normalize only the string char (searchChar is already lowercase)
+			// normalize only the string char (search_char is already lowercase)
 			if (ca >= 65 && ca <= 90) ca |= 32 // A-Z → a-z
-			if (ca === searchCode) {
+			if (ca === search_code) {
 				return i
 			}
 		}
@@ -152,11 +150,11 @@ export function str_index_of(searchChar: string, str: string): number {
 	}
 
 	// Multi-character search
-	for (let i = 0; i <= str.length - searchChar.length; i++) {
+	for (let i = 0; i <= str.length - search_char.length; i++) {
 		let match = true
-		for (let j = 0; j < searchChar.length; j++) {
+		for (let j = 0; j < search_char.length; j++) {
 			let ca = str.charCodeAt(i + j)
-			const cb = searchChar.charCodeAt(j)
+			const cb = search_char.charCodeAt(j)
 			if (ca >= 65 && ca <= 90) ca |= 32 // A-Z → a-z
 			if (ca !== cb) {
 				match = false
@@ -216,7 +214,7 @@ export function is_custom(str: string): boolean {
 	return str.charCodeAt(0) === CHAR_MINUS_HYPHEN && str.charCodeAt(1) === CHAR_MINUS_HYPHEN
 }
 
-// Strip a vendor prefix, e.g. `-webkit-keyframes` → `keyframes`. Returns the input unchanged if it has no prefix.
+/** Strip a vendor prefix, e.g. `-webkit-keyframes` → `keyframes`. Returns the input unchanged if it has no prefix. */
 export function strip_vendor_prefix(str: string): string {
 	if (!is_vendor_prefixed(str)) {
 		return str
