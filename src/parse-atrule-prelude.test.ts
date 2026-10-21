@@ -769,6 +769,38 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(range?.children[1].type).toBe(DIMENSION) // 400px
 			})
 
+			test('should keep a function value whole in range syntax', () => {
+				const [query] = parse_atrule_prelude('media', '(width >= calc(1px + 2px)) and (color)')
+				const range = (query as MediaQuery).children[0] as FeatureRange
+
+				expect(range.text).toBe('(width >= calc(1px + 2px))')
+				expect(range.children.map((c) => c.text)).toEqual(['>=', 'calc(1px + 2px)'])
+				const fn = range.children[1] as Function
+				expect(fn.name).toBe('calc')
+				expect(fn.value).toBe('1px + 2px')
+			})
+
+			test('should keep a leading function value whole in range syntax', () => {
+				const [query] = parse_atrule_prelude('media', '(calc(1px) < width < 5px)')
+				const range = (query as MediaQuery).children[0] as FeatureRange
+
+				expect(range.children.map((c) => c.text)).toEqual(['calc(1px)', '<', '<', '5px'])
+			})
+
+			test('should tokenize a bare = as its own comparator', () => {
+				const [query] = parse_atrule_prelude('media', '(width=>1000px)')
+				const range = (query as MediaQuery).children[0] as FeatureRange
+
+				expect(range.children.map((c) => c.text)).toEqual(['=', '>', '1000px'])
+			})
+
+			test('should tokenize >= and <= as a single comparator', () => {
+				const [query] = parse_atrule_prelude('media', '(100px<=width>=1000px)')
+				const range = (query as MediaQuery).children[0] as FeatureRange
+
+				expect(range.children.map((c) => c.text)).toEqual(['100px', '<=', '>=', '1000px'])
+			})
+
 			test('should parse range syntax with double comparison', () => {
 				const css = '@media (50px <= width <= 100px) { }'
 				const ast = parse(css)
