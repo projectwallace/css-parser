@@ -56,7 +56,7 @@ export class DeclarationParser {
 		// Create a fresh lexer instance for standalone parsing
 		const lexer = new Lexer(this.source)
 		lexer.seek(start, line, column)
-		lexer.next_token_fast(true) // skip whitespace like Parser does
+		lexer.next_token(true) // skip whitespace like Parser does
 
 		return this.parse_declaration_with_lexer(lexer, end)
 	}
@@ -116,7 +116,7 @@ export class DeclarationParser {
 			browser_hack_line = lexer.token_line
 			browser_hack_column = lexer.token_column
 
-			lexer.next_token_fast(true) // skip whitespace
+			lexer.next_token(true) // skip whitespace
 
 			if ((lexer.token_type as TokenType) === TOKEN_IDENT) {
 				has_browser_hack = true
@@ -145,7 +145,7 @@ export class DeclarationParser {
 		// Lookahead: save lexer state before consuming
 		const saved = lexer.save_position_into(this.lookahead_position)
 
-		lexer.next_token_fast(true) // consume property name, skip whitespace
+		lexer.next_token(true) // consume property name, skip whitespace
 
 		// Expect ':' (type assertion needed because TS doesn't know next_token mutates token_type)
 		if ((lexer.token_type as TokenType) !== TOKEN_COLON) {
@@ -207,7 +207,7 @@ export class DeclarationParser {
 			if (stop_ch === CHAR_SEMICOLON && paren_depth === 0) {
 				value_end = skip_whitespace_and_comments_backward(this.source, lexer.pos, value_start)
 				// Tokenize ';' so token_type reflects it, matching what the old loop left behind.
-				lexer.next_token_fast(false)
+				lexer.next_token(false)
 				break
 			}
 
@@ -224,7 +224,7 @@ export class DeclarationParser {
 				}
 				// Tokenize '}' (without consuming it) so peek_type() sees it - the enclosing
 				// block's own loop needs to see '}' to know it's done.
-				lexer.next_token_fast(false)
+				lexer.next_token(false)
 				break
 			}
 
@@ -239,16 +239,16 @@ export class DeclarationParser {
 				value_end = lexer.pos
 				lexer.pos++ // consume '!'
 				// Check if next token is an identifier (doesn't verify it's literally "important")
-				const next_type = lexer.next_token_fast(true) // skip whitespace
+				const next_type = lexer.next_token(true) // skip whitespace
 				if (next_type === TOKEN_IDENT) {
 					has_important = true
 					last_end = lexer.token_end
-					lexer.next_token_fast(true) // Advance to next token after "important", skip whitespace
+					lexer.next_token(true) // Advance to next token after "important", skip whitespace
 					break
 				}
 				// '!' wasn't followed by an identifier - treat the already-peeked token as
 				// ordinary content; lexer.pos is already past it, so the raw scan picks up
-				// naturally (an extra next_token_fast here would swallow e.g. a trailing '}').
+				// naturally (an extra next_token here would swallow e.g. a trailing '}').
 				last_end = lexer.token_end
 				value_end = last_end
 				continue
@@ -258,7 +258,7 @@ export class DeclarationParser {
 				// Ran out of input before finding any of the above
 				last_end = skip_whitespace_and_comments_backward(this.source, lexer.pos, value_start)
 				value_end = last_end
-				lexer.next_token_fast(false) // tokenize EOF so token_type reflects it
+				lexer.next_token(false) // tokenize EOF so token_type reflects it
 				break
 			}
 
@@ -327,7 +327,7 @@ export class DeclarationParser {
 		// Consume ';' if present
 		if ((lexer.token_type as TokenType) === TOKEN_SEMICOLON) {
 			last_end = lexer.token_end
-			lexer.next_token_fast(true) // skip whitespace
+			lexer.next_token(true) // skip whitespace
 		}
 
 		// Set declaration length

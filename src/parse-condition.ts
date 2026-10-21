@@ -91,7 +91,7 @@ export class ConditionParser {
 			this.lexer.token_type = TOKEN_EOF
 			return TOKEN_EOF
 		}
-		return this.lexer.next_token_fast(false)
+		return this.lexer.next_token(false)
 	}
 
 	// Scan tokens from just after an already-open '(' or function-call (depth 1) to its

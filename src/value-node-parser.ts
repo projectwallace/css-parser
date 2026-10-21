@@ -96,7 +96,7 @@ export class ValueNodeParser {
 		while (this.lexer.pos < this.end) {
 			// Whitespace is only a separator here, so let the lexer skip it instead of
 			// emitting a token we'd immediately discard
-			this.lexer.next_token_fast(true)
+			this.lexer.next_token(true)
 
 			// Stop if we've reached the end of the range
 			if (this.lexer.token_start >= this.end) break
@@ -211,7 +211,7 @@ export class ValueNodeParser {
 		let close_end = this.lexer.token_end
 
 		while ((!bounded || this.lexer.pos < this.end) && depth > 0) {
-			this.lexer.next_token_fast(false)
+			this.lexer.next_token(false)
 			const token_type = this.lexer.token_type
 			if (token_type === TOKEN_EOF) break
 			if (bounded && this.lexer.token_start >= this.end) break
@@ -267,11 +267,11 @@ export class ValueNodeParser {
 			// Peek at the next token to see if it's a string
 			// If it's a string, parse normally. Otherwise, skip parsing children.
 			const save_pos = this.lexer.save_position()
-			this.lexer.next_token_fast(false)
+			this.lexer.next_token(false)
 
 			// Skip whitespace
 			while (this.lexer.token_type === TOKEN_WHITESPACE && this.lexer.pos < this.end) {
-				this.lexer.next_token_fast(false)
+				this.lexer.next_token(false)
 			}
 
 			const first_token_type = this.lexer.token_type
@@ -320,7 +320,7 @@ export class ValueNodeParser {
 		let content_end = end
 
 		while (this.lexer.pos < this.end && paren_depth > 0) {
-			this.lexer.next_token_fast(true)
+			this.lexer.next_token(true)
 
 			const token_type = this.lexer.token_type
 			if (token_type === TOKEN_EOF) break
@@ -390,7 +390,7 @@ export class ValueNodeParser {
 		let if_closed = false
 
 		while (this.lexer.pos < this.end && !if_closed) {
-			this.lexer.next_token_fast(false)
+			this.lexer.next_token(false)
 			const tt = this.lexer.token_type
 
 			if (tt === TOKEN_EOF) break
@@ -419,7 +419,7 @@ export class ValueNodeParser {
 			// ── Find the ':' separator ─────────────────────────────────────────
 			let colon_found = false
 			while (this.lexer.pos < this.end) {
-				this.lexer.next_token_fast(false)
+				this.lexer.next_token(false)
 				const t = this.lexer.token_type
 				if (t === TOKEN_EOF) break
 				if (this.lexer.token_start >= this.end) break
@@ -447,7 +447,7 @@ export class ValueNodeParser {
 
 			if (colon_found && !if_closed) {
 				while (this.lexer.pos < this.end) {
-					this.lexer.next_token_fast(false)
+					this.lexer.next_token(false)
 					const t = this.lexer.token_type
 					if (t === TOKEN_EOF) break
 					if (this.lexer.token_start >= this.end) break
@@ -525,7 +525,7 @@ export class ValueNodeParser {
 	// committing to consuming it — callers restore to a saved position when it doesn't.
 	private next_significant_token(): TokenType {
 		while (this.lexer.pos < this.end) {
-			this.lexer.next_token_fast(false)
+			this.lexer.next_token(false)
 			if (this.lexer.token_start >= this.end) return TOKEN_EOF
 			if (this.lexer.token_type === TOKEN_WHITESPACE) continue
 			return this.lexer.token_type
@@ -739,7 +739,7 @@ export class ValueNodeParser {
 
 		const nodes: number[] = []
 		while (this.lexer.pos < this.end) {
-			this.lexer.next_token_fast(true)
+			this.lexer.next_token(true)
 			if (this.lexer.token_start >= this.end) break
 			const token_type = this.lexer.token_type
 			if (token_type === TOKEN_EOF) break
@@ -771,7 +771,7 @@ export class ValueNodeParser {
 		let paren_end = end
 
 		while (this.lexer.pos < this.end && paren_depth > 0) {
-			this.lexer.next_token_fast(true)
+			this.lexer.next_token(true)
 
 			const token_type = this.lexer.token_type
 			if (token_type === TOKEN_EOF) break

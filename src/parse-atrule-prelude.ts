@@ -707,7 +707,7 @@ export class AtRulePreludeParser {
 			this.lexer.token_type = TOKEN_EOF
 			return TOKEN_EOF
 		}
-		return this.lexer.next_token_fast(false)
+		return this.lexer.next_token(false)
 	}
 
 	// Parse @namespace prelude: [prefix] url("...") | "..."

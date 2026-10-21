@@ -135,7 +135,7 @@ export class Parser {
 
 	// Advance to the next token, skipping whitespace
 	private next_token(): void {
-		this.lexer.next_token_fast(true)
+		this.lexer.next_token(true)
 	}
 
 	// Peek at current token type
