@@ -885,6 +885,39 @@ describe('Core Nodes', () => {
 					expect(decl2.type).toBe(DECLARATION)
 				})
 
+				test('@font-feature-values with nested at-rules', () => {
+					const root = parse(
+						'@font-feature-values Font One { @styleset { nice-style: 12; } @swash { fancy: 1 } } a {}',
+					)
+					const rule = root.first_child! as Atrule
+					expect(rule.name).toBe('font-feature-values')
+					expect(rule.next_sibling!.type).toBe(STYLE_RULE)
+					expect(rule.next_sibling!.next_sibling).toBeNull()
+
+					const [styleset, swash] = rule.block!.children as Atrule[]
+					expect(styleset.type).toBe(AT_RULE)
+					expect(styleset.name).toBe('styleset')
+					expect(styleset.block!.first_child!.type).toBe(DECLARATION)
+					expect(swash.name).toBe('swash')
+					expect(swash.block!.first_child!.type).toBe(DECLARATION)
+				})
+
+				test('@page with nested margin at-rules', () => {
+					const root = parse(
+						'@page :first { margin: 1in; @top-left { content: "a"; } @bottom-right-corner { color: red } } a {}',
+					)
+					const page = root.first_child! as Atrule
+					expect(page.name).toBe('page')
+					expect(page.next_sibling!.type).toBe(STYLE_RULE)
+
+					const [margin, top_left, bottom_right] = page.block!.children as Atrule[]
+					expect(margin.type).toBe(DECLARATION)
+					expect(top_left.name).toBe('top-left')
+					expect(top_left.block!.first_child!.type).toBe(DECLARATION)
+					expect(bottom_right.name).toBe('bottom-right-corner')
+					expect(bottom_right.block!.first_child!.type).toBe(DECLARATION)
+				})
+
 				test('@page', () => {
 					const source = '@page { margin: 1in; }'
 					const root = parse(source)
