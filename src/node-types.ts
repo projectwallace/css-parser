@@ -593,12 +593,17 @@ export type LayerName = Leaf<
  * A parenthesised selector argument in an at-rule prelude, e.g. `(.parent)`
  * in `@scope (.parent) to (.child)`. Distinct from SELECTOR_LIST, which
  * already means "matches elements", so tooling can tell scoping arguments
- * apart from real selectors. `value` is the trimmed text inside the parens.
+ * apart from real selectors. `value` is the trimmed text inside the parens;
+ * the parsed selectors are available as a single `SelectorList` child
+ * (absent when the parens are empty).
  */
-export type PreludeSelectorList = Leaf<
-	typeof PRELUDE_SELECTORLIST,
-	'PreludeSelectorList',
-	{ readonly value: string }
+export type PreludeSelectorList = WithClone<
+	CSSNode &
+		WithChildren<SelectorList> & {
+			readonly type: typeof PRELUDE_SELECTORLIST
+			readonly type_name: 'PreludeSelectorList'
+			readonly value: string
+		}
 >
 
 export type PreludeOperator = Leaf<typeof PRELUDE_OPERATOR, 'Operator'>

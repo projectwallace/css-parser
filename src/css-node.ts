@@ -263,6 +263,7 @@ const nodes_with_children = new Set<number>([
 	SUPPORTS_DECLARATION,
 	IF_BRANCH,
 	IF_CONDITION,
+	PRELUDE_SELECTORLIST,
 ])
 
 const enumerable_properties = [
