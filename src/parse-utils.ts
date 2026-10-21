@@ -6,8 +6,6 @@ import {
 	CHAR_RIGHT_PAREN,
 	is_whitespace,
 } from './string-utils'
-import { TOKEN_LEFT_PAREN, TOKEN_RIGHT_PAREN, TOKEN_FUNCTION, TOKEN_EOF } from './token-types'
-import type { Lexer } from './tokenize'
 
 export function skip_whitespace_forward(source: string, pos: number, end: number): number {
 	while (pos < end && is_whitespace(source.charCodeAt(pos))) {
@@ -115,36 +113,4 @@ export function find_colon_at_depth_zero(source: string, start: number, end: num
 		else if (ch === CHAR_COLON && depth === 0) return i
 	}
 	return -1
-}
-
-// Results of the last scan_matching_paren() call: the positions right before/after the closing ')'.
-export const paren_scan = { content_end: 0, close_end: 0 }
-
-// Scan tokens from just after an already-open '(' or function-call (depth 1) to its matching
-// ')', never reading past `end`. Returns false if EOF was hit first, in which case
-// paren_scan is left at the position scanning started from, so callers that don't check the
-// result still get sane fallback spans.
-export function scan_matching_paren(lexer: Lexer, end: number): boolean {
-	let depth = 1
-	let content_end = lexer.pos
-	let close_end = lexer.token_end
-
-	while (lexer.pos < end && depth > 0) {
-		const token_type = lexer.next_token(false)
-		if (token_type === TOKEN_LEFT_PAREN || token_type === TOKEN_FUNCTION) {
-			depth++
-		} else if (token_type === TOKEN_RIGHT_PAREN) {
-			depth--
-			if (depth === 0) {
-				content_end = lexer.token_start
-				close_end = lexer.token_end
-			}
-		} else if (token_type === TOKEN_EOF) {
-			break
-		}
-	}
-
-	paren_scan.content_end = content_end
-	paren_scan.close_end = close_end
-	return depth === 0
 }

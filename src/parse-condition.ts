@@ -45,8 +45,6 @@ import {
 	trim_boundaries,
 	skip_whitespace_and_comments_forward,
 	find_colon_at_depth_zero,
-	scan_matching_paren,
-	paren_scan,
 } from './parse-utils'
 import { SelectorParser } from './parse-selector'
 import type { ValueNodeParser } from './value-node-parser'
@@ -94,6 +92,41 @@ export class ConditionParser {
 			return TOKEN_EOF
 		}
 		return this.lexer.next_token(false)
+	}
+
+	// Scan tokens from just after an already-open '(' or function-call (depth 1) to its
+	// matching ')'. Must be called right after consuming the opening token. Returns
+	// [content_end, close_end, matched]: content_end/close_end are the positions right
+	// before/after the closing ')'; matched is false if EOF was hit first, in which case
+	// content_end/close_end are left at the position scanning started from (mirroring the
+	// caller's own pre-loop defaults, so callers that don't check `matched` still get sane
+	// fallback spans).
+	private paren_content_end = 0
+	private paren_close_end = 0
+
+	private scan_matching_paren(): boolean {
+		let depth = 1
+		let content_end = this.lexer.pos
+		let close_end = this.lexer.token_end
+
+		while (this.lexer.pos < this.end && depth > 0) {
+			const token_type = this.next_token()
+			if (token_type === TOKEN_LEFT_PAREN || token_type === TOKEN_FUNCTION) {
+				depth++
+			} else if (token_type === TOKEN_RIGHT_PAREN) {
+				depth--
+				if (depth === 0) {
+					content_end = this.lexer.token_start
+					close_end = this.lexer.token_end
+				}
+			} else if (token_type === TOKEN_EOF) {
+				break
+			}
+		}
+
+		this.paren_content_end = content_end
+		this.paren_close_end = close_end
+		return depth === 0
 	}
 
 	// Parse feature value via the shared ValueNodeParser, so calc()/env()/var() get full children.
@@ -244,11 +277,8 @@ export class ConditionParser {
 					// token only covers 'name(' — extend to its matching ')' so calc() etc. stay whole
 					const value_start = this.lexer.token_start
 					let value_end = this.lexer.token_end
-					if (
-						this.lexer.token_type === TOKEN_FUNCTION &&
-						scan_matching_paren(this.lexer, this.end)
-					) {
-						value_end = paren_scan.close_end
+					if (this.lexer.token_type === TOKEN_FUNCTION && this.scan_matching_paren()) {
+						value_end = this.paren_close_end
 					}
 					const value_first = this.parse_feature_value(value_start, value_end)
 					if (value_first !== 0) {
@@ -379,9 +409,9 @@ export class ConditionParser {
 		const feature_start = this.lexer.token_start
 		const content_start = this.lexer.pos
 
-		const matched = scan_matching_paren(this.lexer, this.end)
-		const content_end = paren_scan.content_end
-		const feature_end = paren_scan.close_end
+		const matched = this.scan_matching_paren()
+		const content_end = this.paren_content_end
+		const feature_end = this.paren_close_end
 		if (!matched) return null
 
 		return this.parse_media_feature_content(feature_start, feature_end, content_start, content_end)
@@ -402,9 +432,9 @@ export class ConditionParser {
 		const content_column = this.lexer.column
 
 		// Find matching closing paren
-		scan_matching_paren(this.lexer, this.end)
-		const content_end = paren_scan.content_end
-		const func_end = paren_scan.close_end
+		this.scan_matching_paren()
+		const content_end = this.paren_content_end
+		const func_end = this.paren_close_end
 
 		// Create function node
 		const func_node = this.create_node(FUNCTION, func_start, func_end)
@@ -500,9 +530,9 @@ export class ConditionParser {
 				const content_line = this.lexer.line
 				const content_column = this.lexer.column
 
-				const matched = scan_matching_paren(this.lexer, this.end)
-				const content_end = paren_scan.content_end
-				const feature_end = paren_scan.close_end
+				const matched = this.scan_matching_paren()
+				const content_end = this.paren_content_end
+				const feature_end = this.paren_close_end
 
 				if (matched) {
 					const query = this.create_node(SUPPORTS_QUERY, feature_start, feature_end)
