@@ -576,7 +576,9 @@ export type ContainerQuery = WithClone<
 
 export type SupportsQuery = WithClone<
 	CSSNode &
-		WithChildren<SupportsDeclaration> & {
+		// A simple `(property: value)` holds a SupportsDeclaration; a nested boolean group such as
+		// `((a: 1) and (b: 2))` holds the same flat condition nodes as an `@supports` prelude
+		WithChildren<SupportsDeclaration | SupportsQuery | PreludeOperator | Function> & {
 			readonly type: typeof SUPPORTS_QUERY
 			readonly type_name: 'SupportsQuery'
 			/** The supports condition text, e.g. "display: flex" from "supports(display: flex)" */
