@@ -554,7 +554,7 @@ export class AtRulePreludeParser {
 	}
 
 	// Parse import layer: `layer` or `layer(name)`
-	// - `layer`        → LayerName with name=null
+	// - `layer`        → LayerName with name=''
 	// - `layer()`      → Function{name='layer'} without children
 	// - `layer(a.b)`   → Function{name='layer'} > LayerName{name='a.b'}
 	private parse_import_layer(): number | null {
