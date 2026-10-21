@@ -902,6 +902,22 @@ describe('Core Nodes', () => {
 					expect(swash.block!.first_child!.type).toBe(DECLARATION)
 				})
 
+				test('@page with nested margin at-rules', () => {
+					const root = parse(
+						'@page :first { margin: 1in; @top-left { content: "a"; } @bottom-right-corner { color: red } } a {}',
+					)
+					const page = root.first_child! as Atrule
+					expect(page.name).toBe('page')
+					expect(page.next_sibling!.type).toBe(STYLE_RULE)
+
+					const [margin, top_left, bottom_right] = page.block!.children
+					expect(margin.type).toBe(DECLARATION)
+					expect((top_left as Atrule).name).toBe('top-left')
+					expect(top_left.block!.first_child!.type).toBe(DECLARATION)
+					expect((bottom_right as Atrule).name).toBe('bottom-right-corner')
+					expect(bottom_right.block!.first_child!.type).toBe(DECLARATION)
+				})
+
 				test('@page', () => {
 					const source = '@page { margin: 1in; }'
 					const root = parse(source)
