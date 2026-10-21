@@ -301,8 +301,8 @@ export type Function = WithClone<
 		// `supports()` hold SupportsDeclaration/SupportsQuery/PreludeOperator children (matching
 		// `@supports`'s own shape, including the full compound and/or/not grammar for
 		// `supports()`) and `media()` holds a MediaFeature or FeatureRange child (matching
-		// `@media`'s own shape, including range comparison syntax). `@import`'s `layer()` holds a
-		// LayerName child — see parse_import_layer — see parse_if_condition_function
+		// `@media`'s own shape, including range comparison syntax) — see parse_if_condition_function.
+		// `@import`'s `layer()` holds a LayerName child — see parse_import_layer
 		WithChildren<
 			| ValueLike
 			| MediaFeature
