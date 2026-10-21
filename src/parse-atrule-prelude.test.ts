@@ -1,6 +1,8 @@
 import { describe, test, expect } from 'vitest'
 import { parse } from './parse'
 import { parse_atrule_prelude } from './parse-atrule-prelude'
+import { walk } from './walk'
+import { parse_selector_list } from './parse-selector'
 import { CSSNode, type PlainCSSNode } from './css-node'
 import type {
 	Atrule,
@@ -1727,6 +1729,152 @@ describe('At-Rule Prelude Nodes', () => {
 				const atRule = root.first_child! as Atrule
 				const children = (atRule.prelude as AtrulePrelude | null)?.children ?? []
 				expect(children.length).toBe(0)
+			})
+
+			describe('selector children', () => {
+				const scope = (prelude: string) => parse_atrule_prelude('scope', prelude) as any[]
+
+				test('parses both arguments into SelectorList children', () => {
+					const [start, op, end] = scope('(.a) to (.b)') as [
+						PreludeSelectorList,
+						CSSNode,
+						PreludeSelectorList,
+					]
+					expect(op.type).toBe(PRELUDE_OPERATOR)
+					for (const [node, name] of [
+						[start, 'a'],
+						[end, 'b'],
+					] as const) {
+						expect(node.type_name).toBe('PreludeSelectorList')
+						expect(node.value).toBe('.' + name)
+						expect(node.child_count).toBe(1)
+						const list = node.first_child
+						expect(list.type).toBe(SELECTOR_LIST)
+						expect(list.type_name).toBe('SelectorList')
+						expect(list.child_count).toBe(1)
+						const selector = list.first_child
+						expect(selector.type_name).toBe('Selector')
+						expect(selector.first_child.type_name).toBe('ClassSelector')
+						expect(selector.first_child.text).toBe('.' + name)
+					}
+				})
+
+				test('parses selector lists', () => {
+					const [start, , end] = scope('(.a, .b > .c) to (#d)') as PreludeSelectorList[]
+					expect(start.first_child.children.map((c) => c.text)).toEqual(['.a', '.b > .c'])
+					expect(start.first_child.children.every((c) => c.type_name === 'Selector')).toBe(true)
+					expect(end.first_child.first_child.first_child.type_name).toBe('IdSelector')
+				})
+
+				test('trims value and keeps accurate child offsets', () => {
+					const source = '(  .a  ) to (  .b  )'
+					const [start, , end] = scope(source) as PreludeSelectorList[]
+					expect(start.value).toBe('.a')
+					expect(start.text).toBe('(  .a  )')
+					expect(end.value).toBe('.b')
+					for (const node of [start, end]) {
+						const cls = node.first_child.first_child.first_child
+						expect(source.slice(cls.start, cls.end)).toBe(node.value)
+						expect(source.slice(node.first_child.start, node.first_child.end)).toBe(node.value)
+						expect(cls.line).toBe(1)
+						expect(cls.column).toBe(cls.start + 1)
+					}
+				})
+
+				test('tracks line/column across newlines', () => {
+					const source = '(\n  .a\n) to (.b)'
+					const [start] = scope(source) as PreludeSelectorList[]
+					const cls = start.first_child.first_child.first_child
+					expect(source.slice(cls.start, cls.end)).toBe('.a')
+					// Same line/column the selector parser reports for this text on its own
+					const reference = parse_selector_list('\n  .a').first_child!.first_child!
+					expect(cls.line).toBe(2)
+					expect(cls.column).toBe(reference.column)
+					expect(start.value).toBe('.a')
+				})
+
+				test('parses pseudo-classes and nested selectors', () => {
+					const [start, , end] = scope('(.a:hover) to (.b:not(.c))') as PreludeSelectorList[]
+					const compound = start.first_child.first_child.children
+					expect(compound.map((c) => c.type_name)).toEqual(['ClassSelector', 'PseudoClassSelector'])
+					const not = end.first_child.first_child.children[1]
+					expect(not.type_name).toBe('PseudoClassSelector')
+					expect(not.first_child!.type_name).toBe('SelectorList')
+					expect(not.first_child!.text).toBe('.c')
+				})
+
+				test('parses :scope', () => {
+					const [start] = scope(
+						':scope > .a'.replace(/^/, '(').concat(')'),
+					) as PreludeSelectorList[]
+					expect(start.value).toBe(':scope > .a')
+					expect(start.first_child.first_child.children.map((c) => c.type_name)).toEqual([
+						'PseudoClassSelector',
+						'Combinator',
+						'ClassSelector',
+					])
+				})
+
+				test('handles root-only and limit-only preludes', () => {
+					const root_only = scope('(.a)')
+					expect(root_only.length).toBe(1)
+					expect(root_only[0].first_child.type_name).toBe('SelectorList')
+
+					const limit_only = scope('to (.b)')
+					expect(limit_only.map((n) => n.type_name)).toEqual(['Operator', 'PreludeSelectorList'])
+					expect(limit_only[1].first_child.first_child.first_child.text).toBe('.b')
+				})
+
+				test('empty parens have no children and no value', () => {
+					const root = parse('@scope () { a { color: red } }')
+					const prelude = (root.first_child as Atrule).prelude as AtrulePrelude
+					const node = prelude.children[0] as PreludeSelectorList
+					expect(node.type).toBe(PRELUDE_SELECTORLIST)
+					expect(node.has_children).toBe(false)
+					expect(node.value).toBeNull()
+					expect(() => scope('(   )')).not.toThrow()
+				})
+
+				test('invalid selector content does not throw and keeps value', () => {
+					for (const content of ['> .a', '.a,', ',', '!!!', '.a {']) {
+						let nodes: any[] = []
+						expect(() => {
+							nodes = scope(`(${content})`)
+						}).not.toThrow()
+						expect(nodes.length).toBe(1)
+						expect(nodes[0].type).toBe(PRELUDE_SELECTORLIST)
+						expect((nodes[0] as PreludeSelectorList).value).toBe(content.trim())
+					}
+				})
+
+				test('text/value/start/end are unchanged', () => {
+					const source = '@scope (.parent) to (.child) { }'
+					const root = parse(source)
+					const prelude = (root.first_child as Atrule).prelude as AtrulePrelude
+					const [a, op, b] = prelude.children as PreludeSelectorList[]
+					expect([a.text, a.value, a.start, a.end]).toEqual(['(.parent)', '.parent', 7, 16])
+					expect(op.text).toBe('to')
+					expect([b.text, b.value, b.start, b.end]).toEqual(['(.child)', '.child', 20, 28])
+				})
+
+				test('clone includes the selector child', () => {
+					const [node] = scope('(.a)') as PreludeSelectorList[]
+					const plain = node.clone()
+					expect(plain.value).toBe('.a')
+					expect(plain.children?.[0].type_name).toBe('SelectorList')
+					expect(plain.children?.[0].children?.[0].children?.[0].type_name).toBe('ClassSelector')
+				})
+
+				test('walk reaches selector nodes inside @scope', () => {
+					const root = parse('@scope (.a) to (.b:hover) { }')
+					const seen: string[] = []
+					walk(root, (node) => {
+						if (node.type_name === 'ClassSelector' || node.type_name === 'PseudoClassSelector') {
+							seen.push(node.text)
+						}
+					})
+					expect(seen).toEqual(['.a', '.b', ':hover'])
+				})
 			})
 
 			test('should parse nested rules in block', () => {

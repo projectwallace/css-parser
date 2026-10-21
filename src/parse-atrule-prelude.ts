@@ -38,6 +38,7 @@ import { CSSNode } from './css-node'
 import type { AnyNode } from './node-types'
 import { ValueNodeParser } from './value-node-parser'
 import { ConditionParser } from './parse-condition'
+import { SelectorParser } from './parse-selector'
 
 /** @internal */
 export class AtRulePreludeParser {
@@ -50,6 +51,8 @@ export class AtRulePreludeParser {
 	// Shared media-feature/supports-condition/style()-selector() parsing, also used by ValueNodeParser
 	// for if()'s condition functions — see parse-condition.ts for why value_node_parser is injected
 	private condition_parser: ConditionParser
+	// Deep-parses the parenthesised arguments of @scope into real SelectorLists
+	private selector_parser: SelectorParser
 
 	constructor(arena: CSSDataArena, source: string) {
 		this.arena = arena
@@ -59,6 +62,7 @@ export class AtRulePreludeParser {
 		this.prelude_end = 0
 		this.value_node_parser = new ValueNodeParser(arena, source)
 		this.condition_parser = new ConditionParser(arena, source, this.value_node_parser)
+		this.selector_parser = new SelectorParser(arena, source)
 	}
 
 	// Parse an at-rule prelude into nodes (standalone use)
@@ -750,6 +754,9 @@ export class AtRulePreludeParser {
 				this.next_token() // consume '('
 				const paren_start = this.lexer.token_start
 				const content_start = this.lexer.pos
+				// '(' is a single char on one line, so the content starts right after it
+				const content_line = this.lexer.token_line
+				const content_column = this.lexer.token_column
 
 				this.scan_matching_paren()
 				const content_end = this.paren_content_end
@@ -760,6 +767,28 @@ export class AtRulePreludeParser {
 				if (trimmed) {
 					this.arena.set_value_start_delta(scope_node, trimmed[0] - paren_start)
 					this.arena.set_value_length(scope_node, trimmed[1] - trimmed[0])
+
+					// <scope-start>/<scope-end> are plain <selector-list>s; unlike :has(), no leading combinator
+					let line = content_line
+					let column = content_column
+					for (let i = content_start; i < trimmed[0]; i++) {
+						if (this.source.charCodeAt(i) === 0x0a) {
+							line++
+							column = 1
+						} else {
+							column++
+						}
+					}
+					const selector_list = this.selector_parser.parse_selector(
+						trimmed[0],
+						trimmed[1],
+						line,
+						column,
+						false,
+					)
+					if (selector_list !== null) {
+						this.arena.set_first_child(scope_node, selector_list)
+					}
 				}
 				nodes.push(scope_node)
 			} else if (token_type === TOKEN_IDENT) {
