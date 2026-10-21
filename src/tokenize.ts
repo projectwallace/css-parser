@@ -158,8 +158,8 @@ export class Lexer {
 		this._line_offset = pos - column + 1
 	}
 
-	// Fast token advancing without object allocation (for internal parser use)
-	next_token_fast(skip_whitespace: boolean = false): TokenType {
+	// Advances to the next token and returns its type; position is exposed via token_start/token_end/token_line/token_column
+	next_token(skip_whitespace: boolean = false): TokenType {
 		const source = this.source
 		const source_length = source.length
 
@@ -384,7 +384,7 @@ export class Lexer {
 	}
 
 	// Skip a comment (/* ... */), firing on_comment if set. Caller must have verified
-	// this.pos is at '/*'. Shared by next_token_fast and the skip_to_* scans below.
+	// this.pos is at '/*'. Shared by next_token and the skip_to_* scans below.
 	private _skip_comment(): void {
 		const source = this.source
 		const source_length = source.length
@@ -543,7 +543,7 @@ export class Lexer {
 		const source = this.source
 		const source_length = source.length
 		const start = this.pos
-		// Hoisted to locals (synced back once), same as next_token_fast's inline skip.
+		// Hoisted to locals (synced back once), same as next_token's inline skip.
 		let pos = start
 		let line = this._line
 		let line_offset = this._line_offset
@@ -973,18 +973,6 @@ export class Lexer {
 		return type
 	}
 
-	// Public API: returns Token object for backwards compatibility
-	next_token(skip_whitespace: boolean = false): Token | null {
-		this.next_token_fast(skip_whitespace)
-		return {
-			type: this.token_type,
-			start: this.token_start,
-			end: this.token_end,
-			line: this.token_line,
-			column: this.token_column,
-		}
-	}
-
 	/**
 	 * Save complete lexer state for backtracking
 	 * @returns Object containing all lexer state
@@ -1075,10 +1063,16 @@ export function* tokenize(
 	const lexer = new Lexer(source, on_comment)
 
 	while (true) {
-		const token = lexer.next_token()
-		if (!token || token.type === TOKEN_EOF) {
+		const type = lexer.next_token()
+		if (type === TOKEN_EOF) {
 			break
 		}
-		yield token
+		yield {
+			type,
+			start: lexer.token_start,
+			end: lexer.token_end,
+			line: lexer.token_line,
+			column: lexer.token_column,
+		}
 	}
 }

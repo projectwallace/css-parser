@@ -54,7 +54,7 @@ export class ANplusBParser {
 		}
 
 		// Get first token
-		this.lexer.next_token_fast(true)
+		this.lexer.next_token(true)
 
 		// Handle special keywords: odd, even
 		if (this.lexer.token_type === TOKEN_IDENT) {
@@ -153,7 +153,7 @@ export class ANplusBParser {
 		) {
 			// Look ahead for 'n'
 			const saved = this.lexer.save_position()
-			this.lexer.next_token_fast(true)
+			this.lexer.next_token(true)
 
 			if ((this.lexer.token_type as TokenType) === TOKEN_IDENT) {
 				const text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
@@ -249,7 +249,7 @@ export class ANplusBParser {
 			return null
 		}
 
-		this.lexer.next_token_fast(true)
+		this.lexer.next_token(true)
 
 		// Check for + or - delim
 		if (this.lexer.token_type === TOKEN_DELIM) {
@@ -259,7 +259,7 @@ export class ANplusBParser {
 				const sign = ch === CHAR_MINUS_HYPHEN ? '-' : ''
 				this.skip_whitespace()
 
-				this.lexer.next_token_fast(true)
+				this.lexer.next_token(true)
 
 				if ((this.lexer.token_type as TokenType) === TOKEN_NUMBER) {
 					let num_text = this.source.substring(this.lexer.token_start, this.lexer.token_end)

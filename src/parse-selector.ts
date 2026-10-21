@@ -144,7 +144,7 @@ export class SelectorParser {
 			if (this.lexer.pos >= this.selector_end) break
 
 			// Check for comma (comments are auto-skipped by lexer)
-			this.lexer.next_token_fast(false)
+			this.lexer.next_token(false)
 			const token_type: TokenType = this.lexer.token_type
 
 			if (token_type === TOKEN_COMMA) {
@@ -194,7 +194,7 @@ export class SelectorParser {
 		if (allow_relative && this.lexer.pos < this.selector_end) {
 			const saved = this.lexer.save_position()
 
-			this.lexer.next_token_fast(false)
+			this.lexer.next_token(false)
 			const token_type = this.lexer.token_type
 
 			// Check if token is a combinator
@@ -263,7 +263,7 @@ export class SelectorParser {
 		while (this.lexer.pos < this.selector_end) {
 			// Save lexer state before getting token
 			const saved = this.lexer.save_position()
-			this.lexer.next_token_fast(false)
+			this.lexer.next_token(false)
 
 			if (this.lexer.token_start >= this.selector_end) break
 
@@ -358,7 +358,7 @@ export class SelectorParser {
 		namespace_prefix_length: number,
 	): number | null {
 		const saved = this.lexer.save_position()
-		this.lexer.next_token_fast(false)
+		this.lexer.next_token(false)
 
 		let node_type: number
 		if (this.lexer.token_type === TOKEN_IDENT) {
@@ -471,7 +471,7 @@ export class SelectorParser {
 			return null
 		}
 
-		this.lexer.next_token_fast(false)
+		this.lexer.next_token(false)
 
 		// A comma ends the selector: whitespace before it separates selectors, it is not a
 		// descendant combinator (`a , b` is `a` and `b`, not `a<space>` and `b`)
@@ -516,7 +516,7 @@ export class SelectorParser {
 		const saved = this.lexer.save_position()
 
 		// Next token should be identifier
-		this.lexer.next_token_fast(false)
+		this.lexer.next_token(false)
 		if (this.lexer.token_type !== TOKEN_IDENT) {
 			// Restore lexer state and return null
 			this.lexer.restore_position(saved)
@@ -535,7 +535,7 @@ export class SelectorParser {
 
 		// Find matching ]
 		while (this.lexer.pos < this.selector_end && bracket_depth > 0) {
-			this.lexer.next_token_fast(false)
+			this.lexer.next_token(false)
 			const token_type = this.lexer.token_type
 			if (token_type === TOKEN_LEFT_BRACKET) {
 				bracket_depth++
@@ -707,7 +707,7 @@ export class SelectorParser {
 		}
 
 		// Next token should be identifier or function
-		this.lexer.next_token_fast(false)
+		this.lexer.next_token(false)
 
 		const token_type = this.lexer.token_type
 		if (token_type === TOKEN_IDENT) {
@@ -754,7 +754,7 @@ export class SelectorParser {
 		let end = this.lexer.token_end
 
 		while (this.lexer.pos < this.selector_end && paren_depth > 0) {
-			this.lexer.next_token_fast(false)
+			this.lexer.next_token(false)
 			const token_type = this.lexer.token_type
 			if (token_type === TOKEN_LEFT_PAREN || token_type === TOKEN_FUNCTION) {
 				paren_depth++
@@ -850,7 +850,7 @@ export class SelectorParser {
 		let last_child: number | null = null
 
 		while (this.lexer.pos < end) {
-			this.lexer.next_token_fast(false)
+			this.lexer.next_token(false)
 			const token_type = this.lexer.token_type
 			const token_start = this.lexer.token_start
 			const token_end = this.lexer.token_end
