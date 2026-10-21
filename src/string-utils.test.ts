@@ -212,48 +212,48 @@ describe('string-utils', () => {
 		})
 
 		test('should match longer string with lowercase prefix', () => {
-			expect(str_starts_with('url(image.png)', 'url(')).toBe(true)
+			expect(str_starts_with('url(', 'url(image.png)')).toBe(true)
 		})
 
 		test('should match uppercase string with lowercase prefix', () => {
-			expect(str_starts_with('URL(image.png)', 'url(')).toBe(true)
+			expect(str_starts_with('url(', 'URL(image.png)')).toBe(true)
 		})
 
 		test('should match mixed case string with lowercase prefix', () => {
-			expect(str_starts_with('Url(image.png)', 'url(')).toBe(true)
-			expect(str_starts_with('uRL(image.png)', 'url(')).toBe(true)
+			expect(str_starts_with('url(', 'Url(image.png)')).toBe(true)
+			expect(str_starts_with('url(', 'uRL(image.png)')).toBe(true)
 		})
 
 		test('should not match when string is shorter than prefix', () => {
-			expect(str_starts_with('url', 'url(')).toBe(false)
+			expect(str_starts_with('url(', 'url')).toBe(false)
 		})
 
 		test('should not match different prefix', () => {
-			expect(str_starts_with('src(image.png)', 'url(')).toBe(false)
+			expect(str_starts_with('url(', 'src(image.png)')).toBe(false)
 		})
 
 		test('should not match when prefix does not start string', () => {
-			expect(str_starts_with('image url()', 'url(')).toBe(false)
+			expect(str_starts_with('url(', 'image url()')).toBe(false)
 		})
 
 		test('should work with function names for CSS parsing', () => {
-			expect(str_starts_with('CALC(1px + 2px)', 'calc')).toBe(true)
-			expect(str_starts_with('RGB(255, 0, 0)', 'rgb')).toBe(true)
-			expect(str_starts_with('RGBA(255, 0, 0, 0.5)', 'rgba')).toBe(true)
+			expect(str_starts_with('calc', 'CALC(1px + 2px)')).toBe(true)
+			expect(str_starts_with('rgb', 'RGB(255, 0, 0)')).toBe(true)
+			expect(str_starts_with('rgba', 'RGBA(255, 0, 0, 0.5)')).toBe(true)
 		})
 
 		test('should work with pseudo-class functions', () => {
-			expect(str_starts_with('NTH-CHILD(2n)', 'nth-child')).toBe(true)
-			expect(str_starts_with('LANG(en, fr)', 'lang')).toBe(true)
-			expect(str_starts_with('HAS(> article)', 'has')).toBe(true)
+			expect(str_starts_with('nth-child', 'NTH-CHILD(2n)')).toBe(true)
+			expect(str_starts_with('lang', 'LANG(en, fr)')).toBe(true)
+			expect(str_starts_with('has', 'HAS(> article)')).toBe(true)
 		})
 
 		test('should handle empty prefix', () => {
-			expect(str_starts_with('anything', '')).toBe(true)
+			expect(str_starts_with('', 'anything')).toBe(true)
 		})
 
 		test('should handle empty string', () => {
-			expect(str_starts_with('', 'url(')).toBe(false)
+			expect(str_starts_with('url(', '')).toBe(false)
 		})
 
 		test('should handle empty both', () => {
@@ -262,10 +262,10 @@ describe('string-utils', () => {
 
 		test('should be case-insensitive only on string side', () => {
 			// Prefix MUST be lowercase
-			expect(str_starts_with('URL(', 'url(')).toBe(true)
+			expect(str_starts_with('url(', 'URL(')).toBe(true)
 			expect(str_starts_with('url(', 'url(')).toBe(true)
 			// The function doesn't normalize the prefix, so uppercase prefix won't match
-			expect(str_starts_with('url(', 'URL(')).toBe(false)
+			expect(str_starts_with('URL(', 'url(')).toBe(false)
 		})
 	})
 
@@ -401,59 +401,59 @@ describe('string-utils', () => {
 
 describe('str_index_of', () => {
 	test('should find single character in string', () => {
-		expect(str_index_of('hello', 'e')).toBe(1)
+		expect(str_index_of('e', 'hello')).toBe(1)
 	})
 
 	test('should find character case-insensitively', () => {
-		expect(str_index_of('HELLO', 'e')).toBe(1)
-		expect(str_index_of('Hello', 'e')).toBe(1)
+		expect(str_index_of('e', 'HELLO')).toBe(1)
+		expect(str_index_of('e', 'Hello')).toBe(1)
 	})
 
 	test('should return -1 for character not found', () => {
-		expect(str_index_of('hello', 'x')).toBe(-1)
+		expect(str_index_of('x', 'hello')).toBe(-1)
 	})
 
 	test('should find first occurrence', () => {
-		expect(str_index_of('hello', 'l')).toBe(2)
+		expect(str_index_of('l', 'hello')).toBe(2)
 	})
 
 	test('should find multi-character substring', () => {
-		expect(str_index_of('2n+1', 'n')).toBe(1)
-		expect(str_index_of('2N+1', 'n')).toBe(1)
+		expect(str_index_of('n', '2n+1')).toBe(1)
+		expect(str_index_of('n', '2N+1')).toBe(1)
 	})
 
 	test('should find multi-character substring case-insensitively', () => {
-		expect(str_index_of('HELLO', 'lo')).toBe(3)
-		expect(str_index_of('Hello', 'lo')).toBe(3)
+		expect(str_index_of('lo', 'HELLO')).toBe(3)
+		expect(str_index_of('lo', 'Hello')).toBe(3)
 	})
 
 	test('should return -1 for substring not found', () => {
-		expect(str_index_of('hello', 'xyz')).toBe(-1)
+		expect(str_index_of('xyz', 'hello')).toBe(-1)
 	})
 
 	test('should work with An+B patterns', () => {
-		expect(str_index_of('2n', 'n')).toBe(1)
-		expect(str_index_of('2N', 'n')).toBe(1)
-		expect(str_index_of('-5n-2', 'n')).toBe(2)
-		expect(str_index_of('-5N-2', 'n')).toBe(2)
+		expect(str_index_of('n', '2n')).toBe(1)
+		expect(str_index_of('n', '2N')).toBe(1)
+		expect(str_index_of('n', '-5n-2')).toBe(2)
+		expect(str_index_of('n', '-5N-2')).toBe(2)
 	})
 
 	test('should handle empty search string', () => {
-		expect(str_index_of('hello', '')).toBe(-1)
+		expect(str_index_of('', 'hello')).toBe(-1)
 	})
 
 	test('should find at string start', () => {
-		expect(str_index_of('hello', 'h')).toBe(0)
-		expect(str_index_of('HELLO', 'h')).toBe(0)
+		expect(str_index_of('h', 'hello')).toBe(0)
+		expect(str_index_of('h', 'HELLO')).toBe(0)
 	})
 
 	test('should find at string end', () => {
-		expect(str_index_of('hello', 'o')).toBe(4)
-		expect(str_index_of('HELLO', 'o')).toBe(4)
+		expect(str_index_of('o', 'hello')).toBe(4)
+		expect(str_index_of('o', 'HELLO')).toBe(4)
 	})
 
 	test('should find exact match', () => {
 		expect(str_index_of('n', 'n')).toBe(0)
-		expect(str_index_of('N', 'n')).toBe(0)
+		expect(str_index_of('n', 'N')).toBe(0)
 	})
 })

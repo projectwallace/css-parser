@@ -507,7 +507,7 @@ export class CSSNode {
 			}
 			// For URL nodes without children (e.g., @import url(...)), extract from text
 			// Handle both url("...") and url('...') and just "..." or '...'
-			if (str_starts_with(text, 'url(')) {
+			if (str_starts_with('url(', text)) {
 				// url("...") or url('...') or url(...) - extract content between parens
 				const open_paren = text.indexOf('(')
 				const close_paren = text.lastIndexOf(')')

@@ -197,7 +197,7 @@ export class ANplusBParser {
 		// Handle dimension tokens: 2n, 3n+1, -5n-2
 		if (this.lexer.token_type === TOKEN_DIMENSION) {
 			const token_text = this.source.substring(this.lexer.token_start, this.lexer.token_end)
-			const n_index = str_index_of(token_text, 'n')
+			const n_index = str_index_of('n', token_text)
 
 			if (n_index !== -1) {
 				a_start = this.lexer.token_start
