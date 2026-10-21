@@ -553,7 +553,10 @@ export class AtRulePreludeParser {
 		return url_node
 	}
 
-	// Parse import layer: layer or layer(name)
+	// Parse import layer: `layer` or `layer(name)`
+	// - `layer`        → LayerName with name=''
+	// - `layer()`      → Function{name='layer'} without children
+	// - `layer(a.b)`   → Function{name='layer'} > LayerName{name='a.b'}
 	private parse_import_layer(): number | null {
 		// Peek at next token
 		const saved = this.lexer.save_position()
@@ -568,40 +571,39 @@ export class AtRulePreludeParser {
 
 			if (str_equals_range(this.source, this.lexer.token_start, name_end, 'layer')) {
 				const layer_start = this.lexer.token_start
-				let layer_end = this.lexer.token_end
-				let content_start = 0
-				let content_length = 0
 
-				// If it's a function token, parse the contents until closing paren
-				if (this.lexer.token_type === TOKEN_FUNCTION) {
-					// Track the content inside the parentheses
-					content_start = this.lexer.pos
-					const matched = this.scan_matching_paren()
-					const content_end = this.paren_content_end
-					const close_end = this.paren_close_end
-					if (matched) {
-						content_length = content_end - content_start
-						layer_end = close_end
-					}
+				// Bare `layer` keyword: an unnamed layer
+				if (this.lexer.token_type === TOKEN_IDENT) {
+					const layer_node = this.create_node(LAYER_NAME, layer_start, this.lexer.token_end)
+					this.arena.set_content_start_delta(layer_node, 0)
+					this.arena.set_content_length(layer_node, 0)
+					return layer_node
 				}
 
-				// Create layer node
-				const layer_node = this.create_node(LAYER_NAME, layer_start, layer_end)
+				// layer(...): the Function owns the parentheses, the LayerName only the name
+				const content_start = this.lexer.token_end // After the opening '('
+				const matched = this.scan_matching_paren()
+				const content_end = this.paren_content_end
+				const layer_end = matched ? this.paren_close_end : this.lexer.pos
 
-				// Store the layer name (content inside parentheses), trimmed
-				if (content_length > 0) {
-					const trimmed = trim_boundaries(
-						this.source,
-						content_start,
-						content_start + content_length,
-					)
-					if (trimmed) {
-						this.arena.set_content_start_delta(layer_node, trimmed[0] - layer_start)
-						this.arena.set_content_length(layer_node, trimmed[1] - trimmed[0])
-					}
+				const func_node = this.create_node(FUNCTION, layer_start, layer_end)
+				this.arena.set_content_start_delta(func_node, 0)
+				this.arena.set_content_length(func_node, name_end - layer_start)
+
+				const trimmed = matched ? trim_boundaries(this.source, content_start, content_end) : null
+				if (trimmed) {
+					const name_start = trimmed[0]
+					const name_length = trimmed[1] - name_start
+					this.arena.set_value_start_delta(func_node, name_start - layer_start)
+					this.arena.set_value_length(func_node, name_length)
+
+					const name_node = this.create_node(LAYER_NAME, name_start, trimmed[1])
+					this.arena.set_content_start_delta(name_node, 0)
+					this.arena.set_content_length(name_node, name_length)
+					this.arena.set_first_child(func_node, name_node)
 				}
 
-				return layer_node
+				return func_node
 			}
 		}
 
@@ -611,6 +613,12 @@ export class AtRulePreludeParser {
 	}
 
 	// Parse import supports: supports(condition)
+	// Function{name='supports'} owns the outer parentheses. Its children are either
+	//   - SupportsQuery > SupportsDeclaration for `supports(display: grid)`, where the
+	//     SupportsQuery has no parentheses of its own because the source has none, or
+	//   - the same flat condition nodes as an `@supports` prelude for
+	//     `supports((display: grid) and (color: red))`, where each SupportsQuery
+	//     owns its own `(…)`.
 	private parse_import_supports(): number | null {
 		// Peek at next token
 		const saved = this.lexer.save_position()
@@ -624,33 +632,50 @@ export class AtRulePreludeParser {
 				str_equals_range(this.source, this.lexer.token_start, this.lexer.token_end - 1, 'supports')
 			) {
 				const supports_start = this.lexer.token_start
+				const name_end = this.lexer.token_end - 1
 				const content_start = this.lexer.token_end // After the opening '('
+				const line = this.lexer.line
+				const column = this.lexer.column
 
 				// Find matching closing parenthesis
 				this.scan_matching_paren()
 				const content_end = this.paren_content_end
 				const supports_end = this.paren_close_end
 
-				// Create supports node
-				const supports_node = this.create_node(SUPPORTS_QUERY, supports_start, supports_end)
+				const func_node = this.create_node(FUNCTION, supports_start, supports_end)
+				this.arena.set_content_start_delta(func_node, 0)
+				this.arena.set_content_length(func_node, name_end - supports_start)
 
-				// Store query content in value fields, trimmed
 				const trimmed = trim_boundaries(this.source, content_start, content_end)
 				if (trimmed) {
-					this.arena.set_value_start_delta(supports_node, trimmed[0] - supports_start)
-					this.arena.set_value_length(supports_node, trimmed[1] - trimmed[0])
+					const condition_start = trimmed[0]
+					const condition_end = trimmed[1]
+					const condition_length = condition_end - condition_start
+					this.arena.set_value_start_delta(func_node, condition_start - supports_start)
+					this.arena.set_value_length(func_node, condition_length)
 
-					// Check for simple declaration: supports(property: value)
 					const decl_child = this.condition_parser.parse_supports_declaration_content(
-						trimmed[0],
-						trimmed[1],
+						condition_start,
+						condition_end,
 					)
-					if (decl_child !== null) {
-						this.arena.set_first_child(supports_node, decl_child)
+					if (decl_child === null) {
+						const children = this.condition_parser.parse_supports_condition(
+							condition_start,
+							condition_end,
+							line,
+							column,
+						)
+						this.arena.append_children(func_node, children)
+					} else {
+						const query = this.create_node(SUPPORTS_QUERY, condition_start, condition_end)
+						this.arena.set_value_start_delta(query, 0)
+						this.arena.set_value_length(query, condition_length)
+						this.arena.set_first_child(query, decl_child)
+						this.arena.set_first_child(func_node, query)
 					}
 				}
 
-				return supports_node
+				return func_node
 			}
 		}
 

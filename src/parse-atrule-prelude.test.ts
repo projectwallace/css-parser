@@ -1847,6 +1847,7 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(children[1].type).toBe(LAYER_NAME)
 				expect(children[1].text).toBe('layer')
 				expect((children[1] as LayerName).name).toBe('')
+				expect((children[1] as LayerName).value).toBe('')
 			})
 
 			test('should parse with anonymous LAYER', () => {
@@ -1860,6 +1861,7 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(children[1].type).toBe(LAYER_NAME)
 				expect(children[1].text).toBe('LAYER')
 				expect((children[1] as LayerName).name).toBe('')
+				expect((children[1] as LayerName).value).toBe('')
 			})
 
 			test('should parse with named layer', () => {
@@ -1870,9 +1872,14 @@ describe('At-Rule Prelude Nodes', () => {
 
 				expect(children.length).toBe(2)
 				expect(children[0].type).toBe(URL)
-				expect(children[1].type).toBe(LAYER_NAME)
+				expect(children[1].type).toBe(FUNCTION)
 				expect(children[1].text).toBe('layer(utilities)')
-				expect((children[1] as LayerName).name).toBe('utilities')
+				expect((children[1] as Function).name).toBe('layer')
+				expect((children[1] as Function).value).toBe('utilities')
+				const layer = (children[1] as Function).first_child as LayerName
+				expect(layer.type).toBe(LAYER_NAME)
+				expect(layer.text).toBe('utilities')
+				expect(layer.name).toBe('utilities')
 			})
 
 			test('should trim whitespace from layer names', () => {
@@ -1881,8 +1888,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const atRule = ast.first_child! as Atrule
 				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
-				expect(children[1].type).toBe(LAYER_NAME)
-				expect((children[1] as LayerName).name).toBe('utilities')
+				expect(children[1].type).toBe(FUNCTION)
+				expect(((children[1] as Function).first_child as LayerName).type).toBe(LAYER_NAME)
+				expect(((children[1] as Function).first_child as LayerName).name).toBe('utilities')
 			})
 
 			test('should trim comments from layer names', () => {
@@ -1891,8 +1899,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const atRule = ast.first_child! as Atrule
 				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
-				expect(children[1].type).toBe(LAYER_NAME)
-				expect((children[1] as LayerName).name).toBe('utilities')
+				expect(children[1].type).toBe(FUNCTION)
+				expect(((children[1] as Function).first_child as LayerName).type).toBe(LAYER_NAME)
+				expect(((children[1] as Function).first_child as LayerName).name).toBe('utilities')
 			})
 
 			test('should trim whitespace and comments from dotted layer names', () => {
@@ -1901,8 +1910,9 @@ describe('At-Rule Prelude Nodes', () => {
 				const atRule = ast.first_child! as Atrule
 				const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
-				expect(children[1].type).toBe(LAYER_NAME)
-				expect((children[1] as LayerName).name).toBe('named.nested')
+				expect(children[1].type).toBe(FUNCTION)
+				expect(((children[1] as Function).first_child as LayerName).type).toBe(LAYER_NAME)
+				expect(((children[1] as Function).first_child as LayerName).name).toBe('named.nested')
 			})
 
 			test('should parse with supports query', () => {
@@ -1913,11 +1923,18 @@ describe('At-Rule Prelude Nodes', () => {
 
 				expect(children.length).toBe(2)
 				expect(children[0].type).toBe(URL)
-				expect(children[1].type).toBe(SUPPORTS_QUERY)
+				expect(children[1].type).toBe(FUNCTION)
 				expect(children[1].text).toBe('supports(display: grid)')
+				expect((children[1] as Function).name).toBe('supports')
+
+				// The Function owns the parentheses, the SupportsQuery inside has none
+				const query = (children[1] as Function).first_child as SupportsQuery
+				expect(query.type).toBe(SUPPORTS_QUERY)
+				expect(query.text).toBe('display: grid')
+				expect(query.value).toBe('display: grid')
 
 				// supports()'s argument should be deep-parsed into a SupportsDeclaration
-				const decl = (children[1] as SupportsQuery).children[0]
+				const decl = query.children[0]
 				expect(decl.type).toBe(SUPPORTS_DECLARATION)
 				expect(decl.text).toBe('display: grid')
 			})
@@ -1964,10 +1981,10 @@ describe('At-Rule Prelude Nodes', () => {
 
 				expect(children.length).toBe(3)
 				expect(children[0].type).toBe(URL)
-				expect(children[1].type).toBe(LAYER_NAME)
+				expect(children[1].type).toBe(FUNCTION)
 				expect(children[1].text).toBe('layer(base)')
-				expect((children[1] as LayerName).value).toBe('base')
-				expect((children[1] as LayerName).name).toBe('base')
+				expect(((children[1] as Function).first_child as LayerName).value).toBe('base')
+				expect(((children[1] as Function).first_child as LayerName).name).toBe('base')
 				expect(children[2].type).toBe(MEDIA_QUERY)
 			})
 
@@ -1982,15 +1999,20 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(prelude.first_child?.type).toBe(URL)
 				expect(url.value).toBe('"styles.css"')
 
-				const layer = url?.next_sibling as LayerName
+				const layer_fn = url?.next_sibling as Function
+				expect(layer_fn.type).toBe(FUNCTION)
+				expect(layer_fn.name).toBe('layer')
+				const layer = layer_fn.first_child as LayerName
 				expect(layer.type).toBe(LAYER_NAME)
 				expect(layer.value).toBe('base')
 				expect(layer.name).toBe('base')
 
-				const supports = layer?.next_sibling as SupportsQuery
-				expect(supports.type).toBe(SUPPORTS_QUERY)
+				const supports = layer_fn.next_sibling as Function
+				expect(supports.type).toBe(FUNCTION)
+				expect(supports.name).toBe('supports')
 				expect(supports.value).toBe('display: grid')
 				expect(supports.text).toBe('supports(display: grid)')
+				expect((supports.first_child as SupportsQuery).type).toBe(SUPPORTS_QUERY)
 			})
 
 			test('should parse with supports and media query', () => {
@@ -2001,7 +2023,7 @@ describe('At-Rule Prelude Nodes', () => {
 
 				expect(children.length).toBe(3)
 				expect(children[0].type).toBe(URL)
-				expect(children[1].type).toBe(SUPPORTS_QUERY)
+				expect(children[1].type).toBe(FUNCTION)
 				expect(children[2].type).toBe(MEDIA_QUERY)
 			})
 
@@ -2014,8 +2036,8 @@ describe('At-Rule Prelude Nodes', () => {
 
 				expect(children.length).toBe(4)
 				expect(children[0].type).toBe(URL)
-				expect(children[1].type).toBe(LAYER_NAME)
-				expect(children[2].type).toBe(SUPPORTS_QUERY)
+				expect(children[1].type).toBe(FUNCTION)
+				expect(children[2].type).toBe(FUNCTION)
 				expect(children[3].type).toBe(MEDIA_QUERY)
 			})
 
@@ -2027,9 +2049,37 @@ describe('At-Rule Prelude Nodes', () => {
 
 				expect(children.length).toBe(2)
 				expect(children[0].type).toBe(URL)
-				expect(children[1].type).toBe(SUPPORTS_QUERY)
+				expect(children[1].type).toBe(FUNCTION)
 				expect(children[1].text).toBe('supports((display: grid) and (gap: 1rem))')
-				expect((children[1] as SupportsQuery).value).toBe('(display: grid) and (gap: 1rem)')
+				expect((children[1] as Function).value).toBe('(display: grid) and (gap: 1rem)')
+
+				// Same flat children as an @supports prelude: each SupportsQuery owns its own parentheses
+				const inner = (children[1] as Function).children
+				expect(inner.map((c) => c.type)).toEqual([SUPPORTS_QUERY, PRELUDE_OPERATOR, SUPPORTS_QUERY])
+				expect(inner.map((c) => c.text)).toEqual(['(display: grid)', 'and', '(gap: 1rem)'])
+			})
+
+			test('should parse bare layer() as Function without children', () => {
+				const css = '@import url("styles.css") layer();'
+				const ast = parse(css, { parse_atrule_preludes: true })
+				const atRule = ast.first_child! as Atrule
+				const fn = (atRule.prelude as AtrulePrelude).children[1] as Function
+
+				expect(fn.type).toBe(FUNCTION)
+				expect(fn.name).toBe('layer')
+				expect(fn.text).toBe('layer()')
+				expect(fn.has_children).toBe(false)
+			})
+
+			test('should parse empty supports() as Function without children', () => {
+				const css = '@import url("styles.css") supports();'
+				const ast = parse(css, { parse_atrule_preludes: true })
+				const atRule = ast.first_child! as Atrule
+				const fn = (atRule.prelude as AtrulePrelude).children[1] as Function
+
+				expect(fn.type).toBe(FUNCTION)
+				expect(fn.name).toBe('supports')
+				expect(fn.has_children).toBe(false)
 			})
 
 			test('should preserve prelude text', () => {
@@ -2267,7 +2317,7 @@ describe('At-Rule Prelude Nodes', () => {
 					const atRule = ast.first_child! as Atrule
 					const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
-					const importLayer = children.find((c) => c.type === LAYER_NAME)
+					const importLayer = children.find((c) => c.type === FUNCTION)
 					expect(importLayer?.text).toBe('layer(utilities)')
 					expect(importLayer?.text.length).toBe(16)
 				})
@@ -2278,7 +2328,7 @@ describe('At-Rule Prelude Nodes', () => {
 					const atRule = ast.first_child! as Atrule
 					const children = (atRule.prelude as AtrulePrelude | null)?.children || []
 
-					const importSupports = children.find((c) => c.type === SUPPORTS_QUERY)
+					const importSupports = children.find((c) => c.type === FUNCTION)
 					expect(importSupports?.text).toBe('supports(display: flex)')
 					expect(importSupports?.text.length).toBe(23)
 				})
@@ -2563,7 +2613,8 @@ describe('parse_atrule_prelude()', () => {
 
 			expect(result.length).toBeGreaterThanOrEqual(2)
 			expect(result[0].type).toBe(URL)
-			expect(result[1].type).toBe(LAYER_NAME)
+			expect(result[1].type).toBe(FUNCTION)
+			expect((result[1].first_child as LayerName).type).toBe(LAYER_NAME)
 		})
 
 		test('should parse import with supports', () => {
@@ -2571,7 +2622,8 @@ describe('parse_atrule_prelude()', () => {
 
 			expect(result.length).toBeGreaterThanOrEqual(2)
 			expect(result[0].type).toBe(URL)
-			expect(result[1].type).toBe(SUPPORTS_QUERY)
+			expect(result[1].type).toBe(FUNCTION)
+			expect(result[1].first_child?.type).toBe(SUPPORTS_QUERY)
 		})
 	})
 
