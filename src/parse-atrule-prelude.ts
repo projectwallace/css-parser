@@ -33,7 +33,12 @@ import {
 	strip_vendor_prefix,
 	CHAR_PERIOD,
 } from './string-utils'
-import { trim_boundaries, skip_whitespace_and_comments_forward } from './parse-utils'
+import {
+	trim_boundaries,
+	skip_whitespace_and_comments_forward,
+	scan_matching_paren,
+	paren_scan,
+} from './parse-utils'
 import { CSSNode } from './css-node'
 import type { AnyNode } from './node-types'
 import { ValueNodeParser } from './value-node-parser'
@@ -151,41 +156,6 @@ export class AtRulePreludeParser {
 			this.lexer.token_line,
 			this.lexer.token_column,
 		)
-	}
-
-	// Scan tokens from just after an already-open '(' or function-call (depth 1) to its
-	// matching ')'. Must be called right after consuming the opening token. Returns
-	// [content_end, close_end, matched]: content_end/close_end are the positions right
-	// before/after the closing ')'; matched is false if EOF was hit first, in which case
-	// content_end/close_end are left at the position scanning started from (mirroring the
-	// caller's own pre-loop defaults, so callers that don't check `matched` still get sane
-	// fallback spans).
-	private paren_content_end = 0
-	private paren_close_end = 0
-
-	private scan_matching_paren(): boolean {
-		let depth = 1
-		let content_end = this.lexer.pos
-		let close_end = this.lexer.token_end
-
-		while (this.lexer.pos < this.prelude_end && depth > 0) {
-			const token_type = this.next_token()
-			if (token_type === TOKEN_LEFT_PAREN || token_type === TOKEN_FUNCTION) {
-				depth++
-			} else if (token_type === TOKEN_RIGHT_PAREN) {
-				depth--
-				if (depth === 0) {
-					content_end = this.lexer.token_start
-					close_end = this.lexer.token_end
-				}
-			} else if (token_type === TOKEN_EOF) {
-				break
-			}
-		}
-
-		this.paren_content_end = content_end
-		this.paren_close_end = close_end
-		return depth === 0
 	}
 
 	// Parse a single media query: screen and (min-width: 768px)
@@ -543,8 +513,8 @@ export class AtRulePreludeParser {
 
 		if (this.lexer.token_type === TOKEN_FUNCTION) {
 			// It's url( ... we need to find the matching )
-			this.scan_matching_paren()
-			const close_end = this.paren_close_end
+			scan_matching_paren(this.lexer, this.prelude_end)
+			const close_end = paren_scan.close_end
 			url_end = close_end
 		}
 
@@ -582,9 +552,9 @@ export class AtRulePreludeParser {
 
 				// layer(...): the Function owns the parentheses, the LayerName only the name
 				const content_start = this.lexer.token_end // After the opening '('
-				const matched = this.scan_matching_paren()
-				const content_end = this.paren_content_end
-				const layer_end = matched ? this.paren_close_end : this.lexer.pos
+				const matched = scan_matching_paren(this.lexer, this.prelude_end)
+				const content_end = paren_scan.content_end
+				const layer_end = matched ? paren_scan.close_end : this.lexer.pos
 
 				const func_node = this.create_node(FUNCTION, layer_start, layer_end)
 				this.arena.set_content_start_delta(func_node, 0)
@@ -638,9 +608,9 @@ export class AtRulePreludeParser {
 				const column = this.lexer.column
 
 				// Find matching closing parenthesis
-				this.scan_matching_paren()
-				const content_end = this.paren_content_end
-				const supports_end = this.paren_close_end
+				scan_matching_paren(this.lexer, this.prelude_end)
+				const content_end = paren_scan.content_end
+				const supports_end = paren_scan.close_end
 
 				const func_node = this.create_node(FUNCTION, supports_start, supports_end)
 				this.arena.set_content_start_delta(func_node, 0)
@@ -751,9 +721,9 @@ export class AtRulePreludeParser {
 				const paren_start = this.lexer.token_start
 				const content_start = this.lexer.pos
 
-				this.scan_matching_paren()
-				const content_end = this.paren_content_end
-				const paren_end = this.paren_close_end
+				scan_matching_paren(this.lexer, this.prelude_end)
+				const content_end = paren_scan.content_end
+				const paren_end = paren_scan.close_end
 
 				const scope_node = this.create_node(PRELUDE_SELECTORLIST, paren_start, paren_end)
 				const trimmed = trim_boundaries(this.source, content_start, content_end)

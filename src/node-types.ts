@@ -349,14 +349,7 @@ export type Value = WithClone<
 	CSSNode & WithChildren<ValueLike> & { readonly type: typeof VALUE; readonly type_name: 'Value' }
 >
 
-/**
- * A compound `if()`-branch condition combining multiple tests with `not`/`and`/`or`,
- * e.g. `not style(--scheme: light)` or `style(--a: 1) and media(width > 600px)`.
- *
- * Children are the flat sequence of PreludeOperator ("not"/"and"/"or") and
- * Function (`style()`/`media()`/`supports()`) nodes, in source order — the same
- * shape `@supports`'s own compound condition uses.
- */
+/** Compound `if()` condition: a flat sequence of `not`/`and`/`or` operators and `style()`/`media()`/`supports()` functions, e.g. `not style(--a: 1)`. */
 export type IfCondition = WithClone<
 	CSSNode &
 		WithChildren<Function | PreludeOperator> & {
@@ -365,29 +358,15 @@ export type IfCondition = WithClone<
 		}
 >
 
-/**
- * One branch inside a CSS `if()` inline conditional function.
- *
- * Each branch corresponds to a `<condition>: <value>` pair in:
- *   `if( <condition>: <value>; … else: <fallback> )`
- *
- * - `condition` — the parsed condition node: a Function (e.g. `style(--x: 1)`), an
- *   Identifier (`else`), or an IfCondition for compound `not`/`and`/`or` conditions
- *   (e.g. `not style(--x: 1)`)
- * - `value`     — the value text, e.g. `"green"`; `null` when omitted
- * - `is_else`   — `true` for the `else` branch
- * - `first_child` — same node as `condition`
- * - `children`    — condition node followed by parsed value nodes
- */
+/** A `<condition>: <value>` branch of an `if()` function. `children` is the condition followed by the parsed value nodes. */
 export type IfBranch = CSSNode &
 	WithChildren<Function | Identifier | IfCondition | Value> & {
 		readonly type: typeof IF_BRANCH
 		readonly type_name: 'IfBranch'
-		/** The parsed condition node, e.g. the Function "style(--active: 1)", the Identifier "else", or an IfCondition for compound conditions */
+		/** Function (`style(--x: 1)`), Identifier (`else`) or IfCondition */
 		readonly condition: Function | Identifier | IfCondition
-		/** The parsed value as a VALUE node, or null when the branch value is empty */
+		/** Branch value, or null when empty */
 		readonly value: Value | null
-		/** True when this is the else branch */
 		readonly is_else: boolean
 		clone(options?: CloneOptions): ToPlain<IfBranch>
 	}

@@ -31,10 +31,8 @@ export class ANplusBParser {
 		this.expr_end = 0
 	}
 
-	/**
-	 * Parse An+B expression
-	 * Examples: odd, even, 3, n, -n, 2n, 2n+1, -3n-5
-	 */
+	// Parse An+B expression
+	// Examples: odd, even, 3, n, -n, 2n, 2n+1, -3n-5
 	parse_anplusb(start: number, end: number, line: number = 1): number | null {
 		this.expr_end = end
 		this.lexer.seek(start, line)
@@ -238,10 +236,8 @@ export class ANplusBParser {
 		return null
 	}
 
-	/**
-	 * Parse the b part after 'n'
-	 * Handles: +5, -3, whitespace variations
-	 */
+	// Parse the b part after 'n'
+	// Handles: +5, -3, whitespace variations
 	private parse_b_part(): string | null {
 		this.skip_whitespace()
 

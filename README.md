@@ -14,7 +14,7 @@ Heavily influenced by [CSSTree](https://github.com/csstree/csstree). Some parsin
 - **Full modern CSS** — CSS Nesting, `:is()`, `:where()`, `:has()`, `@layer`, `@container`
 - **Error-tolerant** — keeps parsing through malformed input; one bad rule won't kill the file
 - **Precise source locations** — line, column, offset, and length on every node
-- **Tiny footprint** — tree-shakeable subparsers; as small as 278 bytes gzipped, < 16 kB kB worst case
+- **Tiny footprint** — tree-shakeable subparsers; as small as 278 bytes gzipped, < 16 kB worst case
 
 ## Installation
 
@@ -65,34 +65,30 @@ for (const rule of ast) {
 
 ## API
 
-Everything is exported from the package root. Each part is also available from its own entry point, so you can import only what you need and skip evaluating the rest of the package. Node properties and return types ship as TypeScript types, so this section sticks to short examples.
+Everything is exported from the package root. Each part is also available from its own entry point, so you can import only what you need. Node properties and return types ship as TypeScript types.
 
 ### Entry points
 
-| Import                                            | Exports                                                                                                   |
-| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `@projectwallace/css-parser`                      | Everything below, except the `Lexer` and `Parser` classes                                                 |
-| `@projectwallace/css-parser/parse`                | `parse`, `Parser`, `ParserOptions`                                                                        |
-| `@projectwallace/css-parser/parse-selector`       | `parse_selector`, `parse_selector_list`                                                                   |
-| `@projectwallace/css-parser/parse-atrule-prelude` | `parse_atrule_prelude`                                                                                    |
-| `@projectwallace/css-parser/parse-declaration`    | `parse_declaration`                                                                                       |
-| `@projectwallace/css-parser/parse-value`          | `parse_value`                                                                                             |
-| `@projectwallace/css-parser/parse-anplusb`        | `parse_anplusb`                                                                                           |
-| `@projectwallace/css-parser/parse-dimension`      | `parse_dimension`                                                                                         |
-| `@projectwallace/css-parser/tokenizer`            | `tokenize`, `Lexer`                                                                                       |
-| `@projectwallace/css-parser/walker`               | `walk`, `traverse`, `SKIP`, `BREAK`                                                                       |
-| `@projectwallace/css-parser/nodes`                | Node type constants (`STYLE_RULE`, `DECLARATION`, …), `NODE_TYPES`                                        |
-| `@projectwallace/css-parser/node-types`           | Type guards (`is_declaration`, `is_rule`, …) and node types (`CSSNode`, `Rule`, `Declaration`, …)         |
-| `@projectwallace/css-parser/string-utils`         | `is_custom`, `is_vendor_prefixed`, `strip_vendor_prefix`, `str_equals`, `str_starts_with`, `str_index_of` |
-| `@projectwallace/css-parser/token-types`          | Token type constants (`TOKEN_*`)                                                                          |
+- `@projectwallace/css-parser` — everything below, except the `Lexer` and `Parser` classes
+- `/parse` — `parse`, `Parser`, `ParserOptions`
+- `/parse-selector` — `parse_selector`, `parse_selector_list`
+- `/parse-atrule-prelude` — `parse_atrule_prelude`
+- `/parse-declaration` — `parse_declaration`
+- `/parse-value` — `parse_value`
+- `/parse-anplusb` — `parse_anplusb`
+- `/parse-dimension` — `parse_dimension`
+- `/tokenizer` — `tokenize`, `Lexer`
+- `/walker` — `walk`, `traverse`, `SKIP`, `BREAK`
+- `/nodes` — node type constants (`STYLE_RULE`, `DECLARATION`, …), `NODE_TYPES`
+- `/node-types` — type guards (`is_declaration`, `is_rule`, …) and node types (`CSSNode`, `Rule`, …)
+- `/string-utils` — `is_custom`, `is_vendor_prefixed`, `strip_vendor_prefix`, `str_equals`, `str_starts_with`, `str_index_of`
+- `/token-types` — token type constants (`TOKEN_*`)
 
 ### `parse(source, options?)`
 
-Parses a full stylesheet and returns the root `StyleSheet` node. Nodes are iterable and expose `first_child`, `next_sibling`, `children`, `text`, `line`, `column`, `start`, `end` and `length`.
+Returns the root `StyleSheet` node. Nodes are iterable and expose `first_child`, `next_sibling`, `children`, `text`, `line`, `column`, `start`, `end` and `length`.
 
 ```typescript
-import { parse } from '@projectwallace/css-parser'
-
 const ast = parse('body { color: red; }')
 const rule = ast.first_child
 rule.block.first_child.property // "color"
@@ -104,72 +100,26 @@ Options:
 - `parse_values` (default `true`) — parse declaration values into nodes
 - `parse_selectors` (default `true`) — parse selectors into nodes
 - `parse_atrule_preludes` (default `true`) — parse at-rule preludes into nodes
-- `on_comment` — called for every comment; comments are never part of the tree
+- `on_comment` — called for every comment (`{ start, end, length, line, column }`); comments are never part of the tree
+
+### Sub-parsers
 
 ```typescript
-const comments = []
-parse('/* hi */ a { color: red }', {
-	parse_values: false,
-	on_comment: (info) => comments.push(info), // { start, end, length, line, column }
-})
-```
-
-### `parse_selector(source)` and `parse_selector_list(source)`
-
-`parse_selector` returns the first selector, `parse_selector_list` the whole `SelectorList`.
-
-```typescript
-import { parse_selector, parse_selector_list } from '@projectwallace/css-parser'
-
 parse_selector('a.b > c').children.map((part) => part.text) // ["a", ".b", ">", "c"]
 parse_selector_list('h1, h2').children.map((s) => s.text) // ["h1", "h2"]
-```
-
-### `parse_declaration(source)`
-
-```typescript
-import { parse_declaration } from '@projectwallace/css-parser'
 
 const decl = parse_declaration('color: red !important')
 decl.property // "color"
 decl.is_important // true
-decl.value.text // "red"
-```
-
-### `parse_value(source)`
-
-Parses a declaration value into a `Value` node with one child per component.
-
-```typescript
-import { parse_value } from '@projectwallace/css-parser'
 
 for (const node of parse_value('10px 20px')) {
-	console.log(node.type_name, node.value, node.unit) // "Dimension" 10 "px", then "Dimension" 20 "px"
+	node.type_name // "Dimension"
 }
-```
 
-### `parse_atrule_prelude(name, prelude)`
-
-Returns an array of nodes for the prelude of the at-rule called `name` (without the `@`).
-
-```typescript
-import { parse_atrule_prelude } from '@projectwallace/css-parser'
-
-const [query] = parse_atrule_prelude('media', '(min-width: 768px)')
+const [query] = parse_atrule_prelude('media', '(min-width: 768px)') // name without the `@`
 query.type_name // "MediaQuery"
-```
 
-### `parse_dimension(text)`
-
-Splits a number from its unit. It works for anything shaped like a number followed by a unit: lengths (`100px`), percentages (`2%`), durations (`200ms`) and so on. It does not validate; text without a leading number gives `value: 0`.
-
-```typescript
-import { parse_dimension } from '@projectwallace/css-parser'
-
-parse_dimension('100px') // { value: 100, unit: "px" }
-parse_dimension('2%') // { value: 2, unit: "%" }
-parse_dimension('1.5e3s') // { value: 1500, unit: "s" }
-parse_dimension('5') // { value: 5, unit: "" }
+parse_dimension('1.5e3s') // { value: 1500, unit: "s" } (no validation; no leading number gives `value: 0`)
 ```
 
 ### `walk(node, callback)` and `traverse(node, { enter, leave })`
@@ -177,28 +127,13 @@ parse_dimension('5') // { value: 5, unit: "" }
 Both walk the tree depth-first. Return `SKIP` to skip the children of a node and `BREAK` to stop entirely. `walk` also passes a `depth` that counts rule and at-rule nesting. `traverse` calls `enter` before and `leave` after the children (`leave` still runs after `SKIP`, but not after `BREAK`).
 
 ```typescript
-import {
-	parse,
-	walk,
-	traverse,
-	SKIP,
-	BREAK,
-	DECLARATION,
-	AT_RULE,
-} from '@projectwallace/css-parser'
-
-const ast = parse('@media screen { a { color: red; margin: 0 } }')
-
 walk(ast, (node) => {
-	if (node.type === DECLARATION) {
-		console.log(node.property) // "color"
-		return BREAK
-	}
+	if (node.type === DECLARATION) return BREAK
 })
 
 traverse(ast, {
 	enter(node) {
-		if (node.type === AT_RULE) return SKIP // leave() still runs for this node
+		if (node.type === AT_RULE) return SKIP
 	},
 	leave(node) {},
 })
@@ -209,8 +144,6 @@ traverse(ast, {
 A generator of tokens; comments are skipped and reported through `on_comment`.
 
 ```typescript
-import { tokenize } from '@projectwallace/css-parser'
-
 for (const token of tokenize('a { color: red }')) {
 	console.log(token.type, token.start, token.end)
 }
@@ -218,31 +151,19 @@ for (const token of tokenize('a { color: red }')) {
 
 ### Node types, type guards and `clone()`
 
-Node type constants (`STYLE_RULE`, `DECLARATION`, `DIMENSION`, …) and `NODE_TYPES` are exported from the root and from `@projectwallace/css-parser/nodes`. Type guards such as `is_declaration()` and `is_dimension()` that narrow a node to its specific type are exported from the root and from `@projectwallace/css-parser/node-types`. `node.clone({ deep?, locations? })` returns a mutable plain-object copy of a node.
+Type guards such as `is_declaration()` narrow a node to its specific type. `node.clone({ deep?, locations? })` returns a mutable plain-object copy of a node.
 
 ```typescript
-import { parse, is_declaration } from '@projectwallace/css-parser'
-
 const decl = parse('a { color: red }').first_child.block.first_child
 is_declaration(decl) // true
 decl.type_name // "Declaration"
-decl.clone({ deep: false }).property // "color"
 ```
 
 ### String helpers
 
-Allocation-free helpers, handy when working with node names. Also available from `@projectwallace/css-parser/string-utils`; token type constants (`TOKEN_*`) are available from `@projectwallace/css-parser/token-types`. The lowercase argument is always the first one.
+Allocation-free helpers, handy when working with node names. The lowercase argument is always the first one.
 
 ```typescript
-import {
-	is_custom,
-	is_vendor_prefixed,
-	strip_vendor_prefix,
-	str_equals,
-	str_starts_with,
-	str_index_of,
-} from '@projectwallace/css-parser'
-
 is_custom('--primary') // true
 is_vendor_prefixed('-webkit-transform') // true
 strip_vendor_prefix('-webkit-transform') // "transform"
