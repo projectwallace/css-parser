@@ -317,12 +317,12 @@ export class CSSNode {
 		return this.source.substring(start, start + length)
 	}
 
-	/** Get node type as number (for performance) */
+	// Get node type as number (for performance)
 	get type(): CSSNodeType {
 		return this.arena.get_type(this.index) as CSSNodeType
 	}
 
-	/** Get node type as human-readable string */
+	// Get node type as human-readable string
 	get type_name(): TypeName {
 		// A switch compiles to a jump table, which is faster than an object lookup
 		switch (this.type) {
@@ -423,14 +423,14 @@ export class CSSNode {
 		}
 	}
 
-	/** Get the full text of this node from source */
+	// Get the full text of this node from source
 	get text(): string {
 		const start = this.arena.get_start_offset(this.index)
 		const length = this.arena.get_length(this.index)
 		return this.source.substring(start, start + length)
 	}
 
-	/** Get the "content" text (at-rule name for at-rules, layer name for import layers) */
+	// Get the "content" text (at-rule name for at-rules, layer name for import layers)
 	get name(): string | null | undefined {
 		if (!nodes_with_name.has(this.type)) return
 		const { type } = this
@@ -440,7 +440,7 @@ export class CSSNode {
 		return content
 	}
 
-	/** Namespace prefix for type/universal selectors: null (none), '' (`|div`), 'ns' (`ns|div`), or '*' (`*|div`). */
+	// Namespace prefix for type/universal selectors: null (none), '' (`|div`), 'ns' (`ns|div`), or '*' (`*|div`).
 	get namespace(): string | null | undefined {
 		const { type } = this
 		if (type !== TYPE_SELECTOR && type !== UNIVERSAL_SELECTOR) return undefined
@@ -450,17 +450,15 @@ export class CSSNode {
 		return this.source.substring(start, start + length)
 	}
 
-	/** Alias for `name` on declarations ("color" in "color: blue"), more semantic than `name` there. */
+	// Alias for `name` on declarations ("color" in "color: blue"), more semantic than `name` there.
 	get property(): string | undefined {
 		const { type } = this
 		if (type !== DECLARATION && type !== MEDIA_FEATURE && type !== SUPPORTS_DECLARATION) return
 		return this.get_content()
 	}
 
-	/**
-	 * Declarations: the value text ("1px solid blue"). Dimension/number: the numeric value.
-	 * String: content without quotes. URL: quoted string keeps quotes, unquoted URL doesn't.
-	 */
+	// Declarations: the value text ("1px solid blue"). Dimension/number: the numeric value.
+	// String: content without quotes. URL: quoted string keeps quotes, unquoted URL doesn't.
 	get value(): CSSNode | string | number | null | undefined {
 		const { type, text, first_child } = this
 
@@ -544,7 +542,7 @@ export class CSSNode {
 		return this.source.substring(start, start + length)
 	}
 
-	/** At-rules: AT_RULE_PRELUDE wrapper (media queries, layer names, …). Style rules: SELECTOR_LIST/SELECTOR. Null if none. */
+	// At-rules: AT_RULE_PRELUDE wrapper (media queries, layer names, …). Style rules: SELECTOR_LIST/SELECTOR. Null if none.
 	get prelude(): CSSNode | null | undefined {
 		if (this.type === AT_RULE) {
 			const first = this.first_child
@@ -560,7 +558,7 @@ export class CSSNode {
 		return undefined
 	}
 
-	/** Attribute selector operator (=, ~=, |=, ^=, $=, *=), or null for the bare `[attr]` form. */
+	// Attribute selector operator (=, ~=, |=, ^=, $=, *=), or null for the bare `[attr]` form.
 	get attr_operator(): string | null | undefined {
 		if (this.type !== ATTRIBUTE_SELECTOR) return undefined
 
@@ -587,7 +585,7 @@ export class CSSNode {
 		return null
 	}
 
-	/** Attribute selector flag: "i" (case-insensitive), "s" (case-sensitive), or null if absent. */
+	// Attribute selector flag: "i" (case-insensitive), "s" (case-sensitive), or null if absent.
 	get attr_flags(): string | null | undefined {
 		if (this.type !== ATTRIBUTE_SELECTOR) return undefined
 
@@ -611,26 +609,26 @@ export class CSSNode {
 		return null
 	}
 
-	/** Get the unit for dimension nodes (e.g., "px" from "100px", "%" from "50%") */
+	// Get the unit for dimension nodes (e.g., "px" from "100px", "%" from "50%")
 	get unit(): string | undefined {
 		if (this.type !== DIMENSION) return undefined
 		const text = this.text
 		return text.substring(dimension_number_end(text))
 	}
 
-	/** Numerator for ratio values, e.g. the Number "16" in `aspect-ratio: 16/9` */
+	// Numerator for ratio values, e.g. the Number "16" in `aspect-ratio: 16/9`
 	get left(): CSSNode | undefined {
 		if (this.type !== RATIO) return undefined
 		return this.first_child ?? undefined
 	}
 
-	/** Denominator for ratio values, e.g. the Number "9" in `aspect-ratio: 16/9` */
+	// Denominator for ratio values, e.g. the Number "9" in `aspect-ratio: 16/9`
 	get right(): CSSNode | undefined {
 		if (this.type !== RATIO) return undefined
 		return this.first_child?.next_sibling ?? undefined
 	}
 
-	/** Get the parsed condition node of an if() branch, e.g. the Function "style(--active: 1)" or the Identifier "else" */
+	// Get the parsed condition node of an if() branch, e.g. the Function "style(--active: 1)" or the Identifier "else"
 	get condition(): CSSNode | undefined {
 		if (this.type !== IF_BRANCH) {
 			return undefined
@@ -638,25 +636,25 @@ export class CSSNode {
 		return this.first_child ?? undefined
 	}
 
-	/** True when this is the else branch of an if() function */
+	// True when this is the else branch of an if() function
 	get is_else(): boolean | undefined {
 		if (this.type !== IF_BRANCH) return undefined
 		return str_equals('else', this.get_content())
 	}
 
-	/** Check if this declaration has !important */
+	// Check if this declaration has !important
 	get is_important(): boolean | undefined {
 		if (this.type !== DECLARATION) return undefined
 		return this.arena.has_flag(this.index, FLAG_IMPORTANT)
 	}
 
-	/** Check if this declaration has a browser hack prefix */
+	// Check if this declaration has a browser hack prefix
 	get is_browserhack(): boolean | undefined {
 		if (this.type !== DECLARATION) return undefined
 		return this.arena.has_flag(this.index, FLAG_BROWSERHACK)
 	}
 
-	/** Check if this has a vendor prefix (computed on-demand) */
+	// Check if this has a vendor prefix (computed on-demand)
 	get is_vendor_prefixed(): boolean {
 		switch (this.type) {
 			case DECLARATION:
@@ -683,12 +681,12 @@ export class CSSNode {
 		}
 	}
 
-	/** Check if this node has an error */
+	// Check if this node has an error
 	get has_error(): boolean {
 		return this.arena.has_flag(this.index, FLAG_HAS_ERROR)
 	}
 
-	/** Check if this node has a prelude (at-rules and style rules) */
+	// Check if this node has a prelude (at-rules and style rules)
 	get has_prelude(): boolean {
 		const { type } = this
 		if (type === AT_RULE) {
@@ -700,19 +698,19 @@ export class CSSNode {
 		return false
 	}
 
-	/** Check if this rule has a block { } */
+	// Check if this rule has a block { }
 	get has_block(): boolean {
 		return this.arena.has_flag(this.index, FLAG_HAS_BLOCK)
 	}
 
-	/** Check if this style rule has declarations */
+	// Check if this style rule has declarations
 	get has_declarations(): boolean | undefined {
 		const { type } = this
 		if (type !== AT_RULE && type !== STYLE_RULE) return undefined
 		return this.arena.has_flag(this.index, FLAG_HAS_DECLARATIONS)
 	}
 
-	/** Get the block node (for style rules and at-rules with blocks) */
+	// Get the block node (for style rules and at-rules with blocks)
 	get block(): CSSNode | null {
 		const { type } = this
 		// For StyleRule: block is sibling after selector list
@@ -743,7 +741,7 @@ export class CSSNode {
 		return null
 	}
 
-	/** Check if this block is empty (no declarations or rules, only comments allowed) */
+	// Check if this block is empty (no declarations or rules, only comments allowed)
 	get is_empty(): boolean | undefined {
 		// Only valid on block nodes
 		if (this.type !== BLOCK) return undefined
@@ -759,57 +757,55 @@ export class CSSNode {
 		return true
 	}
 
-	/** Get start line number */
+	// Get start line number
 	get line(): number {
 		return this.arena.get_start_line(this.index)
 	}
 
-	/** Get start column number */
+	// Get start column number
 	get column(): number {
 		return this.arena.get_start_column(this.index)
 	}
 
-	/** Get start offset in source */
+	// Get start offset in source
 	get start(): number {
 		return this.arena.get_start_offset(this.index)
 	}
 
-	/** Get length in source */
+	// Get length in source
 	get length(): number {
 		return this.arena.get_length(this.index)
 	}
 
-	/**
-	 * Get end offset in source
-	 * End is not stored, must be calculated
-	 */
+	// Get end offset in source
+	// End is not stored, must be calculated
 	get end(): number {
 		return this.start + this.length
 	}
 
 	// --- Tree Traversal ---
 
-	/** Get first child node */
+	// Get first child node
 	get first_child(): CSSNode | null {
 		const child_index = this.arena.get_first_child(this.index)
 		if (child_index === 0) return null
 		return new CSSNode(this.arena, this.source, child_index)
 	}
 
-	/** Get next sibling node */
+	// Get next sibling node
 	get next_sibling(): CSSNode | null {
 		const sibling_index = this.arena.get_next_sibling(this.index)
 		if (sibling_index === 0) return null
 		return new CSSNode(this.arena, this.source, sibling_index)
 	}
 
-	/** Check if this node has a next sibling */
+	// Check if this node has a next sibling
 	get has_next(): boolean {
 		const sibling_index = this.arena.get_next_sibling(this.index)
 		return sibling_index !== 0
 	}
 
-	/** Whether this node has children. For pseudo-class/element functions, tracks FLAG_HAS_PARENS so formatters can tell `:lang()` from `:hover`. */
+	// Whether this node has children. For pseudo-class/element functions, tracks FLAG_HAS_PARENS so formatters can tell `:lang()` from `:hover`.
 	get has_children(): boolean {
 		const { type } = this
 		// For pseudo-class/pseudo-element nodes, check if they have function syntax
@@ -823,7 +819,7 @@ export class CSSNode {
 		return this.arena.has_children(this.index)
 	}
 
-	/** Count children without allocating an intermediate array */
+	// Count children without allocating an intermediate array
 	get child_count(): number {
 		let count = 0
 		let child_index = this.arena.get_first_child(this.index)
@@ -834,7 +830,7 @@ export class CSSNode {
 		return count
 	}
 
-	/** Get all children as an array */
+	// Get all children as an array
 	get children(): CSSNode[] | undefined {
 		const result: CSSNode[] = []
 		let child = this.first_child
@@ -845,7 +841,7 @@ export class CSSNode {
 		return result
 	}
 
-	/** Make CSSNode iterable over its children */
+	// Make CSSNode iterable over its children
 	*[Symbol.iterator](): Iterator<CSSNode> {
 		let child = this.first_child
 		while (child) {
@@ -856,7 +852,7 @@ export class CSSNode {
 
 	// --- An+B Expression Helpers (for NODE_SELECTOR_NTH) ---
 
-	/** Get the 'a' coefficient from An+B expression (e.g., "2n" from "2n+1", "odd" from "odd") */
+	// Get the 'a' coefficient from An+B expression (e.g., "2n" from "2n+1", "odd" from "odd")
 	get nth_a(): string | null | undefined {
 		const { type, arena, index } = this
 		if (type !== NTH_SELECTOR && type !== NTH_OF_SELECTOR) return undefined
@@ -867,7 +863,7 @@ export class CSSNode {
 		return this.source.substring(start, start + len)
 	}
 
-	/** Get the 'b' coefficient from An+B expression (e.g., "+1" from "2n+1") */
+	// Get the 'b' coefficient from An+B expression (e.g., "+1" from "2n+1")
 	get nth_b(): string | null | undefined {
 		const { type, arena, index, source } = this
 		if (type !== NTH_SELECTOR && type !== NTH_OF_SELECTOR) return undefined
@@ -900,13 +896,13 @@ export class CSSNode {
 
 	// --- Pseudo-Class Nth-Of Helpers (for NODE_SELECTOR_NTH_OF) ---
 
-	/** Get the An+B formula node from :nth-child(2n+1 of .foo) */
+	// Get the An+B formula node from :nth-child(2n+1 of .foo)
 	get nth(): CSSNode | undefined {
 		if (this.type !== NTH_OF_SELECTOR) return undefined
 		return this.first_child ?? undefined // First child is always NODE_SELECTOR_NTH
 	}
 
-	/** Get the selector list from :nth-child(2n+1 of .foo) */
+	// Get the selector list from :nth-child(2n+1 of .foo)
 	get selector(): CSSNode | undefined {
 		if (this.type !== NTH_OF_SELECTOR) return undefined
 		const first = this.first_child
@@ -915,10 +911,8 @@ export class CSSNode {
 
 	// --- Node Cloning ---
 
-	/**
-	 * Clone this node as a mutable plain object with children as arrays.
-	 * Use sparingly — can consume a lot of memory.
-	 */
+	// Clone this node as a mutable plain object with children as arrays.
+	// Use sparingly — can consume a lot of memory.
 	clone(options: CloneOptions = {}): PlainCSSNode {
 		const { deep = true, locations = false } = options
 		const { type } = this

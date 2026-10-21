@@ -418,18 +418,16 @@ export class Lexer {
 		}
 	}
 
-	/**
-	 * Fast-forward to the next `target` char that isn't inside a string or comment, without
-	 * fully tokenizing what's in between — used by callers that only need to know *where a
-	 * construct ends* (e.g. a selector's `{`), since the sub-parser for that construct
-	 * re-tokenizes the span properly afterward.
-	 *
-	 * Strings go through consume_string and comments through _skip_comment, so escapes and
-	 * on_comment callbacks behave identically to real tokenization. Ordinary characters cost
-	 * one SKIP_SCAN_INTERESTING lookup each, same as consume_ident_or_function's inner loop.
-	 *
-	 * Returns true with this.pos at target, or false with this.pos at source_length.
-	 */
+	// Fast-forward to the next `target` char that isn't inside a string or comment, without
+	// fully tokenizing what's in between — used by callers that only need to know *where a
+	// construct ends* (e.g. a selector's `{`), since the sub-parser for that construct
+	// re-tokenizes the span properly afterward.
+	//
+	// Strings go through consume_string and comments through _skip_comment, so escapes and
+	// on_comment callbacks behave identically to real tokenization. Ordinary characters cost
+	// one SKIP_SCAN_INTERESTING lookup each, same as consume_ident_or_function's inner loop.
+	//
+	// Returns true with this.pos at target, or false with this.pos at source_length.
 	skip_to_unquoted(target: number): boolean {
 		const source = this.source
 		const source_length = source.length
@@ -484,13 +482,11 @@ export class Lexer {
 		return false
 	}
 
-	/**
-	 * Same approach as skip_to_unquoted, but stops at any of `; { } ( ) !` — the stop
-	 * characters parse-declaration.ts's value scan needs (paren depth, statement end,
-	 * !important). The caller decides what each one means; this only locates the next one.
-	 *
-	 * Returns the stop character's code (this.pos left at it), or 0 at `end` if none found.
-	 */
+	// Same approach as skip_to_unquoted, but stops at any of `; { } ( ) !` — the stop
+	// characters parse-declaration.ts's value scan needs (paren depth, statement end,
+	// !important). The caller decides what each one means; this only locates the next one.
+	//
+	// Returns the stop character's code (this.pos left at it), or 0 at `end` if none found.
 	skip_to_declaration_stop(end: number): number {
 		const source = this.source
 		let pos = this.pos
@@ -973,10 +969,8 @@ export class Lexer {
 		return type
 	}
 
-	/**
-	 * Save complete lexer state for backtracking
-	 * @returns Object containing all lexer state
-	 */
+	// Save complete lexer state for backtracking
+	// @returns Object containing all lexer state
 	save_position(): LexerPosition {
 		return {
 			pos: this.pos,
@@ -1005,10 +999,8 @@ export class Lexer {
 		return target
 	}
 
-	/**
-	 * Restore lexer state from saved position
-	 * @param saved The saved position to restore
-	 */
+	// Restore lexer state from saved position
+	// @param saved The saved position to restore
 	restore_position(saved: LexerPosition): void {
 		this.pos = saved.pos
 		this._line = saved.line
@@ -1020,10 +1012,8 @@ export class Lexer {
 		this.token_column = saved.token_column
 	}
 
-	/**
-	 * Skip whitespace and comments within a range, maintaining line/column tracking
-	 * @param end The end boundary (exclusive)
-	 */
+	// Skip whitespace and comments within a range, maintaining line/column tracking
+	// @param end The end boundary (exclusive)
 	skip_whitespace_in_range(end: number): void {
 		while (this.pos < end) {
 			const ch = this.source.charCodeAt(this.pos)

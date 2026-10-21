@@ -372,7 +372,7 @@ export class CSSDataArena {
 		}
 	}
 
-	/** Shrink the buffer to the live node count, releasing wasted capacity. Call once after parsing; no-op if already tight. */
+	// Shrink the buffer to the live node count, releasing wasted capacity. Call once after parsing; no-op if already tight.
 	trim(): void {
 		if (this.count === this.capacity) return
 		const byte_count = this.count * BYTES_PER_NODE
