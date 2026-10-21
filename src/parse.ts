@@ -16,6 +16,7 @@ import { CSSNode } from './css-node'
 import type { StyleSheet } from './node-types'
 import { SelectorParser } from './parse-selector'
 import { AtRulePreludeParser } from './parse-atrule-prelude'
+import { ValueNodeParser } from './value-node-parser'
 import { DeclarationParser } from './parse-declaration'
 import {
 	TOKEN_EOF,
@@ -50,7 +51,12 @@ import {
 export interface ParserOptions {
 	parse_values?: boolean
 	parse_selectors?: boolean
-	parse_atrule_preludes?: boolean
+	/**
+	 * `true` (default): deep, at-rule specific nodes (MediaQuery, SupportsQuery, LayerName, ...).
+	 * `'generic'`: one shallow, at-rule agnostic parse (Identifier, Function, Parenthesis, Operator, ...).
+	 * `false`: a single Raw node.
+	 */
+	parse_atrule_preludes?: boolean | 'generic'
 	on_comment?: (info: CommentInfo) => void
 }
 
@@ -98,6 +104,7 @@ export class Parser {
 	private parse_values_enabled: boolean
 	private parse_selectors_enabled: boolean
 	private parse_atrule_preludes_enabled: boolean
+	private generic_prelude_parser: ValueNodeParser | null
 
 	constructor(source: string, options?: ParserOptions) {
 		this.source = source
@@ -106,7 +113,7 @@ export class Parser {
 
 		this.parse_values_enabled = opts.parse_values ?? true
 		this.parse_selectors_enabled = opts.parse_selectors ?? true
-		this.parse_atrule_preludes_enabled = opts.parse_atrule_preludes ?? true
+		this.parse_atrule_preludes_enabled = (opts.parse_atrule_preludes ?? true) !== false
 
 		this.lexer = new Lexer(source, opts.on_comment)
 		// Calculate optimal capacity based on source size
@@ -117,9 +124,13 @@ export class Parser {
 		this.selector_parser = this.parse_selectors_enabled
 			? new SelectorParser(this.arena, source)
 			: null
-		this.prelude_parser = this.parse_atrule_preludes_enabled
-			? new AtRulePreludeParser(this.arena, source)
-			: null
+		const generic = opts.parse_atrule_preludes === 'generic'
+		this.prelude_parser =
+			this.parse_atrule_preludes_enabled && !generic
+				? new AtRulePreludeParser(this.arena, source)
+				: null
+		this.generic_prelude_parser = generic ? new ValueNodeParser(this.arena, source) : null
+		if (this.generic_prelude_parser) this.generic_prelude_parser.keep_delims = true
 		this.declaration_parser = new DeclarationParser(this.arena, source, this.parse_values_enabled)
 	}
 
@@ -472,7 +483,22 @@ export class Parser {
 		let prelude_wrapper: number | null = null
 		if (trimmed_start < trimmed_end) {
 			// Create AT_RULE_PRELUDE wrapper if prelude parsing is enabled
-			if (this.prelude_parser) {
+			if (this.generic_prelude_parser) {
+				const first = this.generic_prelude_parser.parse_chain(
+					trimmed_start,
+					trimmed_end,
+					at_rule_line,
+					at_rule_column,
+				)
+				prelude_wrapper = this.arena.create_node(
+					first === 0 ? RAW : AT_RULE_PRELUDE,
+					trimmed_start,
+					trimmed_end - trimmed_start,
+					at_rule_line,
+					at_rule_column,
+				)
+				if (first !== 0) this.arena.set_first_child(prelude_wrapper, first)
+			} else if (this.prelude_parser) {
 				// Parse prelude and add structured nodes as children
 				const prelude_nodes = this.prelude_parser.parse_prelude(
 					at_rule_name,

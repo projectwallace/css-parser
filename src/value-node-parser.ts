@@ -54,6 +54,9 @@ export class ValueNodeParser {
 	protected arena: CSSDataArena
 	protected source: string
 	protected end: number = 0
+	// Emit an OPERATOR for every delimiter (. < > = ...) instead of dropping those that are not + - * /.
+	// Used for at-rule preludes, where the delimiters are meaningful (`a.b` layer names, `width >= 1px`).
+	keep_delims: boolean = false
 	// Last node from parse_chain(), for callers sizing a wrapper node. Avoids a tuple/array return.
 	last_chain_node: number = 0
 	// Shared media-feature/supports-condition/style() parsing for if()'s condition functions, so
@@ -189,6 +192,7 @@ export class ValueNodeParser {
 		) {
 			return this.create_node(OPERATOR, start, end)
 		}
+		if (this.keep_delims) return this.create_node(OPERATOR, start, end)
 		// Other delimiters are ignored for now
 		return null
 	}
