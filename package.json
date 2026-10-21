@@ -1,6 +1,6 @@
 {
 	"name": "@projectwallace/css-parser",
-	"version": "0.18.11",
+	"version": "0.18.12",
 	"description": "High-performance CSS lexer and parser, optimized for CSS inspection and analysis",
 	"keywords": [
 		"ast",
