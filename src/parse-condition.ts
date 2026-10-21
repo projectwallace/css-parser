@@ -246,7 +246,12 @@ export class ConditionParser {
 			// Comparison operator
 			if (ch === CHAR_LESS_THAN || ch === CHAR_GREATER_THAN || ch === CHAR_EQUALS) {
 				const op_start = pos++
-				if (pos < content_end && this.source.charCodeAt(pos) === CHAR_EQUALS) {
+				// '<=' and '>=' are one comparator; a bare '=' stands alone, so '=>' is '=' then '>'
+				if (
+					ch !== CHAR_EQUALS &&
+					pos < content_end &&
+					this.source.charCodeAt(pos) === CHAR_EQUALS
+				) {
 					pos++
 				}
 
@@ -268,8 +273,14 @@ export class ConditionParser {
 					feature_name_start = this.lexer.token_start
 					feature_name_end = this.lexer.token_end
 				} else {
-					// Value (may itself be a short chain, e.g. a single dimension node)
-					const value_first = this.parse_feature_value(this.lexer.token_start, this.lexer.token_end)
+					// Value (may itself be a short chain, e.g. a single dimension node). A function
+					// token only covers 'name(' — extend to its matching ')' so calc() etc. stay whole
+					const value_start = this.lexer.token_start
+					let value_end = this.lexer.token_end
+					if (this.lexer.token_type === TOKEN_FUNCTION && this.scan_matching_paren()) {
+						value_end = this.paren_close_end
+					}
+					const value_first = this.parse_feature_value(value_start, value_end)
 					if (value_first !== 0) {
 						if (first_child === 0) {
 							first_child = value_first
