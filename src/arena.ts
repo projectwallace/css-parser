@@ -40,6 +40,12 @@
 
 const BYTES_PER_NODE = 32
 
+// Maximum nesting depth of recursive constructs (nested rules, at-rules, functions, parentheses,
+// selector arguments, conditions) that a parse may recurse into. Real-world CSS rarely nests
+// past a couple dozen levels; without a cap, a few KB of `a{a{a{…` or `(((…` overflows the call
+// stack. Also bounds the tree depth that the recursive walk()/traverse()/clone() have to handle.
+export const MAX_NESTING_DEPTH = 256
+
 // Node type constants
 export const STYLESHEET = 1
 export const STYLE_RULE = 2
@@ -115,6 +121,7 @@ export class CSSDataArena {
 	private count: number // Number of nodes currently allocated
 	private growth_count: number // Number of times the arena has grown
 	private overflow_lengths: Map<number, number> // Stores actual lengths for nodes > 65535 chars
+	private nesting_depth: number // Current depth of recursive parsing, see MAX_NESTING_DEPTH
 
 	// Growth multiplier when capacity is exceeded
 	private static readonly GROWTH_FACTOR = 1.3
@@ -137,6 +144,21 @@ export class CSSDataArena {
 		this.buffer = new ArrayBuffer(initial_capacity * BYTES_PER_NODE)
 		this.view = new DataView(this.buffer)
 		this.overflow_lengths = new Map()
+		this.nesting_depth = 0
+	}
+
+	// Call before recursing into a nested construct, and pair with leave_nested() afterwards.
+	// Throws instead of recursing past MAX_NESTING_DEPTH, so hostile input fails with a clear,
+	// deterministic error rather than a call-stack overflow. No leave_nested() is needed after
+	// a throw: the parse is abandoned.
+	enter_nested(): void {
+		if (++this.nesting_depth > MAX_NESTING_DEPTH) {
+			throw new RangeError(`Maximum CSS nesting depth of ${MAX_NESTING_DEPTH} exceeded`)
+		}
+	}
+
+	leave_nested(): void {
+		this.nesting_depth--
 	}
 
 	// Calculate recommended initial capacity based on CSS source size

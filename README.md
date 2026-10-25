@@ -172,6 +172,10 @@ str_starts_with('webkit', 'WEBKIT-transform') // true
 str_index_of('color', 'background-COLOR') // 11
 ```
 
+## Nesting limit
+
+To keep hostile input from overflowing the call stack, parsing throws a `RangeError` (`Maximum CSS nesting depth of 256 exceeded`) when nested rules, at-rules, functions, parentheses, selector arguments or conditions go more than 256 levels deep. Real-world CSS nests a small fraction of that. If you parse untrusted CSS, wrap the call in `try/catch`.
+
 ## Non-goals
 
 - **No syntax validation** — CSS structure is your responsibility; the parser accepts anything valid or not

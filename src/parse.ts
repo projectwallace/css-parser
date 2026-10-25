@@ -210,6 +210,7 @@ export class Parser {
 		let first_child = 0
 		let last_child = 0
 
+		this.arena.enter_nested()
 		while (!this.is_eof()) {
 			const token_type = this.peek_type()
 			if (token_type === TOKEN_RIGHT_BRACE) break
@@ -245,6 +246,7 @@ export class Parser {
 				last_child = child
 			}
 		}
+		this.arena.leave_nested()
 
 		return first_child
 	}

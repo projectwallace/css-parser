@@ -803,6 +803,7 @@ export class SelectorParser {
 				// Recursively parse the content as a selector
 				// Only :has() accepts relative selectors (starting with combinator)
 				const allow_relative = str_equals_range(this.source, func_name_start, func_name_end, 'has')
+				this.arena.enter_nested()
 				const child_selector = this.parse_selector(
 					content_start,
 					content_end,
@@ -810,6 +811,7 @@ export class SelectorParser {
 					this.lexer.column,
 					allow_relative,
 				)
+				this.arena.leave_nested()
 
 				// Restore lexer state and selector_end
 				this.selector_end = saved_selector_end
@@ -924,7 +926,9 @@ export class SelectorParser {
 		// Parse selector list
 		this.selector_end = end
 		this.lexer.pos = selector_start
+		this.arena.enter_nested()
 		const selector_list = this.parse_selector_list()
+		this.arena.leave_nested()
 
 		// Restore state
 		this.selector_end = saved_selector_end

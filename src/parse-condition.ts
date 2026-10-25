@@ -529,7 +529,9 @@ export class ConditionParser {
 		column: number,
 	): void {
 		const saved = this.lexer.save_position()
+		this.arena.enter_nested()
 		const children = this.parse_supports_condition(start, end, line, column)
+		this.arena.leave_nested()
 		this.lexer.restore_position(saved)
 		this.arena.append_children(parent, children)
 	}

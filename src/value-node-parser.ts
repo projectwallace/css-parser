@@ -145,8 +145,12 @@ export class ValueNodeParser {
 			case TOKEN_UNICODE_RANGE:
 				return this.create_node(UNICODE_RANGE, start, end)
 
-			case TOKEN_FUNCTION:
-				return this.parse_function_node(start, end)
+			case TOKEN_FUNCTION: {
+				this.arena.enter_nested()
+				const func_node = this.parse_function_node(start, end)
+				this.arena.leave_nested()
+				return func_node
+			}
 
 			case TOKEN_DELIM:
 				return this.parse_operator_node(start, end)
@@ -156,8 +160,12 @@ export class ValueNodeParser {
 			case TOKEN_SEMICOLON:
 				return this.create_node(OPERATOR, start, end)
 
-			case TOKEN_LEFT_PAREN:
-				return this.parse_parenthesis_node(start, end)
+			case TOKEN_LEFT_PAREN: {
+				this.arena.enter_nested()
+				const paren_node = this.parse_parenthesis_node(start, end)
+				this.arena.leave_nested()
+				return paren_node
+			}
 
 			default:
 				// Unknown token type, skip it
