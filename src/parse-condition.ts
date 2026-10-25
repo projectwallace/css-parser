@@ -152,7 +152,9 @@ export class ConditionParser {
 				this.unmatched_opens = new Set()
 				this.unmatched_opens_end = this.end
 			}
-			for (const pos of open_stack) this.unmatched_opens.add(pos)
+			for (const pos of open_stack) {
+				this.unmatched_opens.add(pos)
+			}
 			return false
 		}
 		return true

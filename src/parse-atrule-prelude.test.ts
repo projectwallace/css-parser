@@ -3091,7 +3091,9 @@ describe('unmatched parentheses performance', () => {
 		const ast = parse('@media ((min-width: 100px) {}')
 		const features: string[] = []
 		walk(ast, (node) => {
-			if (node.type_name === 'Feature') features.push(node.text)
+			if (node.type_name === 'Feature') {
+				features.push(node.text)
+			}
 		})
 		expect(features).toContain('(min-width: 100px)')
 	})
