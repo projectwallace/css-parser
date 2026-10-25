@@ -10,6 +10,7 @@ import {
 	FLAG_LENGTH_OVERFLOW,
 } from './arena'
 import { parse } from './parse'
+import { walk } from './walk'
 import { CSSNode } from './css-node'
 
 describe('CSSDataArena', () => {
@@ -338,6 +339,120 @@ describe('CSSDataArena', () => {
 			expect(arena.has_flag(big, FLAG_LENGTH_OVERFLOW)).toBe(true)
 			// A node whose real length is exactly the saturated value must not read the map
 			expect(arena.get_length(exact)).toBe(65535)
+		})
+	})
+
+	describe('16-bit content/value field overflow', () => {
+		// [setter, getter-of-absolute-or-raw-value]
+		const fields = [
+			['content_length', 'set_content_length', 'get_content_length'],
+			['value_length', 'set_value_length', 'get_value_length'],
+		] as const
+		const deltas = [
+			['content_start_delta', 'set_content_start_delta', 'get_content_start'],
+			['value_start_delta', 'set_value_start_delta', 'get_value_start'],
+		] as const
+
+		test.each(fields)('%s round-trips values around the 16-bit limit', (_name, set, get) => {
+			const arena = new CSSDataArena(10)
+			for (const value of [0, 1, 65534, 65535, 65536, 70000, 1_000_000]) {
+				const node = arena.create_node(DECLARATION, 0, 0, 1, 1)
+				arena[set](node, value)
+				expect(arena[get](node)).toBe(value)
+			}
+		})
+
+		test.each(deltas)('%s round-trips values around the 16-bit limit', (_name, set, get) => {
+			const arena = new CSSDataArena(10)
+			for (const value of [0, 1, 65534, 65535, 65536, 70000, 1_000_000]) {
+				const node = arena.create_node(DECLARATION, 100, 0, 1, 1)
+				arena[set](node, value)
+				expect(arena[get](node)).toBe(100 + value)
+			}
+		})
+
+		test('overflowing one field does not affect other fields or nodes', () => {
+			const arena = new CSSDataArena(10)
+			const a = arena.create_node(DECLARATION, 0, 0, 1, 1)
+			const b = arena.create_node(DECLARATION, 0, 0, 1, 1)
+			arena.set_content_length(a, 70000)
+			arena.set_value_length(a, 5)
+			arena.set_content_length(b, 3)
+			arena.set_value_length(b, 80000)
+
+			expect(arena.get_content_length(a)).toBe(70000)
+			expect(arena.get_value_length(a)).toBe(5)
+			expect(arena.get_content_length(b)).toBe(3)
+			expect(arena.get_value_length(b)).toBe(80000)
+		})
+
+		test('rewriting a field replaces a previous overflow value', () => {
+			const arena = new CSSDataArena(10)
+			const node = arena.create_node(DECLARATION, 0, 0, 1, 1)
+			arena.set_content_length(node, 70000)
+			arena.set_content_length(node, 65535)
+			expect(arena.get_content_length(node)).toBe(65535)
+			arena.set_content_length(node, 12)
+			expect(arena.get_content_length(node)).toBe(12)
+		})
+
+		test('overflow values survive arena growth and trim', () => {
+			const arena = new CSSDataArena(2)
+			const node = arena.create_node(DECLARATION, 0, 0, 1, 1)
+			arena.set_value_length(node, 70000)
+			for (let i = 0; i < 50; i++) arena.create_node(DECLARATION, 0, 0, 1, 1)
+			arena.trim()
+			expect(arena.get_value_length(node)).toBe(70000)
+		})
+
+		describe('through the parser', () => {
+			const long = (char: string, count = 70_000) => char.repeat(count)
+			const find = (css: string, type_name: string) => {
+				let found: any
+				walk(parse(css), (node) => {
+					if (!found && node.type_name === type_name) found = node
+				})
+				return found
+			}
+
+			test('declaration property names over 65535 characters', () => {
+				const decl = find(`a{${long('p')}:red}`, 'Declaration')
+				expect(decl.property).toBe(long('p'))
+				expect(decl.value.text).toBe('red')
+			})
+
+			test('a long name cannot collide with a shorter, real property name', () => {
+				// 65536 + 8 characters would wrap to the 8-character "behavior" if truncated
+				const decl = find(`a{${long('x', 65536 + 8)}:red}`, 'Declaration')
+				expect(decl.property).toBe(long('x', 65536 + 8))
+			})
+
+			test('at-rule names over 65535 characters', () => {
+				expect(find(`@${long('n')} x;`, 'Atrule').name).toBe(long('n'))
+			})
+
+			test('function names and arguments over 65535 characters', () => {
+				expect(find(`a{b:${long('f')}(1)}`, 'Function').name).toBe(long('f'))
+				expect(find(`a{b:f(${long('x')})}`, 'Function').value).toBe(long('x'))
+			})
+
+			test('selector names, attribute names and values over 65535 characters', () => {
+				expect(find(`${long('t')}{}`, 'TypeSelector').name).toBe(long('t'))
+				expect(find(`[${long('a')}=b]{}`, 'AttributeSelector').name).toBe(long('a'))
+				expect(find(`[a=${long('b')}]{}`, 'AttributeSelector').value).toBe(long('b'))
+				expect(find(`:${long('p')}{}`, 'PseudoClassSelector').name).toBe(long('p'))
+			})
+
+			test('media feature and layer names over 65535 characters', () => {
+				expect(find(`@media (${long('w')}: 1px){}`, 'Feature').property).toBe(long('w'))
+				expect(find(`@layer ${long('l')};`, 'Layer').name).toBe(long('l'))
+			})
+
+			test('values after more than 65535 characters of whitespace or comments', () => {
+				expect(find(`a{b :${long(' ')}red}`, 'Declaration').value.text).toBe('red')
+				expect(find(`a{b:/*${long('x')}*/red}`, 'Declaration').value.text).toBe('red')
+				expect(find(`a{b:f(${long(' ')}1)}`, 'Function').value.trim()).toBe('1')
+			})
 		})
 	})
 

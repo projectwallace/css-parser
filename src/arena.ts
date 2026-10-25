@@ -40,6 +40,14 @@
 
 const BYTES_PER_NODE = 32
 
+// The four 16-bit content/value fields saturate at 65535 and keep the real value in a side map,
+// like `length`, so a >64K-character name or a >64K gap before a value is stored correctly
+// instead of silently wrapping around. Each field has a slot to key that map.
+const OVERFLOW_SLOT_CONTENT_START_DELTA = 0
+const OVERFLOW_SLOT_CONTENT_LENGTH = 1
+const OVERFLOW_SLOT_VALUE_START_DELTA = 2
+const OVERFLOW_SLOT_VALUE_LENGTH = 3
+
 // Node type constants
 export const STYLESHEET = 1
 export const STYLE_RULE = 2
@@ -115,6 +123,9 @@ export class CSSDataArena {
 	private count: number // Number of nodes currently allocated
 	private growth_count: number // Number of times the arena has grown
 	private overflow_lengths: Map<number, number> // Stores actual lengths for nodes > 65535 chars
+	// Stores actual values of the 16-bit content/value fields (see OVERFLOW_SLOT_*) once they
+	// reach 65535, keyed by node_index * 4 + slot. Created on first overflow: it is almost always unused.
+	private overflow_fields: Map<number, number> | null
 
 	// Growth multiplier when capacity is exceeded
 	private static readonly GROWTH_FACTOR = 1.3
@@ -137,6 +148,7 @@ export class CSSDataArena {
 		this.buffer = new ArrayBuffer(initial_capacity * BYTES_PER_NODE)
 		this.view = new DataView(this.buffer)
 		this.overflow_lengths = new Map()
+		this.overflow_fields = null
 	}
 
 	// Calculate recommended initial capacity based on CSS source size
@@ -208,13 +220,20 @@ export class CSSDataArena {
 	// Read content start offset (stored as delta from startOffset)
 	get_content_start(node_index: number): number {
 		const startOffset = this.get_start_offset(node_index)
-		const delta = this.view.getUint16(this.node_offset(node_index) + 16, true)
+		let delta = this.view.getUint16(this.node_offset(node_index) + 16, true)
+		if (delta === 65535) {
+			delta = this.get_overflow_field(node_index, OVERFLOW_SLOT_CONTENT_START_DELTA)
+		}
 		return startOffset + delta
 	}
 
 	// Read content length
 	get_content_length(node_index: number): number {
-		return this.view.getUint16(this.node_offset(node_index) + 20, true)
+		const length = this.view.getUint16(this.node_offset(node_index) + 20, true)
+		if (length === 65535) {
+			return this.get_overflow_field(node_index, OVERFLOW_SLOT_CONTENT_LENGTH)
+		}
+		return length
 	}
 
 	// Read first child index (0 = no children)
@@ -240,13 +259,25 @@ export class CSSDataArena {
 	// Read value start offset (stored as delta from startOffset, declaration value / at-rule prelude)
 	get_value_start(node_index: number): number {
 		const startOffset = this.get_start_offset(node_index)
-		const delta = this.view.getUint16(this.node_offset(node_index) + 18, true)
+		let delta = this.view.getUint16(this.node_offset(node_index) + 18, true)
+		if (delta === 65535) {
+			delta = this.get_overflow_field(node_index, OVERFLOW_SLOT_VALUE_START_DELTA)
+		}
 		return startOffset + delta
 	}
 
 	// Read value length
 	get_value_length(node_index: number): number {
-		return this.view.getUint16(this.node_offset(node_index) + 22, true)
+		const length = this.view.getUint16(this.node_offset(node_index) + 22, true)
+		if (length === 65535) {
+			return this.get_overflow_field(node_index, OVERFLOW_SLOT_VALUE_LENGTH)
+		}
+		return length
+	}
+
+	// Cold path of the 16-bit field getters: a saturated field holds its real value in the side map
+	private get_overflow_field(node_index: number, slot: number): number {
+		return this.overflow_fields?.get(node_index * 4 + slot) ?? 65535
 	}
 
 	// --- Write Methods ---
@@ -280,12 +311,20 @@ export class CSSDataArena {
 
 	// Write content start delta (offset from startOffset)
 	set_content_start_delta(node_index: number, delta: number): void {
-		this.view.setUint16(this.node_offset(node_index) + 16, delta, true)
+		if (delta >= 65535) {
+			this.set_overflow_field(node_index, 16, OVERFLOW_SLOT_CONTENT_START_DELTA, delta)
+		} else {
+			this.view.setUint16(this.node_offset(node_index) + 16, delta, true)
+		}
 	}
 
 	// Write content length
 	set_content_length(node_index: number, length: number): void {
-		this.view.setUint16(this.node_offset(node_index) + 20, length, true)
+		if (length >= 65535) {
+			this.set_overflow_field(node_index, 20, OVERFLOW_SLOT_CONTENT_LENGTH, length)
+		} else {
+			this.view.setUint16(this.node_offset(node_index) + 20, length, true)
+		}
 	}
 
 	// Write first child index
@@ -300,12 +339,33 @@ export class CSSDataArena {
 
 	// Write value start delta (offset from startOffset, declaration value / at-rule prelude)
 	set_value_start_delta(node_index: number, delta: number): void {
-		this.view.setUint16(this.node_offset(node_index) + 18, delta, true)
+		if (delta >= 65535) {
+			this.set_overflow_field(node_index, 18, OVERFLOW_SLOT_VALUE_START_DELTA, delta)
+		} else {
+			this.view.setUint16(this.node_offset(node_index) + 18, delta, true)
+		}
 	}
 
 	// Write value length
 	set_value_length(node_index: number, length: number): void {
-		this.view.setUint16(this.node_offset(node_index) + 22, length, true)
+		if (length >= 65535) {
+			this.set_overflow_field(node_index, 22, OVERFLOW_SLOT_VALUE_LENGTH, length)
+		} else {
+			this.view.setUint16(this.node_offset(node_index) + 22, length, true)
+		}
+	}
+
+	// Cold path of the 16-bit field setters: saturate the stored field and keep the real value in
+	// the side map. Exactly 65535 goes here too, so a stale entry is overwritten, never misread.
+	private set_overflow_field(
+		node_index: number,
+		field_offset: number,
+		slot: number,
+		value: number,
+	): void {
+		this.view.setUint16(this.node_offset(node_index) + field_offset, 65535, true)
+		this.overflow_fields ??= new Map()
+		this.overflow_fields.set(node_index * 4 + slot, value)
 	}
 
 	// --- Node Creation ---
