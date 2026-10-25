@@ -104,17 +104,37 @@ export class ConditionParser {
 	private paren_content_end = 0
 	private paren_close_end = 0
 
+	// A failed scan means every '(' still open at the end of the range can never match (the
+	// range end is fixed), so remember them: callers that step past an unmatched '(' and retry
+	// at the next one would otherwise rescan the rest of the range each time, which is O(n^2)
+	// on input like `@media ((((((…`. Only valid for the `end` it was collected under.
+	private unmatched_opens: Set<number> | null = null
+	private unmatched_opens_end = 0
+
 	private scan_matching_paren(): boolean {
 		let depth = 1
 		let content_end = this.lexer.pos
 		let close_end = this.lexer.token_end
 
+		if (this.unmatched_opens !== null && this.unmatched_opens_end === this.end) {
+			if (this.unmatched_opens.has(this.lexer.token_start)) {
+				this.paren_content_end = content_end
+				this.paren_close_end = close_end
+				return false
+			}
+		}
+
+		// Stack of open-paren positions; only needed to record the unmatched ones on failure
+		const open_stack: number[] = [this.lexer.token_start]
+
 		while (this.lexer.pos < this.end && depth > 0) {
 			const token_type = this.next_token()
 			if (token_type === TOKEN_LEFT_PAREN || token_type === TOKEN_FUNCTION) {
 				depth++
+				open_stack.push(this.lexer.token_start)
 			} else if (token_type === TOKEN_RIGHT_PAREN) {
 				depth--
+				open_stack.pop()
 				if (depth === 0) {
 					content_end = this.lexer.token_start
 					close_end = this.lexer.token_end
@@ -126,7 +146,16 @@ export class ConditionParser {
 
 		this.paren_content_end = content_end
 		this.paren_close_end = close_end
-		return depth === 0
+
+		if (depth !== 0) {
+			if (this.unmatched_opens === null || this.unmatched_opens_end !== this.end) {
+				this.unmatched_opens = new Set()
+				this.unmatched_opens_end = this.end
+			}
+			for (const pos of open_stack) this.unmatched_opens.add(pos)
+			return false
+		}
+		return true
 	}
 
 	// Parse feature value via the shared ValueNodeParser, so calc()/env()/var() get full children.

@@ -3077,3 +3077,22 @@ and (min-width: 768px) { }`)
 		})
 	})
 })
+
+describe('unmatched parentheses performance', () => {
+	test.each(['media', 'container'])('@%s with many unclosed "(" parses in linear time', (name) => {
+		const css = `@${name} ${'('.repeat(32_000)}{}`
+		const start = performance.now()
+		parse(css)
+		// Quadratic behavior took ~6s at this size; linear takes a few ms
+		expect(performance.now() - start).toBeLessThan(1000)
+	})
+
+	test('a matched feature after unclosed "(" is still parsed', () => {
+		const ast = parse('@media ((min-width: 100px) {}')
+		const features: string[] = []
+		walk(ast, (node) => {
+			if (node.type_name === 'Feature') features.push(node.text)
+		})
+		expect(features).toContain('(min-width: 100px)')
+	})
+})
