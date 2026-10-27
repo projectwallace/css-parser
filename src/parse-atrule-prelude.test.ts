@@ -3098,3 +3098,22 @@ describe('unmatched parentheses performance', () => {
 		expect(features).toContain('(min-width: 100px)')
 	})
 })
+
+describe('@import layer() names match @layer', () => {
+	function layer_names(css: string): string[] {
+		const names: string[] = []
+		walk(parse(css), (node) => {
+			if (node.type === LAYER_NAME) names.push(node.name)
+		})
+		return names
+	}
+
+	test.each([
+		['a . b', ['a', 'b']],
+		['a..b', ['a', 'b']],
+		['a.b', ['a.b']],
+	])('@import layer(%s) matches @layer %s', (name, expected) => {
+		expect(layer_names(`@layer ${name};`)).toEqual(expected)
+		expect(layer_names(`@import url(x) layer(${name});`)).toEqual(expected)
+	})
+})

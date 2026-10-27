@@ -561,6 +561,7 @@ export class AtRulePreludeParser {
 	// - `layer`        → LayerName with name=''
 	// - `layer()`      → Function{name='layer'} without children
 	// - `layer(a.b)`   → Function{name='layer'} > LayerName{name='a.b'}
+	//   (names are read by parse_layer_names, so `@import` and `@layer` agree)
 	private parse_import_layer(): number | null {
 		// Peek at next token
 		const saved = this.lexer.save_position()
@@ -586,6 +587,7 @@ export class AtRulePreludeParser {
 
 				// layer(...): the Function owns the parentheses, the LayerName only the name
 				const content_start = this.lexer.token_end // After the opening '('
+				const after_open = this.lexer.save_position()
 				const matched = this.scan_matching_paren()
 				const content_end = this.paren_content_end
 				const layer_end = matched ? this.paren_close_end : this.lexer.pos
@@ -596,15 +598,19 @@ export class AtRulePreludeParser {
 
 				const trimmed = matched ? trim_boundaries(this.source, content_start, content_end) : null
 				if (trimmed) {
-					const name_start = trimmed[0]
-					const name_length = trimmed[1] - name_start
-					this.arena.set_value_start_delta(func_node, name_start - layer_start)
-					this.arena.set_value_length(func_node, name_length)
+					this.arena.set_value_start_delta(func_node, trimmed[0] - layer_start)
+					this.arena.set_value_length(func_node, trimmed[1] - trimmed[0])
 
-					const name_node = this.create_node(LAYER_NAME, name_start, trimmed[1])
-					this.arena.set_content_start_delta(name_node, 0)
-					this.arena.set_content_length(name_node, name_length)
-					this.arena.set_first_child(func_node, name_node)
+					// Read the names exactly like an `@layer` prelude does
+					const after_close = this.lexer.save_position()
+					const saved_prelude_end = this.prelude_end
+					this.lexer.restore_position(after_open)
+					this.prelude_end = content_end
+					const names = this.parse_layer_names()
+					this.prelude_end = saved_prelude_end
+					this.lexer.restore_position(after_close)
+
+					this.arena.append_children(func_node, names)
 				}
 
 				return func_node
