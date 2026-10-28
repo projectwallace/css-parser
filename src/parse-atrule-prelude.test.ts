@@ -765,12 +765,11 @@ describe('At-Rule Prelude Nodes', () => {
 
 				expect(range?.type).toBe(FEATURE_RANGE)
 				expect(range?.name).toBe('width')
-				expect(range?.children.length).toBe(3) // identifier + operator + dimension
+				expect(range?.children.length).toBe(2) // dimension + operator
 
 				// Verify child types
-				expect(range?.children[0].type).toBe(IDENTIFIER) // width
-				expect(range?.children[1].type).toBe(PRELUDE_OPERATOR) // >=
-				expect(range?.children[2].type).toBe(DIMENSION) // 400px
+				expect(range?.children[0].type).toBe(PRELUDE_OPERATOR) // >=
+				expect(range?.children[1].type).toBe(DIMENSION) // 400px
 			})
 
 			test('should keep a function value whole in range syntax', () => {
@@ -778,8 +777,8 @@ describe('At-Rule Prelude Nodes', () => {
 				const range = (query as MediaQuery).children[0] as FeatureRange
 
 				expect(range.text).toBe('(width >= calc(1px + 2px))')
-				expect(range.children.map((c) => c.text)).toEqual(['width', '>=', 'calc(1px + 2px)'])
-				const fn = range.children[2] as Function
+				expect(range.children.map((c) => c.text)).toEqual(['>=', 'calc(1px + 2px)'])
+				const fn = range.children[1] as Function
 				expect(fn.name).toBe('calc')
 				expect(fn.value).toBe('1px + 2px')
 			})
@@ -788,21 +787,51 @@ describe('At-Rule Prelude Nodes', () => {
 				const [query] = parse_atrule_prelude('media', '(calc(1px) < width < 5px)')
 				const range = (query as MediaQuery).children[0] as FeatureRange
 
-				expect(range.children.map((c) => c.text)).toEqual(['calc(1px)', '<', 'width', '<', '5px'])
+				expect(range.children.map((c) => c.text)).toEqual(['calc(1px)', '<', '<', '5px'])
 			})
 
 			test('should tokenize a bare = as its own comparator', () => {
 				const [query] = parse_atrule_prelude('media', '(width=>1000px)')
 				const range = (query as MediaQuery).children[0] as FeatureRange
 
-				expect(range.children.map((c) => c.text)).toEqual(['width', '=', '>', '1000px'])
+				expect(range.children.map((c) => c.text)).toEqual(['=', '>', '1000px'])
 			})
 
 			test('should tokenize >= and <= as a single comparator', () => {
 				const [query] = parse_atrule_prelude('media', '(100px<=width>=1000px)')
 				const range = (query as MediaQuery).children[0] as FeatureRange
 
-				expect(range.children.map((c) => c.text)).toEqual(['100px', '<=', 'width', '>=', '1000px'])
+				expect(range.children.map((c) => c.text)).toEqual(['100px', '<=', '>=', '1000px'])
+			})
+
+			test('should not add the feature name as a child by default', () => {
+				const [query] = parse_atrule_prelude('media', '(500px > width > 1000px)')
+				const range = (query as MediaQuery).children[0] as FeatureRange
+
+				expect(range.name).toBe('width')
+				expect(range.children.map((c) => c.text)).toEqual(['500px', '>', '>', '1000px'])
+			})
+
+			test('should add the feature name as a child with range_name_child', () => {
+				const [query] = parse_atrule_prelude('media', '(500px > width > 1000px)', {
+					range_name_child: true,
+				})
+				const range = (query as MediaQuery).children[0] as FeatureRange
+
+				expect(range.name).toBe('width')
+				expect(range.children.map((c) => c.text)).toEqual(['500px', '>', 'width', '>', '1000px'])
+				expect(range.children[2].type).toBe(IDENTIFIER)
+			})
+
+			test('should add the feature name as a child via parse() with range_name_child', () => {
+				const ast = parse('@media (width >= 400px) {}', { range_name_child: true })
+				const range = (ast.first_child as Atrule).prelude!.first_child!.first_child as FeatureRange
+
+				expect(range.children.map((c) => c.type_name)).toEqual([
+					'Identifier',
+					'Operator',
+					'Dimension',
+				])
 			})
 
 			test('should parse range syntax with double comparison', () => {
@@ -818,16 +847,15 @@ describe('At-Rule Prelude Nodes', () => {
 
 				expect(range?.type).toBe(FEATURE_RANGE)
 				expect(range?.name).toBe('width')
-				expect(range?.children.length).toBe(5) // dim, op, ident, op, dim
+				expect(range?.children.length).toBe(4) // dim, op, op, dim
 
 				// Verify child types
 				expect(range?.children[0].type).toBe(DIMENSION) // 50px
 				expect(range?.children[1].type).toBe(PRELUDE_OPERATOR) // <=
-				expect(range?.children[2].type).toBe(IDENTIFIER) // width
-				expect(range?.children[3].type).toBe(PRELUDE_OPERATOR) // <=
+				expect(range?.children[2].type).toBe(PRELUDE_OPERATOR) // <=
 				expect((range!.children[1] as PreludeOperator).value).toBe('<=')
-				expect((range!.children[3] as PreludeOperator).value).toBe('<=')
-				expect(range?.children[4].type).toBe(DIMENSION) // 100px
+				expect((range!.children[2] as PreludeOperator).value).toBe('<=')
+				expect(range?.children[3].type).toBe(DIMENSION) // 100px
 			})
 
 			test('should parse range syntax with less-than', () => {
@@ -843,13 +871,12 @@ describe('At-Rule Prelude Nodes', () => {
 
 				expect(range?.type).toBe(FEATURE_RANGE)
 				expect(range?.name).toBe('width')
-				expect(range?.children.length).toBe(3)
+				expect(range?.children.length).toBe(2)
 
 				// Verify child types
 				expect(range?.children[0].type).toBe(DIMENSION) // 400px
 				expect(range?.children[1].type).toBe(PRELUDE_OPERATOR) // <
 				expect((range!.children[1] as PreludeOperator).value).toBe('<')
-				expect(range?.children[2].type).toBe(IDENTIFIER) // width
 			})
 
 			test('should parse range syntax with equals', () => {
@@ -865,12 +892,11 @@ describe('At-Rule Prelude Nodes', () => {
 
 				expect(range?.type).toBe(FEATURE_RANGE)
 				expect(range?.name).toBe('width')
-				expect(range?.children.length).toBe(3)
+				expect(range?.children.length).toBe(2)
 
 				// Verify child types
-				expect(range?.children[0].type).toBe(IDENTIFIER) // width
-				expect(range?.children[1].type).toBe(PRELUDE_OPERATOR) // =
-				expect(range?.children[2].type).toBe(DIMENSION) // 500px
+				expect(range?.children[0].type).toBe(PRELUDE_OPERATOR) // =
+				expect(range?.children[1].type).toBe(DIMENSION) // 500px
 			})
 
 			test('should parse comma-separated media queries', () => {

@@ -41,6 +41,10 @@ import { ConditionParser } from './parse-condition'
 import { SelectorParser } from './parse-selector'
 
 /** @internal */
+export interface PreludeParserOptions {
+	range_name_child?: boolean
+}
+
 export class AtRulePreludeParser {
 	private lexer: Lexer
 	private arena: CSSDataArena
@@ -54,14 +58,19 @@ export class AtRulePreludeParser {
 	// Deep-parses the parenthesised arguments of @scope into real SelectorLists
 	private selector_parser: SelectorParser
 
-	constructor(arena: CSSDataArena, source: string) {
+	constructor(arena: CSSDataArena, source: string, range_name_child: boolean = false) {
 		this.arena = arena
 		this.source = source
 		// Create a lexer instance for prelude parsing
 		this.lexer = new Lexer(source)
 		this.prelude_end = 0
-		this.value_node_parser = new ValueNodeParser(arena, source)
-		this.condition_parser = new ConditionParser(arena, source, this.value_node_parser)
+		this.value_node_parser = new ValueNodeParser(arena, source, range_name_child)
+		this.condition_parser = new ConditionParser(
+			arena,
+			source,
+			this.value_node_parser,
+			range_name_child,
+		)
 		this.selector_parser = new SelectorParser(arena, source)
 	}
 
@@ -835,14 +844,19 @@ export class AtRulePreludeParser {
  * Parse an at-rule prelude string and return an array of AST nodes
  * @param at_rule_name - The name of the at-rule (e.g., "media", "supports", "layer")
  * @param prelude - The at-rule prelude to parse (e.g., "(min-width: 768px)", "utilities")
+ * @param options - Parser options (`range_name_child`: also add the feature name of a media range as an Identifier child)
  * @returns An array of CSSNode objects representing the parsed prelude
  */
-export function parse_atrule_prelude(at_rule_name: string, prelude: string): AnyNode[] {
+export function parse_atrule_prelude(
+	at_rule_name: string,
+	prelude: string,
+	options?: PreludeParserOptions,
+): AnyNode[] {
 	// Create an arena for the prelude nodes
 	const arena = new CSSDataArena(CSSDataArena.capacity_for_source(prelude.length))
 
 	// Create prelude parser
-	const prelude_parser = new AtRulePreludeParser(arena, prelude)
+	const prelude_parser = new AtRulePreludeParser(arena, prelude, options?.range_name_child ?? false)
 
 	// Parse the entire source as an at-rule prelude
 	const node_indices = prelude_parser.parse_prelude(at_rule_name, 0, prelude.length)

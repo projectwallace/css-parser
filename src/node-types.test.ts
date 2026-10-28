@@ -332,15 +332,14 @@ describe('type narrowing — compile-time', () => {
 		}
 	})
 
-	test('FeatureRange children are typed as Dimension | Function | Identifier | PreludeOperator, not Operator', () => {
+	test('FeatureRange children are typed as Dimension | Function | PreludeOperator, not Operator', () => {
 		const atrule = parse('@media (width >= 400px) {}').first_child! as Atrule
 		const range = atrule.prelude!.first_child!.first_child! as FeatureRange
 		expectTypeOf(range.children).toEqualTypeOf<
 			(Dimension | Function | Identifier | PreludeOperator)[]
 		>()
 
-		const [name, op, dim] = range.children
-		expect(name.type_name).toBe('Identifier')
+		const [op, dim] = range.children
 		expect(op.type_name).toBe('Operator')
 		expect(dim.type_name).toBe('Dimension')
 	})

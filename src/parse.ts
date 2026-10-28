@@ -51,6 +51,8 @@ export interface ParserOptions {
 	parse_values?: boolean
 	parse_selectors?: boolean
 	parse_atrule_preludes?: boolean
+	/** Also add the feature name of a media range, e.g. `width` in `(400px < width)`, as an Identifier child */
+	range_name_child?: boolean
 	on_comment?: (info: CommentInfo) => void
 }
 
@@ -118,9 +120,14 @@ export class Parser {
 			? new SelectorParser(this.arena, source)
 			: null
 		this.prelude_parser = this.parse_atrule_preludes_enabled
-			? new AtRulePreludeParser(this.arena, source)
+			? new AtRulePreludeParser(this.arena, source, opts.range_name_child ?? false)
 			: null
-		this.declaration_parser = new DeclarationParser(this.arena, source, this.parse_values_enabled)
+		this.declaration_parser = new DeclarationParser(
+			this.arena,
+			source,
+			this.parse_values_enabled,
+			opts.range_name_child ?? false,
+		)
 	}
 
 	// Get the arena (for internal/advanced use only)

@@ -73,12 +73,16 @@ export class ValueNodeParser {
 				this.arena,
 				this.source,
 				new ValueNodeParser(this.arena, this.source),
+				this.range_name_child,
 			)
 		}
 		return this._condition_parser
 	}
 
-	constructor(arena: CSSDataArena, source: string) {
+	private range_name_child: boolean
+
+	constructor(arena: CSSDataArena, source: string, range_name_child: boolean = false) {
+		this.range_name_child = range_name_child
 		this.arena = arena
 		this.source = source
 		this.lexer = new Lexer(source)

@@ -26,6 +26,7 @@ import type {
 	Atrule,
 	Block,
 	Declaration,
+	Rule,
 	Dimension,
 	FeatureRange,
 	Function,
@@ -1441,9 +1442,19 @@ describe('Value Node Types', () => {
 			const range = mediaFunc.children[0] as FeatureRange
 			expect(range.type).toBe(FEATURE_RANGE)
 			expect(range.name).toBe('width')
-			expect(range.children.map((c) => c.text)).toEqual(['400px', '<=', 'width', '<=', '800px'])
+			expect(range.children.map((c) => c.text)).toEqual(['400px', '<=', '<=', '800px'])
 			expect((range.children[1] as PreludeOperator).value).toBe('<=')
-			expect((range.children[3] as PreludeOperator).value).toBe('<=')
+			expect((range.children[2] as PreludeOperator).value).toBe('<=')
+		})
+
+		test('media() range includes the feature name as a child with range_name_child', () => {
+			const ast = parse('div { color: if(media(400px <= width): blue; else: red) }', {
+				range_name_child: true,
+			})
+			const decl = (ast.first_child as Rule).block!.first_child as Declaration
+			const mediaFunc = getBranch(decl.value!.first_child as Function, 0)?.first_child as Function
+			const range = mediaFunc.children[0] as FeatureRange
+			expect(range.children.map((c) => c.text)).toEqual(['400px', '<=', 'width'])
 		})
 
 		test('supports() condition supports the full compound and/or/not grammar', () => {
