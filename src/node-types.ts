@@ -606,7 +606,14 @@ export type PreludeSelectorList = WithClone<
 		}
 >
 
-export type PreludeOperator = Leaf<typeof PRELUDE_OPERATOR, 'Operator'>
+export type PreludeOperator = Leaf<
+	typeof PRELUDE_OPERATOR,
+	'Operator',
+	{
+		/** The operator keyword or range comparator, e.g. "and", "or", "not", "only", "to", "<", "<=", ">", ">=", "=" */
+		readonly value: string
+	}
+>
 
 export type FeatureRange = WithClone<
 	CSSNode &

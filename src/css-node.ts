@@ -525,6 +525,9 @@ export class CSSNode {
 			return this.get_content()
 		}
 
+		// Prelude operators (and, or, not, only, to) don't store content in the arena; their text is the value
+		if (type === PRELUDE_OPERATOR) return text
+
 		// Only these types store a value in the arena value_start/value_length field.
 		// Every other node type has no value concept and must return undefined.
 		if (

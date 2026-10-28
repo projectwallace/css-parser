@@ -14,6 +14,7 @@ import type {
 	MediaType,
 	MediaFeature,
 	FeatureRange,
+	PreludeOperator,
 	Function,
 	LayerName,
 	SupportsQuery,
@@ -822,6 +823,8 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(range?.children[0].type).toBe(DIMENSION) // 50px
 				expect(range?.children[1].type).toBe(PRELUDE_OPERATOR) // <=
 				expect(range?.children[2].type).toBe(PRELUDE_OPERATOR) // <=
+				expect((range!.children[1] as PreludeOperator).value).toBe('<=')
+				expect((range!.children[2] as PreludeOperator).value).toBe('<=')
 				expect(range?.children[3].type).toBe(DIMENSION) // 100px
 			})
 
@@ -843,6 +846,7 @@ describe('At-Rule Prelude Nodes', () => {
 				// Verify child types
 				expect(range?.children[0].type).toBe(DIMENSION) // 400px
 				expect(range?.children[1].type).toBe(PRELUDE_OPERATOR) // <
+				expect((range!.children[1] as PreludeOperator).value).toBe('<')
 			})
 
 			test('should parse range syntax with equals', () => {

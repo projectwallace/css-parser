@@ -34,6 +34,7 @@ import type {
 	MediaFeature,
 	Number,
 	Operator,
+	PreludeOperator,
 	Parenthesis,
 	SupportsDeclaration,
 	SupportsQuery,
@@ -1431,6 +1432,7 @@ describe('Value Node Types', () => {
 			expect(range.children[0].text).toBe('400px')
 			expect(range.children[1].type).toBe(PRELUDE_OPERATOR)
 			expect(range.children[1].text).toBe('<=')
+			expect((range.children[1] as PreludeOperator).value).toBe('<=')
 		})
 
 		test('media() condition supports double-sided range syntax', () => {
@@ -1440,6 +1442,8 @@ describe('Value Node Types', () => {
 			expect(range.type).toBe(FEATURE_RANGE)
 			expect(range.name).toBe('width')
 			expect(range.children.map((c) => c.text)).toEqual(['400px', '<=', '<=', '800px'])
+			expect((range.children[1] as PreludeOperator).value).toBe('<=')
+			expect((range.children[2] as PreludeOperator).value).toBe('<=')
 		})
 
 		test('supports() condition supports the full compound and/or/not grammar', () => {
@@ -1459,6 +1463,7 @@ describe('Value Node Types', () => {
 
 			expect(supportsFunc.children[1].type).toBe(PRELUDE_OPERATOR)
 			expect(supportsFunc.children[1].text).toBe('and')
+			expect((supportsFunc.children[1] as PreludeOperator).value).toBe('and')
 
 			const second = supportsFunc.children[2] as SupportsQuery
 			expect(second.type).toBe(SUPPORTS_QUERY)
