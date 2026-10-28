@@ -42,7 +42,11 @@ import { SelectorParser } from './parse-selector'
 
 /** @internal */
 export interface PreludeParserOptions {
-	/** Defaults to `false`, but this will become the default behavior in 0.20.0. */
+	/**
+	 * Defaults to `false`, but this will become the default behavior in 0.20.0.
+	 *
+	 * @deprecated Opt-in only as a migration aid: in 0.20.0 this behavior is always on and the option will be removed.
+	 */
 	media_feature_range_name_as_child?: boolean
 }
 

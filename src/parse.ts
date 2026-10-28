@@ -54,6 +54,8 @@ export interface ParserOptions {
 	/**
 	 * Also add the feature name of a media range, e.g. `width` in `(400px < width)`, as an Identifier child.
 	 * Defaults to `false`, but this will become the default in 0.20.0.
+	 *
+	 * @deprecated Opt-in only as a migration aid: in 0.20.0 this behavior is always on and the option will be removed.
 	 */
 	media_feature_range_name_as_child?: boolean
 	on_comment?: (info: CommentInfo) => void
