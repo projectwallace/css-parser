@@ -117,7 +117,11 @@ export class Parser {
 
 		this.lexer = new Lexer(source, opts.on_comment)
 		// Calculate optimal capacity based on source size
-		const capacity = CSSDataArena.capacity_for_source(source.length)
+		const capacity = CSSDataArena.capacity_for_source(
+			source.length,
+			this.parse_values_enabled,
+			this.parse_selectors_enabled,
+		)
 		this.arena = new CSSDataArena(capacity)
 
 		// Only create parsers if needed
