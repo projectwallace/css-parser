@@ -244,6 +244,8 @@ const nodes_with_name = new Set<number>([
 	FEATURE_RANGE,
 ])
 
+// Container types always expose a `children` array when cloned, even when empty.
+// Other types get one as soon as they actually have children.
 const nodes_with_children = new Set<number>([
 	STYLESHEET,
 	SELECTOR,
@@ -944,7 +946,7 @@ export class CSSNode {
 			plain.end = this.end
 		}
 
-		if (deep && nodes_with_children.has(type)) {
+		if (deep && (nodes_with_children.has(type) || this.has_children)) {
 			plain.children = []
 			plain.child_count = this.child_count
 			plain.has_children = this.has_children
