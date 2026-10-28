@@ -34,6 +34,7 @@ import type {
 	MediaFeature,
 	Number,
 	Operator,
+	PreludeOperator,
 	Parenthesis,
 	SupportsDeclaration,
 	SupportsQuery,
@@ -1459,6 +1460,7 @@ describe('Value Node Types', () => {
 
 			expect(supportsFunc.children[1].type).toBe(PRELUDE_OPERATOR)
 			expect(supportsFunc.children[1].text).toBe('and')
+			expect((supportsFunc.children[1] as PreludeOperator).value).toBe('and')
 
 			const second = supportsFunc.children[2] as SupportsQuery
 			expect(second.type).toBe(SUPPORTS_QUERY)
