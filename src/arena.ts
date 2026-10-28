@@ -125,6 +125,13 @@ export class CSSDataArena {
 	// 210 keeps ~16% headroom above the observed ceiling of 198 nodes/KB.
 	private static readonly NODES_PER_KB = 210
 
+	// Lower estimates for when parse_values and/or parse_selectors are disabled, which
+	// skips creating many nodes. Observed ceilings (nodes/KB) across the same files:
+	//   parse_values=false 141 | parse_selectors=false 168 | both false 111
+	private static readonly NODES_PER_KB_NO_VALUES = 150
+	private static readonly NODES_PER_KB_NO_SELECTORS = 180
+	private static readonly NODES_PER_KB_NO_VALUES_NO_SELECTORS = 120
+
 	// Safety buffer on top of NODES_PER_KB to absorb variance without a grow.
 	// Combined with the constant above: effective ceiling = 210 × 1.1 = 231 nodes/KB.
 	private static readonly CAPACITY_BUFFER = 1.1
@@ -140,9 +147,20 @@ export class CSSDataArena {
 	}
 
 	// Calculate recommended initial capacity based on CSS source size
-	static capacity_for_source(source_length: number): number {
+	static capacity_for_source(
+		source_length: number,
+		parse_values: boolean = true,
+		parse_selectors: boolean = true,
+	): number {
+		const nodes_per_kb = parse_values
+			? parse_selectors
+				? CSSDataArena.NODES_PER_KB
+				: CSSDataArena.NODES_PER_KB_NO_SELECTORS
+			: parse_selectors
+				? CSSDataArena.NODES_PER_KB_NO_VALUES
+				: CSSDataArena.NODES_PER_KB_NO_VALUES_NO_SELECTORS
 		const size_in_kb = source_length / 1024
-		const estimated_nodes = Math.ceil(size_in_kb * CSSDataArena.NODES_PER_KB)
+		const estimated_nodes = Math.ceil(size_in_kb * nodes_per_kb)
 		// Add 15% buffer to avoid growth during parsing
 		const capacity = Math.ceil(estimated_nodes * CSSDataArena.CAPACITY_BUFFER)
 		// Ensure minimum capacity of 16 nodes (even for empty stylesheets)
