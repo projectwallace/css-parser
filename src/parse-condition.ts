@@ -303,6 +303,16 @@ export class ConditionParser {
 					// Feature name
 					feature_name_start = this.lexer.token_start
 					feature_name_end = this.lexer.token_end
+					// The name also stays in the children, so they read in source order
+					const name_first = this.parse_feature_value(feature_name_start, feature_name_end)
+					if (name_first !== 0) {
+						if (first_child === 0) {
+							first_child = name_first
+						} else {
+							this.arena.set_next_sibling(last_child, name_first)
+						}
+						last_child = this.arena.get_last_sibling(name_first)
+					}
 				} else {
 					// Value (may itself be a short chain, e.g. a single dimension node). A function
 					// token only covers 'name(' — extend to its matching ')' so calc() etc. stay whole

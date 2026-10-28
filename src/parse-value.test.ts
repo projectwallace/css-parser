@@ -1441,9 +1441,9 @@ describe('Value Node Types', () => {
 			const range = mediaFunc.children[0] as FeatureRange
 			expect(range.type).toBe(FEATURE_RANGE)
 			expect(range.name).toBe('width')
-			expect(range.children.map((c) => c.text)).toEqual(['400px', '<=', '<=', '800px'])
+			expect(range.children.map((c) => c.text)).toEqual(['400px', '<=', 'width', '<=', '800px'])
 			expect((range.children[1] as PreludeOperator).value).toBe('<=')
-			expect((range.children[2] as PreludeOperator).value).toBe('<=')
+			expect((range.children[3] as PreludeOperator).value).toBe('<=')
 		})
 
 		test('supports() condition supports the full compound and/or/not grammar', () => {
