@@ -244,28 +244,6 @@ const nodes_with_name = new Set<number>([
 	FEATURE_RANGE,
 ])
 
-const nodes_with_children = new Set<number>([
-	STYLESHEET,
-	SELECTOR,
-	SELECTOR_LIST,
-	BLOCK,
-	FUNCTION,
-	PARENTHESIS,
-	VALUE,
-	PSEUDO_CLASS_SELECTOR,
-	PSEUDO_ELEMENT_SELECTOR,
-	AT_RULE_PRELUDE,
-	MEDIA_QUERY,
-	MEDIA_FEATURE,
-	CONTAINER_QUERY,
-	FEATURE_RANGE,
-	SUPPORTS_QUERY,
-	SUPPORTS_DECLARATION,
-	IF_BRANCH,
-	IF_CONDITION,
-	PRELUDE_SELECTORLIST,
-])
-
 const enumerable_properties = [
 	'name',
 	'namespace',
@@ -944,7 +922,7 @@ export class CSSNode {
 			plain.end = this.end
 		}
 
-		if (deep && (this.has_children || nodes_with_children.has(type))) {
+		if (deep && this.has_children) {
 			plain.children = []
 			plain.child_count = this.child_count
 			plain.has_children = this.has_children
