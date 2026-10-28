@@ -51,7 +51,10 @@ export interface ParserOptions {
 	parse_values?: boolean
 	parse_selectors?: boolean
 	parse_atrule_preludes?: boolean
-	/** Also add the feature name of a media range, e.g. `width` in `(400px < width)`, as an Identifier child */
+	/**
+	 * Also add the feature name of a media range, e.g. `width` in `(400px < width)`, as an Identifier child.
+	 * Defaults to `false`, but this will become the default in 0.20.0.
+	 */
 	media_feature_range_name_as_child?: boolean
 	on_comment?: (info: CommentInfo) => void
 }

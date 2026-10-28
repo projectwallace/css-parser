@@ -42,6 +42,7 @@ import { SelectorParser } from './parse-selector'
 
 /** @internal */
 export interface PreludeParserOptions {
+	/** Defaults to `false`, but this will become the default behavior in 0.20.0. */
 	media_feature_range_name_as_child?: boolean
 }
 
@@ -848,7 +849,7 @@ export class AtRulePreludeParser {
  * Parse an at-rule prelude string and return an array of AST nodes
  * @param at_rule_name - The name of the at-rule (e.g., "media", "supports", "layer")
  * @param prelude - The at-rule prelude to parse (e.g., "(min-width: 768px)", "utilities")
- * @param options - Parser options (`media_feature_range_name_as_child`: also add the feature name of a media range as an Identifier child)
+ * @param options - Parser options (`media_feature_range_name_as_child`: also add the feature name of a media range as an Identifier child. This will become the default behavior in 0.20.0.)
  * @returns An array of CSSNode objects representing the parsed prelude
  */
 export function parse_atrule_prelude(
