@@ -812,9 +812,9 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(range.children.map((c) => c.text)).toEqual(['500px', '>', '>', '1000px'])
 			})
 
-			test('should add the feature name as a child with range_name_child', () => {
+			test('should add the feature name as a child with media_feature_range_name_as_child', () => {
 				const [query] = parse_atrule_prelude('media', '(500px > width > 1000px)', {
-					range_name_child: true,
+					media_feature_range_name_as_child: true,
 				})
 				const range = (query as MediaQuery).children[0] as FeatureRange
 
@@ -823,8 +823,8 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(range.children[2].type).toBe(IDENTIFIER)
 			})
 
-			test('should add the feature name as a child via parse() with range_name_child', () => {
-				const ast = parse('@media (width >= 400px) {}', { range_name_child: true })
+			test('should add the feature name as a child via parse() with media_feature_range_name_as_child', () => {
+				const ast = parse('@media (width >= 400px) {}', { media_feature_range_name_as_child: true })
 				const range = (ast.first_child as Atrule).prelude!.first_child!.first_child as FeatureRange
 
 				expect(range.children.map((c) => c.type_name)).toEqual([

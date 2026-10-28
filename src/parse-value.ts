@@ -9,9 +9,13 @@ export class ValueParser {
 	private nodes: ValueNodeParser
 	private arena: CSSDataArena
 
-	constructor(arena: CSSDataArena, source: string, range_name_child: boolean = false) {
+	constructor(
+		arena: CSSDataArena,
+		source: string,
+		media_feature_range_name_as_child: boolean = false,
+	) {
 		this.arena = arena
-		this.nodes = new ValueNodeParser(arena, source, range_name_child)
+		this.nodes = new ValueNodeParser(arena, source, media_feature_range_name_as_child)
 	}
 
 	// Parse a declaration value range into a VALUE wrapper node

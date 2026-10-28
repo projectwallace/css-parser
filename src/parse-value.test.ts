@@ -1447,9 +1447,9 @@ describe('Value Node Types', () => {
 			expect((range.children[2] as PreludeOperator).value).toBe('<=')
 		})
 
-		test('media() range includes the feature name as a child with range_name_child', () => {
+		test('media() range includes the feature name as a child with media_feature_range_name_as_child', () => {
 			const ast = parse('div { color: if(media(400px <= width): blue; else: red) }', {
-				range_name_child: true,
+				media_feature_range_name_as_child: true,
 			})
 			const decl = (ast.first_child as Rule).block!.first_child as Declaration
 			const mediaFunc = getBranch(decl.value!.first_child as Function, 0)?.first_child as Function

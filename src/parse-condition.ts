@@ -63,15 +63,15 @@ export class ConditionParser {
 	private selector_parser: SelectorParser
 
 	// Opt-in: also add a FEATURE_RANGE's feature name as an Identifier child (in source order)
-	private range_name_child: boolean
+	private media_feature_range_name_as_child: boolean
 
 	constructor(
 		arena: CSSDataArena,
 		source: string,
 		value_node_parser: ValueNodeParser,
-		range_name_child: boolean = false,
+		media_feature_range_name_as_child: boolean = false,
 	) {
-		this.range_name_child = range_name_child
+		this.media_feature_range_name_as_child = media_feature_range_name_as_child
 		this.arena = arena
 		this.source = source
 		this.lexer = new Lexer(source)
@@ -312,7 +312,7 @@ export class ConditionParser {
 					// Feature name
 					feature_name_start = this.lexer.token_start
 					feature_name_end = this.lexer.token_end
-					if (this.range_name_child) {
+					if (this.media_feature_range_name_as_child) {
 						const name_first = this.parse_feature_value(feature_name_start, feature_name_end)
 						if (name_first !== 0) {
 							if (first_child === 0) {

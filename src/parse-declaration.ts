@@ -44,11 +44,13 @@ export class DeclarationParser {
 		arena: CSSDataArena,
 		source: string,
 		parse_values: boolean = true,
-		range_name_child: boolean = false,
+		media_feature_range_name_as_child: boolean = false,
 	) {
 		this.arena = arena
 		this.source = source
-		this.value_parser = parse_values ? new ValueParser(arena, source, range_name_child) : null
+		this.value_parser = parse_values
+			? new ValueParser(arena, source, media_feature_range_name_as_child)
+			: null
 	}
 
 	// Parse a declaration range into a declaration node (standalone use)
