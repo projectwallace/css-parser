@@ -833,6 +833,14 @@ describe('CSSNode', () => {
 				expect(nth_of!.children?.length).toBeGreaterThan(0)
 			})
 
+			test('deep clone keeps an empty children array on empty containers', () => {
+				const ast = parse('a {}')
+				const block = ast.clone().children![0].children![1]
+
+				expect(block.type_name).toBe('Block')
+				expect(block.children).toEqual([])
+			})
+
 			// Guards against future node types being forgotten
 			test('deep clone contains every node that walk() visits', () => {
 				const css = `
