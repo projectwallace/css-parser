@@ -944,7 +944,7 @@ export class CSSNode {
 			plain.end = this.end
 		}
 
-		if (deep && nodes_with_children.has(type)) {
+		if (deep && (this.has_children || nodes_with_children.has(type))) {
 			plain.children = []
 			plain.child_count = this.child_count
 			plain.has_children = this.has_children

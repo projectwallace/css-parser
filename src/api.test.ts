@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'vitest'
 import { parse } from './parse'
 import { parse_selector, parse_selector_list } from './parse-selector'
+import { walk } from './walk'
 import {
 	DECLARATION,
 	STYLE_RULE,
@@ -13,6 +14,7 @@ import {
 	NUMBER,
 	FUNCTION,
 	ATTRIBUTE_SELECTOR,
+	NTH_OF_SELECTOR,
 } from './arena'
 import { CSSNode, PlainCSSNode } from './css-node'
 import {
@@ -797,6 +799,70 @@ describe('CSSNode', () => {
 
 	describe('Node cloning', () => {
 		describe('clone() method', () => {
+			test('deep clone includes children of Atrule', () => {
+				const ast = parse('@media print { a { color: red } }')
+				const atrule = ast.clone().children![0]
+
+				expect(atrule.type_name).toBe('Atrule')
+				expect(atrule.children?.map((c) => c.type_name)).toEqual(['AtrulePrelude', 'Block'])
+			})
+
+			test('deep clone includes children of Rule', () => {
+				const ast = parse('a { color: red }')
+				const rule = ast.clone().children![0]
+
+				expect(rule.type_name).toBe('Rule')
+				expect(rule.children?.map((c) => c.type_name)).toEqual(['SelectorList', 'Block'])
+			})
+
+			test('deep clone includes children of Declaration', () => {
+				const ast = parse('a { color: red }')
+				const decl = (ast.first_child! as Rule).block!.first_child!.clone()
+
+				expect(decl.type_name).toBe('Declaration')
+				expect(decl.children?.map((c) => c.type_name)).toEqual(['Value'])
+			})
+
+			test('deep clone includes children of NthOf', () => {
+				const ast = parse('a:nth-child(2n+1 of .x) {}')
+				let nth_of: PlainCSSNode | undefined
+				walk(ast, (node) => {
+					if (node.type === NTH_OF_SELECTOR) nth_of = node.clone()
+				})
+
+				expect(nth_of!.children?.length).toBeGreaterThan(0)
+			})
+
+			// Guards against future node types being forgotten
+			test('deep clone contains every node that walk() visits', () => {
+				const css = `
+					@import url(x.css) layer(a) supports(display: grid) screen;
+					@layer a, b;
+					@font-face { src: url(a.woff) }
+					@media (width > 1000px) and (print) { a { color: red } }
+					@supports (display: grid) { b { c: d } }
+					@container card (min-width: 400px) { e {} }
+					@keyframes k { from { opacity: 0 } }
+					@scope (.a) to (.b) { c {} }
+					@page :first { margin: 1in }
+					a:is(.b, #c) > d[e="f" i]::before:nth-child(2n+1 of .x), g + h ~ i {
+						color: rgb(0 0 0 / calc(1 + 2));
+						width: var(--a, 1px) !important;
+					}
+				`
+				const ast = parse(css)
+
+				let walked = 0
+				walk(ast, () => {
+					walked++
+				})
+
+				const count = (node: PlainCSSNode): number =>
+					1 + (node.children ?? []).reduce((sum, child) => sum + count(child), 0)
+
+				expect(count(ast.clone())).toBe(walked)
+			})
+
 			test('creates plain object with core properties', () => {
 				const ast = parse('div { color: red; }', { parse_values: false, parse_selectors: false })
 				const rule = ast.first_child! as Rule
