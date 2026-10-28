@@ -610,7 +610,7 @@ export type PreludeOperator = Leaf<
 	typeof PRELUDE_OPERATOR,
 	'Operator',
 	{
-		/** The operator keyword, e.g. "and", "or", "not", "only", "to" */
+		/** The operator keyword or range comparator, e.g. "and", "or", "not", "only", "to", "<", "<=", ">", ">=", "=" */
 		readonly value: string
 	}
 >
