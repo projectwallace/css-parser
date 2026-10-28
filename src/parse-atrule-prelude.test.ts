@@ -804,6 +804,36 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(range.children.map((c) => c.text)).toEqual(['100px', '<=', '>=', '1000px'])
 			})
 
+			test('should not add the feature name as a child by default', () => {
+				const [query] = parse_atrule_prelude('media', '(500px > width > 1000px)')
+				const range = (query as MediaQuery).children[0] as FeatureRange
+
+				expect(range.name).toBe('width')
+				expect(range.children.map((c) => c.text)).toEqual(['500px', '>', '>', '1000px'])
+			})
+
+			test('should add the feature name as a child with media_feature_range_name_as_child', () => {
+				const [query] = parse_atrule_prelude('media', '(500px > width > 1000px)', {
+					media_feature_range_name_as_child: true,
+				})
+				const range = (query as MediaQuery).children[0] as FeatureRange
+
+				expect(range.name).toBe('width')
+				expect(range.children.map((c) => c.text)).toEqual(['500px', '>', 'width', '>', '1000px'])
+				expect(range.children[2].type).toBe(IDENTIFIER)
+			})
+
+			test('should add the feature name as a child via parse() with media_feature_range_name_as_child', () => {
+				const ast = parse('@media (width >= 400px) {}', { media_feature_range_name_as_child: true })
+				const range = (ast.first_child as Atrule).prelude!.first_child!.first_child as FeatureRange
+
+				expect(range.children.map((c) => c.type_name)).toEqual([
+					'Identifier',
+					'Operator',
+					'Dimension',
+				])
+			})
+
 			test('should parse range syntax with double comparison', () => {
 				const css = '@media (50px <= width <= 100px) { }'
 				const ast = parse(css)
