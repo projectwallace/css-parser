@@ -617,10 +617,10 @@ export type PreludeOperator = Leaf<
 
 export type FeatureRange = WithClone<
 	CSSNode &
-		WithChildren<Dimension | Function | PreludeOperator> & {
+		WithChildren<Dimension | Function | Identifier | PreludeOperator> & {
 			readonly type: typeof FEATURE_RANGE
 			readonly type_name: 'MediaFeatureRange'
-			/** The feature name in a range comparison, e.g. "width" from "(width >= 400px)" */
+			/** The feature name in a range comparison, e.g. "width" from "(width >= 400px)". Also present as an Identifier child, in source order. */
 			readonly name: string
 		}
 >

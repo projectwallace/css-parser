@@ -100,6 +100,7 @@ Options:
 - `parse_values` (default `true`) — parse declaration values into nodes
 - `parse_selectors` (default `true`) — parse selectors into nodes
 - `parse_atrule_preludes` (default `true`) — parse at-rule preludes into nodes
+- `media_feature_range_name_as_child` (default `false`) — also add the feature name of a media range (`width` in `(400px < width < 1000px)`) as an `Identifier` child, so the children read in source order. `name` is set either way. **Deprecated:** this will become the default in 0.20.0 and the option will be removed, so opt in now to prepare
 - `on_comment` — called for every comment (`{ start, end, length, line, column }`); comments are never part of the tree
 
 ### Sub-parsers

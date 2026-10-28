@@ -335,7 +335,9 @@ describe('type narrowing — compile-time', () => {
 	test('FeatureRange children are typed as Dimension | Function | PreludeOperator, not Operator', () => {
 		const atrule = parse('@media (width >= 400px) {}').first_child! as Atrule
 		const range = atrule.prelude!.first_child!.first_child! as FeatureRange
-		expectTypeOf(range.children).toEqualTypeOf<(Dimension | Function | PreludeOperator)[]>()
+		expectTypeOf(range.children).toEqualTypeOf<
+			(Dimension | Function | Identifier | PreludeOperator)[]
+		>()
 
 		const [op, dim] = range.children
 		expect(op.type_name).toBe('Operator')
