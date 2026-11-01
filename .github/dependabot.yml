@@ -22,5 +22,9 @@ updates:
     directory: '/'
     schedule:
       interval: 'monthly'
+    groups:
+      github-actions:
+        patterns:
+          - '*'
     cooldown:
       default-days: 7
