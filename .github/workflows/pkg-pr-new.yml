@@ -104,6 +104,8 @@ jobs:
         with:
           name: dist
           path: dist/
+      # pkg-pr-new publishes previews through its own GitHub App, not to npm, so there is
+      # no npm token to replace with trusted publishing.
       # --commentWithSha uses the commit sha in install URLs/comments instead
       # of a PR number, and pnpm exec (not npx/dlx) runs the pinned devDependency.
-      - run: pnpm exec pkg-pr-new publish --commentWithSha
+      - run: pnpm exec pkg-pr-new publish --commentWithSha  # zizmor: ignore[use-trusted-publishing]
