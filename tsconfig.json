@@ -8,6 +8,8 @@
 		"skipLibCheck": true,
 		"resolveJsonModule": true,
 		"isolatedModules": true,
+		"declaration": true,
+		"isolatedDeclarations": true,
 		"noEmit": true,
 		"types": ["vitest/globals", "node"]
 	},

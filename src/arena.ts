@@ -97,15 +97,15 @@ export const RATIO = 58 // ratio value: 16/9 in aspect-ratio: 16/9
 export const VALUE = 50 // Wrapper for declaration values
 
 // Flag constants (bit-packed in 1 byte)
-export const FLAG_IMPORTANT = 1 << 0 // Has !important
-export const FLAG_HAS_ERROR = 1 << 1 // Syntax error
-export const FLAG_LENGTH_OVERFLOW = 1 << 2 // Node > 65k chars
-export const FLAG_HAS_BLOCK = 1 << 3 // Has { } block (for style rules and at-rules)
+export const FLAG_IMPORTANT: number = 1 << 0 // Has !important
+export const FLAG_HAS_ERROR: number = 1 << 1 // Syntax error
+export const FLAG_LENGTH_OVERFLOW: number = 1 << 2 // Node > 65k chars
+export const FLAG_HAS_BLOCK: number = 1 << 3 // Has { } block (for style rules and at-rules)
 // export const FLAG_VENDOR_PREFIXED = 1 << 4 // Has vendor prefix (-webkit-, -moz-, -ms-, -o-)
-export const FLAG_HAS_NAMESPACE = 1 << 4 // Has namespace qualifier (for type/universal selectors)
-export const FLAG_HAS_DECLARATIONS = 1 << 5 // Has direct declaration children (style rules and at-rules)
-export const FLAG_HAS_PARENS = 1 << 6 // Has parentheses syntax (for pseudo-class/pseudo-element functions)
-export const FLAG_BROWSERHACK = 1 << 7 // Has browser hack prefix (*property, _property, etc.)
+export const FLAG_HAS_NAMESPACE: number = 1 << 4 // Has namespace qualifier (for type/universal selectors)
+export const FLAG_HAS_DECLARATIONS: number = 1 << 5 // Has direct declaration children (style rules and at-rules)
+export const FLAG_HAS_PARENS: number = 1 << 6 // Has parentheses syntax (for pseudo-class/pseudo-element functions)
+export const FLAG_BROWSERHACK: number = 1 << 7 // Has browser hack prefix (*property, _property, etc.)
 
 /** @internal */
 export class CSSDataArena {

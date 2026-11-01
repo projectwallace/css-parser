@@ -25,18 +25,18 @@
 // them as true constants and fold combined masks like CHAR_WHITESPACE | CHAR_NEWLINE
 // into a literal instead of re-reading two module bindings on every hot-loop char.
 const CHAR_ALPHA = 1 << 0 // 1
-export const CHAR_DIGIT = 1 << 1 // 2
+export const CHAR_DIGIT: number = 1 << 1 // 2
 const CHAR_HEX = 1 << 2 // 4
 const CHAR_WHITESPACE = 1 << 3 // 8
-export const CHAR_NEWLINE = 1 << 4 // 16
-export const CHAR_IDENT = 1 << 5 // 32
-export const CHAR_IDENT_START = 1 << 6 // 64: ASCII letters and underscore (non-ASCII handled by callers via ch >= 0x80)
+export const CHAR_NEWLINE: number = 1 << 4 // 16
+export const CHAR_IDENT: number = 1 << 5 // 32
+export const CHAR_IDENT_START: number = 1 << 6 // 64: ASCII letters and underscore (non-ASCII handled by callers via ch >= 0x80)
 // Precomputed so the whitespace-skip hot loops do a single mask compare
 // instead of OR-ing two constants on every character.
-export const CHAR_WHITESPACE_OR_NEWLINE = CHAR_WHITESPACE | CHAR_NEWLINE
+export const CHAR_WHITESPACE_OR_NEWLINE: number = CHAR_WHITESPACE | CHAR_NEWLINE
 
 // Lookup table for ASCII characters (0-127)
-export const char_types = new Uint8Array(128)
+export const char_types: Uint8Array = new Uint8Array(128)
 
 // Initialize digit characters (0-9)
 for (let i = 0x30; i <= 0x39; i++) {

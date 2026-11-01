@@ -5,8 +5,8 @@ import type { CSSDataArena } from './arena'
 import { STYLE_RULE, AT_RULE } from './constants'
 
 // Control flow symbols for walk callbacks
-export const SKIP = Symbol('SKIP')
-export const BREAK = Symbol('BREAK')
+export const SKIP: unique symbol = Symbol('SKIP')
+export const BREAK: unique symbol = Symbol('BREAK')
 
 type WalkCallback = (node: AnyNode, depth: number) => void | typeof SKIP | typeof BREAK
 
