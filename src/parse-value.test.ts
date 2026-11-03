@@ -1563,6 +1563,26 @@ describe('Value Node Types', () => {
 				expect(getBranch(func, 1)?.is_else).toBe(true)
 			})
 
+			test('line/column of surrounding nodes stay correct for a multi-line compound condition', () => {
+				const ast = parse(
+					'a {\n  x: if(media((hover) and\n  /* multi\n line */ (pointer:fine)): 1;\n   else: 2);\n  y: 3 }',
+				)
+				const block = (ast.first_child as Rule).block!
+				const decl_x = block.first_child as Declaration
+				const func = decl_x.value!.first_child as Function
+				const branch = getBranch(func, 0)!
+				const else_branch = getBranch(func, 1)!
+				const at = (n: any) => [n.line, n.column]
+				expect(at(decl_x)).toEqual([2, 3])
+				expect(at(func)).toEqual([2, 6])
+				expect(at(branch)).toEqual([2, 9])
+				expect(at(branch.first_child)).toEqual([2, 9]) // the media() function
+				expect(at(branch.value)).toEqual([4, 27])
+				expect(at(else_branch)).toEqual([5, 4])
+				expect(at(else_branch.value)).toEqual([5, 10])
+				expect(at(decl_x.next_sibling)).toEqual([6, 3])
+			})
+
 			test('with media_feature_range_name_as_child', () => {
 				const ast = parse(
 					'div { color: if(media((400px <= width) and (hover)): blue; else: red) }',
