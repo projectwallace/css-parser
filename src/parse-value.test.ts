@@ -1449,6 +1449,12 @@ describe('Value Node Types', () => {
 				['Operator', 'not'],
 				['Feature', '(hover)'],
 			])
+			// A single parenthesized feature is still a <media-condition>, not a bare feature
+			const single = shape('(hover)')
+			expect(single[0][0]).toBe('MediaQuery')
+			expect(single[0][2]).toEqual([['Feature', '(hover)']])
+			const nested = shape('((hover))')
+			expect(nested[0][0]).toBe('MediaQuery')
 			const typed = shape('screen and (min-width:100px)')
 			expect(typed[0][2].map((c: any) => c[0])).toEqual(['MediaType', 'Operator', 'Feature'])
 		})

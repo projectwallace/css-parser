@@ -36,6 +36,7 @@ import {
 	TOKEN_RIGHT_PAREN,
 	TOKEN_UNICODE_RANGE,
 	TOKEN_WHITESPACE,
+	TOKEN_COMMENT,
 	type TokenType,
 } from './token-types'
 import {
@@ -214,6 +215,8 @@ export class ValueNodeParser {
 	private paren_content_end = 0
 	// Set by scan_matching_paren: an and/or/not identifier appeared directly inside the parens
 	private paren_has_logical_op = false
+	// Set by scan_matching_paren: the first meaningful token inside the parens is '('
+	private paren_starts_with_paren = false
 	private paren_close_end = 0
 
 	private scan_matching_paren(bounded: boolean): boolean {
@@ -221,12 +224,19 @@ export class ValueNodeParser {
 		let content_end = this.lexer.pos
 		let close_end = this.lexer.token_end
 		this.paren_has_logical_op = false
+		this.paren_starts_with_paren = false
+		let seen_first_token = false
 
 		while ((!bounded || this.lexer.pos < this.end) && depth > 0) {
 			this.lexer.next_token(false)
 			const token_type = this.lexer.token_type
 			if (token_type === TOKEN_EOF) break
 			if (bounded && this.lexer.token_start >= this.end) break
+
+			if (!seen_first_token && token_type !== TOKEN_WHITESPACE && token_type !== TOKEN_COMMENT) {
+				seen_first_token = true
+				this.paren_starts_with_paren = token_type === TOKEN_LEFT_PAREN
+			}
 
 			if (token_type === TOKEN_LEFT_PAREN || token_type === TOKEN_FUNCTION) {
 				depth++
@@ -312,7 +322,6 @@ export class ValueNodeParser {
 				const matched = this.scan_matching_paren(false)
 				const scanned_content_end = this.paren_content_end
 				const scanned_func_end = this.paren_close_end
-				const has_logical_op = this.paren_has_logical_op
 				if (matched) {
 					content_end = scanned_content_end
 					func_end = scanned_func_end
@@ -669,7 +678,8 @@ export class ValueNodeParser {
 
 		// Scan for matching ')' to find the full function extent
 		const matched = this.scan_matching_paren(true)
-		const has_logical_op = this.paren_has_logical_op
+		// A <media-condition> (starts with '(' or uses not/and/or) vs. a bare <media-feature>
+		const is_media_condition = this.paren_starts_with_paren || this.paren_has_logical_op
 		const scanned_content_end = this.paren_content_end
 		const scanned_func_end = this.paren_close_end
 		if (matched) {
@@ -733,7 +743,7 @@ export class ValueNodeParser {
 		} else if (str_equals_range(this.source, func_start, func_name_end, 'media')) {
 			// media()'s own parens delimit the feature; there's no separate inner paren pair,
 			// so the feature span equals the content span (see parse_media_feature_content's docs)
-			if (has_logical_op) {
+			if (is_media_condition) {
 				// Compound <media-condition> (not/and/or, optional media type): same MediaQuery
 				// structure as a real `@media` prelude
 				child_nodes = this.media_prelude_parser.parse_prelude(
