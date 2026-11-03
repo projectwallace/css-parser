@@ -1476,6 +1476,106 @@ describe('Value Node Types', () => {
 			expect(typed[0][2].map((c: any) => c[0])).toEqual(['MediaType', 'Operator', 'Feature'])
 		})
 
+		describe('media() compound conditions (more cases)', () => {
+			const media_fn = (css: string, branch = 0) =>
+				getBranch(getFunc(`div { color: if(${css}) }`), branch)?.first_child as Function
+			const kids = (node: any): string[][] => node.children.map((c: any) => [c.type_name, c.text])
+
+			test('keywords are case-insensitive', () => {
+				const not_query = media_fn('media(NOT (hover)): 1')
+				expect(not_query.children[0].type_name).toBe('MediaQuery')
+				expect(kids(not_query.children[0])).toEqual([
+					['Operator', 'NOT'],
+					['Feature', '(hover)'],
+				])
+				const only_query = media_fn('media(ONLY screen): 1')
+				expect(only_query.children[0].type_name).toBe('MediaQuery')
+				expect(kids(only_query.children[0])).toEqual([
+					['Operator', 'ONLY'],
+					['MediaType', 'screen'],
+				])
+			})
+
+			test('range syntax inside a compound condition', () => {
+				const fn = media_fn('media((width >= 100px) and (height < 50px)): 1')
+				expect(kids(fn.children[0])).toEqual([
+					['MediaFeatureRange', '(width >= 100px)'],
+					['Operator', 'and'],
+					['MediaFeatureRange', '(height < 50px)'],
+				])
+			})
+
+			test('nested functions inside a feature', () => {
+				const fn = media_fn('media((min-width: calc(1px + 2px)) and (hover)): 1')
+				const query = fn.children[0] as any
+				expect(query.type_name).toBe('MediaQuery')
+				expect(kids(query)).toEqual([
+					['Feature', '(min-width: calc(1px + 2px))'],
+					['Operator', 'and'],
+					['Feature', '(hover)'],
+				])
+				expect(query.first_child.first_child.type_name).toBe('Function')
+			})
+
+			test('comment before the condition is skipped', () => {
+				const fn = media_fn('media(/* c */ (hover) and (x)): 1')
+				expect(kids(fn.children[0])).toEqual([
+					['Feature', '(hover)'],
+					['Operator', 'and'],
+					['Feature', '(x)'],
+				])
+			})
+
+			test('combined with style() in an IfCondition', () => {
+				const cond = getBranch(
+					getFunc('div { color: if(media(not (hover)) and style(--a: 1): 1) }'),
+					0,
+				)?.first_child as any
+				expect(cond.type_name).toBe('IfCondition')
+				expect(cond.children.map((c: any) => c.type_name)).toEqual([
+					'Function',
+					'Operator',
+					'Function',
+				])
+				expect(cond.first_child.first_child.type_name).toBe('MediaQuery')
+			})
+
+			test('negated with a leading not', () => {
+				const cond = getBranch(
+					getFunc('div { color: if(not media((hover) or (pointer: fine)): 1) }'),
+					0,
+				)?.first_child as any
+				expect(cond.type_name).toBe('IfCondition')
+				expect(cond.children.map((c: any) => c.type_name)).toEqual(['Operator', 'Function'])
+				expect(kids(cond.children[1].first_child)).toEqual([
+					['Feature', '(hover)'],
+					['Operator', 'or'],
+					['Feature', '(pointer: fine)'],
+				])
+			})
+
+			test('else branch after a compound branch', () => {
+				const func = getFunc(
+					'div { color: if(media((width >= 100px) and (height < 50px)): 1; else: 2) }',
+				)
+				expect(func?.children).toHaveLength(2)
+				expect(getBranch(func, 0)?.first_child?.first_child?.type_name).toBe('MediaQuery')
+				expect(getBranch(func, 1)?.is_else).toBe(true)
+			})
+
+			test('with media_feature_range_name_as_child', () => {
+				const ast = parse(
+					'div { color: if(media((400px <= width) and (hover)): blue; else: red) }',
+					{ media_feature_range_name_as_child: true },
+				)
+				const decl = (ast.first_child as Rule).block!.first_child as Declaration
+				const fn = getBranch(decl.value!.first_child as Function, 0)?.first_child as Function
+				const range = (fn.children[0] as any).first_child
+				expect(range.type_name).toBe('MediaFeatureRange')
+				expect(range.children.map((c: any) => c.text)).toEqual(['400px', '<=', 'width'])
+			})
+		})
+
 		test('media() condition supports range syntax', () => {
 			const func = getFunc('div { color: if(media(400px <= width): blue; else: red) }')
 			const mediaFunc = getBranch(func, 0)?.first_child as Function
