@@ -215,7 +215,7 @@ export class ValueNodeParser {
 	private paren_content_end = 0
 	// Set by scan_matching_paren: an and/or/not identifier appeared directly inside the parens
 	private paren_has_logical_op = false
-	// Set by scan_matching_paren: the first meaningful token inside the parens is '('
+	// Set by scan_matching_paren: the first meaningful token inside the parens is '(' or a leading only/not
 	private paren_starts_with_paren = false
 	private paren_close_end = 0
 
@@ -235,7 +235,11 @@ export class ValueNodeParser {
 
 			if (!seen_first_token && token_type !== TOKEN_WHITESPACE && token_type !== TOKEN_COMMENT) {
 				seen_first_token = true
-				this.paren_starts_with_paren = token_type === TOKEN_LEFT_PAREN
+				this.paren_starts_with_paren =
+					token_type === TOKEN_LEFT_PAREN ||
+					(token_type === TOKEN_IDENT &&
+						(str_equals_range(this.source, this.lexer.token_start, this.lexer.token_end, 'only') ||
+							str_equals_range(this.source, this.lexer.token_start, this.lexer.token_end, 'not')))
 			}
 
 			if (token_type === TOKEN_LEFT_PAREN || token_type === TOKEN_FUNCTION) {

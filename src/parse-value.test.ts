@@ -1457,6 +1457,15 @@ describe('Value Node Types', () => {
 				['Operator', 'and'],
 				['Feature', '(min-width:100px)'],
 			])
+			// Leading only/not without any and/or still marks a media query, not a bare feature
+			const only_type = shape('only screen')
+			expect(only_type[0][0]).toBe('MediaQuery')
+			expect(only_type[0][2].map((c: any) => [c[0], c[1]])).toEqual([
+				['Operator', 'only'],
+				['MediaType', 'screen'],
+			])
+			const not_type = shape('not print')
+			expect(not_type[0][0]).toBe('MediaQuery')
 			// A single parenthesized feature is still a <media-condition>, not a bare feature
 			const single = shape('(hover)')
 			expect(single[0][0]).toBe('MediaQuery')
