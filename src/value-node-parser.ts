@@ -36,6 +36,7 @@ import {
 	TOKEN_RIGHT_PAREN,
 	TOKEN_UNICODE_RANGE,
 	TOKEN_WHITESPACE,
+	TOKEN_COMMENT,
 	type TokenType,
 } from './token-types'
 import {
@@ -48,6 +49,7 @@ import {
 	is_and_or_not_range,
 } from './string-utils'
 import { ConditionParser } from './parse-condition'
+import { AtRulePreludeParser } from './parse-atrule-prelude'
 
 export class ValueNodeParser {
 	protected lexer: Lexer
@@ -211,18 +213,34 @@ export class ValueNodeParser {
 	// Returns [content_end, close_end, matched]; matched is false if EOF was hit first, in
 	// which case content_end/close_end are left at their initial (scan-start) values.
 	private paren_content_end = 0
+	// Set by scan_matching_paren: an and/or/not identifier appeared directly inside the parens
+	private paren_has_logical_op = false
+	// Set by scan_matching_paren: the first meaningful token inside the parens is '(' or a leading only/not
+	private paren_starts_with_paren = false
 	private paren_close_end = 0
 
 	private scan_matching_paren(bounded: boolean): boolean {
 		let depth = 1
 		let content_end = this.lexer.pos
 		let close_end = this.lexer.token_end
+		this.paren_has_logical_op = false
+		this.paren_starts_with_paren = false
+		let seen_first_token = false
 
 		while ((!bounded || this.lexer.pos < this.end) && depth > 0) {
 			this.lexer.next_token(false)
 			const token_type = this.lexer.token_type
 			if (token_type === TOKEN_EOF) break
 			if (bounded && this.lexer.token_start >= this.end) break
+
+			if (!seen_first_token && token_type !== TOKEN_WHITESPACE && token_type !== TOKEN_COMMENT) {
+				seen_first_token = true
+				this.paren_starts_with_paren =
+					token_type === TOKEN_LEFT_PAREN ||
+					(token_type === TOKEN_IDENT &&
+						(str_equals_range(this.source, this.lexer.token_start, this.lexer.token_end, 'only') ||
+							str_equals_range(this.source, this.lexer.token_start, this.lexer.token_end, 'not')))
+			}
 
 			if (token_type === TOKEN_LEFT_PAREN || token_type === TOKEN_FUNCTION) {
 				depth++
@@ -232,6 +250,12 @@ export class ValueNodeParser {
 					content_end = this.lexer.token_start
 					close_end = this.lexer.token_end
 				}
+			} else if (
+				depth === 1 &&
+				token_type === TOKEN_IDENT &&
+				is_and_or_not_range(this.source, this.lexer.token_start, this.lexer.token_end)
+			) {
+				this.paren_has_logical_op = true
 			}
 		}
 
@@ -658,6 +682,8 @@ export class ValueNodeParser {
 
 		// Scan for matching ')' to find the full function extent
 		const matched = this.scan_matching_paren(true)
+		// A <media-condition> (starts with '(' or uses not/and/or) vs. a bare <media-feature>
+		const is_media_condition = this.paren_starts_with_paren || this.paren_has_logical_op
 		const scanned_content_end = this.paren_content_end
 		const scanned_func_end = this.paren_close_end
 		if (matched) {
@@ -721,13 +747,25 @@ export class ValueNodeParser {
 		} else if (str_equals_range(this.source, func_start, func_name_end, 'media')) {
 			// media()'s own parens delimit the feature; there's no separate inner paren pair,
 			// so the feature span equals the content span (see parse_media_feature_content's docs)
-			const feature = this.condition_parser.parse_media_feature_content(
-				content_start,
-				content_end,
-				content_start,
-				content_end,
-			)
-			child_nodes = [feature]
+			if (is_media_condition) {
+				// Compound <media-condition> (not/and/or, optional media type): same MediaQuery
+				// structure as a real `@media` prelude
+				child_nodes = this.media_prelude_parser.parse_prelude(
+					'media',
+					content_start,
+					content_end,
+					func_line,
+					func_col + (content_start - func_start),
+				)
+			} else {
+				const feature = this.condition_parser.parse_media_feature_content(
+					content_start,
+					content_end,
+					content_start,
+					content_end,
+				)
+				child_nodes = [feature]
+			}
 		} else {
 			// Generic: parse content as value nodes
 			child_nodes = this.parse_value_nodes_in_range(content_start, content_end)
@@ -735,6 +773,21 @@ export class ValueNodeParser {
 
 		this.arena.append_children(func_node, child_nodes)
 		return func_node
+	}
+
+	// Lazily built to reuse the `@media` prelude parser for compound media() conditions
+	// (circular import, only used at call time).
+	private _media_prelude_parser: AtRulePreludeParser | null = null
+
+	private get media_prelude_parser(): AtRulePreludeParser {
+		if (this._media_prelude_parser === null) {
+			this._media_prelude_parser = new AtRulePreludeParser(
+				this.arena,
+				this.source,
+				this.media_feature_range_name_as_child,
+			)
+		}
+		return this._media_prelude_parser
 	}
 
 	// Parse value tokens in a source sub-range using save/restore to protect lexer state.
