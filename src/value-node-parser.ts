@@ -212,12 +212,15 @@ export class ValueNodeParser {
 	// Returns [content_end, close_end, matched]; matched is false if EOF was hit first, in
 	// which case content_end/close_end are left at their initial (scan-start) values.
 	private paren_content_end = 0
+	// Set by scan_matching_paren: an and/or/not identifier appeared directly inside the parens
+	private paren_has_logical_op = false
 	private paren_close_end = 0
 
 	private scan_matching_paren(bounded: boolean): boolean {
 		let depth = 1
 		let content_end = this.lexer.pos
 		let close_end = this.lexer.token_end
+		this.paren_has_logical_op = false
 
 		while ((!bounded || this.lexer.pos < this.end) && depth > 0) {
 			this.lexer.next_token(false)
@@ -233,6 +236,12 @@ export class ValueNodeParser {
 					content_end = this.lexer.token_start
 					close_end = this.lexer.token_end
 				}
+			} else if (
+				depth === 1 &&
+				token_type === TOKEN_IDENT &&
+				is_and_or_not_range(this.source, this.lexer.token_start, this.lexer.token_end)
+			) {
+				this.paren_has_logical_op = true
 			}
 		}
 
@@ -303,6 +312,7 @@ export class ValueNodeParser {
 				const matched = this.scan_matching_paren(false)
 				const scanned_content_end = this.paren_content_end
 				const scanned_func_end = this.paren_close_end
+				const has_logical_op = this.paren_has_logical_op
 				if (matched) {
 					content_end = scanned_content_end
 					func_end = scanned_func_end
@@ -659,6 +669,7 @@ export class ValueNodeParser {
 
 		// Scan for matching ')' to find the full function extent
 		const matched = this.scan_matching_paren(true)
+		const has_logical_op = this.paren_has_logical_op
 		const scanned_content_end = this.paren_content_end
 		const scanned_func_end = this.paren_close_end
 		if (matched) {
@@ -722,7 +733,7 @@ export class ValueNodeParser {
 		} else if (str_equals_range(this.source, func_start, func_name_end, 'media')) {
 			// media()'s own parens delimit the feature; there's no separate inner paren pair,
 			// so the feature span equals the content span (see parse_media_feature_content's docs)
-			if (this.has_top_level_and_or_not(content_start, content_end)) {
+			if (has_logical_op) {
 				// Compound <media-condition> (not/and/or, optional media type): same MediaQuery
 				// structure as a real `@media` prelude
 				child_nodes = this.media_prelude_parser.parse_prelude(
@@ -763,26 +774,6 @@ export class ValueNodeParser {
 			)
 		}
 		return this._media_prelude_parser
-	}
-
-	// True when [start, end) has an `and`/`or`/`not` keyword outside any parentheses.
-	private has_top_level_and_or_not(start: number, end: number): boolean {
-		const is_letter = (c: number) => ((c | 32) >= 97 && (c | 32) <= 122) || c === 45
-		let depth = 0
-		let i = start
-		while (i < end) {
-			const c = this.source.charCodeAt(i)
-			if (c === 40) depth++
-			else if (c === 41) depth--
-			else if (depth === 0 && is_letter(c)) {
-				const word_start = i
-				while (i < end && is_letter(this.source.charCodeAt(i))) i++
-				if (is_and_or_not_range(this.source, word_start, i)) return true
-				continue
-			}
-			i++
-		}
-		return false
 	}
 
 	// Parse value tokens in a source sub-range using save/restore to protect lexer state.
