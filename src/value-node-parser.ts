@@ -48,6 +48,7 @@ import {
 	is_and_or_not_range,
 } from './string-utils'
 import { ConditionParser } from './parse-condition'
+import { AtRulePreludeParser } from './parse-atrule-prelude'
 
 export class ValueNodeParser {
 	protected lexer: Lexer
@@ -721,13 +722,25 @@ export class ValueNodeParser {
 		} else if (str_equals_range(this.source, func_start, func_name_end, 'media')) {
 			// media()'s own parens delimit the feature; there's no separate inner paren pair,
 			// so the feature span equals the content span (see parse_media_feature_content's docs)
-			const feature = this.condition_parser.parse_media_feature_content(
-				content_start,
-				content_end,
-				content_start,
-				content_end,
-			)
-			child_nodes = [feature]
+			if (this.has_top_level_and_or_not(content_start, content_end)) {
+				// Compound <media-condition> (not/and/or, optional media type): same MediaQuery
+				// structure as a real `@media` prelude
+				child_nodes = this.media_prelude_parser.parse_prelude(
+					'media',
+					content_start,
+					content_end,
+					func_line,
+					func_col + (content_start - func_start),
+				)
+			} else {
+				const feature = this.condition_parser.parse_media_feature_content(
+					content_start,
+					content_end,
+					content_start,
+					content_end,
+				)
+				child_nodes = [feature]
+			}
 		} else {
 			// Generic: parse content as value nodes
 			child_nodes = this.parse_value_nodes_in_range(content_start, content_end)
@@ -735,6 +748,41 @@ export class ValueNodeParser {
 
 		this.arena.append_children(func_node, child_nodes)
 		return func_node
+	}
+
+	// Lazily built to reuse the `@media` prelude parser for compound media() conditions
+	// (circular import, only used at call time).
+	private _media_prelude_parser: AtRulePreludeParser | null = null
+
+	private get media_prelude_parser(): AtRulePreludeParser {
+		if (this._media_prelude_parser === null) {
+			this._media_prelude_parser = new AtRulePreludeParser(
+				this.arena,
+				this.source,
+				this.media_feature_range_name_as_child,
+			)
+		}
+		return this._media_prelude_parser
+	}
+
+	// True when [start, end) has an `and`/`or`/`not` keyword outside any parentheses.
+	private has_top_level_and_or_not(start: number, end: number): boolean {
+		const is_letter = (c: number) => ((c | 32) >= 97 && (c | 32) <= 122) || c === 45
+		let depth = 0
+		let i = start
+		while (i < end) {
+			const c = this.source.charCodeAt(i)
+			if (c === 40) depth++
+			else if (c === 41) depth--
+			else if (depth === 0 && is_letter(c)) {
+				const word_start = i
+				while (i < end && is_letter(this.source.charCodeAt(i))) i++
+				if (is_and_or_not_range(this.source, word_start, i)) return true
+				continue
+			}
+			i++
+		}
+		return false
 	}
 
 	// Parse value tokens in a source sub-range using save/restore to protect lexer state.

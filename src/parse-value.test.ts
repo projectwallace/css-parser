@@ -1422,6 +1422,37 @@ describe('Value Node Types', () => {
 			expect(feature.value).toBeNull()
 		})
 
+		test('media() compound condition parses like an @media prelude', () => {
+			const shape = (css: string): any[] => {
+				const func = getFunc(`div { color: if(media(${css}): blue) }`)
+				const media_fn = getBranch(func, 0)?.first_child as Function
+				return media_fn.children.map((query) => [
+					query.type_name,
+					query.text,
+					(query as any).children.map((c: any) => [c.type_name, c.text]),
+				])
+			}
+			expect(shape('(min-width:100px) and (max-width:200px)')).toEqual([
+				[
+					'MediaQuery',
+					'(min-width:100px) and (max-width:200px)',
+					[
+						['Feature', '(min-width:100px)'],
+						['Operator', 'and'],
+						['Feature', '(max-width:200px)'],
+					],
+				],
+			])
+			const not_hover = shape('not (hover)')
+			expect(not_hover[0][0]).toBe('MediaQuery')
+			expect(not_hover[0][2]).toEqual([
+				['Operator', 'not'],
+				['Feature', '(hover)'],
+			])
+			const typed = shape('screen and (min-width:100px)')
+			expect(typed[0][2].map((c: any) => c[0])).toEqual(['MediaType', 'Operator', 'Feature'])
+		})
+
 		test('media() condition supports range syntax', () => {
 			const func = getFunc('div { color: if(media(400px <= width): blue; else: red) }')
 			const mediaFunc = getBranch(func, 0)?.first_child as Function
