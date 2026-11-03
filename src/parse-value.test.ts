@@ -1422,6 +1422,180 @@ describe('Value Node Types', () => {
 			expect(feature.value).toBeNull()
 		})
 
+		test('media() compound condition parses like an @media prelude', () => {
+			const shape = (css: string): any[] => {
+				const func = getFunc(`div { color: if(media(${css}): blue) }`)
+				const media_fn = getBranch(func, 0)?.first_child as Function
+				return media_fn.children.map((query) => [
+					query.type_name,
+					query.text,
+					(query as any).children.map((c: any) => [c.type_name, c.text]),
+				])
+			}
+			expect(shape('(min-width:100px) and (max-width:200px)')).toEqual([
+				[
+					'MediaQuery',
+					'(min-width:100px) and (max-width:200px)',
+					[
+						['Feature', '(min-width:100px)'],
+						['Operator', 'and'],
+						['Feature', '(max-width:200px)'],
+					],
+				],
+			])
+			const not_hover = shape('not (hover)')
+			expect(not_hover[0][0]).toBe('MediaQuery')
+			expect(not_hover[0][2]).toEqual([
+				['Operator', 'not'],
+				['Feature', '(hover)'],
+			])
+			const only = shape('only screen and (min-width:100px)')
+			expect(only[0][0]).toBe('MediaQuery')
+			expect(only[0][2].map((c: any) => [c[0], c[1]])).toEqual([
+				['Operator', 'only'],
+				['MediaType', 'screen'],
+				['Operator', 'and'],
+				['Feature', '(min-width:100px)'],
+			])
+			// Leading only/not without any and/or still marks a media query, not a bare feature
+			const only_type = shape('only screen')
+			expect(only_type[0][0]).toBe('MediaQuery')
+			expect(only_type[0][2].map((c: any) => [c[0], c[1]])).toEqual([
+				['Operator', 'only'],
+				['MediaType', 'screen'],
+			])
+			const not_type = shape('not print')
+			expect(not_type[0][0]).toBe('MediaQuery')
+			// A single parenthesized feature is still a <media-condition>, not a bare feature
+			const single = shape('(hover)')
+			expect(single[0][0]).toBe('MediaQuery')
+			expect(single[0][2]).toEqual([['Feature', '(hover)']])
+			const nested = shape('((hover))')
+			expect(nested[0][0]).toBe('MediaQuery')
+			const typed = shape('screen and (min-width:100px)')
+			expect(typed[0][2].map((c: any) => c[0])).toEqual(['MediaType', 'Operator', 'Feature'])
+		})
+
+		describe('media() compound conditions (more cases)', () => {
+			const media_fn = (css: string, branch = 0) =>
+				getBranch(getFunc(`div { color: if(${css}) }`), branch)?.first_child as Function
+			const kids = (node: any): string[][] => node.children.map((c: any) => [c.type_name, c.text])
+
+			test('keywords are case-insensitive', () => {
+				const not_query = media_fn('media(NOT (hover)): 1')
+				expect(not_query.children[0].type_name).toBe('MediaQuery')
+				expect(kids(not_query.children[0])).toEqual([
+					['Operator', 'NOT'],
+					['Feature', '(hover)'],
+				])
+				const only_query = media_fn('media(ONLY screen): 1')
+				expect(only_query.children[0].type_name).toBe('MediaQuery')
+				expect(kids(only_query.children[0])).toEqual([
+					['Operator', 'ONLY'],
+					['MediaType', 'screen'],
+				])
+			})
+
+			test('range syntax inside a compound condition', () => {
+				const fn = media_fn('media((width >= 100px) and (height < 50px)): 1')
+				expect(kids(fn.children[0])).toEqual([
+					['MediaFeatureRange', '(width >= 100px)'],
+					['Operator', 'and'],
+					['MediaFeatureRange', '(height < 50px)'],
+				])
+			})
+
+			test('nested functions inside a feature', () => {
+				const fn = media_fn('media((min-width: calc(1px + 2px)) and (hover)): 1')
+				const query = fn.children[0] as any
+				expect(query.type_name).toBe('MediaQuery')
+				expect(kids(query)).toEqual([
+					['Feature', '(min-width: calc(1px + 2px))'],
+					['Operator', 'and'],
+					['Feature', '(hover)'],
+				])
+				expect(query.first_child.first_child.type_name).toBe('Function')
+			})
+
+			test('comment before the condition is skipped', () => {
+				const fn = media_fn('media(/* c */ (hover) and (x)): 1')
+				expect(kids(fn.children[0])).toEqual([
+					['Feature', '(hover)'],
+					['Operator', 'and'],
+					['Feature', '(x)'],
+				])
+			})
+
+			test('combined with style() in an IfCondition', () => {
+				const cond = getBranch(
+					getFunc('div { color: if(media(not (hover)) and style(--a: 1): 1) }'),
+					0,
+				)?.first_child as any
+				expect(cond.type_name).toBe('IfCondition')
+				expect(cond.children.map((c: any) => c.type_name)).toEqual([
+					'Function',
+					'Operator',
+					'Function',
+				])
+				expect(cond.first_child.first_child.type_name).toBe('MediaQuery')
+			})
+
+			test('negated with a leading not', () => {
+				const cond = getBranch(
+					getFunc('div { color: if(not media((hover) or (pointer: fine)): 1) }'),
+					0,
+				)?.first_child as any
+				expect(cond.type_name).toBe('IfCondition')
+				expect(cond.children.map((c: any) => c.type_name)).toEqual(['Operator', 'Function'])
+				expect(kids(cond.children[1].first_child)).toEqual([
+					['Feature', '(hover)'],
+					['Operator', 'or'],
+					['Feature', '(pointer: fine)'],
+				])
+			})
+
+			test('else branch after a compound branch', () => {
+				const func = getFunc(
+					'div { color: if(media((width >= 100px) and (height < 50px)): 1; else: 2) }',
+				)
+				expect(func?.children).toHaveLength(2)
+				expect(getBranch(func, 0)?.first_child?.first_child?.type_name).toBe('MediaQuery')
+				expect(getBranch(func, 1)?.is_else).toBe(true)
+			})
+
+			test('line/column of surrounding nodes stay correct for a multi-line compound condition', () => {
+				const ast = parse(
+					'a {\n  x: if(media((hover) and\n  /* multi\n line */ (pointer:fine)): 1;\n   else: 2);\n  y: 3 }',
+				)
+				const block = (ast.first_child as Rule).block!
+				const decl_x = block.first_child as Declaration
+				const func = decl_x.value!.first_child as Function
+				const branch = getBranch(func, 0)!
+				const else_branch = getBranch(func, 1)!
+				const at = (n: any) => [n.line, n.column]
+				expect(at(decl_x)).toEqual([2, 3])
+				expect(at(func)).toEqual([2, 6])
+				expect(at(branch)).toEqual([2, 9])
+				expect(at(branch.first_child)).toEqual([2, 9]) // the media() function
+				expect(at(branch.value)).toEqual([4, 27])
+				expect(at(else_branch)).toEqual([5, 4])
+				expect(at(else_branch.value)).toEqual([5, 10])
+				expect(at(decl_x.next_sibling)).toEqual([6, 3])
+			})
+
+			test('with media_feature_range_name_as_child', () => {
+				const ast = parse(
+					'div { color: if(media((400px <= width) and (hover)): blue; else: red) }',
+					{ media_feature_range_name_as_child: true },
+				)
+				const decl = (ast.first_child as Rule).block!.first_child as Declaration
+				const fn = getBranch(decl.value!.first_child as Function, 0)?.first_child as Function
+				const range = (fn.children[0] as any).first_child
+				expect(range.type_name).toBe('MediaFeatureRange')
+				expect(range.children.map((c: any) => c.text)).toEqual(['400px', '<=', 'width'])
+			})
+		})
+
 		test('media() condition supports range syntax', () => {
 			const func = getFunc('div { color: if(media(400px <= width): blue; else: red) }')
 			const mediaFunc = getBranch(func, 0)?.first_child as Function
