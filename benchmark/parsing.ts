@@ -11,6 +11,7 @@ import {
 	parse_value,
 	parse_dimension,
 	tokenize,
+	tokenize_cb,
 	walk,
 	traverse,
 	STYLE_RULE,
@@ -37,6 +38,10 @@ for (const [name, file] of Object.entries(files)) {
 		for (const _token of tokenize(css)) {
 			// iterate
 		}
+	})
+
+	bench.add(`tokenize_cb|${name}`, () => {
+		tokenize_cb(css, () => {})
 	})
 
 	bench.add(`parse|${name}`, () => {

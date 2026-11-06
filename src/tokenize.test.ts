@@ -1,8 +1,9 @@
 import { describe, test, expect } from 'vitest'
-import { Lexer } from './tokenize'
+import { Lexer, tokenize, tokenize_cb } from './tokenize'
 import { is_ident_start } from './char-types'
 import {
 	TOKEN_IDENT,
+	TOKEN_COMMENT,
 	TOKEN_FUNCTION,
 	TOKEN_AT_KEYWORD,
 	TOKEN_HASH,
@@ -829,5 +830,52 @@ describe('Lexer', () => {
 				expect(lexer.token_type === TOKEN_IDENT).toBe(false)
 			}
 		})
+	})
+})
+
+describe('tokenize_cb', () => {
+	test('reports the same tokens as the iterator tokenize()', () => {
+		const css = 'a { color: red; margin: 0 }'
+		const from_cb: Token[] = []
+		tokenize_cb(css, (type, start, end, line, column) => {
+			from_cb.push({ type, start, end, line, column })
+		})
+		expect(from_cb.length).toBeGreaterThan(0)
+		expect(from_cb).toEqual(Array.from(tokenize(css)))
+	})
+
+	test('emits comments as TOKEN_COMMENT with position', () => {
+		const tokens: Token[] = []
+		tokenize_cb('a{/* hi */}', (type, start, end, line, column) =>
+			tokens.push({ type, start, end, line, column }),
+		)
+		const comments = tokens.filter((t) => t.type === TOKEN_COMMENT)
+		expect(comments).toEqual([{ type: TOKEN_COMMENT, start: 2, end: 10, line: 1, column: 3 }])
+		expect(tokens.map((t) => t.type)).toEqual([
+			TOKEN_IDENT,
+			TOKEN_LEFT_BRACE,
+			TOKEN_COMMENT,
+			TOKEN_RIGHT_BRACE,
+		])
+	})
+
+	test('tracks lines across multi-line comments', () => {
+		const tokens: Token[] = []
+		tokenize_cb('/* a\nb */ x', (type, start, end, line, column) =>
+			tokens.push({ type, start, end, line, column }),
+		)
+		expect(tokens.at(-1)).toMatchObject({ type: TOKEN_IDENT, line: 2, column: 6 })
+	})
+
+	test('lexer used by the parsers still skips comments', () => {
+		const lexer = new Lexer('a/* hi */b')
+		expect(lexer.next_token()).toBe(TOKEN_IDENT)
+		expect(lexer.next_token()).toBe(TOKEN_IDENT)
+	})
+
+	test('calls nothing for empty source', () => {
+		let calls = 0
+		tokenize_cb('', () => calls++)
+		expect(calls).toBe(0)
 	})
 })

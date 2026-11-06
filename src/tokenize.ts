@@ -38,6 +38,7 @@ import {
 	TOKEN_RIGHT_BRACE,
 	TOKEN_EOF,
 	TOKEN_UNICODE_RANGE,
+	TOKEN_COMMENT,
 	type Token,
 	type TokenType,
 } from './token-types'
@@ -124,6 +125,8 @@ export class Lexer {
 	private _line: number
 	private _line_offset: number
 	on_comment: ((info: CommentInfo) => void) | undefined
+	// When true, next_token() returns comments as TOKEN_COMMENT instead of skipping them
+	emit_comments: boolean
 	// Current token properties (avoiding object allocation)
 	token_type: TokenType
 	token_start: number
@@ -131,8 +134,13 @@ export class Lexer {
 	token_line: number
 	token_column: number
 
-	constructor(source: string, on_comment?: (info: CommentInfo) => void) {
+	constructor(
+		source: string,
+		on_comment?: (info: CommentInfo) => void,
+		emit_comments: boolean = false,
+	) {
 		this.source = source
+		this.emit_comments = emit_comments
 		this.pos = 0
 		this._line = 1
 		this._line_offset = 0
@@ -251,6 +259,9 @@ export class Lexer {
 				source.charCodeAt(this.pos + 1) === CHAR_ASTERISK
 			) {
 				this._skip_comment()
+				if (this.emit_comments) {
+					return this.make_token(TOKEN_COMMENT, start, this.pos, start_line, start_column)
+				}
 				// Loop instead of recursing — eliminates stack frame overhead
 				continue
 			}
@@ -1041,10 +1052,37 @@ export class Lexer {
 }
 
 /**
+ * Called for every token, including whitespace and comments.
+ */
+export type OnToken = (
+	type: TokenType,
+	start: number,
+	end: number,
+	line: number,
+	column: number,
+) => void
+
+/**
+ * Tokenize CSS source code, calling `on_token` for every token.
+ * Faster than the iterator-based `tokenize()` because it allocates no generator or token objects.
+ * @param source - The CSS source code to tokenize
+ * @param on_token - Called with `(type, start, end, line, column)` for each token
+ * @deprecated Renamed to `tokenize()` in 0.20.0, where the callback form replaces the iterator form.
+ */
+export function tokenize_cb(source: string, on_token: OnToken): void {
+	const lexer = new Lexer(source, undefined, true)
+	let type: TokenType
+	while ((type = lexer.next_token()) !== TOKEN_EOF) {
+		on_token(type, lexer.token_start, lexer.token_end, lexer.token_line, lexer.token_column)
+	}
+}
+
+/**
  * Tokenize CSS source code
  * @param source - The CSS source code to tokenize
  * @param on_comment - Optional callback for comment tokens
  * @yields CSS tokens
+ * @deprecated The iterator form is replaced in 0.20.0 by a callback-based `tokenize(source, on_token)`. Use `tokenize_cb()` today for the same behavior.
  */
 export function* tokenize(
 	source: string,
