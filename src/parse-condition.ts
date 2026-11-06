@@ -45,6 +45,7 @@ import {
 	trim_boundaries,
 	skip_whitespace_and_comments_forward,
 	find_colon_at_depth_zero,
+	PositionTracker,
 } from './parse-utils'
 import { SelectorParser } from './parse-selector'
 import type { ValueNodeParser } from './value-node-parser'
@@ -54,6 +55,10 @@ export class ConditionParser {
 	private arena: CSSDataArena
 	private source: string
 	private end: number = 0
+	// Start-of-node line/column for nodes created from offsets. Anchored by the outermost public
+	// parse call (nested calls always start later, so the outer anchor stays valid for them).
+	private positions: PositionTracker
+	private depth = 0
 	// Injected rather than owned, so calc()/env()/var() inside feature values get the same
 	// structured children the caller's own value parsing produces (and to avoid a circular
 	// import — see the file header).
@@ -75,6 +80,7 @@ export class ConditionParser {
 		this.arena = arena
 		this.source = source
 		this.lexer = new Lexer(source)
+		this.positions = new PositionTracker(source)
 		this.value_node_parser = value_node_parser
 		this.selector_parser = new SelectorParser(arena, source)
 	}
@@ -85,13 +91,25 @@ export class ConditionParser {
 		target.seek(this.lexer.pos, this.lexer.line, this.lexer.column)
 	}
 
+	// Tell the parser the line/column of `offset`, for callers of parse_media_feature_content()/
+	// parse_supports_declaration_content() (the entry points that take no line/column themselves).
+	// The other public methods anchor themselves from their own arguments.
+	anchor(offset: number, line: number, column: number): void {
+		this.positions.reset(offset, line, column)
+	}
+
+	private enter(offset: number, line: number, column: number): void {
+		if (this.depth++ === 0) this.positions.reset(offset, line, column)
+	}
+
 	private create_node(type: number, start: number, end: number): number {
+		this.positions.seek(start)
 		return this.arena.create_node(
 			type,
 			start,
 			end - start,
-			this.lexer.token_line,
-			this.lexer.token_column,
+			this.positions.line,
+			this.positions.column,
 		)
 	}
 
@@ -172,7 +190,13 @@ export class ConditionParser {
 	// Parse feature value via the shared ValueNodeParser, so calc()/env()/var() get full children.
 	// Own lexer instance, so it doesn't disturb this.lexer's position — no save/restore needed.
 	private parse_feature_value(start: number, end: number): number {
-		return this.value_node_parser.parse_chain(start, end, this.lexer.line, this.lexer.column)
+		this.positions.seek(start)
+		return this.value_node_parser.parse_chain(
+			start,
+			end,
+			this.positions.line,
+			this.positions.column,
+		)
 	}
 
 	// Detect a ratio value chain (e.g. "16/9" from aspect-ratio: 16/9) and collapse it into
@@ -232,25 +256,15 @@ export class ConditionParser {
 
 		if (val_trimmed) {
 			const value_first = this.parse_feature_value(val_trimmed[0], val_trimmed[1])
-			let value_node: number
-			if (value_first === 0) {
-				value_node = this.arena.create_node(
-					VALUE,
-					val_trimmed[0],
-					0,
-					this.lexer.token_line,
-					this.lexer.token_column,
-				)
-			} else {
-				value_node = this.arena.create_node(
-					VALUE,
-					val_trimmed[0],
-					val_trimmed[1] - val_trimmed[0],
-					this.lexer.token_line,
-					this.lexer.token_column,
-				)
-				this.arena.set_first_child(value_node, value_first)
-			}
+			this.positions.seek(val_trimmed[0])
+			const value_node = this.arena.create_node(
+				VALUE,
+				val_trimmed[0],
+				value_first === 0 ? 0 : val_trimmed[1] - val_trimmed[0],
+				this.positions.line,
+				this.positions.column,
+			)
+			if (value_first !== 0) this.arena.set_first_child(value_node, value_first)
 			this.arena.set_first_child(decl, value_node)
 		}
 
@@ -453,25 +467,49 @@ export class ConditionParser {
 		line: number,
 		column: number,
 	): number | null {
-		this.end = end
-		this.lexer.seek(open_paren_start, line, column)
-		this.next_token() // consume '('
+		this.enter(open_paren_start, line, column)
+		try {
+			this.end = end
+			this.lexer.seek(open_paren_start, line, column)
+			this.next_token() // consume '('
 
-		const feature_start = this.lexer.token_start
-		const content_start = this.lexer.pos
+			const feature_start = this.lexer.token_start
+			const content_start = this.lexer.pos
 
-		const matched = this.scan_matching_paren()
-		const content_end = this.paren_content_end
-		const feature_end = this.paren_close_end
-		if (!matched) return null
+			const matched = this.scan_matching_paren()
+			const content_end = this.paren_content_end
+			const feature_end = this.paren_close_end
+			if (!matched) return null
 
-		return this.parse_media_feature_content(feature_start, feature_end, content_start, content_end)
+			return this.parse_media_feature_content(
+				feature_start,
+				feature_end,
+				content_start,
+				content_end,
+			)
+		} finally {
+			this.depth--
+		}
 	}
 
 	// Parse a bare function condition: style(...), selector(...), font-tech(...). `func_start`
 	// is the source offset of the function name's first char — this seeks its own lexer there
 	// and re-scans (see parse_media_feature for why). `end` bounds the scan for the matching ')'.
 	parse_function_condition(func_start: number, end: number, line: number, column: number): number {
+		this.enter(func_start, line, column)
+		try {
+			return this.parse_function_condition_inner(func_start, end, line, column)
+		} finally {
+			this.depth--
+		}
+	}
+
+	private parse_function_condition_inner(
+		func_start: number,
+		end: number,
+		line: number,
+		column: number,
+	): number {
 		this.end = end
 		this.lexer.seek(func_start, line, column)
 		this.next_token() // consume the function token, up to and including '('
@@ -561,6 +599,20 @@ export class ConditionParser {
 	// `start`/`end` bound the range to scan; the caller has already positioned nothing — this
 	// seeks its own lexer, so it's safe to call with any sub-range of the source.
 	parse_supports_condition(start: number, end: number, line: number, column: number): number[] {
+		this.enter(start, line, column)
+		try {
+			return this.parse_supports_condition_inner(start, end, line, column)
+		} finally {
+			this.depth--
+		}
+	}
+
+	private parse_supports_condition_inner(
+		start: number,
+		end: number,
+		line: number,
+		column: number,
+	): number[] {
 		const saved_end = this.end
 		this.end = end
 		this.lexer.seek(start, line, column)

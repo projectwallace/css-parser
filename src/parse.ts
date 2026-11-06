@@ -37,6 +37,7 @@ import {
 import {
 	skip_whitespace_and_comments_forward,
 	skip_whitespace_and_comments_backward,
+	PositionTracker,
 } from './parse-utils'
 import {
 	CHAR_PERIOD,
@@ -102,12 +103,15 @@ export class Parser {
 	private selector_parser: SelectorParser | null
 	private prelude_parser: AtRulePreludeParser | null
 	private declaration_parser: DeclarationParser
+	// Offset -> line/column for at-rule preludes, which start after the at-rule's own position
+	private positions: PositionTracker
 	private parse_values_enabled: boolean
 	private parse_selectors_enabled: boolean
 	private parse_atrule_preludes_enabled: boolean
 
 	constructor(source: string, options?: ParserOptions) {
 		this.source = source
+		this.positions = new PositionTracker(source)
 
 		const opts: ParserOptions = options || {}
 
@@ -292,12 +296,12 @@ export class Parser {
 		}
 		// Capture block start position (right after '{') before consuming the token
 		const block_start = this.lexer.token_end
+		const block_line = this.lexer.token_line
+		const block_column = this.lexer.token_column + 1 // '{' is one char on one line
 		this.next_token() // consume '{'
 		this.arena.set_flag(style_rule, FLAG_HAS_BLOCK) // Style rules always have blocks
 
 		// Create block node (length will be set later)
-		const block_line = this.lexer.token_line
-		const block_column = this.lexer.token_column
 		const block_node = this.arena.create_node(
 			BLOCK,
 			block_start,
@@ -487,6 +491,11 @@ export class Parser {
 		)
 		let prelude_wrapper: number | null = null
 		if (trimmed_start < trimmed_end) {
+			// The prelude starts after the '@name', so derive its own line/column from the at-rule's
+			this.positions.reset(at_rule_start, at_rule_line, at_rule_column)
+			const prelude_line = this.positions.line_at(trimmed_start)
+			const prelude_column = this.positions.column
+
 			// Create AT_RULE_PRELUDE wrapper if prelude parsing is enabled
 			if (this.prelude_parser) {
 				// Parse prelude and add structured nodes as children
@@ -494,16 +503,16 @@ export class Parser {
 					at_rule_name,
 					trimmed_start,
 					trimmed_end,
-					at_rule_line,
-					at_rule_column,
+					prelude_line,
+					prelude_column,
 				)
 				if (prelude_nodes.length > 0) {
 					prelude_wrapper = this.arena.create_node(
 						AT_RULE_PRELUDE,
 						trimmed_start,
 						trimmed_end - trimmed_start,
-						at_rule_line,
-						at_rule_column,
+						prelude_line,
+						prelude_column,
 					)
 					this.arena.append_children(prelude_wrapper, prelude_nodes)
 				} else {
@@ -511,8 +520,8 @@ export class Parser {
 						RAW,
 						trimmed_start,
 						trimmed_end - trimmed_start,
-						at_rule_line,
-						at_rule_column,
+						prelude_line,
+						prelude_column,
 					)
 				}
 			} else {
@@ -520,8 +529,8 @@ export class Parser {
 					RAW,
 					trimmed_start,
 					trimmed_end - trimmed_start,
-					at_rule_line,
-					at_rule_column,
+					prelude_line,
+					prelude_column,
 				)
 			}
 		}
@@ -532,12 +541,12 @@ export class Parser {
 		if (this.peek_type() === TOKEN_LEFT_BRACE) {
 			// Capture block start position (right after '{') before consuming the token
 			const block_start = this.lexer.token_end
+			const block_line = this.lexer.token_line
+			const block_column = this.lexer.token_column + 1 // '{' is one char on one line
 			this.next_token() // consume '{'
 			this.arena.set_flag(at_rule, FLAG_HAS_BLOCK) // At-rule has a block
 
 			// Create block node (length will be set later)
-			const block_line = this.lexer.token_line
-			const block_column = this.lexer.token_column
 			const block_node = this.arena.create_node(
 				BLOCK,
 				block_start,

@@ -677,6 +677,10 @@ export class ValueNodeParser {
 		const func_col = this.lexer.token_column
 
 		const content_start = token_end // right after '('
+		// A function name can't span lines, so the content starts on the same line, after the name and '('
+		const content_line = func_line
+		const content_col = func_col + (content_start - func_start)
+		this.condition_parser.anchor(content_start, content_line, content_col)
 		let content_end = content_start
 		let func_end = content_start
 
@@ -719,8 +723,8 @@ export class ValueNodeParser {
 				child_nodes = this.condition_parser.parse_supports_condition(
 					content_start,
 					content_end,
-					func_line,
-					func_col,
+					content_line,
+					content_col,
 				)
 			} else {
 				child_nodes = [decl]
@@ -738,8 +742,8 @@ export class ValueNodeParser {
 				child_nodes = this.condition_parser.parse_supports_condition(
 					content_start,
 					content_end,
-					func_line,
-					func_col,
+					content_line,
+					content_col,
 				)
 			} else {
 				child_nodes = [decl]

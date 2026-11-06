@@ -4,8 +4,76 @@ import {
 	CHAR_FORWARD_SLASH,
 	CHAR_LEFT_PAREN,
 	CHAR_RIGHT_PAREN,
+	CHAR_CARRIAGE_RETURN,
+	CHAR_FORM_FEED,
 	is_whitespace,
 } from './string-utils'
+
+/**
+ * Maps source offsets to 1-based line/column, counting newlines the way the lexer does
+ * (`\n`, `\r`, `\r\n` and `\f`). Sub-parsers that scan ranges by offset use it to give nodes
+ * the position of their *start*, instead of wherever their lexer happens to be afterwards.
+ * Anchor it once with `reset()` at a known offset/line/column, then query offsets at or after
+ * the anchor; queries mostly move forward, so each one only scans the gap since the last.
+ */
+export class PositionTracker {
+	private source: string
+	private anchor_offset = 0
+	private anchor_line = 1
+	private anchor_column = 1
+	private offset = 0
+	line = 1
+	column = 1
+
+	constructor(source: string) {
+		this.source = source
+	}
+
+	reset(offset: number, line: number, column: number): void {
+		this.anchor_offset = this.offset = offset
+		this.anchor_line = this.line = line
+		this.anchor_column = this.column = column
+	}
+
+	// Move to `target` (clamped to the anchor); the result is in `line`/`column`
+	seek(target: number): void {
+		if (target < this.offset) {
+			this.offset = this.anchor_offset
+			this.line = this.anchor_line
+			this.column = this.anchor_column
+		}
+		const source = this.source
+		let line = this.line
+		let column = this.column
+		let i = this.offset
+		while (i < target) {
+			const c = source.charCodeAt(i++)
+			if (c === 0x0a || c === CHAR_FORM_FEED) {
+				line++
+				column = 1
+			} else if (c === CHAR_CARRIAGE_RETURN) {
+				if (i < target && source.charCodeAt(i) === 0x0a) i++
+				line++
+				column = 1
+			} else {
+				column++
+			}
+		}
+		this.offset = i
+		this.line = line
+		this.column = column
+	}
+
+	line_at(offset: number): number {
+		this.seek(offset)
+		return this.line
+	}
+
+	column_at(offset: number): number {
+		this.seek(offset)
+		return this.column
+	}
+}
 
 export function skip_whitespace_forward(source: string, pos: number, end: number): number {
 	while (pos < end && is_whitespace(source.charCodeAt(pos))) {

@@ -33,7 +33,11 @@ import {
 	strip_vendor_prefix,
 	CHAR_PERIOD,
 } from './string-utils'
-import { trim_boundaries, skip_whitespace_and_comments_forward } from './parse-utils'
+import {
+	trim_boundaries,
+	skip_whitespace_and_comments_forward,
+	PositionTracker,
+} from './parse-utils'
 import { CSSNode } from './css-node'
 import type { AnyNode } from './node-types'
 import { ValueNodeParser } from './value-node-parser'
@@ -55,6 +59,8 @@ export class AtRulePreludeParser {
 	private arena: CSSDataArena
 	private source: string
 	private prelude_end: number
+	// Start-of-node line/column for nodes created from offsets (the lexer only knows where it is now)
+	private positions: PositionTracker
 	// Shared with declaration values so calc()/env()/var() get structured children, not raw text
 	private value_node_parser: ValueNodeParser
 	// Shared media-feature/supports-condition/style()-selector() parsing, also used by ValueNodeParser
@@ -73,6 +79,7 @@ export class AtRulePreludeParser {
 		// Create a lexer instance for prelude parsing
 		this.lexer = new Lexer(source)
 		this.prelude_end = 0
+		this.positions = new PositionTracker(source)
 		this.value_node_parser = new ValueNodeParser(arena, source, media_feature_range_name_as_child)
 		this.condition_parser = new ConditionParser(
 			arena,
@@ -92,6 +99,7 @@ export class AtRulePreludeParser {
 		column: number = 1,
 	): number[] {
 		this.prelude_end = end
+		this.positions.reset(start, line, column)
 
 		// Position lexer at prelude start
 		this.lexer.seek(start, line, column)
@@ -166,12 +174,13 @@ export class AtRulePreludeParser {
 	}
 
 	private create_node(type: number, start: number, end: number): number {
+		this.positions.seek(start)
 		return this.arena.create_node(
 			type,
 			start,
 			end - start,
-			this.lexer.token_line,
-			this.lexer.token_column,
+			this.positions.line,
+			this.positions.column,
 		)
 	}
 
@@ -662,8 +671,6 @@ export class AtRulePreludeParser {
 				const supports_start = this.lexer.token_start
 				const name_end = this.lexer.token_end - 1
 				const content_start = this.lexer.token_end // After the opening '('
-				const line = this.lexer.line
-				const column = this.lexer.column
 
 				// Find matching closing parenthesis
 				this.scan_matching_paren()
@@ -682,6 +689,10 @@ export class AtRulePreludeParser {
 					this.arena.set_value_start_delta(func_node, condition_start - supports_start)
 					this.arena.set_value_length(func_node, condition_length)
 
+					this.positions.seek(condition_start)
+					const condition_line = this.positions.line
+					const condition_column = this.positions.column
+					this.condition_parser.anchor(condition_start, condition_line, condition_column)
 					const decl_child = this.condition_parser.parse_supports_declaration_content(
 						condition_start,
 						condition_end,
@@ -690,8 +701,8 @@ export class AtRulePreludeParser {
 						const children = this.condition_parser.parse_supports_condition(
 							condition_start,
 							condition_end,
-							line,
-							column,
+							condition_line,
+							condition_column,
 						)
 						this.arena.append_children(func_node, children)
 					} else {
