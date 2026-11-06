@@ -7,7 +7,7 @@ export { parse_atrule_prelude } from './parse-atrule-prelude'
 export { parse_declaration } from './parse-declaration'
 export { parse_value } from './parse-value'
 export { parse_dimension } from './parse-dimension'
-export { tokenize } from './tokenize'
+export { tokenize, tokenize_cb } from './tokenize'
 export { walk, traverse, SKIP, BREAK } from './walk'
 export {
 	is_custom,
@@ -23,7 +23,7 @@ export { type ParserOptions } from './parse'
 
 // Types
 export { type CloneOptions, type PlainCSSNode } from './css-node'
-export type { LexerPosition, CommentInfo } from './tokenize'
+export type { LexerPosition, CommentInfo, OnToken } from './tokenize'
 
 // Constants - imported from dedicated constants file
 // This improves tree-shaking by avoiding the parse module if only constants are needed

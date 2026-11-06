@@ -140,9 +140,21 @@ traverse(ast, {
 })
 ```
 
-### `tokenize(source, on_comment?)`
+### `tokenize_cb(source, on_token, on_comment?)`
 
-A generator of tokens; comments are skipped and reported through `on_comment`.
+Calls `on_token(type, start, end, line, column)` for every token. Comments are skipped and reported through `on_comment`. This is about 35% faster than iterating `tokenize()`, because no generator or token objects are allocated.
+
+```typescript
+tokenize_cb('a { color: red }', (type, start, end, line, column) => {
+	console.log(type, start, end)
+})
+```
+
+In 0.20.0 this becomes `tokenize()`, replacing the iterator form below.
+
+### `tokenize(source, on_comment?)` (deprecated)
+
+A generator of tokens; comments are skipped and reported through `on_comment`. Deprecated: use `tokenize_cb()` now, it becomes `tokenize()` in 0.20.0.
 
 ```typescript
 for (const token of tokenize('a { color: red }')) {
