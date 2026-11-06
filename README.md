@@ -140,9 +140,9 @@ traverse(ast, {
 })
 ```
 
-### `tokenize_cb(source, on_token, on_comment?)`
+### `tokenize_cb(source, on_token)`
 
-Calls `on_token(type, start, end, line, column)` for every token. Comments are skipped and reported through `on_comment`. This is about 35% faster than iterating `tokenize()`, because no generator or token objects are allocated.
+Calls `on_token(type, start, end, line, column)` for every token. Comments are skipped. This is about 35% faster than iterating `tokenize()`, because no generator or token objects are allocated.
 
 ```typescript
 tokenize_cb('a { color: red }', (type, start, end, line, column) => {

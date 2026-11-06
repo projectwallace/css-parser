@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { Lexer, tokenize, tokenize_cb, type CommentInfo } from './tokenize'
+import { Lexer, tokenize, tokenize_cb } from './tokenize'
 import { is_ident_start } from './char-types'
 import {
 	TOKEN_IDENT,
@@ -843,16 +843,11 @@ describe('tokenize_cb', () => {
 		expect(from_cb).toEqual(Array.from(tokenize(css)))
 	})
 
-	test('reports comments through on_comment', () => {
-		const comments: CommentInfo[] = []
-		tokenize_cb(
-			'a { /* hi */ }',
-			() => {},
-			(info) => comments.push(info),
-		)
-		expect(comments).toHaveLength(1)
-		expect(comments[0].start).toBe(4)
-		expect(comments[0].end).toBe(12)
+	test('skips comments', () => {
+		const types: number[] = []
+		tokenize_cb('a{/* hi */}', (type) => types.push(type))
+		expect(types).toEqual(Array.from(tokenize('a{/* hi */}')).map((t) => t.type))
+		expect(types).toHaveLength(3)
 	})
 
 	test('calls nothing for empty source', () => {
