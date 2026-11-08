@@ -71,6 +71,7 @@ import {
 	str_equals,
 } from './string-utils'
 import { dimension_number_end } from './parse-dimension'
+import type { AnyNode } from './node-types'
 
 // CSSTree-compatible node type names
 export type TypeName =
@@ -805,14 +806,22 @@ export class CSSNode {
 		return new CSSNode(this.arena, this.source, parent_index)
 	}
 
-	// Get the nearest ancestor at-rule (not the node itself), or null when not inside an at-rule
-	closest_atrule(): CSSNode | null {
-		let index = this.arena.get_parent(this.index)
-		while (index !== 0) {
-			if (this.arena.get_type(index) === AT_RULE) {
-				return new CSSNode(this.arena, this.source, index)
+	// Get the nearest ancestor matching a node type constant or a predicate (not the node itself), or null
+	closest(match: number | ((node: AnyNode) => boolean)): CSSNode | null {
+		const arena = this.arena
+		let index = arena.get_parent(this.index)
+		if (typeof match === 'number') {
+			// Climb the arena without creating wrappers; only the match is wrapped
+			while (index !== 0) {
+				if (arena.get_type(index) === match) return new CSSNode(arena, this.source, index)
+				index = arena.get_parent(index)
 			}
-			index = this.arena.get_parent(index)
+			return null
+		}
+		while (index !== 0) {
+			const node = new CSSNode(arena, this.source, index)
+			if (match(node as unknown as AnyNode)) return node
+			index = arena.get_parent(index)
 		}
 		return null
 	}

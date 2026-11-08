@@ -161,14 +161,15 @@ walk_values(decl, (node) => {
 })
 ```
 
-### `node.parent` and `node.closest_atrule()`
+### `node.parent` and `node.closest(match)`
 
-`parent` is the parent node (`null` for the root); `closest_atrule()` is the nearest ancestor at-rule, not counting the node itself. Nothing is stored while parsing: the first call on a tree builds a lookup table in one pass (4 bytes per node), so you only pay for it if you use it.
+`parent` is the parent node (`null` for the root); `closest(match)` is the nearest ancestor that is of a node type (`AT_RULE`) or satisfies a predicate or type guard (`is_atrule`), not counting the node itself; it returns `null` when there is none. Passing a type constant climbs without creating wrapper objects, so prefer it over a predicate. Nothing is stored while parsing: the first call on a tree builds a lookup table in one pass (4 bytes per node), so you only pay for it if you use it.
 
 ```typescript
 walk(ast, (node) => {
 	if (node.type === DECLARATION) {
-		node.closest_atrule()?.name // "media" for a declaration inside @media
+		node.closest(AT_RULE)?.name // "media" for a declaration inside @media
+		node.closest((n) => is_atrule(n) && n.name === 'media') // by predicate
 	}
 })
 ```

@@ -88,8 +88,13 @@ export type CSSNode = {
 	readonly first_child: CSSNode | null
 	/** Parent node, or null for the root. The first access builds a lookup table for the whole tree. */
 	readonly parent: CSSNode | null
-	/** Nearest ancestor at-rule (excluding the node itself), or null when not inside one. */
-	closest_atrule(): Atrule | null
+	/**
+	 * Nearest ancestor (excluding the node itself) with the given node type constant, or matching a
+	 * predicate / type guard such as `is_atrule`. Null when there is none.
+	 */
+	closest<T extends CSSNodeType>(type: T): Extract<AnyNode, { type: T }> | null
+	closest<N extends AnyNode>(match: (node: AnyNode) => node is N): N | null
+	closest(match: (node: AnyNode) => boolean): AnyNode | null
 	clone(options?: CloneOptions): PlainCSSNode
 } & (
 	| { readonly has_next: false; readonly next_sibling: null }
