@@ -138,7 +138,6 @@ export type ToPlain<T extends CSSNode> = PlainCSSNode & { type: T['type'] } & {
 			| symbol
 			| 'attr_operator'
 			| 'attr_flags'
-			| 'basename'
 			| 'has_children'
 			| 'child_count'
 			| 'children'
@@ -188,8 +187,6 @@ export type Declaration = Leaf<
 	{
 		/** Property name, e.g. "color" */
 		readonly property: string
-		/** Normalized property name: hack and vendor prefix removed, lowercased (not for custom properties), e.g. "color" for "*Color" */
-		readonly basename: string
 		/** VALUE node (parse_values=true), RAW node (parse_values=false), or null */
 		readonly value: Value | Raw | null
 		readonly is_important: boolean
@@ -537,8 +534,6 @@ export type MediaFeature = WithClone<
 			readonly type_name: 'Feature'
 			/** Feature name, e.g. "min-width" */
 			readonly property: string
-			/** Normalized feature name: vendor prefix removed, lowercased, e.g. "min-device-pixel-ratio" for "-webkit-min-device-pixel-ratio" */
-			readonly basename: string
 			/** Feature value node (Dimension, Number, Identifier or Ratio), or null for boolean features like (hover). Hacks like `0\0` add further children after it. */
 			readonly value: Identifier | Number | Dimension | Ratio | null
 		}
@@ -580,8 +575,6 @@ export type SupportsDeclaration = WithClone<
 			readonly type_name: 'SupportsDeclaration'
 			/** Property name, e.g. "display" from "(display: flex)" */
 			readonly property: string
-			/** Normalized property name: hack and vendor prefix removed, lowercased */
-			readonly basename: string
 			/** VALUE node for the declaration's value, e.g. "flex" from "(display: flex)" */
 			readonly value: Value | null
 		}

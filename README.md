@@ -95,8 +95,6 @@ rule.block.first_child.property // "color"
 rule.block.first_child.value.text // "red"
 ```
 
-Declarations (and media features) also expose `basename`: the property name with browser hack and vendor prefix removed, lowercased (custom properties keep their case), so `*Color` and `-WEBKIT-Color` both give `"color"`.
-
 Options:
 
 - `parse_values` (default `true`) — parse declaration values into nodes
