@@ -263,3 +263,39 @@ export function property_basename(str: string): string {
 	}
 	return (start === 0 ? str : str.substring(start)).toLowerCase()
 }
+
+const CHAR_BACKSLASH = 0x5c // \
+const CHAR_ZERO = 0x30 // 0
+const CHAR_NINE = 0x39 // 9
+
+/**
+ * Remove an old-IE value hack postfix: `\9`, `\0`, `\0/` and combinations such as `\9\0`.
+ * `10px\9` → `10px`, `red \0/` → `red`. Values without a hack are returned unchanged.
+ */
+export function strip_value_hack(str: string): string {
+	let end = str.length
+	// `\0/` hack: the slash only counts together with the `\0` before it
+	if (
+		str.charCodeAt(end - 1) === CHAR_FORWARD_SLASH &&
+		str.charCodeAt(end - 2) === CHAR_ZERO &&
+		str.charCodeAt(end - 3) === CHAR_BACKSLASH
+	) {
+		end--
+	}
+	// One or more `\9` / `\0` escapes. An escaped backslash (`\\9`) is not a hack.
+	while (end >= 2) {
+		const digit = str.charCodeAt(end - 1)
+		if (
+			(digit === CHAR_ZERO || digit === CHAR_NINE) &&
+			str.charCodeAt(end - 2) === CHAR_BACKSLASH &&
+			str.charCodeAt(end - 3) !== CHAR_BACKSLASH
+		) {
+			end -= 2
+		} else {
+			break
+		}
+	}
+	if (end === str.length) return str
+	while (end > 0 && is_whitespace(str.charCodeAt(end - 1))) end--
+	return str.substring(0, end)
+}

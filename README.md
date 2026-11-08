@@ -78,10 +78,10 @@ Everything is exported from the package root. Each part is also available from i
 - `/parse-anplusb` — `parse_anplusb`
 - `/parse-dimension` — `parse_dimension`
 - `/tokenizer` — `tokenize`, `Lexer`
-- `/walker` — `walk`, `traverse`, `SKIP`, `BREAK`
+- `/walker` — `walk`, `traverse`, `walk_declarations`, `walk_selectors`, `walk_values`, `SKIP`, `BREAK`
 - `/nodes` — node type constants (`STYLE_RULE`, `DECLARATION`, …), `NODE_TYPES`
 - `/node-types` — type guards (`is_declaration`, `is_rule`, …) and node types (`CSSNode`, `Rule`, …)
-- `/string-utils` — `is_custom`, `is_vendor_prefixed`, `strip_vendor_prefix`, `property_basename`, `str_equals`, `str_starts_with`, `str_index_of`
+- `/string-utils` — `is_custom`, `is_vendor_prefixed`, `strip_vendor_prefix`, `strip_value_hack`, `property_basename`, `str_equals`, `str_starts_with`, `str_index_of`
 - `/token-types` — token type constants (`TOKEN_*`)
 
 ### `parse(source, options?)`
@@ -137,6 +137,27 @@ traverse(ast, {
 		if (node.type === AT_RULE) return SKIP
 	},
 	leave(node) {},
+})
+```
+
+### `walk_declarations`, `walk_selectors` and `walk_values`
+
+Typed walkers that only visit what you ask for and never enter irrelevant subtrees, so they are faster than filtering inside `walk`. `BREAK` stops the walk.
+
+```typescript
+// every declaration, including nested rules and at-rules (values and selectors are not entered)
+walk_declarations(ast, (decl) => {
+	decl.property
+})
+
+// every complex selector: `a` and `b > c` in `a, b > c {}`
+walk_selectors(ast, (selector) => {})
+// also selectors nested in pseudo-classes: `b` in `a:is(b)`. Return SKIP to skip a selector's nested selectors
+walk_selectors(ast, (selector) => {}, { recursive: true })
+
+// nodes in a declaration's value. Return SKIP to skip function arguments
+walk_values(decl, (node) => {
+	if (node.type === FUNCTION) return SKIP
 })
 ```
 
