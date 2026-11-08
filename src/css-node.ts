@@ -875,7 +875,22 @@ export class CSSNode {
 		return result
 	}
 
-	// Make CSSNode iterable over its children
+	/**
+	 * Call `callback` for each child, in order. No allocations.
+	 * Much faster than iterating the node (generator); prefer it in hot paths.
+	 */
+	for_each(callback: (child: CSSNode) => void): void {
+		let child = this.first_child
+		while (child) {
+			callback(child)
+			child = child.next_sibling
+		}
+	}
+
+	/**
+	 * Make CSSNode iterable over its children.
+	 * Convenient, but generators are slow: use `for_each()` in performance-sensitive code.
+	 */
 	*[Symbol.iterator](): Iterator<CSSNode> {
 		let child = this.first_child
 		while (child) {

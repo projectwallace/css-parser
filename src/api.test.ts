@@ -34,6 +34,14 @@ import {
 
 describe('CSSNode', () => {
 	describe('iteration', () => {
+		test('for_each visits children in order', () => {
+			const root = parse('a {} b {} c {}')
+			const from_for_each: string[] = []
+			root.for_each((child) => from_for_each.push(child.text))
+			expect(from_for_each).toEqual([...root].map((child) => child.text))
+			expect(from_for_each).toHaveLength(3)
+		})
+
 		test('should be iterable with for-of', () => {
 			const source = 'body { color: red; margin: 0; padding: 10px; }'
 			const root = parse(source, { parse_selectors: false, parse_values: false })
