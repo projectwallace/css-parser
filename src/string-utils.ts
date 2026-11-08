@@ -266,10 +266,11 @@ export function property_basename(str: string): string {
 
 const CHAR_BACKSLASH = 0x5c // \
 const CHAR_ZERO = 0x30 // 0
+const CHAR_SEVEN = 0x37 // 7
 const CHAR_NINE = 0x39 // 9
 
 /**
- * Remove an old-IE value hack postfix: `\9`, `\0`, `\0/` and combinations such as `\9\0`.
+ * Remove an old-IE value hack postfix: `\9`, `\7`, `\0`, `\0/` and combinations such as `\9\0`.
  * `10px\9` → `10px`, `red \0/` → `red`. Values without a hack are returned unchanged.
  */
 export function strip_value_hack(str: string): string {
@@ -282,11 +283,11 @@ export function strip_value_hack(str: string): string {
 	) {
 		end--
 	}
-	// One or more `\9` / `\0` escapes. An escaped backslash (`\\9`) is not a hack.
+	// One or more `\9` / `\7` / `\0` escapes. An escaped backslash (`\\9`) is not a hack.
 	while (end >= 2) {
 		const digit = str.charCodeAt(end - 1)
 		if (
-			(digit === CHAR_ZERO || digit === CHAR_NINE) &&
+			(digit === CHAR_ZERO || digit === CHAR_SEVEN || digit === CHAR_NINE) &&
 			str.charCodeAt(end - 2) === CHAR_BACKSLASH &&
 			str.charCodeAt(end - 3) !== CHAR_BACKSLASH
 		) {
