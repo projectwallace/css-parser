@@ -77,7 +77,7 @@ const CHAR_LINE_FEED = 0x0a // \n
 const CHAR_FORM_FEED = 0x0c // \f
 
 // Characters skip_to_unquoted()/skip_to_declaration_stop() must stop and inspect: quotes,
-// comment-starting '/', and newlines. One shared table keeps the ordinary-char fast path
+// comment-starting '/', backslash escapes, and newlines. One shared table keeps the ordinary-char fast path
 // to a single lookup, same cost as consume_ident_or_function's inner loop.
 const SKIP_SCAN_INTERESTING = new Uint8Array(128)
 SKIP_SCAN_INTERESTING[CHAR_DOUBLE_QUOTE] = 1
@@ -86,6 +86,7 @@ SKIP_SCAN_INTERESTING[CHAR_FORWARD_SLASH] = 1
 SKIP_SCAN_INTERESTING[CHAR_LINE_FEED] = 1
 SKIP_SCAN_INTERESTING[CHAR_CARRIAGE_RETURN] = 1
 SKIP_SCAN_INTERESTING[CHAR_FORM_FEED] = 1
+SKIP_SCAN_INTERESTING[CHAR_BACKSLASH] = 1
 
 // Stop characters skip_to_declaration_stop() reports back: statement/block/paren
 // delimiters plus '!' for !important. The caller (parse-declaration.ts) decides what
@@ -457,6 +458,17 @@ export class Lexer {
 				continue
 			}
 
+			if (ch === CHAR_BACKSLASH) {
+				// Valid escape: the next code point (e.g. a quote) is part of the ident, not special.
+				// A backslash before a newline isn't an escape; let the newline be tracked normally.
+				const next = pos + 1 < source_length ? source.charCodeAt(pos + 1) : 0
+				pos +=
+					next === CHAR_LINE_FEED || next === CHAR_CARRIAGE_RETURN || next === CHAR_FORM_FEED
+						? 1
+						: 2
+				continue
+			}
+
 			if (ch === CHAR_DOUBLE_QUOTE || ch === CHAR_SINGLE_QUOTE) {
 				// The returned token is discarded — only consume_string's pos/line side effects matter.
 				this.pos = pos
@@ -512,6 +524,17 @@ export class Lexer {
 
 			if (ch >= 128 || SKIP_SCAN_INTERESTING[ch] === 0) {
 				pos++
+				continue
+			}
+
+			if (ch === CHAR_BACKSLASH) {
+				// Valid escape: the next code point (e.g. a quote) is part of the ident, not special.
+				// A backslash before a newline isn't an escape; let the newline be tracked normally.
+				const next = pos + 1 < end ? source.charCodeAt(pos + 1) : 0
+				pos +=
+					next === CHAR_LINE_FEED || next === CHAR_CARRIAGE_RETURN || next === CHAR_FORM_FEED
+						? 1
+						: 2
 				continue
 			}
 
