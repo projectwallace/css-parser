@@ -140,6 +140,18 @@ traverse(ast, {
 })
 ```
 
+### `node.parent` and `node.closest_atrule()`
+
+`parent` is the parent node (`null` for the root); `closest_atrule()` is the nearest ancestor at-rule, not counting the node itself. Nothing is stored while parsing: the first call on a tree builds a lookup table in one pass (4 bytes per node), so you only pay for it if you use it.
+
+```typescript
+walk(ast, (node) => {
+	if (node.type === DECLARATION) {
+		node.closest_atrule()?.name // "media" for a declaration inside @media
+	}
+})
+```
+
 ### `tokenize_cb(source, on_token)`
 
 Calls `on_token(type, start, end, line, column)` for every token. Whitespace and comments are emitted as tokens (`TOKEN_WHITESPACE`, `TOKEN_COMMENT`). This is about 35% faster than iterating `tokenize()`, because no generator or token objects are allocated.

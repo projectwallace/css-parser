@@ -2,6 +2,7 @@ import { describe, test, expect } from 'vitest'
 import { parse } from './parse'
 import { parse_selector, parse_selector_list } from './parse-selector'
 import { walk } from './walk'
+import { parse_declaration } from './parse-declaration'
 import {
 	DECLARATION,
 	STYLE_RULE,
@@ -1343,5 +1344,51 @@ describe('NODE_TYPES namespace', () => {
 		expect(NODE_TYPES.DECLARATION).toBe(DECLARATION)
 		expect(NODE_TYPES.AT_RULE).toBe(AT_RULE)
 		expect(NODE_TYPES.SELECTOR_LIST).toBe(SELECTOR_LIST)
+	})
+})
+
+const idx = (node: unknown) => (node as CSSNode).__get_index()
+
+describe('parent and closest_atrule', () => {
+	test('parent links every node back to the node it was reached from', () => {
+		const root = parse(
+			'a:is(b) { color: red; @media (x) { c { margin: 1px calc(2px + 3px) } } } @font-face { src: url(x) }',
+		)
+		expect(root.parent).toBeNull()
+		let count = 0
+		walk(root, (node) => {
+			count++
+			let child = node.first_child
+			while (child) {
+				expect(idx(child.parent)).toBe(idx(node))
+				child = child.next_sibling
+			}
+		})
+		expect(count).toBeGreaterThan(20)
+	})
+
+	test('closest_atrule finds the nearest ancestor at-rule, excluding the node itself', () => {
+		const root = parse('a { color: red } @supports (x: y) { @media (z) { b { top: 0 } } }')
+		const found: Record<string, string | null> = {}
+		walk(root, (node) => {
+			if (node.type === DECLARATION) found[node.property] = node.closest_atrule()?.name ?? null
+			if (node.type === AT_RULE) found['@' + node.name] = node.closest_atrule()?.name ?? null
+		})
+		// `x` is the declaration inside the @supports prelude
+		expect(found).toEqual({
+			color: null,
+			x: 'supports',
+			top: 'media',
+			'@supports': null,
+			'@media': 'supports',
+		})
+	})
+
+	test('works for nodes from standalone sub-parsers', () => {
+		const decl = parse_declaration('margin: 1px 2px')
+		const value = decl.first_child!
+		expect(idx(value.parent)).toBe(idx(decl))
+		expect(decl.parent).toBeNull()
+		expect(decl.closest_atrule()).toBeNull()
 	})
 })

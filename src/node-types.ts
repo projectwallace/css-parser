@@ -86,6 +86,10 @@ export type CSSNode = {
 	readonly length: number
 	readonly end: number
 	readonly first_child: CSSNode | null
+	/** Parent node, or null for the root. The first access builds a lookup table for the whole tree. */
+	readonly parent: CSSNode | null
+	/** Nearest ancestor at-rule (excluding the node itself), or null when not inside one. */
+	closest_atrule(): Atrule | null
 	clone(options?: CloneOptions): PlainCSSNode
 } & (
 	| { readonly has_next: false; readonly next_sibling: null }

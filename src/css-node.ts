@@ -798,6 +798,25 @@ export class CSSNode {
 		return new CSSNode(this.arena, this.source, child_index)
 	}
 
+	// Get the parent node, or null for the root. The first call on a tree builds a lookup table (one pass over the arena).
+	get parent(): CSSNode | null {
+		const parent_index = this.arena.get_parent(this.index)
+		if (parent_index === 0) return null
+		return new CSSNode(this.arena, this.source, parent_index)
+	}
+
+	// Get the nearest ancestor at-rule (not the node itself), or null when not inside an at-rule
+	closest_atrule(): CSSNode | null {
+		let index = this.arena.get_parent(this.index)
+		while (index !== 0) {
+			if (this.arena.get_type(index) === AT_RULE) {
+				return new CSSNode(this.arena, this.source, index)
+			}
+			index = this.arena.get_parent(index)
+		}
+		return null
+	}
+
 	// Get next sibling node
 	get next_sibling(): CSSNode | null {
 		const sibling_index = this.arena.get_next_sibling(this.index)

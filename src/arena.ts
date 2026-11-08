@@ -115,6 +115,7 @@ export class CSSDataArena {
 	private count: number // Number of nodes currently allocated
 	private growth_count: number // Number of times the arena has grown
 	private overflow_lengths: Map<number, number> // Stores actual lengths for nodes > 65535 chars
+	private parents: Uint32Array | null = null // Built on first get_parent() call; nothing is stored per node while parsing
 
 	// Growth multiplier when capacity is exceeded
 	private static readonly GROWTH_FACTOR = 1.3
@@ -411,6 +412,29 @@ export class CSSDataArena {
 			next = this.get_next_sibling(node)
 		}
 		return node
+	}
+
+	// Read parent index (0 = no parent). The lookup table is built lazily on first use with one pass
+	// over all nodes (4 bytes per node, only for callers that ask), so parsing and the node layout
+	// are unaffected. Rebuilt if nodes were added since it was built.
+	get_parent(node_index: number): number {
+		let parents = this.parents
+		if (parents === null || parents.length !== this.count) {
+			parents = this.parents = this.build_parents()
+		}
+		return parents[node_index]
+	}
+
+	private build_parents(): Uint32Array {
+		const parents = new Uint32Array(this.count)
+		for (let node = 1; node < this.count; node++) {
+			let child = this.get_first_child(node)
+			while (child !== 0) {
+				parents[child] = node
+				child = this.get_next_sibling(child)
+			}
+		}
+		return parents
 	}
 
 	// Check if a node has any children
