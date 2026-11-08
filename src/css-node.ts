@@ -67,6 +67,7 @@ import {
 	CHAR_ASTERISK,
 	is_whitespace,
 	is_vendor_prefixed,
+	strip_value_hack,
 	str_starts_with,
 	str_equals,
 } from './string-utils'
@@ -646,6 +647,15 @@ export class CSSNode {
 	get is_else(): boolean | undefined {
 		if (this.type !== IF_BRANCH) return undefined
 		return str_equals('else', this.get_content())
+	}
+
+	// Declaration value text without an old-IE hack postfix (`\\9`, `\\0`, `\\0/`); "" for an empty value
+	get value_without_hack(): string | undefined {
+		if (this.type !== DECLARATION) return undefined
+		const length = this.arena.get_value_length(this.index)
+		if (length === 0) return ''
+		const start = this.arena.get_value_start(this.index)
+		return strip_value_hack(this.source.substring(start, start + length))
 	}
 
 	// Check if this declaration has !important

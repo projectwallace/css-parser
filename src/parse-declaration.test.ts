@@ -198,6 +198,15 @@ describe('parse_declaration', () => {
 			expect(node.is_browserhack).toBe(false)
 		})
 
+		test('value_without_hack strips value hack postfixes', () => {
+			expect(parse_declaration('width: 10px\\9').value_without_hack).toBe('10px')
+			expect(parse_declaration('*color: red\\9').value_without_hack).toBe('red')
+			expect(parse_declaration('width: 1px\\0/').value_without_hack).toBe('1px')
+			expect(parse_declaration('width: 1px').value_without_hack).toBe('1px')
+			expect(parse_declaration('width:').value_without_hack).toBe('')
+			expect(parse_declaration('width: 10px\\9').value).toBeTruthy()
+		})
+
 		test('normal property is not a browserhack', () => {
 			const node = parse_declaration('color: red')
 			expect(node.is_browserhack).toBe(false)

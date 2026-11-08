@@ -81,7 +81,7 @@ Everything is exported from the package root. Each part is also available from i
 - `/walker` — `walk`, `traverse`, `SKIP`, `BREAK`
 - `/nodes` — node type constants (`STYLE_RULE`, `DECLARATION`, …), `NODE_TYPES`
 - `/node-types` — type guards (`is_declaration`, `is_rule`, …) and node types (`CSSNode`, `Rule`, …)
-- `/string-utils` — `is_custom`, `is_vendor_prefixed`, `strip_vendor_prefix`, `str_equals`, `str_starts_with`, `str_index_of`
+- `/string-utils` — `is_custom`, `is_vendor_prefixed`, `strip_vendor_prefix`, `strip_value_hack`, `str_equals`, `str_starts_with`, `str_index_of`
 - `/token-types` — token type constants (`TOKEN_*`)
 
 ### `parse(source, options?)`
@@ -94,6 +94,8 @@ const rule = ast.first_child
 rule.block.first_child.property // "color"
 rule.block.first_child.value.text // "red"
 ```
+
+Declarations also expose `value_without_hack`: the value text without an old-IE hack postfix (`\9`, `\0`, `\0/`), so `width: 10px\9` gives `"10px"`.
 
 Options:
 

@@ -138,6 +138,7 @@ export type ToPlain<T extends CSSNode> = PlainCSSNode & { type: T['type'] } & {
 			| symbol
 			| 'attr_operator'
 			| 'attr_flags'
+			| 'value_without_hack'
 			| 'has_children'
 			| 'child_count'
 			| 'children'
@@ -191,6 +192,8 @@ export type Declaration = Leaf<
 		readonly value: Value | Raw | null
 		readonly is_important: boolean
 		readonly is_browserhack: boolean
+		/** Value text without an old-IE hack postfix, e.g. "10px" for "10px\\9". "" when the value is empty */
+		readonly value_without_hack: string
 	}
 >
 
