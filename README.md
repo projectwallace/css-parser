@@ -95,8 +95,6 @@ rule.block.first_child.property // "color"
 rule.block.first_child.value.text // "red"
 ```
 
-Declarations also expose `value_without_hack`: the value text without an old-IE hack postfix (`\9`, `\0`, `\0/`), so `width: 10px\9` gives `"10px"`.
-
 Options:
 
 - `parse_values` (default `true`) — parse declaration values into nodes
