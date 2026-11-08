@@ -6,6 +6,7 @@ import {
 	str_index_of,
 	is_vendor_prefixed,
 	is_custom,
+	property_basename,
 	strip_value_hack,
 	CHAR_SPACE,
 	CHAR_TAB,
@@ -267,6 +268,27 @@ describe('string-utils', () => {
 			expect(str_starts_with('url(', 'url(')).toBe(true)
 			// The function doesn't normalize the prefix, so uppercase prefix won't match
 			expect(str_starts_with('URL(', 'url(')).toBe(false)
+		})
+	})
+
+	describe('property_basename', () => {
+		test.each([
+			['color', 'color'],
+			['COLOR', 'color'],
+			['*color', 'color'],
+			['_Color', 'color'],
+			['*  color', 'color'],
+			['#color', 'color'],
+			['@color', 'color'],
+			['-color', 'color'],
+			['-webkit-transform', 'transform'],
+			['-WEBKIT-Transform', 'transform'],
+			['*-webkit-transform', 'transform'],
+			['--Custom-Prop', '--Custom-Prop'],
+			['-moz-', ''],
+			['', ''],
+		])('%s → %s', (input, expected) => {
+			expect(property_basename(input)).toBe(expected)
 		})
 	})
 
