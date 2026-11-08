@@ -13,6 +13,7 @@ export {
 	is_custom,
 	is_vendor_prefixed,
 	strip_vendor_prefix,
+	property_basename,
 	str_equals,
 	str_starts_with,
 	str_index_of,

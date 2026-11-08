@@ -67,6 +67,7 @@ import {
 	CHAR_ASTERISK,
 	is_whitespace,
 	is_vendor_prefixed,
+	property_basename,
 	str_starts_with,
 	str_equals,
 } from './string-utils'
@@ -458,6 +459,13 @@ export class CSSNode {
 		const { type } = this
 		if (type !== DECLARATION && type !== MEDIA_FEATURE && type !== SUPPORTS_DECLARATION) return
 		return this.get_content()
+	}
+
+	// Normalized `property`: hack and vendor prefix removed, lowercased (custom properties keep their case)
+	get basename(): string | undefined {
+		const { type } = this
+		if (type !== DECLARATION && type !== MEDIA_FEATURE && type !== SUPPORTS_DECLARATION) return
+		return property_basename(this.get_content())
 	}
 
 	// Declarations: the value text ("1px solid blue"). Dimension/number: the numeric value.

@@ -230,3 +230,36 @@ export function strip_vendor_prefix(str: string): string {
 	// Should never reach here if is_vendor_prefixed returned true
 	return str
 }
+
+/**
+ * Normalized property name: browser hack prefix (`*`, `_`, `#`, …) and vendor prefix removed,
+ * lowercased. Custom properties (`--Foo`) keep their case. `*Color` → `color`, `-WEBKIT-Transform` → `transform`.
+ */
+export function property_basename(str: string): string {
+	let start = 0
+	const length = str.length
+	// Skip hack prefix characters until something that can start a property name
+	while (start < length) {
+		const ch = str.charCodeAt(start)
+		if (
+			(ch >= 0x61 && ch <= 0x7a) || // a-z
+			(ch >= 0x41 && ch <= 0x5a) || // A-Z
+			ch === CHAR_MINUS_HYPHEN ||
+			ch === 0x5c || // escape
+			ch > 0x7f
+		) {
+			break
+		}
+		start++
+	}
+	if (str.charCodeAt(start) === CHAR_MINUS_HYPHEN) {
+		if (str.charCodeAt(start + 1) === CHAR_MINUS_HYPHEN) {
+			return start === 0 ? str : str.substring(start)
+		}
+		// `-webkit-foo` → `foo`; a lone `-` (`-color`) is a browser hack
+		const name = start === 0 ? str : str.substring(start)
+		if (is_vendor_prefixed(name)) return strip_vendor_prefix(name).toLowerCase()
+		return name.substring(1).toLowerCase()
+	}
+	return (start === 0 ? str : str.substring(start)).toLowerCase()
+}

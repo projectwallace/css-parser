@@ -198,6 +198,12 @@ describe('parse_declaration', () => {
 			expect(node.is_browserhack).toBe(false)
 		})
 
+		test('basename', () => {
+			expect(parse_declaration('*Color: red').basename).toBe('color')
+			expect(parse_declaration('-WEBKIT-Transform: none').basename).toBe('transform')
+			expect(parse_declaration('--Foo: 1').basename).toBe('--Foo')
+		})
+
 		test('normal property is not a browserhack', () => {
 			const node = parse_declaration('color: red')
 			expect(node.is_browserhack).toBe(false)

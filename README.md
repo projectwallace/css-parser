@@ -81,7 +81,7 @@ Everything is exported from the package root. Each part is also available from i
 - `/walker` — `walk`, `traverse`, `SKIP`, `BREAK`
 - `/nodes` — node type constants (`STYLE_RULE`, `DECLARATION`, …), `NODE_TYPES`
 - `/node-types` — type guards (`is_declaration`, `is_rule`, …) and node types (`CSSNode`, `Rule`, …)
-- `/string-utils` — `is_custom`, `is_vendor_prefixed`, `strip_vendor_prefix`, `str_equals`, `str_starts_with`, `str_index_of`
+- `/string-utils` — `is_custom`, `is_vendor_prefixed`, `strip_vendor_prefix`, `property_basename`, `str_equals`, `str_starts_with`, `str_index_of`
 - `/token-types` — token type constants (`TOKEN_*`)
 
 ### `parse(source, options?)`
@@ -94,6 +94,8 @@ const rule = ast.first_child
 rule.block.first_child.property // "color"
 rule.block.first_child.value.text // "red"
 ```
+
+Declarations (and media features) also expose `basename`: the property name with browser hack and vendor prefix removed, lowercased (custom properties keep their case), so `*Color` and `-WEBKIT-Color` both give `"color"`.
 
 Options:
 
