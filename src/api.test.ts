@@ -37,9 +37,21 @@ describe('CSSNode', () => {
 		test('for_each visits children in order', () => {
 			const root = parse('a {} b {} c {}')
 			const from_for_each: string[] = []
-			root.for_each((child) => from_for_each.push(child.text))
+			root.for_each((child) => {
+				from_for_each.push(child.text)
+			})
 			expect(from_for_each).toEqual([...root].map((child) => child.text))
 			expect(from_for_each).toHaveLength(3)
+		})
+
+		test('for_each stops when callback returns false', () => {
+			const root = parse('a {} b {} c {}')
+			const seen: string[] = []
+			root.for_each((child) => {
+				seen.push(child.text)
+				return seen.length < 2
+			})
+			expect(seen).toHaveLength(2)
 		})
 
 		test('should be iterable with for-of', () => {

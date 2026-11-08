@@ -878,11 +878,12 @@ export class CSSNode {
 	/**
 	 * Call `callback` for each child, in order. No allocations.
 	 * Much faster than iterating the node (generator); prefer it in hot paths.
+	 * Return `false` from the callback to stop iterating early (any other return value continues).
 	 */
-	for_each(callback: (child: CSSNode) => void): void {
+	for_each(callback: (child: CSSNode) => void | boolean): void {
 		let child = this.first_child
 		while (child) {
-			callback(child)
+			if (callback(child) === false) return
 			child = child.next_sibling
 		}
 	}
