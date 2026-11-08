@@ -815,3 +815,48 @@ describe('traverse with SKIP and BREAK', () => {
 		expect(leave).toEqual([RAW, RAW, DECLARATION, BLOCK, STYLE_RULE, STYLESHEET])
 	})
 })
+
+describe('traverse depth', () => {
+	test('enter and leave receive the same depth as walk (rule and at-rule nesting)', () => {
+		const root = parse('a { color: red; @media (x) { b { top: 0 } } } c { margin: 0 }')
+
+		const walked: [number, number][] = []
+		walk(root, (node, depth) => {
+			walked.push([node.type, depth])
+		})
+
+		const entered: [number, number][] = []
+		const left: [number, number][] = []
+		traverse(root, {
+			enter(node, depth) {
+				entered.push([node.type, depth])
+			},
+			leave(node, depth) {
+				left.push([node.type, depth])
+			},
+		})
+
+		expect(entered).toEqual(walked)
+		expect(left).toHaveLength(entered.length)
+		expect(left.toSorted()).toEqual(entered.toSorted())
+		expect(entered.find(([type]) => type === DECLARATION)).toEqual([DECLARATION, 1])
+		expect(Math.max(...entered.map(([, depth]) => depth))).toBe(3)
+	})
+
+	test('depth is still reported to leave after SKIP', () => {
+		const root = parse('a { b { color: red } }')
+		const left: [number, number][] = []
+		traverse(root, {
+			enter(node) {
+				if (node.type === STYLE_RULE) return SKIP
+			},
+			leave(node, depth) {
+				left.push([node.type, depth])
+			},
+		})
+		expect(left).toEqual([
+			[STYLE_RULE, 0],
+			[STYLESHEET, 0],
+		])
+	})
+})

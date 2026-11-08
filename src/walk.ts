@@ -47,7 +47,7 @@ function _walk(
 
 const NOOP = function () {}
 
-type WalkEnterLeaveCallback = (node: AnyNode) => void | typeof SKIP | typeof BREAK
+type WalkEnterLeaveCallback = (node: AnyNode, depth: number) => void | typeof SKIP | typeof BREAK
 
 interface WalkEnterLeaveOptions {
 	enter?: WalkEnterLeaveCallback
@@ -57,13 +57,15 @@ interface WalkEnterLeaveOptions {
 /**
  * Walk the AST depth-first, calling `enter` before children and `leave` after.
  * SKIP in enter skips children (leave still runs); BREAK stops (leave doesn't run).
+ * Both callbacks receive the same `depth` as `walk`: it counts rule and at-rule nesting only.
  */
 export function traverse(
 	node: CSSNode,
 	{ enter = NOOP, leave = NOOP }: WalkEnterLeaveOptions = {},
+	depth = 0,
 ): boolean {
 	const impl = node as unknown as CSSNodeImpl
-	return _traverse(impl.__get_arena(), impl.__get_source(), impl.__get_index(), enter, leave)
+	return _traverse(impl.__get_arena(), impl.__get_source(), impl.__get_index(), enter, leave, depth)
 }
 
 function _traverse(
@@ -72,21 +74,24 @@ function _traverse(
 	index: number,
 	enter: WalkEnterLeaveCallback,
 	leave: WalkEnterLeaveCallback,
+	depth: number,
 ): boolean {
 	const node = new CSSNodeImpl(arena, source, index) as unknown as AnyNode
-	const enter_result = enter(node)
+	const enter_result = enter(node, depth)
 
 	if (enter_result === BREAK) return false
 
 	if (enter_result !== SKIP) {
+		const type = arena.get_type(index)
+		const child_depth = type === STYLE_RULE || type === AT_RULE ? depth + 1 : depth
 		let child = arena.get_first_child(index)
 		while (child !== 0) {
-			if (!_traverse(arena, source, child, enter, leave)) return false
+			if (!_traverse(arena, source, child, enter, leave, child_depth)) return false
 			child = arena.get_next_sibling(child)
 		}
 	}
 
-	const leave_result = leave(node)
+	const leave_result = leave(node, depth)
 	if (leave_result === BREAK) return false
 
 	return true
