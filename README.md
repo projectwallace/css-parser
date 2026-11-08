@@ -125,7 +125,7 @@ parse_dimension('1.5e3s') // { value: 1500, unit: "s" } (no validation; no leadi
 
 ### `walk(node, callback)` and `traverse(node, { enter, leave })`
 
-Both walk the tree depth-first. Return `SKIP` to skip the children of a node and `BREAK` to stop entirely. `walk` also passes a `depth` that counts rule and at-rule nesting. `traverse` calls `enter` before and `leave` after the children (`leave` still runs after `SKIP`, but not after `BREAK`).
+Both walk the tree depth-first. Return `SKIP` to skip the children of a node and `BREAK` to stop entirely. `walk` also passes a `depth` that counts rule and at-rule nesting. `traverse` calls `enter` before and `leave` after the children, both with the same `depth` (`leave` still runs after `SKIP`, but not after `BREAK`).
 
 ```typescript
 walk(ast, (node) => {
