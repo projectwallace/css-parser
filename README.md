@@ -161,6 +161,19 @@ walk_values(decl, (node) => {
 })
 ```
 
+### `node.parent` and `node.closest(match)`
+
+`parent` is the parent node (`null` for the root); `closest(match)` is the nearest ancestor that is of a node type (`AT_RULE`) or satisfies a predicate or type guard (`is_atrule`), not counting the node itself; it returns `null` when there is none. Passing a type constant climbs without creating wrapper objects, so prefer it over a predicate. Nothing is stored while parsing: the first call on a tree builds a lookup table in one pass (4 bytes per node), so you only pay for it if you use it.
+
+```typescript
+walk(ast, (node) => {
+	if (node.type === DECLARATION) {
+		node.closest(AT_RULE)?.name // "media" for a declaration inside @media
+		node.closest((n) => is_atrule(n) && n.name === 'media') // by predicate
+	}
+})
+```
+
 ### `tokenize_cb(source, on_token)`
 
 Calls `on_token(type, start, end, line, column)` for every token. Whitespace and comments are emitted as tokens (`TOKEN_WHITESPACE`, `TOKEN_COMMENT`). This is about 35% faster than iterating `tokenize()`, because no generator or token objects are allocated.
