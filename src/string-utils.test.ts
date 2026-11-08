@@ -6,6 +6,7 @@ import {
 	str_index_of,
 	is_vendor_prefixed,
 	is_custom,
+	strip_value_hack,
 	CHAR_SPACE,
 	CHAR_TAB,
 	CHAR_NEWLINE,
@@ -266,6 +267,24 @@ describe('string-utils', () => {
 			expect(str_starts_with('url(', 'url(')).toBe(true)
 			// The function doesn't normalize the prefix, so uppercase prefix won't match
 			expect(str_starts_with('URL(', 'url(')).toBe(false)
+		})
+	})
+
+	describe('strip_value_hack', () => {
+		test.each([
+			['10px\\9', '10px'],
+			['10px\\0', '10px'],
+			['red\\9\\0', 'red'],
+			['1px\\0/', '1px'],
+			['red \\9', 'red'],
+			['red', 'red'],
+			['', ''],
+			['\\9', ''],
+			['a/', 'a/'],
+			['a\\\\9', 'a\\\\9'],
+			['url(a\\9)', 'url(a\\9)'],
+		])('%s → %s', (input, expected) => {
+			expect(strip_value_hack(input)).toBe(expected)
 		})
 	})
 

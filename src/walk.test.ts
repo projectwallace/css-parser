@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { parse } from './parse'
+import { parse_declaration } from './parse-declaration'
 import {
 	STYLESHEET,
 	STYLE_RULE,
@@ -13,8 +14,10 @@ import {
 	VALUE,
 	RAW,
 	SELECTOR,
+	FUNCTION,
+	OPERATOR,
 } from './constants'
-import { walk, traverse, SKIP, BREAK } from './walk'
+import { walk, traverse, walk_declarations, walk_selectors, walk_values, SKIP, BREAK } from './walk'
 
 describe('walk', () => {
 	test('should visit single node', () => {
@@ -813,6 +816,144 @@ describe('traverse with SKIP and BREAK', () => {
 
 		expect(enter).toEqual([STYLESHEET, STYLE_RULE, RAW, BLOCK, DECLARATION, RAW])
 		expect(leave).toEqual([RAW, RAW, DECLARATION, BLOCK, STYLE_RULE, STYLESHEET])
+	})
+})
+
+describe('walk_declarations', () => {
+	test('visits declarations in source order, including nested rules and at-rules', () => {
+		const root = parse(
+			'a { color: red; &:hover { margin: 0 } @media (x) { b { top: 0 } } } @font-face { src: x }',
+		)
+		const props: string[] = []
+		walk_declarations(root, (d) => {
+			props.push(d.property)
+		})
+		expect(props).toEqual(['color', 'margin', 'top', 'src'])
+	})
+
+	test('BREAK stops the walk', () => {
+		const root = parse('a { color: red; margin: 0 } b { top: 0 }')
+		const props: string[] = []
+		const result = walk_declarations(root, (d) => {
+			props.push(d.property)
+			return BREAK
+		})
+		expect(props).toEqual(['color'])
+		expect(result).toBe(false)
+	})
+
+	test('accepts a rule as root and never visits value nodes', () => {
+		const root = parse('a { color: red } b { top: 0 }')
+		const types: number[] = []
+		walk_declarations(root.first_child!, (d) => {
+			types.push(d.type)
+		})
+		expect(types).toEqual([DECLARATION])
+	})
+})
+
+describe('walk_selectors', () => {
+	test('visits complex selectors of style rules, nested rules and @scope preludes', () => {
+		const root = parse('a, b > c { &:hover {} } @scope (.x) to (.y) { d {} } @media (x) { e {} }')
+		const texts: string[] = []
+		walk_selectors(root, (s) => {
+			texts.push(s.text)
+		})
+		expect(texts).toEqual(['a', 'b > c', '&:hover', '.x', '.y', 'd', 'e'])
+	})
+
+	test('does not enter nested selectors by default', () => {
+		const root = parse('a:is(b, c > d):not(.e) {}')
+		const texts: string[] = []
+		walk_selectors(root, (s) => {
+			texts.push(s.text)
+		})
+		expect(texts).toEqual(['a:is(b, c > d):not(.e)'])
+	})
+
+	test('recursive visits nested selectors after their container', () => {
+		const root = parse('a:is(b, c > d):not(.e):nth-child(2n of .f) {}')
+		const texts: string[] = []
+		walk_selectors(
+			root,
+			(s) => {
+				texts.push(s.text)
+			},
+			{ recursive: true },
+		)
+		expect(texts).toEqual(['a:is(b, c > d):not(.e):nth-child(2n of .f)', 'b', 'c > d', '.e', '.f'])
+	})
+
+	test('SKIP skips nested selectors when recursive', () => {
+		const root = parse('a:is(b) {} c:is(d) {}')
+		const texts: string[] = []
+		walk_selectors(
+			root,
+			(s) => {
+				texts.push(s.text)
+				return s.text.startsWith('a') ? SKIP : undefined
+			},
+			{ recursive: true },
+		)
+		expect(texts).toEqual(['a:is(b)', 'c:is(d)', 'd'])
+	})
+
+	test('BREAK stops the walk', () => {
+		const root = parse('a {} b {}')
+		const texts: string[] = []
+		walk_selectors(root, (s) => {
+			texts.push(s.text)
+			return BREAK
+		})
+		expect(texts).toEqual(['a'])
+	})
+
+	test('visits selector() in @supports', () => {
+		const root = parse('@supports selector(a > b) {}')
+		const texts: string[] = []
+		walk_selectors(root, (s) => {
+			texts.push(s.text)
+		})
+		expect(texts).toEqual(['a > b'])
+	})
+})
+
+describe('walk_values', () => {
+	test('visits value nodes depth-first, excluding the Value wrapper', () => {
+		const decl = parse_declaration('margin: 1px calc(2px + 3px)')
+		const types: number[] = []
+		walk_values(decl, (n) => {
+			types.push(n.type)
+		})
+		expect(types).toEqual([DIMENSION, FUNCTION, DIMENSION, OPERATOR, DIMENSION])
+	})
+
+	test('SKIP skips function arguments, BREAK stops', () => {
+		const decl = parse_declaration('margin: 1px calc(2px + 3px) 4px')
+		const texts: string[] = []
+		walk_values(decl, (n) => {
+			texts.push(n.text)
+			return n.type === FUNCTION ? SKIP : undefined
+		})
+		expect(texts).toEqual(['1px', 'calc(2px + 3px)', '4px'])
+
+		const first: string[] = []
+		walk_values(decl, (n) => {
+			first.push(n.text)
+			return BREAK
+		})
+		expect(first).toEqual(['1px'])
+	})
+
+	test('visits nothing for unparsed values', () => {
+		const root = parse('a { margin: 1px }', { parse_values: false })
+		let count = 0
+		walk_declarations(root, (decl) => {
+			walk_values(decl, () => {
+				count++
+			})
+		})
+		expect(count).toBe(0)
 	})
 })
 
