@@ -295,6 +295,12 @@ describe('string-utils', () => {
 	describe('strip_value_hack', () => {
 		test.each([
 			['10px\\9', '10px'],
+			['10px\\7', '10px'],
+			['red\\7\\9', 'red'],
+			['red \\7', 'red'],
+			['\\7', ''],
+			['a\\\\7', 'a\\\\7'],
+			['url(a\\7)', 'url(a\\7)'],
 			['10px\\0', '10px'],
 			['red\\9\\0', 'red'],
 			['1px\\0/', '1px'],
