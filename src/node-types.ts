@@ -131,6 +131,8 @@ export interface WithChildren<T = AnyNode> {
 	readonly children: T[]
 	readonly first_child: T
 	[Symbol.iterator](): Iterator<T>
+	/** Much faster than iterating (generator); prefer in hot paths. Return `false` from the callback to stop early. */
+	for_each(callback: (child: T) => void | boolean): void
 }
 
 /**
@@ -247,6 +249,7 @@ export type Block = WithClone<
 			readonly first_child: BlockChild
 			readonly children: BlockChild[]
 			[Symbol.iterator](): Iterator<BlockChild>
+			for_each(callback: (child: BlockChild) => void | boolean): void
 		}
 >
 
