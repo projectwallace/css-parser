@@ -869,6 +869,16 @@ describe('walk_selectors', () => {
 		expect(texts).toEqual(['d', 'e', 'f'])
 	})
 
+	test('skip_atrule_preludes skips selector() in @import supports()', () => {
+		const root = parse('@import url(a.css) supports(selector(a > b)); c {}')
+		const all: string[] = []
+		walk_selectors(root, (s) => void all.push(s.text))
+		expect(all).toEqual(['a > b', 'c'])
+		const texts: string[] = []
+		walk_selectors(root, (s) => void texts.push(s.text), { skip_atrule_preludes: true })
+		expect(texts).toEqual(['c'])
+	})
+
 	test('skip_keyframes skips keyframe selectors, including prefixed and uppercase', () => {
 		const css =
 			'@keyframes a { from {} 50% {} } @-webkit-keyframes b { to {} } @KEYFRAMES c { from {} } d {} @media (x) { e {} }'
