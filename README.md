@@ -149,11 +149,18 @@ Typed walkers that only visit what you ask for and never enter irrelevant subtre
 walk_declarations(ast, (decl) => {
 	decl.property
 })
+// skip whole at-rules by lowercase name (vendor prefixes ignored), also supported by `walk_selectors`
+walk_declarations(ast, (decl) => {}, { skip_atrules: new Set(['font-face', 'keyframes']) })
 
 // every complex selector: `a` and `b > c` in `a, b > c {}`
 walk_selectors(ast, (selector) => {})
 // also selectors nested in pseudo-classes: `b` in `a:is(b)`. Return SKIP to skip a selector's nested selectors
 walk_selectors(ast, (selector) => {}, { recursive: true })
+// skip selectors in at-rule preludes (`@scope (.a) to (.b)`, `selector()`) and whole at-rules
+walk_selectors(ast, (selector) => {}, {
+	skip_atrule_preludes: true,
+	skip_atrules: new Set(['keyframes']),
+})
 
 // nodes in a declaration's value. Return SKIP to skip function arguments
 walk_values(decl, (node) => {

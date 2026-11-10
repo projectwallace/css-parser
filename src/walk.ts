@@ -2,7 +2,17 @@
 import type { AnyNode, CSSNode, Declaration, Selector } from './node-types'
 import { CSSNode as CSSNodeImpl } from './css-node'
 import type { CSSDataArena } from './arena'
-import { STYLESHEET, STYLE_RULE, AT_RULE, BLOCK, DECLARATION, SELECTOR, VALUE } from './constants'
+import {
+	STYLESHEET,
+	STYLE_RULE,
+	AT_RULE,
+	AT_RULE_PRELUDE,
+	BLOCK,
+	DECLARATION,
+	SELECTOR,
+	VALUE,
+} from './constants'
+import { strip_vendor_prefix } from './string-utils'
 
 // Control flow symbols for walk callbacks
 export const SKIP: unique symbol = Symbol('SKIP')
@@ -99,15 +109,47 @@ function _traverse(
 
 type WalkVisitor<T> = (node: T) => void | typeof SKIP | typeof BREAK
 
+type SkipAtrules = ReadonlySet<Lowercase<string>>
+
+/** Is this at-rule's name (vendor prefix stripped, lowercased) in `skip`? */
+function is_skipped_atrule(
+	arena: CSSDataArena,
+	source: string,
+	index: number,
+	skip: SkipAtrules,
+): boolean {
+	const start = arena.get_content_start(index)
+	const name = source.substring(start, start + arena.get_content_length(index))
+	return skip.has(strip_vendor_prefix(name).toLowerCase() as Lowercase<string>)
+}
+
+interface WalkDeclarationsOptions {
+	/**
+	 * Skip these at-rules entirely (prelude and block), by lowercase name without `@` or vendor prefix,
+	 * e.g. `new Set(['font-face', 'keyframes'])`.
+	 */
+	skip_atrules?: SkipAtrules
+}
+
 /**
  * Visit every declaration in a stylesheet, rule, at-rule or block (including nested rules and
  * at-rules), in source order. Only rule/at-rule/block structure is traversed: selectors,
  * preludes and values are never entered, and no wrapper is created for other nodes.
  * Return BREAK to stop. SKIP has no effect, since declarations are not walked into.
  */
-export function walk_declarations(root: CSSNode, callback: WalkVisitor<Declaration>): boolean {
+export function walk_declarations(
+	root: CSSNode,
+	callback: WalkVisitor<Declaration>,
+	options: WalkDeclarationsOptions = {},
+): boolean {
 	const impl = root as unknown as CSSNodeImpl
-	return _walk_declarations(impl.__get_arena(), impl.__get_source(), impl.__get_index(), callback)
+	return _walk_declarations(
+		impl.__get_arena(),
+		impl.__get_source(),
+		impl.__get_index(),
+		callback,
+		options.skip_atrules,
+	)
 }
 
 function _walk_declarations(
@@ -115,16 +157,20 @@ function _walk_declarations(
 	source: string,
 	index: number,
 	callback: WalkVisitor<Declaration>,
+	skip_atrules: SkipAtrules | undefined,
 ): boolean {
 	const type = arena.get_type(index)
 	if (type === DECLARATION) {
 		return callback(new CSSNodeImpl(arena, source, index) as unknown as Declaration) !== BREAK
 	}
 	if (type !== STYLESHEET && type !== STYLE_RULE && type !== AT_RULE && type !== BLOCK) return true
+	if (type === AT_RULE && skip_atrules && is_skipped_atrule(arena, source, index, skip_atrules)) {
+		return true
+	}
 
 	let child = arena.get_first_child(index)
 	while (child !== 0) {
-		if (!_walk_declarations(arena, source, child, callback)) return false
+		if (!_walk_declarations(arena, source, child, callback, skip_atrules)) return false
 		child = arena.get_next_sibling(child)
 	}
 	return true
@@ -136,6 +182,13 @@ interface WalkSelectorsOptions {
 	 * Default `false`: only selectors of style rules and at-rule preludes (`@scope`, `selector()`).
 	 */
 	recursive?: boolean
+	/** Skip selectors in at-rule preludes, e.g. `@scope (.a) to (.b)` and `@supports selector(a)`. Default `false`. */
+	skip_atrule_preludes?: boolean
+	/**
+	 * Skip these at-rules entirely (prelude and block), by lowercase name without `@` or vendor prefix,
+	 * e.g. `new Set(['keyframes'])` skips `@keyframes`, `@-webkit-keyframes` and `@KEYFRAMES`.
+	 */
+	skip_atrules?: SkipAtrules
 }
 
 /**
@@ -147,7 +200,7 @@ interface WalkSelectorsOptions {
 export function walk_selectors(
 	root: CSSNode,
 	callback: WalkVisitor<Selector>,
-	{ recursive = false }: WalkSelectorsOptions = {},
+	options: WalkSelectorsOptions = {},
 ): boolean {
 	const impl = root as unknown as CSSNodeImpl
 	return _walk_selectors(
@@ -155,7 +208,7 @@ export function walk_selectors(
 		impl.__get_source(),
 		impl.__get_index(),
 		callback,
-		recursive,
+		options,
 	)
 }
 
@@ -164,19 +217,28 @@ function _walk_selectors(
 	source: string,
 	index: number,
 	callback: WalkVisitor<Selector>,
-	recursive: boolean,
+	options: WalkSelectorsOptions,
 ): boolean {
 	const type = arena.get_type(index)
 	if (type === DECLARATION) return true
+	if (type === AT_RULE_PRELUDE && options.skip_atrule_preludes) return true
 	if (type === SELECTOR) {
 		const result = callback(new CSSNodeImpl(arena, source, index) as unknown as Selector)
 		if (result === BREAK) return false
-		if (result === SKIP || !recursive) return true
+		if (result === SKIP || !options.recursive) return true
+	}
+
+	if (
+		type === AT_RULE &&
+		options.skip_atrules &&
+		is_skipped_atrule(arena, source, index, options.skip_atrules)
+	) {
+		return true
 	}
 
 	let child = arena.get_first_child(index)
 	while (child !== 0) {
-		if (!_walk_selectors(arena, source, child, callback, recursive)) return false
+		if (!_walk_selectors(arena, source, child, callback, options)) return false
 		child = arena.get_next_sibling(child)
 	}
 	return true

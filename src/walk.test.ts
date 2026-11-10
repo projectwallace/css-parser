@@ -831,6 +831,17 @@ describe('walk_declarations', () => {
 		expect(props).toEqual(['color', 'margin', 'top', 'src'])
 	})
 
+	test('skip_atrules skips declarations in whole at-rules, including prefixed and uppercase', () => {
+		const root = parse(
+			'a { color: red } @font-face { src: x } @-webkit-keyframes k { from { top: 0 } } @MEDIA (x) { b { margin: 0 } } @page { size: a4 }',
+		)
+		const props: string[] = []
+		walk_declarations(root, (d) => void props.push(d.property), {
+			skip_atrules: new Set(['font-face', 'keyframes', 'media']),
+		})
+		expect(props).toEqual(['color', 'size'])
+	})
+
 	test('BREAK stops the walk', () => {
 		const root = parse('a { color: red; margin: 0 } b { top: 0 }')
 		const props: string[] = []
@@ -860,6 +871,44 @@ describe('walk_selectors', () => {
 			texts.push(s.text)
 		})
 		expect(texts).toEqual(['a', 'b > c', '&:hover', '.x', '.y', 'd', 'e'])
+	})
+
+	test('skip_atrule_preludes skips @scope and selector() preludes', () => {
+		const root = parse('@scope (.x) to (.y) { d {} } @supports selector(a) { e {} } f {}')
+		const texts: string[] = []
+		walk_selectors(root, (s) => void texts.push(s.text), { skip_atrule_preludes: true })
+		expect(texts).toEqual(['d', 'e', 'f'])
+	})
+
+	test('skip_atrule_preludes skips selector() in @import supports()', () => {
+		const root = parse('@import url(a.css) supports(selector(a > b)); c {}')
+		const all: string[] = []
+		walk_selectors(root, (s) => void all.push(s.text))
+		expect(all).toEqual(['a > b', 'c'])
+		const texts: string[] = []
+		walk_selectors(root, (s) => void texts.push(s.text), { skip_atrule_preludes: true })
+		expect(texts).toEqual(['c'])
+	})
+
+	test('skip_atrules skips whole at-rules by name, including prefixed and uppercase', () => {
+		const css =
+			'@keyframes a { from {} 50% {} } @-webkit-keyframes b { to {} } @KEYFRAMES c { from {} } d {} @media (x) { e {} }'
+		const root = parse(css)
+		const all: string[] = []
+		walk_selectors(root, (s) => void all.push(s.text))
+		expect(all).toEqual(['from', '50%', 'to', 'from', 'd', 'e'])
+		const texts: string[] = []
+		walk_selectors(root, (s) => void texts.push(s.text), { skip_atrules: new Set(['keyframes']) })
+		expect(texts).toEqual(['d', 'e'])
+	})
+
+	test('skip_atrules skips nested rules of other at-rules too', () => {
+		const root = parse('@media (x) { a {} } @scope (.s) { b {} } c {}')
+		const texts: string[] = []
+		walk_selectors(root, (s) => void texts.push(s.text), {
+			skip_atrules: new Set(['media', 'scope']),
+		})
+		expect(texts).toEqual(['c'])
 	})
 
 	test('does not enter nested selectors by default', () => {
