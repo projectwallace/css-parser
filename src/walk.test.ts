@@ -879,7 +879,7 @@ describe('walk_selectors', () => {
 		expect(texts).toEqual(['c'])
 	})
 
-	test('skip_keyframes skips keyframe selectors, including prefixed and uppercase', () => {
+	test('skip_atrules skips whole at-rules by name, including prefixed and uppercase', () => {
 		const css =
 			'@keyframes a { from {} 50% {} } @-webkit-keyframes b { to {} } @KEYFRAMES c { from {} } d {} @media (x) { e {} }'
 		const root = parse(css)
@@ -887,8 +887,17 @@ describe('walk_selectors', () => {
 		walk_selectors(root, (s) => void all.push(s.text))
 		expect(all).toEqual(['from', '50%', 'to', 'from', 'd', 'e'])
 		const texts: string[] = []
-		walk_selectors(root, (s) => void texts.push(s.text), { skip_keyframes: true })
+		walk_selectors(root, (s) => void texts.push(s.text), { skip_atrules: new Set(['keyframes']) })
 		expect(texts).toEqual(['d', 'e'])
+	})
+
+	test('skip_atrules skips nested rules of other at-rules too', () => {
+		const root = parse('@media (x) { a {} } @scope (.s) { b {} } c {}')
+		const texts: string[] = []
+		walk_selectors(root, (s) => void texts.push(s.text), {
+			skip_atrules: new Set(['media', 'scope']),
+		})
+		expect(texts).toEqual(['c'])
 	})
 
 	test('does not enter nested selectors by default', () => {

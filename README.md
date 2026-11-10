@@ -154,8 +154,11 @@ walk_declarations(ast, (decl) => {
 walk_selectors(ast, (selector) => {})
 // also selectors nested in pseudo-classes: `b` in `a:is(b)`. Return SKIP to skip a selector's nested selectors
 walk_selectors(ast, (selector) => {}, { recursive: true })
-// skip selectors in at-rule preludes (`@scope (.a) to (.b)`, `selector()`) and keyframe selectors (`from`, `50%`)
-walk_selectors(ast, (selector) => {}, { skip_atrule_preludes: true, skip_keyframes: true })
+// skip selectors in at-rule preludes (`@scope (.a) to (.b)`, `selector()`) and skip whole at-rules by lowercase name (vendor prefixes ignored)
+walk_selectors(ast, (selector) => {}, {
+	skip_atrule_preludes: true,
+	skip_atrules: new Set(['keyframes']),
+})
 
 // nodes in a declaration's value. Return SKIP to skip function arguments
 walk_values(decl, (node) => {

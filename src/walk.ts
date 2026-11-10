@@ -12,7 +12,7 @@ import {
 	SELECTOR,
 	VALUE,
 } from './constants'
-import { str_equals, strip_vendor_prefix } from './string-utils'
+import { strip_vendor_prefix } from './string-utils'
 
 // Control flow symbols for walk callbacks
 export const SKIP: unique symbol = Symbol('SKIP')
@@ -148,8 +148,11 @@ interface WalkSelectorsOptions {
 	recursive?: boolean
 	/** Skip selectors in at-rule preludes, e.g. `@scope (.a) to (.b)` and `@supports selector(a)`. Default `false`. */
 	skip_atrule_preludes?: boolean
-	/** Skip the selectors of keyframes (`from`, `50%`) in `@keyframes` and `@-vendor-keyframes`. Default `false`. */
-	skip_keyframes?: boolean
+	/**
+	 * Skip these at-rules entirely (prelude and block), by lowercase name without `@` or vendor prefix,
+	 * e.g. `new Set(['keyframes'])` skips `@keyframes`, `@-webkit-keyframes` and `@KEYFRAMES`.
+	 */
+	skip_atrules?: ReadonlySet<Lowercase<string>>
 }
 
 /**
@@ -189,24 +192,20 @@ function _walk_selectors(
 		if (result === SKIP || !options.recursive) return true
 	}
 
-	// Keyframes: only the prelude (name) is walked, never the block of frame selectors
-	const skip_block =
-		type === AT_RULE && options.skip_keyframes === true && is_keyframes(arena, source, index)
+	if (type === AT_RULE && options.skip_atrules !== undefined) {
+		const start = arena.get_content_start(index)
+		const name = source.substring(start, start + arena.get_content_length(index))
+		if (options.skip_atrules.has(strip_vendor_prefix(name).toLowerCase() as Lowercase<string>)) {
+			return true
+		}
+	}
 
 	let child = arena.get_first_child(index)
 	while (child !== 0) {
-		if (!(skip_block && arena.get_type(child) === BLOCK)) {
-			if (!_walk_selectors(arena, source, child, callback, options)) return false
-		}
+		if (!_walk_selectors(arena, source, child, callback, options)) return false
 		child = arena.get_next_sibling(child)
 	}
 	return true
-}
-
-function is_keyframes(arena: CSSDataArena, source: string, index: number): boolean {
-	const start = arena.get_content_start(index)
-	const name = source.substring(start, start + arena.get_content_length(index))
-	return str_equals('keyframes', strip_vendor_prefix(name))
 }
 
 /**
