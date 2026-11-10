@@ -12,7 +12,7 @@ import {
 	SELECTOR,
 	VALUE,
 } from './constants'
-import { strip_vendor_prefix } from './string-utils'
+import { str_equals, strip_vendor_prefix } from './string-utils'
 
 // Control flow symbols for walk callbacks
 export const SKIP: unique symbol = Symbol('SKIP')
@@ -206,7 +206,7 @@ function _walk_selectors(
 function is_keyframes(arena: CSSDataArena, source: string, index: number): boolean {
 	const start = arena.get_content_start(index)
 	const name = source.substring(start, start + arena.get_content_length(index))
-	return strip_vendor_prefix(name).toLowerCase() === 'keyframes'
+	return str_equals('keyframes', strip_vendor_prefix(name))
 }
 
 /**
