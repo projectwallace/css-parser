@@ -109,15 +109,47 @@ function _traverse(
 
 type WalkVisitor<T> = (node: T) => void | typeof SKIP | typeof BREAK
 
+type SkipAtrules = ReadonlySet<Lowercase<string>>
+
+/** Is this at-rule's name (vendor prefix stripped, lowercased) in `skip`? */
+function is_skipped_atrule(
+	arena: CSSDataArena,
+	source: string,
+	index: number,
+	skip: SkipAtrules,
+): boolean {
+	const start = arena.get_content_start(index)
+	const name = source.substring(start, start + arena.get_content_length(index))
+	return skip.has(strip_vendor_prefix(name).toLowerCase() as Lowercase<string>)
+}
+
+interface WalkDeclarationsOptions {
+	/**
+	 * Skip these at-rules entirely (prelude and block), by lowercase name without `@` or vendor prefix,
+	 * e.g. `new Set(['font-face', 'keyframes'])`.
+	 */
+	skip_atrules?: SkipAtrules
+}
+
 /**
  * Visit every declaration in a stylesheet, rule, at-rule or block (including nested rules and
  * at-rules), in source order. Only rule/at-rule/block structure is traversed: selectors,
  * preludes and values are never entered, and no wrapper is created for other nodes.
  * Return BREAK to stop. SKIP has no effect, since declarations are not walked into.
  */
-export function walk_declarations(root: CSSNode, callback: WalkVisitor<Declaration>): boolean {
+export function walk_declarations(
+	root: CSSNode,
+	callback: WalkVisitor<Declaration>,
+	options: WalkDeclarationsOptions = {},
+): boolean {
 	const impl = root as unknown as CSSNodeImpl
-	return _walk_declarations(impl.__get_arena(), impl.__get_source(), impl.__get_index(), callback)
+	return _walk_declarations(
+		impl.__get_arena(),
+		impl.__get_source(),
+		impl.__get_index(),
+		callback,
+		options.skip_atrules,
+	)
 }
 
 function _walk_declarations(
@@ -125,16 +157,20 @@ function _walk_declarations(
 	source: string,
 	index: number,
 	callback: WalkVisitor<Declaration>,
+	skip_atrules: SkipAtrules | undefined,
 ): boolean {
 	const type = arena.get_type(index)
 	if (type === DECLARATION) {
 		return callback(new CSSNodeImpl(arena, source, index) as unknown as Declaration) !== BREAK
 	}
 	if (type !== STYLESHEET && type !== STYLE_RULE && type !== AT_RULE && type !== BLOCK) return true
+	if (type === AT_RULE && skip_atrules && is_skipped_atrule(arena, source, index, skip_atrules)) {
+		return true
+	}
 
 	let child = arena.get_first_child(index)
 	while (child !== 0) {
-		if (!_walk_declarations(arena, source, child, callback)) return false
+		if (!_walk_declarations(arena, source, child, callback, skip_atrules)) return false
 		child = arena.get_next_sibling(child)
 	}
 	return true
@@ -152,7 +188,7 @@ interface WalkSelectorsOptions {
 	 * Skip these at-rules entirely (prelude and block), by lowercase name without `@` or vendor prefix,
 	 * e.g. `new Set(['keyframes'])` skips `@keyframes`, `@-webkit-keyframes` and `@KEYFRAMES`.
 	 */
-	skip_atrules?: ReadonlySet<Lowercase<string>>
+	skip_atrules?: SkipAtrules
 }
 
 /**
@@ -192,12 +228,12 @@ function _walk_selectors(
 		if (result === SKIP || !options.recursive) return true
 	}
 
-	if (type === AT_RULE && options.skip_atrules !== undefined) {
-		const start = arena.get_content_start(index)
-		const name = source.substring(start, start + arena.get_content_length(index))
-		if (options.skip_atrules.has(strip_vendor_prefix(name).toLowerCase() as Lowercase<string>)) {
-			return true
-		}
+	if (
+		type === AT_RULE &&
+		options.skip_atrules &&
+		is_skipped_atrule(arena, source, index, options.skip_atrules)
+	) {
+		return true
 	}
 
 	let child = arena.get_first_child(index)

@@ -831,6 +831,17 @@ describe('walk_declarations', () => {
 		expect(props).toEqual(['color', 'margin', 'top', 'src'])
 	})
 
+	test('skip_atrules skips declarations in whole at-rules, including prefixed and uppercase', () => {
+		const root = parse(
+			'a { color: red } @font-face { src: x } @-webkit-keyframes k { from { top: 0 } } @MEDIA (x) { b { margin: 0 } } @page { size: a4 }',
+		)
+		const props: string[] = []
+		walk_declarations(root, (d) => void props.push(d.property), {
+			skip_atrules: new Set(['font-face', 'keyframes', 'media']),
+		})
+		expect(props).toEqual(['color', 'size'])
+	})
+
 	test('BREAK stops the walk', () => {
 		const root = parse('a { color: red; margin: 0 } b { top: 0 }')
 		const props: string[] = []
