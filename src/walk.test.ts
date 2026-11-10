@@ -862,6 +862,25 @@ describe('walk_selectors', () => {
 		expect(texts).toEqual(['a', 'b > c', '&:hover', '.x', '.y', 'd', 'e'])
 	})
 
+	test('skip_atrule_preludes skips @scope and selector() preludes', () => {
+		const root = parse('@scope (.x) to (.y) { d {} } @supports selector(a) { e {} } f {}')
+		const texts: string[] = []
+		walk_selectors(root, (s) => void texts.push(s.text), { skip_atrule_preludes: true })
+		expect(texts).toEqual(['d', 'e', 'f'])
+	})
+
+	test('skip_keyframes skips keyframe selectors, including prefixed and uppercase', () => {
+		const css =
+			'@keyframes a { from {} 50% {} } @-webkit-keyframes b { to {} } @KEYFRAMES c { from {} } d {} @media (x) { e {} }'
+		const root = parse(css)
+		const all: string[] = []
+		walk_selectors(root, (s) => void all.push(s.text))
+		expect(all).toEqual(['from', '50%', 'to', 'from', 'd', 'e'])
+		const texts: string[] = []
+		walk_selectors(root, (s) => void texts.push(s.text), { skip_keyframes: true })
+		expect(texts).toEqual(['d', 'e'])
+	})
+
 	test('does not enter nested selectors by default', () => {
 		const root = parse('a:is(b, c > d):not(.e) {}')
 		const texts: string[] = []

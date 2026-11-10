@@ -2,7 +2,17 @@
 import type { AnyNode, CSSNode, Declaration, Selector } from './node-types'
 import { CSSNode as CSSNodeImpl } from './css-node'
 import type { CSSDataArena } from './arena'
-import { STYLESHEET, STYLE_RULE, AT_RULE, BLOCK, DECLARATION, SELECTOR, VALUE } from './constants'
+import {
+	STYLESHEET,
+	STYLE_RULE,
+	AT_RULE,
+	AT_RULE_PRELUDE,
+	BLOCK,
+	DECLARATION,
+	SELECTOR,
+	VALUE,
+} from './constants'
+import { strip_vendor_prefix } from './string-utils'
 
 // Control flow symbols for walk callbacks
 export const SKIP: unique symbol = Symbol('SKIP')
@@ -136,6 +146,10 @@ interface WalkSelectorsOptions {
 	 * Default `false`: only selectors of style rules and at-rule preludes (`@scope`, `selector()`).
 	 */
 	recursive?: boolean
+	/** Skip selectors in at-rule preludes, e.g. `@scope (.a) to (.b)` and `@supports selector(a)`. Default `false`. */
+	skip_atrule_preludes?: boolean
+	/** Skip the selectors of keyframes (`from`, `50%`) in `@keyframes` and `@-vendor-keyframes`. Default `false`. */
+	skip_keyframes?: boolean
 }
 
 /**
@@ -147,7 +161,7 @@ interface WalkSelectorsOptions {
 export function walk_selectors(
 	root: CSSNode,
 	callback: WalkVisitor<Selector>,
-	{ recursive = false }: WalkSelectorsOptions = {},
+	options: WalkSelectorsOptions = {},
 ): boolean {
 	const impl = root as unknown as CSSNodeImpl
 	return _walk_selectors(
@@ -155,7 +169,7 @@ export function walk_selectors(
 		impl.__get_source(),
 		impl.__get_index(),
 		callback,
-		recursive,
+		options,
 	)
 }
 
@@ -164,22 +178,35 @@ function _walk_selectors(
 	source: string,
 	index: number,
 	callback: WalkVisitor<Selector>,
-	recursive: boolean,
+	options: WalkSelectorsOptions,
 ): boolean {
 	const type = arena.get_type(index)
 	if (type === DECLARATION) return true
+	if (type === AT_RULE_PRELUDE && options.skip_atrule_preludes) return true
 	if (type === SELECTOR) {
 		const result = callback(new CSSNodeImpl(arena, source, index) as unknown as Selector)
 		if (result === BREAK) return false
-		if (result === SKIP || !recursive) return true
+		if (result === SKIP || !options.recursive) return true
 	}
+
+	// Keyframes: only the prelude (name) is walked, never the block of frame selectors
+	const skip_block =
+		type === AT_RULE && options.skip_keyframes === true && is_keyframes(arena, source, index)
 
 	let child = arena.get_first_child(index)
 	while (child !== 0) {
-		if (!_walk_selectors(arena, source, child, callback, recursive)) return false
+		if (!(skip_block && arena.get_type(child) === BLOCK)) {
+			if (!_walk_selectors(arena, source, child, callback, options)) return false
+		}
 		child = arena.get_next_sibling(child)
 	}
 	return true
+}
+
+function is_keyframes(arena: CSSDataArena, source: string, index: number): boolean {
+	const start = arena.get_content_start(index)
+	const name = source.substring(start, start + arena.get_content_length(index))
+	return strip_vendor_prefix(name).toLowerCase() === 'keyframes'
 }
 
 /**
