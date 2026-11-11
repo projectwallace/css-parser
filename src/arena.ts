@@ -137,11 +137,10 @@ export class CSSDataArena {
 	// Combined with the constant above: effective ceiling = 210 × 1.1 = 231 nodes/KB.
 	private static readonly CAPACITY_BUFFER = 1.1
 
-	// A resizable buffer reserves address space up front (not physical memory). Reserve this many
-	// times the initial size, but at least MIN_RESERVED_BYTES. Growing past the reservation falls
-	// back to copying into a new buffer.
-	private static readonly MAX_GROWTH_RATIO = 16
-	private static readonly MIN_RESERVED_BYTES = 16 * 1024 * 1024
+	// A resizable buffer reserves address space up front (not physical memory). The initial capacity
+	// is already estimated from the source size, so reserve a multiple of it. Growing past the
+	// reservation falls back to copying into a new buffer.
+	private static readonly MAX_GROWTH_RATIO = 4
 
 	constructor(initial_capacity: number = 1024) {
 		this.capacity = initial_capacity
@@ -158,11 +157,9 @@ export class CSSDataArena {
 	private static create_buffer(byte_length: number): ArrayBuffer {
 		if (typeof ArrayBuffer.prototype.resize === 'function') {
 			try {
-				const max_byte_length = Math.max(
-					byte_length * CSSDataArena.MAX_GROWTH_RATIO,
-					CSSDataArena.MIN_RESERVED_BYTES,
-				)
-				return new ArrayBuffer(byte_length, { maxByteLength: max_byte_length })
+				return new ArrayBuffer(byte_length, {
+					maxByteLength: byte_length * CSSDataArena.MAX_GROWTH_RATIO,
+				})
 			} catch {
 				// Unsupported options or unable to reserve address space: use a plain buffer
 			}

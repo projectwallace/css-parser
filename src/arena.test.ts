@@ -530,7 +530,7 @@ describe('CSSDataArena buffer growth', () => {
 		if (typeof ArrayBuffer.prototype.resize !== 'function') return
 		const arena = new CSSDataArena(2)
 		const max = ((arena as any).buffer as ArrayBuffer).maxByteLength
-		// 16MB reservation / 32 bytes = 524288 nodes
+		expect(max).toBe(2 * 32 * 4) // reservation scales with initial capacity
 		const n = max / 32 + 1000
 		for (let i = 0; i < n; i++) arena.create_node(DECLARATION, i, 1, 1, 1)
 		expect(arena.get_start_offset(1)).toBe(0)
