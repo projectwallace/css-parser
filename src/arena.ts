@@ -362,9 +362,8 @@ export class CSSDataArena {
 
 		if (buffer.resizable && new_byte_length <= buffer.maxByteLength) {
 			try {
+				// The length-tracking DataView created with the buffer follows the resize
 				buffer.resize(new_byte_length)
-				// Fixed-length view: cheaper than a length-tracking one
-				this.view = new DataView(buffer, 0, new_byte_length)
 				this.capacity = new_capacity
 				return
 			} catch {
@@ -426,10 +425,19 @@ export class CSSDataArena {
 		}
 	}
 
-	// Shrink the buffer to the live node count, releasing wasted capacity. Call once after parsing; no-op if already tight.
+	// Shrink the buffer to the live node count (in place when resizable), releasing wasted capacity. Call once after parsing; no-op if already tight.
 	trim(): void {
 		if (this.count === this.capacity) return
 		const byte_count = this.count * BYTES_PER_NODE
+		if (this.buffer.resizable) {
+			try {
+				this.buffer.resize(byte_count)
+				this.capacity = this.count
+				return
+			} catch {
+				// Fall back to copying
+			}
+		}
 		const new_buffer = new ArrayBuffer(byte_count)
 		new Uint8Array(new_buffer).set(new Uint8Array(this.buffer, 0, byte_count))
 		this.buffer = new_buffer

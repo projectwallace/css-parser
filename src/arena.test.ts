@@ -401,6 +401,7 @@ describe('CSSDataArena', () => {
 			expect(arena.get_capacity()).toBe(100)
 			arena.trim()
 			expect(arena.get_capacity()).toBe(arena.get_count())
+			expect(((arena as any).buffer as ArrayBuffer).byteLength).toBe(arena.get_count() * 32)
 		})
 
 		test('should preserve all node data after trim', () => {
@@ -478,8 +479,10 @@ describe('CSSDataArena buffer growth', () => {
 		if (typeof ArrayBuffer.prototype.resize !== 'function') return
 		const arena = new CSSDataArena(2)
 		const before = (arena as any).buffer
+		const view = (arena as any).view
 		fill_and_check(arena, 100)
 		expect((arena as any).buffer).toBe(before)
+		expect((arena as any).view).toBe(view)
 	})
 
 	test('works when ArrayBuffer.prototype.resize is unavailable', () => {
