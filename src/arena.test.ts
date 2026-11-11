@@ -477,7 +477,7 @@ describe('CSSDataArena buffer growth', () => {
 
 	test('grows in place without replacing the buffer when resizable', () => {
 		if (typeof ArrayBuffer.prototype.resize !== 'function') return
-		const arena = new CSSDataArena(2)
+		const arena = new CSSDataArena(64)
 		const before = (arena as any).buffer
 		const view = (arena as any).view
 		fill_and_check(arena, 100)
