@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'vitest'
+import { describe, test, expect, afterEach, vi } from 'vitest'
 import { readFileSync } from 'fs'
 import {
 	CSSDataArena,
@@ -446,5 +446,102 @@ describe('CSSDataArena', () => {
 			expect(arena.get_growth_count()).toBe(0)
 			expect(arena.get_capacity()).toBe(arena.get_count())
 		})
+	})
+})
+
+describe('CSSDataArena buffer growth', () => {
+	afterEach(() => {
+		vi.restoreAllMocks()
+	})
+
+	function fill_and_check(arena: CSSDataArena, n: number) {
+		for (let i = 0; i < n; i++) {
+			const node = arena.create_node(DECLARATION, i, i % 100, i + 1, 7)
+			arena.set_flag(node, FLAG_IMPORTANT)
+		}
+		expect(arena.get_count()).toBe(n + 1)
+		for (let i = 0; i < n; i++) {
+			expect(arena.get_start_offset(i + 1)).toBe(i)
+			expect(arena.get_length(i + 1)).toBe(i % 100)
+			expect(arena.get_start_line(i + 1)).toBe(i + 1)
+			expect(arena.has_flag(i + 1, FLAG_IMPORTANT)).toBe(true)
+		}
+	}
+
+	test('grows correctly with native resize support', () => {
+		const arena = new CSSDataArena(2)
+		fill_and_check(arena, 500)
+		expect(arena.get_growth_count()).toBeGreaterThan(0)
+	})
+
+	test('grows in place without replacing the buffer when resizable', () => {
+		if (typeof ArrayBuffer.prototype.resize !== 'function') return
+		const arena = new CSSDataArena(2)
+		const before = (arena as any).buffer
+		fill_and_check(arena, 100)
+		expect((arena as any).buffer).toBe(before)
+	})
+
+	test('works when ArrayBuffer.prototype.resize is unavailable', () => {
+		const resize = Object.getOwnPropertyDescriptor(ArrayBuffer.prototype, 'resize')
+		Object.defineProperty(ArrayBuffer.prototype, 'resize', { value: undefined, configurable: true })
+		try {
+			const arena = new CSSDataArena(2)
+			expect((arena as any).buffer.resizable).toBe(false)
+			fill_and_check(arena, 500)
+		} finally {
+			Object.defineProperty(ArrayBuffer.prototype, 'resize', resize!)
+		}
+	})
+
+	test('falls back when resizable allocation throws', () => {
+		const Original = globalThis.ArrayBuffer
+		let calls = 0
+		class Throwing extends Original {
+			constructor(length: number, options?: { maxByteLength?: number }) {
+				if (options && calls++ >= 0) throw new RangeError('no address space')
+				super(length)
+			}
+		}
+		vi.stubGlobal('ArrayBuffer', Throwing)
+		try {
+			const arena = new CSSDataArena(2)
+			fill_and_check(arena, 200)
+			expect(calls).toBeGreaterThan(0)
+		} finally {
+			vi.unstubAllGlobals()
+		}
+	})
+
+	test('falls back to copying when resize() throws', () => {
+		if (typeof ArrayBuffer.prototype.resize !== 'function') return
+		const arena = new CSSDataArena(2)
+		const spy = vi.spyOn(ArrayBuffer.prototype, 'resize').mockImplementation(() => {
+			throw new RangeError('out of memory')
+		})
+		fill_and_check(arena, 200)
+		expect(spy).toHaveBeenCalled()
+	})
+
+	test('falls back to copying when growing past the reserved size', () => {
+		if (typeof ArrayBuffer.prototype.resize !== 'function') return
+		const arena = new CSSDataArena(2)
+		const max = ((arena as any).buffer as ArrayBuffer).maxByteLength
+		// 16MB reservation / 32 bytes = 524288 nodes
+		const n = max / 32 + 1000
+		for (let i = 0; i < n; i++) arena.create_node(DECLARATION, i, 1, 1, 1)
+		expect(arena.get_start_offset(1)).toBe(0)
+		expect(arena.get_start_offset(n)).toBe(n - 1)
+		expect(((arena as any).buffer as ArrayBuffer).byteLength).toBeGreaterThan(max)
+	})
+
+	test('trim then grow still works', () => {
+		const arena = new CSSDataArena(100)
+		for (let i = 0; i < 10; i++) arena.create_node(DECLARATION, i, 1, 1, 1)
+		arena.trim()
+		expect(arena.get_capacity()).toBe(arena.get_count())
+		arena.create_node(DECLARATION, 99, 1, 1, 1)
+		expect(arena.get_start_offset(arena.get_count() - 1)).toBe(99)
+		expect(arena.get_start_offset(5)).toBe(4)
 	})
 })

@@ -137,14 +137,37 @@ export class CSSDataArena {
 	// Combined with the constant above: effective ceiling = 210 × 1.1 = 231 nodes/KB.
 	private static readonly CAPACITY_BUFFER = 1.1
 
+	// A resizable buffer reserves address space up front (not physical memory). Reserve this many
+	// times the initial size, but at least MIN_RESERVED_BYTES. Growing past the reservation falls
+	// back to copying into a new buffer.
+	private static readonly MAX_GROWTH_RATIO = 16
+	private static readonly MIN_RESERVED_BYTES = 16 * 1024 * 1024
+
 	constructor(initial_capacity: number = 1024) {
 		this.capacity = initial_capacity
 		// Start count at 1 since 0 is reserved for "no node"
 		this.count = 1
 		this.growth_count = 0
-		this.buffer = new ArrayBuffer(initial_capacity * BYTES_PER_NODE)
+		this.buffer = CSSDataArena.create_buffer(initial_capacity * BYTES_PER_NODE)
 		this.view = new DataView(this.buffer)
 		this.overflow_lengths = new Map()
+	}
+
+	// Allocate a resizable buffer (so growing needs no copy) when ArrayBuffer.prototype.resize is
+	// supported; otherwise, or if the allocation throws, fall back to a plain fixed-size buffer.
+	private static create_buffer(byte_length: number): ArrayBuffer {
+		if (typeof ArrayBuffer.prototype.resize === 'function') {
+			try {
+				const max_byte_length = Math.max(
+					byte_length * CSSDataArena.MAX_GROWTH_RATIO,
+					CSSDataArena.MIN_RESERVED_BYTES,
+				)
+				return new ArrayBuffer(byte_length, { maxByteLength: max_byte_length })
+			} catch {
+				// Unsupported options or unable to reserve address space: use a plain buffer
+			}
+		}
+		return new ArrayBuffer(byte_length)
 	}
 
 	// Calculate recommended initial capacity based on CSS source size
@@ -329,16 +352,28 @@ export class CSSDataArena {
 
 	// --- Node Creation ---
 
-	// Grow the arena by 1.3x when capacity is exceeded
+	// Grow the arena by 1.3x when capacity is exceeded.
+	// Resizes in place when the buffer is resizable; otherwise (or if that fails) copies.
 	private grow(): void {
 		this.growth_count++
 		const new_capacity = Math.ceil(this.capacity * CSSDataArena.GROWTH_FACTOR)
-		const new_buffer = new ArrayBuffer(new_capacity * BYTES_PER_NODE)
+		const new_byte_length = new_capacity * BYTES_PER_NODE
+		const buffer = this.buffer
 
-		// Copy existing data to new buffer
-		new Uint8Array(new_buffer).set(new Uint8Array(this.buffer))
+		if (buffer.resizable && new_byte_length <= buffer.maxByteLength) {
+			try {
+				buffer.resize(new_byte_length)
+				// Fixed-length view: cheaper than a length-tracking one
+				this.view = new DataView(buffer, 0, new_byte_length)
+				this.capacity = new_capacity
+				return
+			} catch {
+				// Resize failed (buffer is unchanged): fall back to copying
+			}
+		}
 
-		// Update arena state
+		const new_buffer = new ArrayBuffer(new_byte_length)
+		new Uint8Array(new_buffer).set(new Uint8Array(buffer))
 		this.buffer = new_buffer
 		this.view = new DataView(new_buffer)
 		this.capacity = new_capacity
