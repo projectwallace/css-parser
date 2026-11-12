@@ -17,6 +17,7 @@ import {
 	LANG_SELECTOR,
 	DIMENSION,
 	IDENTIFIER,
+	OPERATOR,
 	FLAG_HAS_PARENS,
 	FLAG_HAS_NAMESPACE,
 } from './arena'
@@ -897,25 +898,52 @@ export class SelectorParser {
 		let run_line = 0
 		let run_column = 0
 
+		const append = (node: number) => {
+			if (first_child === null) {
+				first_child = node
+			}
+			if (last_child !== null) {
+				this.arena.set_next_sibling(last_child, node)
+			}
+			last_child = node
+		}
+
 		const flush = () => {
-			if (run_start === -1) return
-			const ident = this.create_node(IDENTIFIER, run_start, run_end, run_line, run_column)
-			if (first_child === null) first_child = ident
-			if (last_child !== null) this.arena.set_next_sibling(last_child, ident)
-			last_child = ident
+			if (run_start === -1) {
+				return
+			}
+			append(this.create_node(IDENTIFIER, run_start, run_end, run_line, run_column))
 			run_start = -1
 		}
 
 		while (this.lexer.pos < end) {
 			this.lexer.next_token(false)
 			const type = this.lexer.token_type
-			if (type === TOKEN_EOF) break
-			if (type === TOKEN_WHITESPACE || type === TOKEN_COMMA) {
+			if (type === TOKEN_EOF) {
+				break
+			}
+			if (type === TOKEN_WHITESPACE) {
 				flush()
 				continue
 			}
+			if (type === TOKEN_COMMA) {
+				flush()
+				// Keep the comma so the original CSS can be printed back
+				append(
+					this.create_node(
+						OPERATOR,
+						this.lexer.token_start,
+						this.lexer.token_end,
+						this.lexer.token_line,
+						this.lexer.token_column,
+					),
+				)
+				continue
+			}
 			// A gap before this token means a comment was skipped: start a new argument
-			if (run_start !== -1 && this.lexer.token_start !== run_end) flush()
+			if (run_start !== -1 && this.lexer.token_start !== run_end) {
+				flush()
+			}
 			if (run_start === -1) {
 				run_start = this.lexer.token_start
 				run_line = this.lexer.token_line
@@ -962,8 +990,16 @@ export class SelectorParser {
 				continue
 			}
 
-			// Skip commas
+			// Keep commas as operators so the original CSS can be printed back
 			if (token_type === TOKEN_COMMA) {
+				const comma_node = this.create_node(OPERATOR, token_start, token_end)
+				if (first_child === null) {
+					first_child = comma_node
+				}
+				if (last_child !== null) {
+					this.arena.set_next_sibling(last_child, comma_node)
+				}
+				last_child = comma_node
 				continue
 			}
 
