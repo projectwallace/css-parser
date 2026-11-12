@@ -44,6 +44,7 @@ import {
 	CHAR_PLUS,
 	CHAR_ASTERISK,
 	CHAR_FORWARD_SLASH,
+	CHAR_EQUALS,
 	str_equals,
 	str_equals_range,
 	is_and_or_not_range,
@@ -189,13 +190,14 @@ export class ValueNodeParser {
 	}
 
 	private parse_operator_node(start: number, end: number): number | null {
-		// Only create operator nodes for specific delimiters: + - * /
+		// Only create operator nodes for specific delimiters: + - * / =
 		const ch = this.source.charCodeAt(start)
 		if (
 			ch === CHAR_PLUS ||
 			ch === CHAR_MINUS_HYPHEN ||
 			ch === CHAR_ASTERISK ||
-			ch === CHAR_FORWARD_SLASH
+			ch === CHAR_FORWARD_SLASH ||
+			ch === CHAR_EQUALS
 		) {
 			return this.create_node(OPERATOR, start, end)
 		}
