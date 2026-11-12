@@ -815,7 +815,13 @@ export class SelectorParser {
 				}
 			} else if (str_equals_range(this.source, func_name_start, func_name_end, 'lang')) {
 				// Parse as :lang() - comma-separated language identifiers
-				this.parse_lang_identifiers(content_start, content_end, node)
+				this.parse_lang_identifiers(
+					content_start,
+					content_end,
+					node,
+					func_line,
+					func_column + content_start - func_name_start,
+				)
 			} else if (
 				SELECTOR_PSEUDOS.has(this.source.substring(func_name_start, func_name_end).toLowerCase())
 			) {
@@ -929,9 +935,15 @@ export class SelectorParser {
 
 	// Parse :lang() content - comma-separated language identifiers
 	// Accepts both quoted strings: :lang("en", "fr") and unquoted: :lang(en, fr)
-	private parse_lang_identifiers(start: number, end: number, parent_node: number): void {
+	private parse_lang_identifiers(
+		start: number,
+		end: number,
+		parent_node: number,
+		line: number,
+		column: number,
+	): void {
 		const saved_position = this.lexer.save_position()
-		this.lexer.seek(start, this.lexer.line, this.lexer.column)
+		this.lexer.seek(start, line, column)
 
 		const saved_selector_end = this.selector_end
 		this.selector_end = end

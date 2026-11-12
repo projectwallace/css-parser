@@ -3040,6 +3040,14 @@ describe('Selector Nodes', () => {
 				])
 			})
 
+			test(':lang() positions across lines', () => {
+				const pe = kids(parse_selector_list('a:lang(en,\n  fr)').first_child)[1]
+				expect(kids(pe).map((c) => [c.text, c.line, c.column])).toEqual([
+					['en', 1, 8],
+					['fr', 2, 3],
+				])
+			})
+
 			test.each([':is(a)', ':where(a)', ':not(a)', ':has(a)', ':host(a)', '::slotted(a)'])(
 				'%s still parses a selector list',
 				(css) => {
