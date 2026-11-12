@@ -18,6 +18,7 @@ export const CHAR_GREATER_THAN = 0x3e // >
 export const CHAR_AMPERSAND = 0x26 // &
 export const CHAR_EQUALS = 0x3d // =
 export const CHAR_PIPE = 0x7c // |
+export const CHAR_COMMA = 0x2c // ,
 export const CHAR_DOLLAR = 0x24 // $
 export const CHAR_CARET = 0x5e // ^
 export const CHAR_COLON = 0x3a // :

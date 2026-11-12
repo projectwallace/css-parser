@@ -16,6 +16,7 @@ import {
 	NTH_OF_SELECTOR,
 	LANG_SELECTOR,
 	DIMENSION,
+	IDENTIFIER,
 	FLAG_HAS_PARENS,
 	FLAG_HAS_NAMESPACE,
 } from './arena'
@@ -53,6 +54,7 @@ import {
 	is_combinator,
 	CHAR_EQUALS,
 	CHAR_PIPE,
+	CHAR_COMMA,
 	CHAR_DOLLAR,
 	CHAR_CARET,
 	CHAR_SINGLE_QUOTE,
@@ -63,6 +65,25 @@ import {
 import { ANplusBParser } from './parse-anplusb'
 import { CSSNode } from './css-node'
 import type { Selector, SelectorList } from './node-types'
+
+// Pseudos whose argument is a selector (list). All others get plain identifier arguments.
+const SELECTOR_PSEUDOS = new Set([
+	'is',
+	'where',
+	'not',
+	'has',
+	'matches',
+	'-webkit-any',
+	'-moz-any',
+	'host',
+	'host-context',
+	'slotted',
+	'cue',
+	'cue-region',
+	'current',
+	'past',
+	'future',
+])
 
 /** @internal */
 export class SelectorParser {
@@ -794,7 +815,9 @@ export class SelectorParser {
 			} else if (str_equals_range(this.source, func_name_start, func_name_end, 'lang')) {
 				// Parse as :lang() - comma-separated language identifiers
 				this.parse_lang_identifiers(content_start, content_end, node)
-			} else {
+			} else if (
+				SELECTOR_PSEUDOS.has(this.source.substring(func_name_start, func_name_end).toLowerCase())
+			) {
 				// Parse as selector (for :is(), :where(), :has(), etc.)
 				// Save current lexer state and selector_end
 				const saved_selector_end = this.selector_end
@@ -819,6 +842,9 @@ export class SelectorParser {
 				if (child_selector !== null) {
 					this.arena.set_first_child(node, child_selector)
 				}
+			} else {
+				// Not a selector argument (::part(), :state(), ::highlight(), :dir(), ...)
+				this.parse_ident_arguments(content_start, content_end, node)
 			}
 		}
 
@@ -835,6 +861,33 @@ export class SelectorParser {
 			str_equals_range(this.source, start, end, 'nth-col') ||
 			str_equals_range(this.source, start, end, 'nth-last-col')
 		)
+	}
+
+	// Parse non-selector pseudo arguments: whitespace/comma separated runs become IDENTIFIER nodes
+	private parse_ident_arguments(start: number, end: number, parent_node: number): void {
+		let first_child: number | null = null
+		let last_child: number | null = null
+		let i = start
+		while (i < end) {
+			const ch = this.source.charCodeAt(i)
+			if (is_whitespace(ch) || ch === CHAR_COMMA) {
+				i++
+				continue
+			}
+			const run_start = i
+			while (i < end) {
+				const c = this.source.charCodeAt(i)
+				if (is_whitespace(c) || c === CHAR_COMMA) break
+				i++
+			}
+			const ident = this.create_node(IDENTIFIER, run_start, i)
+			if (first_child === null) first_child = ident
+			if (last_child !== null) this.arena.set_next_sibling(last_child, ident)
+			last_child = ident
+		}
+		if (first_child !== null) {
+			this.arena.set_first_child(parent_node, first_child)
+		}
 	}
 
 	// Parse :lang() content - comma-separated language identifiers
