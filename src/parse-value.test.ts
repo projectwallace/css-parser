@@ -1963,3 +1963,17 @@ describe('Value Node Types', () => {
 		})
 	})
 })
+
+describe('legacy IE alpha()', () => {
+	test('exposes = as an operator node', () => {
+		const value = parse_value('alpha(opacity=80)')
+		const fn = value.first_child as Function
+		expect(fn.type).toBe(FUNCTION)
+		const children = fn.children.map((c) => [c.type, c.text])
+		expect(children).toEqual([
+			[IDENTIFIER, 'opacity'],
+			[OPERATOR, '='],
+			[NUMBER, '80'],
+		])
+	})
+})
