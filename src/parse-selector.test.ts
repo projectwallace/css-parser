@@ -3026,6 +3026,20 @@ describe('Selector Nodes', () => {
 				expect(kids(b_pe).map((c) => [c.type, c.name])).toEqual([ident('tab'), ident('active')])
 			})
 
+			test('comments and newlines separate arguments', () => {
+				expect(args('::part(a/* x */b)')).toEqual([ident('a'), ident('b')])
+				expect(args('::part(a\n  b,\n/* c */ d)')).toEqual([ident('a'), ident('b'), ident('d')])
+				expect(args('::part(/* x */ a)')).toEqual([ident('a')])
+			})
+
+			test('positions of arguments across lines', () => {
+				const pe = kids(parse_selector_list('a::part(x\n  y)').first_child)[1]
+				expect(kids(pe).map((c) => [c.text, c.line, c.column])).toEqual([
+					['x', 1, 9],
+					['y', 2, 3],
+				])
+			})
+
 			test.each([':is(a)', ':where(a)', ':not(a)', ':has(a)', ':host(a)', '::slotted(a)'])(
 				'%s still parses a selector list',
 				(css) => {

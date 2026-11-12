@@ -54,7 +54,6 @@ import {
 	is_combinator,
 	CHAR_EQUALS,
 	CHAR_PIPE,
-	CHAR_COMMA,
 	CHAR_DOLLAR,
 	CHAR_CARET,
 	CHAR_SINGLE_QUOTE,
@@ -765,6 +764,8 @@ export class SelectorParser {
 	): number | null {
 		const func_name_start = this.lexer.token_start
 		const func_name_end = this.lexer.token_end - 1 // Exclude the '('
+		const func_line = this.lexer.token_line
+		const func_column = this.lexer.token_column
 
 		// Capture content start (right after the '(')
 		const content_start = this.lexer.pos
@@ -844,7 +845,13 @@ export class SelectorParser {
 				}
 			} else {
 				// Not a selector argument (::part(), :state(), ::highlight(), :dir(), ...)
-				this.parse_ident_arguments(content_start, content_end, node)
+				this.parse_ident_arguments(
+					content_start,
+					content_end,
+					node,
+					func_line,
+					func_column + content_start - func_name_start,
+				)
 			}
 		}
 
@@ -863,31 +870,61 @@ export class SelectorParser {
 		)
 	}
 
-	// Parse non-selector pseudo arguments: whitespace/comma separated runs become IDENTIFIER nodes
-	private parse_ident_arguments(start: number, end: number, parent_node: number): void {
+	// Parse non-selector pseudo arguments. Whitespace, commas and comments separate
+	// arguments; adjacent tokens (e.g. `.a.b`, `*`) merge into one IDENTIFIER node.
+	private parse_ident_arguments(
+		start: number,
+		end: number,
+		parent_node: number,
+		line: number,
+		column: number,
+	): void {
+		const saved_position = this.lexer.save_position()
+		const saved_selector_end = this.selector_end
+		this.lexer.seek(start, line, column)
+		this.selector_end = end
+
 		let first_child: number | null = null
 		let last_child: number | null = null
-		let i = start
-		while (i < end) {
-			const ch = this.source.charCodeAt(i)
-			if (is_whitespace(ch) || ch === CHAR_COMMA) {
-				i++
-				continue
-			}
-			const run_start = i
-			while (i < end) {
-				const c = this.source.charCodeAt(i)
-				if (is_whitespace(c) || c === CHAR_COMMA) break
-				i++
-			}
-			const ident = this.create_node(IDENTIFIER, run_start, i)
+		let run_start = -1
+		let run_end = -1
+		let run_line = 0
+		let run_column = 0
+
+		const flush = () => {
+			if (run_start === -1) return
+			const ident = this.create_node(IDENTIFIER, run_start, run_end, run_line, run_column)
 			if (first_child === null) first_child = ident
 			if (last_child !== null) this.arena.set_next_sibling(last_child, ident)
 			last_child = ident
+			run_start = -1
 		}
+
+		while (this.lexer.pos < end) {
+			this.lexer.next_token(false)
+			const type = this.lexer.token_type
+			if (type === TOKEN_EOF) break
+			if (type === TOKEN_WHITESPACE || type === TOKEN_COMMA) {
+				flush()
+				continue
+			}
+			// A gap before this token means a comment was skipped: start a new argument
+			if (run_start !== -1 && this.lexer.token_start !== run_end) flush()
+			if (run_start === -1) {
+				run_start = this.lexer.token_start
+				run_line = this.lexer.token_line
+				run_column = this.lexer.token_column
+			}
+			run_end = this.lexer.token_end
+		}
+		flush()
+
 		if (first_child !== null) {
 			this.arena.set_first_child(parent_node, first_child)
 		}
+
+		this.selector_end = saved_selector_end
+		this.lexer.restore_position(saved_position)
 	}
 
 	// Parse :lang() content - comma-separated language identifiers
