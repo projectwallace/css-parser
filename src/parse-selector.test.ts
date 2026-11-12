@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { SelectorParser, parse_selector, parse_selector_list } from './parse-selector'
 import { CSSDataArena } from './arena'
+import type { CSSNode } from './css-node'
 import type {
 	AttributeSelector,
 	ClassSelector,
@@ -30,6 +31,8 @@ import {
 	NTH_SELECTOR,
 	NTH_OF_SELECTOR,
 	LANG_SELECTOR,
+	IDENTIFIER,
+	OPERATOR,
 } from './arena'
 
 // Helper for low-level testing
@@ -2097,9 +2100,11 @@ describe('Selector Nodes', () => {
 				expect(langPseudoClass.type).toBe(PSEUDO_CLASS_SELECTOR)
 				expect(langPseudoClass.text).toBe(':lang("nl", "de")')
 
-				// :lang() has 2 children - language identifiers
+				// :lang() has 3 children - 2 language identifiers and the comma between them
 				expect(langPseudoClass.has_children).toBe(true)
-				expect(langPseudoClass.children).toHaveLength(2)
+				expect(langPseudoClass.children).toHaveLength(3)
+				expect(langPseudoClass.children[1].type).toBe(OPERATOR)
+				expect(langPseudoClass.children[1].text).toBe(',')
 
 				// First language identifier: "nl"
 				const lang1 = langPseudoClass.children[0]
@@ -2107,7 +2112,7 @@ describe('Selector Nodes', () => {
 				expect(lang1.text).toBe('"nl"')
 
 				// Second language identifier: "de"
-				const lang2 = langPseudoClass.children[1]
+				const lang2 = langPseudoClass.children[2]
 				expect(lang2.type).toBe(LANG_SELECTOR)
 				expect(lang2.text).toBe('"de"')
 			})
@@ -2121,8 +2126,9 @@ describe('Selector Nodes', () => {
 				expect(langPseudoClass.type).toBe(PSEUDO_CLASS_SELECTOR)
 				expect(langPseudoClass.text).toBe(':lang(en, fr)')
 
-				// :lang() has 2 children - language identifiers
-				expect(langPseudoClass.children).toHaveLength(2)
+				// :lang() has 3 children - 2 language identifiers and the comma between them
+				expect(langPseudoClass.children).toHaveLength(3)
+				expect(langPseudoClass.children[1].type).toBe(OPERATOR)
 
 				// First language identifier: en
 				const lang1 = langPseudoClass.children[0]
@@ -2130,7 +2136,7 @@ describe('Selector Nodes', () => {
 				expect(lang1.text).toBe('en')
 
 				// Second language identifier: fr
-				const lang2 = langPseudoClass.children[1]
+				const lang2 = langPseudoClass.children[2]
 				expect(lang2.type).toBe(LANG_SELECTOR)
 				expect(lang2.text).toBe('fr')
 			})
@@ -2978,6 +2984,90 @@ describe('Selector Nodes', () => {
 				const root = parse_selector_list('a, /* comment */ b, c')
 				expect(root.children.length).toBe(3)
 			})
+		})
+
+		describe('Non-selector pseudo arguments', () => {
+			const args = (css: string) => {
+				const pseudo = parse_selector_list(css).first_child?.first_child
+				return kids(pseudo).map((c) => [c.type, c.name])
+			}
+			const ident = (name: string) => [IDENTIFIER, name]
+			const comma = [OPERATOR, undefined]
+			const kids = (n: unknown) => [...((n as CSSNode | undefined)?.children ?? [])]
+
+			test.each([
+				['::highlight(x)', ['x']],
+				[':state(checked)', ['checked']],
+				[':dir(rtl)', ['rtl']],
+				['::part(a b)', ['a', 'b']],
+				['::view-transition-old(*)', ['*']],
+				['::view-transition-group(.a.b)', ['.a.b']],
+				[':foo(bar)', ['bar']],
+			])('%s has identifier children only', (css, names) => {
+				expect(args(css)).toEqual(names.map((n) => ident(n)))
+			})
+
+			test('html:active-view-transition-type(forwards, backwards)', () => {
+				const selector = parse_selector_list(
+					'html:active-view-transition-type(forwards, backwards)',
+				).first_child
+				const [type, pseudo] = kids(selector)
+				expect(type.type).toBe(TYPE_SELECTOR)
+				expect(kids(pseudo).map((c) => [c.type, c.name])).toEqual([
+					ident('forwards'),
+					comma,
+					ident('backwards'),
+				])
+			})
+
+			test('tabbed-custom-element::part(tab), ::part(tab active)', () => {
+				const root = parse_selector_list(
+					'tabbed-custom-element::part(tab),\ntabbed-custom-element::part(tab active)',
+				)
+				const [a, b] = root.children
+				const [a_type, a_pe] = kids(a)
+				const [, b_pe] = kids(b)
+				expect([a_type.type, a_pe.type]).toEqual([TYPE_SELECTOR, PSEUDO_ELEMENT_SELECTOR])
+				expect(kids(a_pe).map((c) => c.name)).toEqual(['tab'])
+				expect(kids(b_pe).map((c) => [c.type, c.name])).toEqual([ident('tab'), ident('active')])
+			})
+
+			test('comments and newlines separate arguments', () => {
+				expect(args('::part(a/* x */b)')).toEqual([ident('a'), ident('b')])
+				// Commas are kept as Operator children (not dropped) so the CSS can be printed back
+				expect(args('::part(a\n  b,\n/* c */ d)')).toEqual([
+					ident('a'),
+					ident('b'),
+					comma,
+					ident('d'),
+				])
+				expect(args('::part(/* x */ a)')).toEqual([ident('a')])
+			})
+
+			test('positions of arguments across lines', () => {
+				const pe = kids(parse_selector_list('a::part(x\n  y)').first_child)[1]
+				expect(kids(pe).map((c) => [c.text, c.line, c.column])).toEqual([
+					['x', 1, 9],
+					['y', 2, 3],
+				])
+			})
+
+			test(':lang() positions across lines', () => {
+				const pe = kids(parse_selector_list('a:lang(en,\n  fr)').first_child)[1]
+				expect(kids(pe).map((c) => [c.text, c.line, c.column])).toEqual([
+					['en', 1, 8],
+					[',', 1, 10],
+					['fr', 2, 3],
+				])
+			})
+
+			test.each([':is(a)', ':where(a)', ':not(a)', ':has(a)', ':host(a)', '::slotted(a)'])(
+				'%s still parses a selector list',
+				(css) => {
+					const pseudo = parse_selector_list(css).first_child?.first_child
+					expect(pseudo?.first_child?.type).toBe(SELECTOR_LIST)
+				},
+			)
 		})
 
 		describe('Dashed idents in pseudo-element functions', () => {

@@ -16,6 +16,8 @@ import {
 	NTH_OF_SELECTOR,
 	LANG_SELECTOR,
 	DIMENSION,
+	IDENTIFIER,
+	OPERATOR,
 	FLAG_HAS_PARENS,
 	FLAG_HAS_NAMESPACE,
 } from './arena'
@@ -63,6 +65,25 @@ import {
 import { ANplusBParser } from './parse-anplusb'
 import { CSSNode } from './css-node'
 import type { Selector, SelectorList } from './node-types'
+
+// Pseudos whose argument is a selector (list). All others get plain identifier arguments.
+const SELECTOR_PSEUDOS = new Set([
+	'is',
+	'where',
+	'not',
+	'has',
+	'matches',
+	'-webkit-any',
+	'-moz-any',
+	'host',
+	'host-context',
+	'slotted',
+	'cue',
+	'cue-region',
+	'current',
+	'past',
+	'future',
+])
 
 /** @internal */
 export class SelectorParser {
@@ -744,6 +765,8 @@ export class SelectorParser {
 	): number | null {
 		const func_name_start = this.lexer.token_start
 		const func_name_end = this.lexer.token_end - 1 // Exclude the '('
+		const func_line = this.lexer.token_line
+		const func_column = this.lexer.token_column
 
 		// Capture content start (right after the '(')
 		const content_start = this.lexer.pos
@@ -793,8 +816,16 @@ export class SelectorParser {
 				}
 			} else if (str_equals_range(this.source, func_name_start, func_name_end, 'lang')) {
 				// Parse as :lang() - comma-separated language identifiers
-				this.parse_lang_identifiers(content_start, content_end, node)
-			} else {
+				this.parse_lang_identifiers(
+					content_start,
+					content_end,
+					node,
+					func_line,
+					func_column + content_start - func_name_start,
+				)
+			} else if (
+				SELECTOR_PSEUDOS.has(this.source.substring(func_name_start, func_name_end).toLowerCase())
+			) {
 				// Parse as selector (for :is(), :where(), :has(), etc.)
 				// Save current lexer state and selector_end
 				const saved_selector_end = this.selector_end
@@ -819,6 +850,15 @@ export class SelectorParser {
 				if (child_selector !== null) {
 					this.arena.set_first_child(node, child_selector)
 				}
+			} else {
+				// Not a selector argument (::part(), :state(), ::highlight(), :dir(), ...)
+				this.parse_ident_arguments(
+					content_start,
+					content_end,
+					node,
+					func_line,
+					func_column + content_start - func_name_start,
+				)
 			}
 		}
 
@@ -837,11 +877,101 @@ export class SelectorParser {
 		)
 	}
 
+	// Parse non-selector pseudo arguments. Whitespace, commas and comments separate
+	// arguments; adjacent tokens (e.g. `.a.b`, `*`) merge into one IDENTIFIER node.
+	private parse_ident_arguments(
+		start: number,
+		end: number,
+		parent_node: number,
+		line: number,
+		column: number,
+	): void {
+		const saved_position = this.lexer.save_position()
+		const saved_selector_end = this.selector_end
+		this.lexer.seek(start, line, column)
+		this.selector_end = end
+
+		let first_child: number | null = null
+		let last_child: number | null = null
+		let run_start = -1
+		let run_end = -1
+		let run_line = 0
+		let run_column = 0
+
+		const append = (node: number) => {
+			if (first_child === null) {
+				first_child = node
+			}
+			if (last_child !== null) {
+				this.arena.set_next_sibling(last_child, node)
+			}
+			last_child = node
+		}
+
+		const flush = () => {
+			if (run_start === -1) {
+				return
+			}
+			append(this.create_node(IDENTIFIER, run_start, run_end, run_line, run_column))
+			run_start = -1
+		}
+
+		while (this.lexer.pos < end) {
+			this.lexer.next_token(false)
+			const type = this.lexer.token_type
+			if (type === TOKEN_EOF) {
+				break
+			}
+			if (type === TOKEN_WHITESPACE) {
+				flush()
+				continue
+			}
+			if (type === TOKEN_COMMA) {
+				flush()
+				// Keep the comma so the original CSS can be printed back
+				append(
+					this.create_node(
+						OPERATOR,
+						this.lexer.token_start,
+						this.lexer.token_end,
+						this.lexer.token_line,
+						this.lexer.token_column,
+					),
+				)
+				continue
+			}
+			// A gap before this token means a comment was skipped: start a new argument
+			if (run_start !== -1 && this.lexer.token_start !== run_end) {
+				flush()
+			}
+			if (run_start === -1) {
+				run_start = this.lexer.token_start
+				run_line = this.lexer.token_line
+				run_column = this.lexer.token_column
+			}
+			run_end = this.lexer.token_end
+		}
+		flush()
+
+		if (first_child !== null) {
+			this.arena.set_first_child(parent_node, first_child)
+		}
+
+		this.selector_end = saved_selector_end
+		this.lexer.restore_position(saved_position)
+	}
+
 	// Parse :lang() content - comma-separated language identifiers
 	// Accepts both quoted strings: :lang("en", "fr") and unquoted: :lang(en, fr)
-	private parse_lang_identifiers(start: number, end: number, parent_node: number): void {
+	private parse_lang_identifiers(
+		start: number,
+		end: number,
+		parent_node: number,
+		line: number,
+		column: number,
+	): void {
 		const saved_position = this.lexer.save_position()
-		this.lexer.seek(start, this.lexer.line, this.lexer.column)
+		this.lexer.seek(start, line, column)
 
 		const saved_selector_end = this.selector_end
 		this.selector_end = end
@@ -860,8 +990,16 @@ export class SelectorParser {
 				continue
 			}
 
-			// Skip commas
+			// Keep commas as operators so the original CSS can be printed back
 			if (token_type === TOKEN_COMMA) {
+				const comma_node = this.create_node(OPERATOR, token_start, token_end)
+				if (first_child === null) {
+					first_child = comma_node
+				}
+				if (last_child !== null) {
+					this.arena.set_next_sibling(last_child, comma_node)
+				}
+				last_child = comma_node
 				continue
 			}
 
