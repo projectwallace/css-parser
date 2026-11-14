@@ -180,26 +180,14 @@ walk(ast, (node) => {
 })
 ```
 
-### `tokenize_cb(source, on_token)`
+### `tokenize(source, on_token)`
 
-Calls `on_token(type, start, end, line, column)` for every token. Whitespace and comments are emitted as tokens (`TOKEN_WHITESPACE`, `TOKEN_COMMENT`). This is about 35% faster than iterating `tokenize()`, because no generator or token objects are allocated.
+Calls `on_token(type, start, end, line, column)` for every token. Whitespace and comments are emitted as tokens (`TOKEN_WHITESPACE`, `TOKEN_COMMENT`).
 
 ```typescript
-tokenize_cb('a { color: red }', (type, start, end, line, column) => {
+tokenize('a { color: red }', (type, start, end, line, column) => {
 	console.log(type, start, end)
 })
-```
-
-In 0.20.0 this becomes `tokenize()`, replacing the iterator form below.
-
-### `tokenize(source, on_comment?)` (deprecated)
-
-A generator of tokens; comments are skipped and reported through `on_comment`. Deprecated: use `tokenize_cb()` now, it becomes `tokenize()` in 0.20.0.
-
-```typescript
-for (const token of tokenize('a { color: red }')) {
-	console.log(token.type, token.start, token.end)
-}
 ```
 
 ### Node types, type guards and `clone()`

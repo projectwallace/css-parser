@@ -7,7 +7,7 @@ export { parse_atrule_prelude } from './parse-atrule-prelude'
 export { parse_declaration } from './parse-declaration'
 export { parse_value } from './parse-value'
 export { parse_dimension } from './parse-dimension'
-export { tokenize, tokenize_cb } from './tokenize'
+export { tokenize } from './tokenize'
 export { walk, traverse, walk_declarations, walk_selectors, walk_values, SKIP, BREAK } from './walk'
 export {
 	is_custom,

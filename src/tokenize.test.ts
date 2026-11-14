@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { Lexer, tokenize, tokenize_cb } from './tokenize'
+import { Lexer, tokenize } from './tokenize'
 import { is_ident_start } from './char-types'
 import {
 	TOKEN_IDENT,
@@ -833,20 +833,10 @@ describe('Lexer', () => {
 	})
 })
 
-describe('tokenize_cb', () => {
-	test('reports the same tokens as the iterator tokenize()', () => {
-		const css = 'a { color: red; margin: 0 }'
-		const from_cb: Token[] = []
-		tokenize_cb(css, (type, start, end, line, column) => {
-			from_cb.push({ type, start, end, line, column })
-		})
-		expect(from_cb.length).toBeGreaterThan(0)
-		expect(from_cb).toEqual(Array.from(tokenize(css)))
-	})
-
+describe('tokenize', () => {
 	test('emits comments as TOKEN_COMMENT with position', () => {
 		const tokens: Token[] = []
-		tokenize_cb('a{/* hi */}', (type, start, end, line, column) =>
+		tokenize('a{/* hi */}', (type, start, end, line, column) =>
 			tokens.push({ type, start, end, line, column }),
 		)
 		const comments = tokens.filter((t) => t.type === TOKEN_COMMENT)
@@ -861,7 +851,7 @@ describe('tokenize_cb', () => {
 
 	test('tracks lines across multi-line comments', () => {
 		const tokens: Token[] = []
-		tokenize_cb('/* a\nb */ x', (type, start, end, line, column) =>
+		tokenize('/* a\nb */ x', (type, start, end, line, column) =>
 			tokens.push({ type, start, end, line, column }),
 		)
 		expect(tokens.at(-1)).toMatchObject({ type: TOKEN_IDENT, line: 2, column: 6 })
@@ -875,7 +865,7 @@ describe('tokenize_cb', () => {
 
 	test('calls nothing for empty source', () => {
 		let calls = 0
-		tokenize_cb('', () => calls++)
+		tokenize('', () => calls++)
 		expect(calls).toBe(0)
 	})
 })
