@@ -904,31 +904,58 @@ export class Lexer {
 		const source = this.source
 		const source_length = source.length
 		const start = this.pos
-		let pos = start + 1 // Skip @ — never a newline
-
-		// Ident chars (a-z,A-Z,0-9,-,_) and non-ASCII are never newlines — use pos++
-		while (pos < source_length) {
-			const ch = source.charCodeAt(pos)
-			if (ch < 0x80 && (char_types[ch] & CHAR_IDENT) === 0) break
-			pos++
-		}
+		const pos = this.consume_name(start + 1) // Skip @ — never a newline
 
 		this.pos = pos
 		return this.make_token(TOKEN_AT_KEYWORD, start, pos, start_line, start_column)
+	}
+
+	// Consume ident chars and valid escapes from `pos`, returns the end position
+	consume_name(pos: number): number {
+		const source = this.source
+		const source_length = source.length
+		// Ident chars and non-ASCII are never newlines — use pos++
+		while (pos < source_length) {
+			const ch = source.charCodeAt(pos)
+			if (ch === CHAR_BACKSLASH) {
+				// A backslash at EOF or before a newline is not an escape
+				if (pos + 1 >= source_length || is_newline(source.charCodeAt(pos + 1))) break
+				this.pos = pos
+				this.consume_escape()
+				pos = this.pos
+				continue
+			}
+			if (ch < 0x80 && (char_types[ch] & CHAR_IDENT) === 0) break
+			pos++
+		}
+		return pos
+	}
+
+	// Consume a valid escape at this.pos (a backslash not followed by a newline/EOF)
+	consume_escape(): void {
+		const source = this.source
+		const source_length = source.length
+		const next = source.charCodeAt(this.pos + 1)
+		this.pos += 2 // backslash + first escaped char: never newlines
+		if (is_hex_digit(next)) {
+			for (let i = 0; i < 5 && this.pos < source_length; i++) {
+				if (!is_hex_digit(source.charCodeAt(this.pos))) break
+				this.pos++
+			}
+			if (this.pos < source_length) {
+				const ws = source.charCodeAt(this.pos)
+				if (ws < 128 && (char_types[ws] & CHAR_WHITESPACE_OR_NEWLINE) !== 0) {
+					this.advance()
+				}
+			}
+		}
 	}
 
 	consume_hash(start_line: number, start_column: number): TokenType {
 		const source = this.source
 		const source_length = source.length
 		const start = this.pos
-		let pos = start + 1 // Skip # — never a newline
-
-		// Ident chars and non-ASCII are never newlines — use pos++
-		while (pos < source_length) {
-			const ch = source.charCodeAt(pos)
-			if (ch < 0x80 && (char_types[ch] & CHAR_IDENT) === 0) break
-			pos++
-		}
+		const pos = this.consume_name(start + 1) // Skip # — never a newline
 
 		this.pos = pos
 		return this.make_token(TOKEN_HASH, start, pos, start_line, start_column)
