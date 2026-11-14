@@ -339,7 +339,8 @@ describe('type narrowing — compile-time', () => {
 			(Dimension | Function | Identifier | PreludeOperator)[]
 		>()
 
-		const [op, dim] = range.children
+		const [name, op, dim] = range.children
+		expect(name.type_name).toBe('Identifier')
 		expect(op.type_name).toBe('Operator')
 		expect(dim.type_name).toBe('Dimension')
 	})

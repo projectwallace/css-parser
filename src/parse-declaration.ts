@@ -40,17 +40,10 @@ export class DeclarationParser {
 	// Reused lookahead snapshot (never nested) to avoid an allocation per declaration
 	private lookahead_position: LexerPosition = new Lexer('').save_position()
 
-	constructor(
-		arena: CSSDataArena,
-		source: string,
-		parse_values: boolean = true,
-		media_feature_range_name_as_child: boolean = false,
-	) {
+	constructor(arena: CSSDataArena, source: string, parse_values: boolean = true) {
 		this.arena = arena
 		this.source = source
-		this.value_parser = parse_values
-			? new ValueParser(arena, source, media_feature_range_name_as_child)
-			: null
+		this.value_parser = parse_values ? new ValueParser(arena, source) : null
 	}
 
 	// Parse a declaration range into a declaration node (standalone use)

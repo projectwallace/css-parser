@@ -62,16 +62,7 @@ export class ConditionParser {
 	// doesn't depend on ValueNodeParser/AtRulePreludeParser), so this is safely owned here.
 	private selector_parser: SelectorParser
 
-	// Opt-in: also add a FEATURE_RANGE's feature name as an Identifier child (in source order)
-	private media_feature_range_name_as_child: boolean
-
-	constructor(
-		arena: CSSDataArena,
-		source: string,
-		value_node_parser: ValueNodeParser,
-		media_feature_range_name_as_child: boolean = false,
-	) {
-		this.media_feature_range_name_as_child = media_feature_range_name_as_child
+	constructor(arena: CSSDataArena, source: string, value_node_parser: ValueNodeParser) {
 		this.arena = arena
 		this.source = source
 		this.lexer = new Lexer(source)
@@ -312,16 +303,14 @@ export class ConditionParser {
 					// Feature name
 					feature_name_start = this.lexer.token_start
 					feature_name_end = this.lexer.token_end
-					if (this.media_feature_range_name_as_child) {
-						const name_first = this.parse_feature_value(feature_name_start, feature_name_end)
-						if (name_first !== 0) {
-							if (first_child === 0) {
-								first_child = name_first
-							} else {
-								this.arena.set_next_sibling(last_child, name_first)
-							}
-							last_child = this.arena.get_last_sibling(name_first)
+					const name_first = this.parse_feature_value(feature_name_start, feature_name_end)
+					if (name_first !== 0) {
+						if (first_child === 0) {
+							first_child = name_first
+						} else {
+							this.arena.set_next_sibling(last_child, name_first)
 						}
+						last_child = this.arena.get_last_sibling(name_first)
 					}
 				} else {
 					// Value (may itself be a short chain, e.g. a single dimension node). A function
