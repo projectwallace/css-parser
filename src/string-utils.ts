@@ -334,7 +334,10 @@ export function unescape_css(str: string): string {
 			let end = i
 			while (end < len && end - i < 6 && is_hex_digit(str.charCodeAt(end))) end++
 			const code = parseInt(str.substring(i, end), 16)
-			out += code === 0 || code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff) ? '\uFFFD' : String.fromCodePoint(code)
+			out +=
+				code === 0 || code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff)
+					? '\uFFFD'
+					: String.fromCodePoint(code)
 			i = end
 			// One optional whitespace after a hex escape (CRLF counts as one)
 			if (i < len && is_whitespace(str.charCodeAt(i))) {
