@@ -1118,43 +1118,13 @@ export type OnToken = (
 
 /**
  * Tokenize CSS source code, calling `on_token` for every token.
- * Faster than the iterator-based `tokenize()` because it allocates no generator or token objects.
  * @param source - The CSS source code to tokenize
  * @param on_token - Called with `(type, start, end, line, column)` for each token
- * @deprecated Renamed to `tokenize()` in 0.20.0, where the callback form replaces the iterator form.
  */
-export function tokenize_cb(source: string, on_token: OnToken): void {
+export function tokenize(source: string, on_token: OnToken): void {
 	const lexer = new Lexer(source, undefined, true)
 	let type: TokenType
 	while ((type = lexer.next_token()) !== TOKEN_EOF) {
 		on_token(type, lexer.token_start, lexer.token_end, lexer.token_line, lexer.token_column)
-	}
-}
-
-/**
- * Tokenize CSS source code
- * @param source - The CSS source code to tokenize
- * @param on_comment - Optional callback for comment tokens
- * @yields CSS tokens
- * @deprecated The iterator form is replaced in 0.20.0 by a callback-based `tokenize(source, on_token)`. Use `tokenize_cb()` today for the same behavior.
- */
-export function* tokenize(
-	source: string,
-	on_comment?: (info: CommentInfo) => void,
-): Generator<Token, void, undefined> {
-	const lexer = new Lexer(source, on_comment)
-
-	while (true) {
-		const type = lexer.next_token()
-		if (type === TOKEN_EOF) {
-			break
-		}
-		yield {
-			type,
-			start: lexer.token_start,
-			end: lexer.token_end,
-			line: lexer.token_line,
-			column: lexer.token_column,
-		}
 	}
 }

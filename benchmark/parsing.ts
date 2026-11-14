@@ -11,7 +11,6 @@ import {
 	parse_value,
 	parse_dimension,
 	tokenize,
-	tokenize_cb,
 	walk,
 	traverse,
 	STYLE_RULE,
@@ -35,13 +34,7 @@ for (const [name, file] of Object.entries(files)) {
 	const css = fs.readFileSync(path.resolve('benchmark', file), 'utf-8')
 
 	bench.add(`tokenize|${name}`, () => {
-		for (const _token of tokenize(css)) {
-			// iterate
-		}
-	})
-
-	bench.add(`tokenize_cb|${name}`, () => {
-		tokenize_cb(css, () => {})
+		tokenize(css, () => {})
 	})
 
 	bench.add(`parse|${name}`, () => {
