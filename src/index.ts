@@ -15,6 +15,7 @@ export {
 	strip_vendor_prefix,
 	property_basename,
 	strip_value_hack,
+	unescape_css,
 	str_equals,
 	str_starts_with,
 	str_index_of,
