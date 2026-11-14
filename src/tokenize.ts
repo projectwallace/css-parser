@@ -294,6 +294,13 @@ export class Lexer {
 					return this.consume_ident_or_function(start_line, start_column)
 				}
 
+				// -\31 x: a hyphen followed by a valid escape is still an ident
+				if (next === CHAR_BACKSLASH && this.pos + 2 < source_length) {
+					if (!is_newline(source.charCodeAt(this.pos + 2))) {
+						return this.consume_ident_or_function(start_line, start_column)
+					}
+				}
+
 				if (next < 128 && (char_types[next] & CHAR_DIGIT) !== 0) {
 					return this.consume_number(start_line, start_column)
 				}
@@ -753,17 +760,14 @@ export class Lexer {
 				this.pos = pos
 				return this.make_token(TOKEN_PERCENTAGE, start, pos, start_line, start_column)
 			}
+			const next = pos + 1 < source_length ? source.charCodeAt(pos + 1) : 0
 			if (
 				is_ident_start(ch) ||
-				(ch === CHAR_HYPHEN &&
-					is_ident_start(pos + 1 < source_length ? source.charCodeAt(pos + 1) : 0))
+				(ch === CHAR_HYPHEN && is_ident_start(next)) ||
+				(ch === CHAR_BACKSLASH && next !== 0 && !is_newline(next))
 			) {
-				// Unit: px, em, rem, etc — ident chars and non-ASCII are never newlines
-				while (pos < source_length) {
-					const ch = source.charCodeAt(pos)
-					if (ch < 0x80 && (char_types[ch] & CHAR_IDENT) === 0) break
-					pos++
-				}
+				// Unit: px, em, rem, etc, including escapes like 1\70x
+				pos = this.consume_name(pos)
 				this.pos = pos
 				return this.make_token(TOKEN_DIMENSION, start, pos, start_line, start_column)
 			}
