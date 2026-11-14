@@ -9,4 +9,5 @@ export {
 	str_equals,
 	str_starts_with,
 	str_index_of,
+	css_unescape,
 } from './string-utils'

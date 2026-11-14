@@ -45,6 +45,7 @@ import {
 	CHAR_TILDE,
 	CHAR_AMPERSAND,
 	CHAR_LEFT_BRACE,
+	css_unescape,
 } from './string-utils'
 
 export interface ParserOptions {
@@ -584,7 +585,7 @@ export class Parser {
 
 	// Determine if an at-rule contains declarations or nested rules
 	private atrule_has_declarations(name: string): boolean {
-		return DECLARATION_AT_RULES.has(name.toLowerCase())
+		return DECLARATION_AT_RULES.has(css_unescape(name).toLowerCase())
 	}
 }
 

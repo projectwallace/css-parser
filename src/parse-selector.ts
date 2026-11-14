@@ -46,6 +46,7 @@ import {
 import {
 	is_whitespace,
 	str_equals_range,
+	css_unescape,
 	CHAR_PLUS,
 	CHAR_TILDE,
 	CHAR_GREATER_THAN,
@@ -824,7 +825,9 @@ export class SelectorParser {
 					func_column + content_start - func_name_start,
 				)
 			} else if (
-				SELECTOR_PSEUDOS.has(this.source.substring(func_name_start, func_name_end).toLowerCase())
+				SELECTOR_PSEUDOS.has(
+					css_unescape(this.source.substring(func_name_start, func_name_end)).toLowerCase(),
+				)
 			) {
 				// Parse as selector (for :is(), :where(), :has(), etc.)
 				// Save current lexer state and selector_end

@@ -29,6 +29,7 @@ import {
 } from './token-types'
 import {
 	str_equals_range,
+	css_unescape,
 	is_and_or_not_range,
 	strip_vendor_prefix,
 	CHAR_PERIOD,
@@ -83,7 +84,7 @@ export class AtRulePreludeParser {
 	// Dispatch to appropriate parser based on at-rule type
 	private parse_prelude_dispatch(at_rule_name: string): number[] {
 		// Strip vendor prefix to treat @-webkit-keyframes same as @keyframes
-		const normalized_name = strip_vendor_prefix(at_rule_name).toLowerCase()
+		const normalized_name = strip_vendor_prefix(css_unescape(at_rule_name)).toLowerCase()
 
 		switch (normalized_name) {
 			case 'media':

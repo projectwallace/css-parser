@@ -1,3 +1,5 @@
+import { is_hex_digit } from './char-types'
+
 // String utility functions for CSS parsing
 
 // Character constants (exported for use in parsers)
@@ -49,30 +51,125 @@ export function is_digit(ch: number): boolean {
 	return ch >= 0x30 && ch <= 0x39 // 0-9
 }
 
-/** Case-insensitive ASCII equality without allocations. `a` MUST be lowercase. */
-export function str_equals(a: string, b: string): boolean {
-	if (a.length !== b.length) {
-		return false
+/** True if `source[start, end)` contains a backslash. */
+function has_backslash(source: string, start: number, end: number): boolean {
+	for (let i = start; i < end; i++) {
+		if (source.charCodeAt(i) === CHAR_BACKSLASH) return true
 	}
+	return false
+}
 
-	for (let i = 0; i < a.length; i++) {
-		const ca = a.charCodeAt(i)
-		let cb = b.charCodeAt(i)
-
-		// normalize ASCII uppercase A-Z → a-z
-		cb |= 32
-
-		if (ca !== cb) {
-			return false
+/**
+ * Read one CSS escape starting at the backslash at `source[i]`, within `[i, end)`.
+ * Returns the decoded code point, or -1 for a backslash that isn't a valid escape (at the end or
+ * before a newline). The index after the escape is left in `escape_next`, which avoids allocating a result.
+ */
+let escape_next = 0
+function read_escape(source: string, i: number, end: number): number {
+	const next = i + 1
+	if (next >= end) {
+		escape_next = next
+		return -1
+	}
+	const ch = source.charCodeAt(next)
+	if (ch === CHAR_NEWLINE || ch === CHAR_CARRIAGE_RETURN || ch === CHAR_FORM_FEED) {
+		escape_next = next
+		return -1
+	}
+	if (!is_hex_digit(ch)) {
+		escape_next = next + 1
+		return ch
+	}
+	let cp = 0
+	let pos = next
+	for (let n = 0; n < 6 && pos < end; n++) {
+		const h = source.charCodeAt(pos)
+		if (!is_hex_digit(h)) break
+		cp = cp * 16 + (h <= 0x39 ? h - 0x30 : (h | 32) - 0x61 + 10)
+		pos++
+	}
+	// A single whitespace after a hex escape belongs to the escape (CRLF counts as one)
+	if (pos < end) {
+		const ws = source.charCodeAt(pos)
+		if (ws === CHAR_CARRIAGE_RETURN && source.charCodeAt(pos + 1) === CHAR_NEWLINE) {
+			pos += 2
+		} else if (is_whitespace(ws)) {
+			pos++
 		}
 	}
+	escape_next = pos
+	// Per CSS Syntax: NULL, surrogates and out-of-range code points become U+FFFD
+	if (cp === 0 || (cp >= 0xd800 && cp <= 0xdfff) || cp > 0x10ffff) return 0xfffd
+	return cp
+}
 
-	return true
+/**
+ * Decode CSS escapes (`\31 23` -> `123`, `\:` -> `:`), per CSS Syntax "consume an escaped code point".
+ * A backslash followed by a newline or at the end of the input is not an escape and is kept as is.
+ * Returns the input unchanged (no allocation) when it has no backslash.
+ */
+export function css_unescape(text: string): string {
+	if (!has_backslash(text, 0, text.length)) return text
+	let result = ''
+	let i = 0
+	const end = text.length
+	while (i < end) {
+		const ch = text.charCodeAt(i)
+		if (ch !== CHAR_BACKSLASH) {
+			result += text[i]
+			i++
+			continue
+		}
+		const cp = read_escape(text, i, end)
+		if (cp === -1) {
+			result += '\\'
+			i++
+		} else {
+			result += String.fromCodePoint(cp)
+			i = escape_next
+		}
+	}
+	return result
+}
+
+/**
+ * Case-insensitive equality between the decoded `source[start, end)` (escapes resolved) and `literal`,
+ * without allocating. `literal` MUST be lowercase ASCII.
+ */
+function escaped_equals(source: string, start: number, end: number, literal: string): boolean {
+	let j = 0
+	let i = start
+	while (i < end) {
+		if (j >= literal.length) return false
+		let cp = source.charCodeAt(i)
+		if (cp === CHAR_BACKSLASH) {
+			cp = read_escape(source, i, end)
+			i = cp === -1 ? i + 1 : escape_next
+			if (cp === -1) cp = CHAR_BACKSLASH
+		} else {
+			i++
+		}
+		// normalize ASCII uppercase A-Z -> a-z
+		if (cp < 128) cp |= 32
+		if (cp !== literal.charCodeAt(j)) return false
+		j++
+	}
+	return j === literal.length
+}
+
+/**
+ * Case-insensitive ASCII equality without allocations. `a` MUST be lowercase.
+ * Escapes in `b` are decoded: `str_equals('media', '\\6dedia')` is true.
+ */
+export function str_equals(a: string, b: string): boolean {
+	return str_equals_range(b, 0, b.length, a)
 }
 
 /**
  * Case-insensitive equality between `source[start, end)` and `literal`, without allocating a substring first.
  * Same semantics as `str_equals(literal, source.substring(start, end))`. `literal` MUST be lowercase.
+ * Escapes in the source are decoded (`\6dedia` equals `media`); an escape is always longer than the
+ * character it encodes, so only a longer source can be an escaped match.
  */
 export function str_equals_range(
 	source: string,
@@ -80,8 +177,13 @@ export function str_equals_range(
 	end: number,
 	literal: string,
 ): boolean {
-	if (end - start !== literal.length) {
+	const length = end - start
+	if (length < literal.length) {
 		return false
+	}
+
+	if (length > literal.length) {
+		return has_backslash(source, start, end) && escaped_equals(source, start, end, literal)
 	}
 
 	for (let i = 0; i < literal.length; i++) {
