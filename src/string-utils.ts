@@ -300,3 +300,59 @@ export function strip_value_hack(str: string): string {
 	while (end > 0 && is_whitespace(str.charCodeAt(end - 1))) end--
 	return str.substring(0, end)
 }
+
+function is_hex_digit(ch: number): boolean {
+	return (ch >= 0x30 && ch <= 0x39) || (ch >= 0x41 && ch <= 0x46) || (ch >= 0x61 && ch <= 0x66)
+}
+
+/**
+ * Resolve CSS escape sequences: `\31 23` → `123`, `\:` → `:`, `\\` → `\`.
+ * Hex escapes take 1-6 digits plus one optional trailing whitespace; invalid code points
+ * (0, surrogates, > 10FFFF) become U+FFFD. An escaped newline (string line continuation) is removed.
+ */
+export function unescape_css(str: string): string {
+	let i = str.indexOf('\\')
+	if (i === -1) return str
+	let out = str.substring(0, i)
+	const len = str.length
+	while (i < len) {
+		const ch = str.charCodeAt(i)
+		if (ch !== CHAR_BACKSLASH) {
+			let next = str.indexOf('\\', i)
+			if (next === -1) next = len
+			out += str.substring(i, next)
+			i = next
+			continue
+		}
+		i++
+		if (i >= len) {
+			out += '\uFFFD'
+			break
+		}
+		const c = str.charCodeAt(i)
+		if (is_hex_digit(c)) {
+			let end = i
+			while (end < len && end - i < 6 && is_hex_digit(str.charCodeAt(end))) end++
+			const code = parseInt(str.substring(i, end), 16)
+			out +=
+				code === 0 || code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff)
+					? '\uFFFD'
+					: String.fromCodePoint(code)
+			i = end
+			// One optional whitespace after a hex escape (CRLF counts as one)
+			if (i < len && is_whitespace(str.charCodeAt(i))) {
+				i += str.charCodeAt(i) === 0x0d && str.charCodeAt(i + 1) === 0x0a ? 2 : 1
+			}
+		} else if (c === 0x0a || c === 0x0c) {
+			i++
+		} else if (c === 0x0d) {
+			i += str.charCodeAt(i + 1) === 0x0a ? 2 : 1
+		} else {
+			const cp = str.codePointAt(i)!
+			const s = String.fromCodePoint(cp)
+			out += s
+			i += s.length
+		}
+	}
+	return out
+}

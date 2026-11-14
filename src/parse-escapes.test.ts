@@ -1,4 +1,5 @@
-import { test, expect } from 'vitest'
+import { test, expect, describe } from 'vitest'
+import { unescape_css } from './string-utils'
 import { parse } from './parse'
 import { parse_selector } from './parse-selector'
 import { ID_SELECTOR, AT_RULE, DIMENSION, IDENTIFIER } from './constants'
@@ -67,4 +68,38 @@ test.each(['.-\\31 x', '.-\\31', '#-\\31 x'])('selector %s with hyphen and escap
 	const root = parse_selector(selector)
 	expect(root.children.length).toBe(1)
 	expect(root.first_child!.text).toBe(selector)
+})
+
+describe('unescape_css', () => {
+	test('hex escapes', () => {
+		expect(unescape_css('\\31 23')).toBe('123')
+		expect(unescape_css('\\000041')).toBe('A')
+		expect(unescape_css('\\41\nb')).toBe('Ab')
+		expect(unescape_css('\\0 \\110000 \\d800')).toBe('\uFFFD\uFFFD\uFFFD')
+		expect(unescape_css('\\1F600')).toBe('😀')
+	})
+	test('character escapes and edge cases', () => {
+		expect(unescape_css('plain')).toBe('plain')
+		expect(unescape_css('a\\:b\\\\c')).toBe('a:b\\c')
+		expect(unescape_css('a\\\nb')).toBe('ab')
+		expect(unescape_css('a\\')).toBe('a\uFFFD')
+	})
+	test('selectors', () => {
+		const cls = parse_selector('.md\\:hidden').first_child!
+		expect(unescape_css(cls.text)).toBe('.md:hidden')
+		const id = parse_selector('#\\31 23').first_child!
+		expect(unescape_css(id.text)).toBe('#123')
+	})
+	test('values', () => {
+		const ident = parse_value('\\46oo\\ Bar').first_child!
+		expect(unescape_css(ident.text)).toBe('Foo Bar')
+		const str = parse_value('"a\\"b"').first_child!
+		expect(unescape_css(str.text)).toBe('"a"b"')
+	})
+	test('atrules', () => {
+		const rule = parse('@media (min-width:1px){} @layer a\\.b{}').children[1] as Atrule
+		expect(unescape_css(rule.prelude!.text)).toBe('a.b')
+		const kf = parse('@keyframes \\66 oo{}').first_child as Atrule
+		expect(unescape_css(kf.prelude!.text)).toBe('foo')
+	})
 })

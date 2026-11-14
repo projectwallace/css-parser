@@ -81,7 +81,7 @@ Everything is exported from the package root. Each part is also available from i
 - `/walker` — `walk`, `traverse`, `walk_declarations`, `walk_selectors`, `walk_values`, `SKIP`, `BREAK`
 - `/nodes` — node type constants (`STYLE_RULE`, `DECLARATION`, …), `NODE_TYPES`
 - `/node-types` — type guards (`is_declaration`, `is_rule`, …) and node types (`CSSNode`, `Rule`, …)
-- `/string-utils` — `is_custom`, `is_vendor_prefixed`, `strip_vendor_prefix`, `strip_value_hack`, `property_basename`, `str_equals`, `str_starts_with`, `str_index_of`
+- `/string-utils` — `is_custom`, `is_vendor_prefixed`, `strip_vendor_prefix`, `strip_value_hack`, `unescape_css`, `property_basename`, `str_equals`, `str_starts_with`, `str_index_of`
 - `/token-types` — token type constants (`TOKEN_*`)
 
 ### `parse(source, options?)`
@@ -211,6 +211,7 @@ strip_vendor_prefix('-webkit-transform') // "transform"
 str_equals('media', 'MEDIA') // true
 str_starts_with('webkit', 'WEBKIT-transform') // true
 str_index_of('color', 'background-COLOR') // 11
+unescape_css('.\\31 23\\:x') // ".123:x"
 ```
 
 ## Non-goals
