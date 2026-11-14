@@ -1,9 +1,9 @@
 import { test, expect } from 'vitest'
 import { parse } from './parse'
 import { parse_selector } from './parse-selector'
-import { ID_SELECTOR, AT_RULE } from './constants'
+import { ID_SELECTOR, AT_RULE, DIMENSION, IDENTIFIER } from './constants'
 import { parse_value } from './parse-value'
-import type { Atrule } from './node-types'
+import type { Atrule, Dimension } from './node-types'
 
 test('escaped quote in selector', () => {
 	expect(parse('.a{color:red} .x-\\"{color:red} .b{color:blue}').children.length).toBe(3)
@@ -41,8 +41,30 @@ test.each([
 	expect(atrule.prelude?.text).toBe(css.includes('screen') ? 'screen' : 'a')
 })
 
-test('escape-like hack after a number stays a separate node', () => {
-	// Legacy hacks like `0\9` and `100px\9` must not become escaped units
-	const value = parse_value('100px\\9')
-	expect([...value.children].map((c) => c.type_name)).toEqual(['Dimension', 'Identifier'])
+test.each([
+	['1\\70x', '1', '\\70x'],
+	['-1\\70x', '-1', '\\70x'],
+	['.5\\70x', '.5', '\\70x'],
+	['1e\\33', '1', 'e\\33'],
+	['100px\\9', '100', 'px\\9'],
+	['0\\9', '0', '\\9'],
+])('escape in dimension unit %s is part of the unit', (css, value, unit) => {
+	const children = [...parse_value(css).children] as Dimension[]
+	expect(children.length).toBe(1)
+	expect(children[0].type).toBe(DIMENSION)
+	expect(children[0].value).toBe(Number(value))
+	expect(children[0].unit).toBe(unit)
+})
+
+test.each(['-\\31 x', '-\\31', '-\\3a b'])('ident %s starting with hyphen and escape', (css) => {
+	const children = [...parse_value(css).children]
+	expect(children.length).toBe(1)
+	expect(children[0].type).toBe(IDENTIFIER)
+	expect(children[0].text).toBe(css)
+})
+
+test.each(['.-\\31 x', '.-\\31', '#-\\31 x'])('selector %s with hyphen and escape', (selector) => {
+	const root = parse_selector(selector)
+	expect(root.children.length).toBe(1)
+	expect(root.first_child!.text).toBe(selector)
 })
