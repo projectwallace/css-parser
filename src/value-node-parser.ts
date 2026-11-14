@@ -76,20 +76,12 @@ export class ValueNodeParser {
 				this.arena,
 				this.source,
 				new ValueNodeParser(this.arena, this.source),
-				this.media_feature_range_name_as_child,
 			)
 		}
 		return this._condition_parser
 	}
 
-	private media_feature_range_name_as_child: boolean
-
-	constructor(
-		arena: CSSDataArena,
-		source: string,
-		media_feature_range_name_as_child: boolean = false,
-	) {
-		this.media_feature_range_name_as_child = media_feature_range_name_as_child
+	constructor(arena: CSSDataArena, source: string) {
 		this.arena = arena
 		this.source = source
 		this.lexer = new Lexer(source)
@@ -783,11 +775,7 @@ export class ValueNodeParser {
 
 	private get media_prelude_parser(): AtRulePreludeParser {
 		if (this._media_prelude_parser === null) {
-			this._media_prelude_parser = new AtRulePreludeParser(
-				this.arena,
-				this.source,
-				this.media_feature_range_name_as_child,
-			)
+			this._media_prelude_parser = new AtRulePreludeParser(this.arena, this.source)
 		}
 		return this._media_prelude_parser
 	}

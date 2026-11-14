@@ -1583,11 +1583,8 @@ describe('Value Node Types', () => {
 				expect(at(decl_x.next_sibling)).toEqual([6, 3])
 			})
 
-			test('with media_feature_range_name_as_child', () => {
-				const ast = parse(
-					'div { color: if(media((400px <= width) and (hover)): blue; else: red) }',
-					{ media_feature_range_name_as_child: true },
-				)
+			test('range includes the feature name as a child', () => {
+				const ast = parse('div { color: if(media((400px <= width) and (hover)): blue; else: red) }')
 				const decl = (ast.first_child as Rule).block!.first_child as Declaration
 				const fn = getBranch(decl.value!.first_child as Function, 0)?.first_child as Function
 				const range = (fn.children[0] as any).first_child
@@ -1616,15 +1613,13 @@ describe('Value Node Types', () => {
 			const range = mediaFunc.children[0] as FeatureRange
 			expect(range.type).toBe(FEATURE_RANGE)
 			expect(range.name).toBe('width')
-			expect(range.children.map((c) => c.text)).toEqual(['400px', '<=', '<=', '800px'])
+			expect(range.children.map((c) => c.text)).toEqual(['400px', '<=', 'width', '<=', '800px'])
 			expect((range.children[1] as PreludeOperator).value).toBe('<=')
-			expect((range.children[2] as PreludeOperator).value).toBe('<=')
+			expect((range.children[3] as PreludeOperator).value).toBe('<=')
 		})
 
-		test('media() range includes the feature name as a child with media_feature_range_name_as_child', () => {
-			const ast = parse('div { color: if(media(400px <= width): blue; else: red) }', {
-				media_feature_range_name_as_child: true,
-			})
+		test('media() range includes the feature name as a child', () => {
+			const ast = parse('div { color: if(media(400px <= width): blue; else: red) }')
 			const decl = (ast.first_child as Rule).block!.first_child as Declaration
 			const mediaFunc = getBranch(decl.value!.first_child as Function, 0)?.first_child as Function
 			const range = mediaFunc.children[0] as FeatureRange
