@@ -63,6 +63,14 @@ for (const rule of ast) {
 - **Location tracking with no penalty** — full line, column, and offset data without slowing the parser down
 - **No syntax validation** — skipping spec checks and MDN data means nothing gets in the way of speed
 
+### Performance tips
+
+- **Skip parsing what you don't need.** Not parsing is always faster: set `parse_values`, `parse_selectors` or `parse_atrule_preludes` to `false`.
+- **Use `node.type` or `is_*()` guards; never `node.type_name`.** `type_name` is a string meant for debugging.
+- **Use `node.for_each(cb)` instead of `for...of`.** Iterating a node uses a generator; `for_each` allocates nothing. Return `false` to stop early.
+- **Prefer `walk()` and `walk_declarations()`/`walk_selectors()`/`walk_values()`** over hand-rolled recursion when you only need certain nodes.
+- **Avoid `node.clone()` in hot paths.** Only clone when you need a mutable copy.
+
 ## API
 
 Everything is exported from the package root. Each part is also available from its own entry point, so you can import only what you need. Node properties and return types ship as TypeScript types.
