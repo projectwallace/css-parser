@@ -25,6 +25,7 @@ import {
 	TOKEN_URL,
 	TOKEN_FUNCTION,
 	TOKEN_DELIM,
+	TOKEN_COLON,
 	type TokenType,
 } from './token-types'
 import {
@@ -32,11 +33,14 @@ import {
 	is_and_or_not_range,
 	strip_vendor_prefix,
 	CHAR_PERIOD,
+	CHAR_LESS_THAN,
+	CHAR_GREATER_THAN,
 } from './string-utils'
 import { trim_boundaries, skip_whitespace_and_comments_forward } from './parse-utils'
 import { CSSNode } from './css-node'
 import type { AnyNode } from './node-types'
 import { ValueNodeParser } from './value-node-parser'
+import { ValueParser } from './parse-value'
 import { ConditionParser } from './parse-condition'
 import { SelectorParser } from './parse-selector'
 
@@ -47,6 +51,8 @@ export class AtRulePreludeParser {
 	private prelude_end: number
 	// Shared with declaration values so calc()/env()/var() get structured children, not raw text
 	private value_node_parser: ValueNodeParser
+	// Wraps shorthand @property initial values in a Value node
+	private value_parser: ValueParser
 	// Shared media-feature/supports-condition/style()-selector() parsing, also used by ValueNodeParser
 	// for if()'s condition functions — see parse-condition.ts for why value_node_parser is injected
 	private condition_parser: ConditionParser
@@ -60,6 +66,7 @@ export class AtRulePreludeParser {
 		this.lexer = new Lexer(source)
 		this.prelude_end = 0
 		this.value_node_parser = new ValueNodeParser(arena, source)
+		this.value_parser = new ValueParser(arena, source)
 		this.condition_parser = new ConditionParser(arena, source, this.value_node_parser)
 		this.selector_parser = new SelectorParser(arena, source)
 	}
@@ -94,8 +101,9 @@ export class AtRulePreludeParser {
 				return this.parse_supports_query()
 			case 'layer':
 				return this.parse_layer_names()
-			case 'keyframes':
 			case 'property':
+				return this.parse_property_prelude()
+			case 'keyframes':
 			case 'counter-style':
 			case 'color-profile':
 			case 'font-palette-values':
@@ -450,6 +458,103 @@ export class AtRulePreludeParser {
 		const name_end = this.lexer.token_end - 1 // Exclude '('
 
 		return [this.create_node(IDENTIFIER, name_start, name_end)]
+	}
+
+	// Parse @property prelude: --a, --b, --c [<type> | type(<syntax>)]? [: <initial-value>]?
+	// Children: Identifier names, then the shorthand syntax (Identifier `<length>` or Function `type(...)`),
+	// then the shorthand initial value as a Value node.
+	private parse_property_prelude(): number[] {
+		const nodes: number[] = []
+		while (true) {
+			this.skip_whitespace()
+			if (this.lexer.pos >= this.prelude_end) {
+				return nodes
+			}
+			this.next_token()
+			if (this.lexer.token_type !== TOKEN_IDENT) {
+				return nodes
+			}
+			nodes.push(this.create_node(IDENTIFIER, this.lexer.token_start, this.lexer.token_end))
+			if (this.peek_token_type_skipping_ws() !== TOKEN_COMMA) {
+				break
+			}
+			this.skip_whitespace()
+			this.next_token() // consume comma
+		}
+
+		// Shorthand syntax: `<length>` or `type(...)`
+		this.skip_whitespace()
+		if (this.lexer.pos >= this.prelude_end) {
+			return nodes
+		}
+		const syntax_start = this.lexer.pos
+		const syntax_line = this.lexer.line
+		const syntax_column = this.lexer.column
+		const syntax_type: TokenType = this.next_token()
+		if (syntax_type === TOKEN_FUNCTION) {
+			this.scan_matching_paren()
+			const first = this.value_node_parser.parse_chain(
+				syntax_start,
+				this.paren_close_end,
+				syntax_line,
+				syntax_column,
+			)
+			if (first !== 0) {
+				nodes.push(first)
+			}
+			this.lexer.seek(this.paren_close_end, syntax_line, syntax_column)
+		} else if (
+			syntax_type === TOKEN_DELIM &&
+			this.source.charCodeAt(syntax_start) === CHAR_LESS_THAN
+		) {
+			if (this.next_token() !== TOKEN_IDENT) {
+				return nodes
+			}
+			if (
+				this.next_token() !== TOKEN_DELIM ||
+				this.source.charCodeAt(this.lexer.token_start) !== CHAR_GREATER_THAN
+			) {
+				return nodes
+			}
+			nodes.push(this.create_node(IDENTIFIER, syntax_start, this.lexer.token_end))
+		} else if (syntax_type === TOKEN_COLON) {
+			this.lexer.seek(syntax_start, syntax_line, syntax_column)
+		} else {
+			return nodes
+		}
+
+		// Shorthand initial value: `: <declaration-value>`
+		this.skip_whitespace()
+		if (this.lexer.pos >= this.prelude_end) {
+			return nodes
+		}
+		if (this.next_token() !== TOKEN_COLON) {
+			return nodes
+		}
+		const value_start = skip_whitespace_and_comments_forward(
+			this.source,
+			this.lexer.token_end,
+			this.prelude_end,
+		)
+		if (value_start < this.prelude_end) {
+			nodes.push(
+				this.value_parser.parse_value(
+					value_start,
+					this.prelude_end,
+					this.lexer.token_line,
+					this.lexer.token_column + (value_start - this.lexer.token_start),
+				),
+			)
+		}
+		return nodes
+	}
+
+	private peek_token_type_skipping_ws(): number {
+		const saved = this.lexer.save_position()
+		this.skip_whitespace()
+		const type = this.next_token()
+		this.lexer.restore_position(saved)
+		return type
 	}
 
 	// Parse single identifier: keyframe name, property name
