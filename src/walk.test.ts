@@ -1050,3 +1050,22 @@ describe('traverse depth', () => {
 		])
 	})
 })
+
+describe('walk: CSS mixins', () => {
+	test('visits parameters, their types/defaults and @apply arguments', () => {
+		const root = parse(`@mixin --m(--a <length>: 1px) { color: red }
+			.x { @apply --m(2px) { color: blue } }`)
+		const seen: string[] = []
+		walk(root, (node) => {
+			if (node.type_name === 'Parameter' || node.type_name === 'Function') {
+				seen.push(`${node.type_name}:${node.text}`)
+			}
+		})
+		expect(seen).toEqual(['Parameter:--a <length>: 1px', 'Function:--m(2px)'])
+		const dims: string[] = []
+		walk(root, (node) => {
+			if (node.type === DIMENSION) dims.push(node.text)
+		})
+		expect(dims).toEqual(['1px', '2px'])
+	})
+})

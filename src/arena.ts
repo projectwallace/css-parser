@@ -63,6 +63,7 @@ export const URL = 18 // URL: url("file.css"), url(image.png), used in values an
 export const UNICODE_RANGE = 19 // unicode range: u+0025-00ff, u+4??
 export const IF_BRANCH = 59 // Branch inside an if() function: <condition>: <value>
 export const IF_CONDITION = 60 // Compound if()-branch condition: not style(...), style(...) and media(...), etc.
+export const PARAMETER = 61 // @function/@mixin parameter: --a <length> : 1px
 
 // Selector node type constants (for detailed selector parsing)
 export const SELECTOR_LIST = 20 // comma-separated selectors

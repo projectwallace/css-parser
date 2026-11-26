@@ -47,6 +47,7 @@ import {
 	RATIO,
 	IF_BRANCH,
 	IF_CONDITION,
+	PARAMETER,
 	FLAG_IMPORTANT,
 	FLAG_HAS_ERROR,
 	FLAG_HAS_BLOCK,
@@ -118,6 +119,7 @@ export type TypeName =
 	| 'AtrulePrelude'
 	| 'PreludeSelectorList'
 	| 'Ratio'
+	| 'Parameter'
 	| 'IfBranch'
 	| 'IfCondition'
 	| 'unknown'
@@ -170,6 +172,7 @@ export type CSSNodeType =
 	| typeof RATIO
 	| typeof IF_BRANCH
 	| typeof IF_CONDITION
+	| typeof PARAMETER
 
 // Options for cloning nodes
 export interface CloneOptions {
@@ -243,6 +246,7 @@ const nodes_with_name = new Set<number>([
 	LANG_SELECTOR,
 	LAYER_NAME,
 	FEATURE_RANGE,
+	PARAMETER,
 ])
 
 // Container types always expose a `children` array when cloned, even when empty.
@@ -266,6 +270,7 @@ const nodes_with_children = new Set<number>([
 	SUPPORTS_DECLARATION,
 	IF_BRANCH,
 	IF_CONDITION,
+	PARAMETER,
 	PRELUDE_SELECTORLIST,
 ])
 
@@ -420,6 +425,8 @@ export class CSSNode {
 				return 'Ratio'
 			case IF_BRANCH:
 				return 'IfBranch'
+			case PARAMETER:
+				return 'Parameter'
 			case IF_CONDITION:
 				return 'IfCondition'
 			default:

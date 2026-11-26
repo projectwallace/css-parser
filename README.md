@@ -130,6 +130,12 @@ query.type_name // "MediaQuery"
 parse_dimension('1.5e3s') // { value: 1500, unit: "s" } (no validation; no leading number gives `value: 0`)
 ```
 
+CSS Mixins ([css-mixins-1](https://drafts.csswg.org/css-mixins-1/)) preludes are structured too:
+
+- `@function --f(--a <length>: 1px) returns <length>` and `@mixin --m(--a)`: prelude children are an `Identifier` (the name), then a `Parameter` per parameter (`name`, with optional type and default `Value` children), then for `@function` the return type.
+- `@apply --m` / `@apply --m(1px, 2px) { … }`: prelude child is an `Identifier` or a `Function` (arguments as children); the optional contents block is the at-rule's `block`.
+- `@contents` and `@private` have no prelude; their blocks parse like any other rule body.
+
 ### `walk(node, callback)` and `traverse(node, { enter, leave })`
 
 Both walk the tree depth-first. Return `SKIP` to skip the children of a node and `BREAK` to stop entirely. `walk` also passes a `depth` that counts rule and at-rule nesting. `traverse` calls `enter` before and `leave` after the children, both with the same `depth` (`leave` still runs after `SKIP`, but not after `BREAK`).

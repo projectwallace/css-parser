@@ -19,6 +19,7 @@ import {
 import type {
 	Rule,
 	Atrule,
+	AtrulePrelude,
 	Declaration,
 	Block,
 	SelectorList,
@@ -2850,5 +2851,109 @@ describe('Core Nodes', () => {
 			// Verify column is correctly stored (Uint32, no overflow needed)
 			expect(secondDecl.column).toBe(expectedColumn)
 		})
+	})
+})
+
+describe('CSS Mixins (css-mixins-1)', () => {
+	const type_names = (atrule: Atrule) =>
+		(atrule.prelude as AtrulePrelude).children.map((c) => c.type_name)
+
+	test('@mixin with parameters, @private and body', () => {
+		const ast =
+			parse(`@mixin --gradient-text(--from <color>: pink, --to <color>: teal, --angle: to bottom right,) {
+			@private { --gradient: linear-gradient(var(--angle), var(--from), var(--to)); }
+			color: var(--from, var(--to));
+			@supports (background-clip: text) { background: var(--gradient); }
+			& + * { color: red; }
+		}`)
+		const mixin = ast.first_child as Atrule
+		expect(mixin.name).toBe('mixin')
+		expect(type_names(mixin)).toEqual(['Identifier', 'Parameter', 'Parameter', 'Parameter'])
+		expect(mixin.has_block).toBe(true)
+		const body = mixin.block!.children!
+		expect(body.map((c) => c.type_name)).toEqual(['Atrule', 'Declaration', 'Atrule', 'Rule'])
+		const priv = body[0] as Atrule
+		expect(priv.name).toBe('private')
+		expect(priv.has_prelude).toBe(false)
+		expect(priv.block!.first_child!.type_name).toBe('Declaration')
+	})
+
+	test('@mixin ident form', () => {
+		const mixin = parse('@mixin --foo { color: red }').first_child as Atrule
+		expect(type_names(mixin)).toEqual(['Identifier'])
+		expect(mixin.prelude!.first_child!.text).toBe('--foo')
+	})
+
+	test('@mixin with @contents and fallback', () => {
+		const mixin = parse(`@mixin --one-column() {
+			@media (width <= 800px) { @contents; }
+			@contents { color: red; }
+		}`).first_child as Atrule
+		const [media, contents] = mixin.block!.children as Atrule[]
+		const inner = media.block!.first_child as Atrule
+		expect(inner.name).toBe('contents')
+		expect(inner.has_block).toBe(false)
+		expect(inner.has_prelude).toBe(false)
+		expect(contents.has_block).toBe(true)
+		expect((contents.block!.first_child as Declaration).property).toBe('color')
+	})
+
+	test('@apply forms', () => {
+		const rule = parse(`.foo {
+			@apply --one;
+			@apply --two(blue);
+			@apply --three { color: red; }
+			@apply --four(blue, 1px) { color: red; }
+			@apply --five {}
+		}`).first_child as Rule
+		const applies = rule.block!.children as Atrule[]
+		expect(applies.map((a) => a.name)).toEqual(['apply', 'apply', 'apply', 'apply', 'apply'])
+		expect(applies.map((a) => a.prelude!.first_child!.type_name)).toEqual([
+			'Identifier',
+			'Function',
+			'Identifier',
+			'Function',
+			'Identifier',
+		])
+		expect(applies.map((a) => a.has_block)).toEqual([false, false, true, true, true])
+		expect(applies.map((a) => a.prelude!.first_child!.text)).toEqual([
+			'--one',
+			'--two(blue)',
+			'--three',
+			'--four(blue, 1px)',
+			'--five',
+		])
+		// An empty contents block is a block with no children, not a missing block
+		expect(applies[4].block!.has_children).toBe(false)
+		expect(applies[2].block!.first_child!.type_name).toBe('Declaration')
+	})
+
+	test('@apply inside a mixin', () => {
+		const mixin = parse('@mixin --a { @apply --b(1px); }').first_child as Atrule
+		const apply = mixin.block!.first_child as Atrule
+		expect(apply.prelude!.first_child!.text).toBe('--b(1px)')
+	})
+
+	test('@function with typed parameters and return type', () => {
+		const fn = parse(
+			'@function --f(--a <length>, --b type(<number>): 1) returns <length> { result: calc(var(--a) * var(--b)); }',
+		).first_child as Atrule
+		expect(type_names(fn)).toEqual(['Identifier', 'Parameter', 'Parameter', 'Identifier'])
+		expect(fn.block!.first_child!.type_name).toBe('Declaration')
+	})
+
+	test('preludes stay Raw when parse_atrule_preludes is false', () => {
+		const opts = { parse_atrule_preludes: false }
+		const mixin = parse('@mixin --a(--b) { }', opts).first_child as Atrule
+		expect(mixin.prelude!.type_name).toBe('Raw')
+		expect(mixin.prelude!.text).toBe('--a(--b)')
+		const rule = parse('.a { @apply --b(1); }', opts).first_child as Rule
+		const apply = rule.block!.first_child as Atrule
+		expect(apply.prelude!.type_name).toBe('Raw')
+	})
+
+	test('invalid mixin names fall back to Raw', () => {
+		const mixin = parse('@mixin foo { }').first_child as Atrule
+		expect(mixin.prelude!.type_name).toBe('Raw')
 	})
 })
