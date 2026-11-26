@@ -193,15 +193,43 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(names).toEqual(['--width', '--height', '--depth'])
 			})
 
-			test('@property shorthand syntax', () => {
-				for (const css of [
-					'@property --foo <integer>: 0;',
-					'@property --bar type(narrow | normal | wide);',
-				]) {
-					const atRule = parse(css).first_child as Atrule
-					expect(atRule.has_block).toBe(false)
-					expect([...(atRule.prelude as unknown as CSSNode)].map((c) => c.text)).toEqual([css.slice(10).split(/[ ;]/)[0]])
-				}
+			test('@property shorthand with type and initial value', () => {
+				const atRule = parse('@property --foo <integer>: 0;').first_child as Atrule
+				const [name, type, initial] = [...(atRule.prelude as unknown as CSSNode)]
+				expect(atRule.has_block).toBe(false)
+				expect(name.text).toBe('--foo')
+				expect(type.type).toBe(IDENTIFIER)
+				expect(type.text).toBe('<integer>')
+				expect(initial.type_name).toBe('Value')
+				expect(initial.text).toBe('0')
+				expect(initial.first_child!.type_name).toBe('Number')
+			})
+
+			test('@property shorthand with type() function', () => {
+				const atRule = parse('@property --a, --b type(narrow | normal | wide): auto;')
+					.first_child as Atrule
+				const nodes = [...(atRule.prelude as unknown as CSSNode)]
+				expect(nodes.map((n) => n.type_name)).toEqual([
+					'Identifier',
+					'Identifier',
+					'Function',
+					'Value',
+				])
+				expect(nodes[2].text).toBe('type(narrow | normal | wide)')
+				expect(nodes[3].text).toBe('auto')
+			})
+
+			test('@property shorthand with only a type or only an initial value', () => {
+				const type_only = parse('@property --a <length>;').first_child as Atrule
+				expect([...(type_only.prelude as unknown as CSSNode)].map((n) => n.text)).toEqual([
+					'--a',
+					'<length>',
+				])
+				const value_only = parse('@property --a: 5;').first_child as Atrule
+				expect([...(value_only.prelude as unknown as CSSNode)].map((n) => n.type_name)).toEqual([
+					'Identifier',
+					'Value',
+				])
 			})
 
 			test('offset and length in @property', () => {
