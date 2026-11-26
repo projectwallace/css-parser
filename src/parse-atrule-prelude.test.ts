@@ -187,6 +187,23 @@ describe('At-Rule Prelude Nodes', () => {
 				expect(identifier.end).toBe(18)
 			})
 
+			test('@property with multiple names', () => {
+				const ast = parse('@property --width, --height, --depth { syntax: "<length>"; }')
+				const names = [...(ast.first_child as Atrule).prelude as unknown as CSSNode].map((c) => c.text)
+				expect(names).toEqual(['--width', '--height', '--depth'])
+			})
+
+			test('@property shorthand syntax', () => {
+				for (const css of [
+					'@property --foo <integer>: 0;',
+					'@property --bar type(narrow | normal | wide);',
+				]) {
+					const atRule = parse(css).first_child as Atrule
+					expect(atRule.has_block).toBe(false)
+					expect([...(atRule.prelude as unknown as CSSNode)].map((c) => c.text)).toEqual([css.slice(10).split(/[ ;]/)[0]])
+				}
+			})
+
 			test('offset and length in @property', () => {
 				const css = '@property --my-color { }'
 				const ast = parse(css)

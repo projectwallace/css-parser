@@ -94,8 +94,9 @@ export class AtRulePreludeParser {
 				return this.parse_supports_query()
 			case 'layer':
 				return this.parse_layer_names()
-			case 'keyframes':
 			case 'property':
+				return this.parse_property_prelude()
+			case 'keyframes':
 			case 'counter-style':
 			case 'color-profile':
 			case 'font-palette-values':
@@ -450,6 +451,30 @@ export class AtRulePreludeParser {
 		const name_end = this.lexer.token_end - 1 // Exclude '('
 
 		return [this.create_node(IDENTIFIER, name_start, name_end)]
+	}
+
+	// Parse @property prelude: --a, --b, --c [<type>]? [: <initial-value>]?
+	// Only the comma-separated names become nodes; shorthand syntax/initial-value stay in the raw prelude text.
+	private parse_property_prelude(): number[] {
+		const nodes: number[] = []
+		while (true) {
+			this.skip_whitespace()
+			if (this.lexer.pos >= this.prelude_end) break
+			this.next_token()
+			if (this.lexer.token_type !== TOKEN_IDENT) break
+			nodes.push(this.create_node(IDENTIFIER, this.lexer.token_start, this.lexer.token_end))
+			if (this.peek_token_type_skipping_ws() !== TOKEN_COMMA) break
+			this.next_token() // consume comma
+		}
+		return nodes
+	}
+
+	private peek_token_type_skipping_ws(): number {
+		const saved = this.lexer.save_position()
+		this.skip_whitespace()
+		const type = this.next_token()
+		this.lexer.restore_position(saved)
+		return type
 	}
 
 	// Parse single identifier: keyframe name, property name
