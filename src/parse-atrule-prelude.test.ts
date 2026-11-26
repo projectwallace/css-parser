@@ -189,7 +189,9 @@ describe('At-Rule Prelude Nodes', () => {
 
 			test('@property with multiple names', () => {
 				const ast = parse('@property --width, --height, --depth { syntax: "<length>"; }')
-				const names = [...(ast.first_child as Atrule).prelude as unknown as CSSNode].map((c) => c.text)
+				const names = [...((ast.first_child as Atrule).prelude as unknown as CSSNode)].map(
+					(c) => c.text,
+				)
 				expect(names).toEqual(['--width', '--height', '--depth'])
 			})
 
@@ -229,6 +231,16 @@ describe('At-Rule Prelude Nodes', () => {
 				expect([...(value_only.prelude as unknown as CSSNode)].map((n) => n.type_name)).toEqual([
 					'Identifier',
 					'Value',
+				])
+			})
+
+			test('@property shorthand ignores comments', () => {
+				const atRule = parse('@property --a /* x */ <length> /* y */ : /* z */ 5;')
+					.first_child as Atrule
+				expect([...(atRule.prelude as unknown as CSSNode)].map((n) => n.text)).toEqual([
+					'--a',
+					'<length>',
+					'5',
 				])
 			})
 

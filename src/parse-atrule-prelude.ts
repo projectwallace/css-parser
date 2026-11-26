@@ -33,6 +33,8 @@ import {
 	is_and_or_not_range,
 	strip_vendor_prefix,
 	CHAR_PERIOD,
+	CHAR_LESS_THAN,
+	CHAR_GREATER_THAN,
 } from './string-utils'
 import { trim_boundaries, skip_whitespace_and_comments_forward } from './parse-utils'
 import { CSSNode } from './css-node'
@@ -465,18 +467,26 @@ export class AtRulePreludeParser {
 		const nodes: number[] = []
 		while (true) {
 			this.skip_whitespace()
-			if (this.lexer.pos >= this.prelude_end) return nodes
+			if (this.lexer.pos >= this.prelude_end) {
+				return nodes
+			}
 			this.next_token()
-			if (this.lexer.token_type !== TOKEN_IDENT) return nodes
+			if (this.lexer.token_type !== TOKEN_IDENT) {
+				return nodes
+			}
 			nodes.push(this.create_node(IDENTIFIER, this.lexer.token_start, this.lexer.token_end))
-			if (this.peek_token_type_skipping_ws() !== TOKEN_COMMA) break
+			if (this.peek_token_type_skipping_ws() !== TOKEN_COMMA) {
+				break
+			}
 			this.skip_whitespace()
 			this.next_token() // consume comma
 		}
 
 		// Shorthand syntax: `<length>` or `type(...)`
 		this.skip_whitespace()
-		if (this.lexer.pos >= this.prelude_end) return nodes
+		if (this.lexer.pos >= this.prelude_end) {
+			return nodes
+		}
 		const syntax_start = this.lexer.pos
 		const syntax_line = this.lexer.line
 		const syntax_column = this.lexer.column
@@ -489,11 +499,21 @@ export class AtRulePreludeParser {
 				syntax_line,
 				syntax_column,
 			)
-			if (first !== 0) nodes.push(first)
+			if (first !== 0) {
+				nodes.push(first)
+			}
 			this.lexer.seek(this.paren_close_end, syntax_line, syntax_column)
-		} else if (syntax_type === TOKEN_DELIM && this.source[syntax_start] === '<') {
-			if (this.next_token() !== TOKEN_IDENT) return nodes
-			if (this.next_token() !== TOKEN_DELIM || this.source[this.lexer.token_start] !== '>') {
+		} else if (
+			syntax_type === TOKEN_DELIM &&
+			this.source.charCodeAt(syntax_start) === CHAR_LESS_THAN
+		) {
+			if (this.next_token() !== TOKEN_IDENT) {
+				return nodes
+			}
+			if (
+				this.next_token() !== TOKEN_DELIM ||
+				this.source.charCodeAt(this.lexer.token_start) !== CHAR_GREATER_THAN
+			) {
 				return nodes
 			}
 			nodes.push(this.create_node(IDENTIFIER, syntax_start, this.lexer.token_end))
@@ -505,8 +525,12 @@ export class AtRulePreludeParser {
 
 		// Shorthand initial value: `: <declaration-value>`
 		this.skip_whitespace()
-		if (this.lexer.pos >= this.prelude_end) return nodes
-		if (this.next_token() !== TOKEN_COLON) return nodes
+		if (this.lexer.pos >= this.prelude_end) {
+			return nodes
+		}
+		if (this.next_token() !== TOKEN_COLON) {
+			return nodes
+		}
 		const value_start = skip_whitespace_and_comments_forward(
 			this.source,
 			this.lexer.token_end,
