@@ -40,6 +40,7 @@ import {
 	UNICODE_RANGE,
 	IF_BRANCH,
 	IF_CONDITION,
+	PARAMETER,
 	VALUE,
 	SELECTOR_LIST,
 	TYPE_SELECTOR,
@@ -362,6 +363,21 @@ export type Value = WithClone<
 	CSSNode & WithChildren<ValueLike> & { readonly type: typeof VALUE; readonly type_name: 'Value' }
 >
 
+/**
+ * A `@function` / `@mixin` parameter: `--a`, `--a <length>`, `--a: 1px`, `--a <color>: red`.
+ * `name` is the custom property name. Children, in order, are all optional: the parameter
+ * type (Identifier `<length>` / Function `type(...)`) and the default (Value; zero-length when
+ * the colon is present but nothing follows it).
+ */
+export type Parameter = WithClone<
+	CSSNode &
+		WithChildren<Identifier | Function | Value> & {
+			readonly type: typeof PARAMETER
+			readonly type_name: 'Parameter'
+			readonly name: string
+		}
+>
+
 /** Compound `if()` condition: a flat sequence of `not`/`and`/`or` operators and `style()`/`media()`/`supports()` functions, e.g. `not style(--a: 1)`. */
 export type IfCondition = WithClone<
 	CSSNode &
@@ -528,6 +544,8 @@ export type AtrulePrelude = WithClone<
 			| Identifier
 			// `@charset` (parse_charset_prelude())
 			| String
+			// `@function` / `@mixin` parameters
+			| Parameter
 		> & { readonly type: typeof AT_RULE_PRELUDE; readonly type_name: 'AtrulePrelude' }
 >
 
@@ -662,6 +680,7 @@ export type AnyNode =
 	| Number
 	| Dimension
 	| Ratio
+	| Parameter
 	| String
 	| Hash
 	| Function
@@ -763,6 +782,9 @@ export function is_unicode_range(node: CSSNode): node is UnicodeRange {
 }
 export function is_if_branch(node: CSSNode): node is IfBranch {
 	return node.type === IF_BRANCH
+}
+export function is_parameter(node: CSSNode): node is Parameter {
+	return node.type === PARAMETER
 }
 export function is_if_condition(node: CSSNode): node is IfCondition {
 	return node.type === IF_CONDITION

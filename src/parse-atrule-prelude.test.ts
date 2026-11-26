@@ -23,6 +23,8 @@ import type {
 	PreludeSelectorList,
 	Ratio,
 	Number as NumberNode,
+	Parameter,
+	AnyNode,
 } from './node-types'
 import {
 	AT_RULE,
@@ -47,6 +49,7 @@ import {
 	SELECTOR_LIST,
 	VALUE,
 	RATIO,
+	PARAMETER,
 } from './arena'
 
 describe('At-Rule Prelude Nodes', () => {
@@ -2791,8 +2794,7 @@ describe('parse_atrule_prelude()', () => {
 		test('should parse function name', () => {
 			const result = parse_atrule_prelude('function', '--transparent(--color, --alpha)')
 
-			expect(result.length).toBe(1)
-			expect(result[0].type).toBe(IDENTIFIER)
+			expect(result.map((n) => n.type)).toEqual([IDENTIFIER, PARAMETER, PARAMETER])
 			expect(result[0].text).toBe('--transparent')
 		})
 
@@ -2807,7 +2809,7 @@ describe('parse_atrule_prelude()', () => {
 		test('should parse function name with type annotations', () => {
 			const result = parse_atrule_prelude('function', '--add(--a <integer>, --b <integer>)')
 
-			expect(result.length).toBe(1)
+			expect(result.length).toBe(3)
 			expect(result[0].type).toBe(IDENTIFIER)
 			expect(result[0].text).toBe('--add')
 		})
@@ -2818,9 +2820,141 @@ describe('parse_atrule_prelude()', () => {
 				'--clamp-it(--val, --min, --max) returns <number>',
 			)
 
-			expect(result.length).toBe(1)
-			expect(result[0].type).toBe(IDENTIFIER)
+			expect(result.map((n) => n.type)).toEqual([
+				IDENTIFIER,
+				PARAMETER,
+				PARAMETER,
+				PARAMETER,
+				IDENTIFIER,
+			])
 			expect(result[0].text).toBe('--clamp-it')
+			expect(result[4].text).toBe('<number>')
+		})
+
+		test('should parse typed parameters and defaults', () => {
+			const result = parse_atrule_prelude(
+				'function',
+				'--f(--a <length>, --b: 1px, --c <color> : red, --d type(<number> | <percentage>), --e <length>+,)',
+			)
+
+			const params = result.slice(1) as Parameter[]
+			expect(params.map((p) => p.name)).toEqual(['--a', '--b', '--c', '--d', '--e'])
+			expect(params.map((p) => p.text)).toEqual([
+				'--a <length>',
+				'--b: 1px',
+				'--c <color> : red',
+				'--d type(<number> | <percentage>)',
+				'--e <length>+',
+			])
+			// --a: type only
+			expect(params[0].children.map((c) => c.type_name)).toEqual(['Identifier'])
+			expect(params[0].children[0].text).toBe('<length>')
+			// --b: default only
+			expect(params[1].children.map((c) => c.type_name)).toEqual(['Value'])
+			expect(params[1].children[0].text).toBe('1px')
+			// --c: type and default
+			expect(params[2].children.map((c) => c.text)).toEqual(['<color>', 'red'])
+			// --d: type() function
+			expect(params[3].children.map((c) => c.type_name)).toEqual(['Function'])
+			expect(params[3].children[0].text).toBe('type(<number> | <percentage>)')
+			// --e: type with multiplier
+			expect(params[4].children[0].text).toBe('<length>+')
+		})
+
+		test('should keep an empty default distinguishable from no default', () => {
+			const result = parse_atrule_prelude('function', '--f(--a:, --b)')
+			const [, a, b] = result as [AnyNode, Parameter, Parameter]
+			expect(a.children.map((c) => c.type_name)).toEqual(['Value'])
+			expect(a.children[0].text).toBe('')
+			expect(b.has_children).toBe(false)
+		})
+
+		test('should parse defaults containing commas and functions', () => {
+			const result = parse_atrule_prelude(
+				'function',
+				'--f(--a: calc(1px, 2px), --b <color>: rgb(0, 0, 0)) returns <color>',
+			)
+			expect(result.map((n) => n.type)).toEqual([IDENTIFIER, PARAMETER, PARAMETER, IDENTIFIER])
+			expect(result[1].text).toBe('--a: calc(1px, 2px)')
+			expect(result[2].text).toBe('--b <color>: rgb(0, 0, 0)')
+		})
+
+		test('should parse a type() return type', () => {
+			const result = parse_atrule_prelude('function', '--f() returns type(<length>)')
+			expect(result.map((n) => n.type_name)).toEqual(['Identifier', 'Function'])
+		})
+	})
+
+	describe('mixin', () => {
+		test('ident form has only the name', () => {
+			const result = parse_atrule_prelude('mixin', '--foo')
+			expect(result.map((n) => n.type_name)).toEqual(['Identifier'])
+			expect(result[0].text).toBe('--foo')
+		})
+
+		test('function form with no parameters', () => {
+			const result = parse_atrule_prelude('mixin', '--foo()')
+			expect(result.map((n) => n.type_name)).toEqual(['Identifier'])
+			expect(result[0].text).toBe('--foo')
+		})
+
+		test('spec example parameters with trailing comma', () => {
+			const result = parse_atrule_prelude(
+				'mixin',
+				`--gradient-text(
+  --from <color>: mediumvioletred,
+  --to <color>: teal,
+  --angle: to bottom right,
+)`,
+			)
+			expect(result.map((n) => n.type_name)).toEqual([
+				'Identifier',
+				'Parameter',
+				'Parameter',
+				'Parameter',
+			])
+			const params = result.slice(1) as Parameter[]
+			expect(params.map((p) => p.name)).toEqual(['--from', '--to', '--angle'])
+			expect(params[0].children.map((c) => c.text)).toEqual(['<color>', 'mediumvioletred'])
+			expect(params[2].children.map((c) => c.text)).toEqual(['to bottom right'])
+		})
+
+		test('name without two dashes is invalid', () => {
+			expect(parse_atrule_prelude('mixin', 'foo')).toEqual([])
+			expect(parse_atrule_prelude('mixin', 'foo(--a)')).toEqual([])
+		})
+
+		test('parameter without two dashes is dropped', () => {
+			const result = parse_atrule_prelude('mixin', '--foo(a, --b)')
+			expect(result.map((n) => n.type_name)).toEqual(['Identifier', 'Parameter'])
+			expect((result[1] as Parameter).name).toBe('--b')
+		})
+	})
+
+	describe('apply', () => {
+		test('dashed-ident', () => {
+			const result = parse_atrule_prelude('apply', '--foo')
+			expect(result.map((n) => n.type_name)).toEqual(['Identifier'])
+			expect(result[0].text).toBe('--foo')
+		})
+
+		test('dashed-function with arguments', () => {
+			const result = parse_atrule_prelude('apply', '--foo(pink, powderblue)')
+			expect(result.map((n) => n.type_name)).toEqual(['Function'])
+			const fn = result[0] as Function
+			expect(fn.name).toBe('--foo')
+			expect(fn.children.map((c) => c.text)).toEqual(['pink', ',', 'powderblue'])
+		})
+
+		test('dashed-function with no arguments', () => {
+			const result = parse_atrule_prelude('apply', '--foo()')
+			expect(result.map((n) => n.type_name)).toEqual(['Function'])
+			expect((result[0] as Function).has_children).toBe(false)
+		})
+
+		test('non-dashed name is invalid', () => {
+			expect(parse_atrule_prelude('apply', 'foo')).toEqual([])
+			expect(parse_atrule_prelude('apply', 'foo(1)')).toEqual([])
 		})
 	})
 
@@ -3133,7 +3267,7 @@ and (min-width: 768px) { }`)
 			expect(atRule.name).toBe('function')
 
 			const children = (atRule.prelude as AtrulePrelude | null)?.children
-			expect(children?.length).toBe(1)
+			expect(children?.length).toBe(3)
 			expect(children?.[0].type).toBe(IDENTIFIER)
 			expect(children?.[0].text).toBe('--transparent')
 		})

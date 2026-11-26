@@ -13,6 +13,8 @@ import {
 	URL,
 	FUNCTION,
 	STRING,
+	VALUE,
+	PARAMETER,
 } from './arena'
 import {
 	TOKEN_IDENT,
@@ -35,8 +37,13 @@ import {
 	CHAR_PERIOD,
 	CHAR_LESS_THAN,
 	CHAR_GREATER_THAN,
+	CHAR_MINUS_HYPHEN,
 } from './string-utils'
-import { trim_boundaries, skip_whitespace_and_comments_forward } from './parse-utils'
+import {
+	trim_boundaries,
+	skip_whitespace_and_comments_forward,
+	find_colon_at_depth_zero,
+} from './parse-utils'
 import { CSSNode } from './css-node'
 import type { AnyNode } from './node-types'
 import { ValueNodeParser } from './value-node-parser'
@@ -113,6 +120,10 @@ export class AtRulePreludeParser {
 				return this.parse_identifier()
 			case 'function':
 				return this.parse_function_prelude()
+			case 'mixin':
+				return this.parse_mixin_prelude()
+			case 'apply':
+				return this.parse_apply_prelude()
 			case 'import':
 				return this.parse_import_prelude()
 			case 'charset':
@@ -440,24 +451,161 @@ export class AtRulePreludeParser {
 		return nodes
 	}
 
-	// Parse @function prelude: --function-name(--param1, --param2, ...) [returns <type>]?
-	// The function name is a dashed-ident immediately followed by '(' (TOKEN_FUNCTION).
-	// Parameters and return type remain in the raw prelude text (accessible via .value).
+	// Parse @function prelude: --name(<parameter>#?, ,?) [returns <css-type>]?
+	// Children: Identifier (name), Parameter*, then the return type (Identifier `<length>` or
+	// Function `type(...)`) when a `returns` clause is present.
+	// The name is a dashed-ident immediately followed by '(' (TOKEN_FUNCTION).
 	private parse_function_prelude(): number[] {
 		this.skip_whitespace()
 		if (this.lexer.pos >= this.prelude_end) return []
 
 		this.next_token()
-
-		// @function prelude starts with a <dashed-function> token like --name(
-		// which the CSS tokenizer produces as TOKEN_FUNCTION (includes the '(')
 		if (this.lexer.token_type !== TOKEN_FUNCTION) return []
 
-		// Create an IDENTIFIER node for just the function name (without '(')
-		const name_start = this.lexer.token_start
-		const name_end = this.lexer.token_end - 1 // Exclude '('
+		// Identifier for just the function name (without '(')
+		const nodes = [this.create_node(IDENTIFIER, this.lexer.token_start, this.lexer.token_end - 1)]
+		if (!this.parse_parameters(nodes)) return nodes
 
-		return [this.create_node(IDENTIFIER, name_start, name_end)]
+		this.skip_whitespace()
+		if (this.lexer.pos >= this.prelude_end) return nodes
+		if (
+			this.next_token() === TOKEN_IDENT &&
+			str_equals_range(this.source, this.lexer.token_start, this.lexer.token_end, 'returns')
+		) {
+			const range = trim_boundaries(this.source, this.lexer.token_end, this.prelude_end)
+			if (range) nodes.push(this.parse_css_type(range[0], range[1]))
+		}
+		return nodes
+	}
+
+	// Parse @mixin prelude: --name | --name(<parameter>#?, ,?)
+	// Children: Identifier (name), then Parameter* for the function-token form.
+	private parse_mixin_prelude(): number[] {
+		this.skip_whitespace()
+		if (this.lexer.pos >= this.prelude_end) return []
+
+		this.next_token()
+		const type = this.lexer.token_type
+		if (type !== TOKEN_IDENT && type !== TOKEN_FUNCTION) return []
+		// The name must start with two dashes
+		if (this.source.charCodeAt(this.lexer.token_start) !== CHAR_MINUS_HYPHEN) return []
+		if (this.source.charCodeAt(this.lexer.token_start + 1) !== CHAR_MINUS_HYPHEN) return []
+
+		const name_end = type === TOKEN_FUNCTION ? this.lexer.token_end - 1 : this.lexer.token_end
+		const nodes = [this.create_node(IDENTIFIER, this.lexer.token_start, name_end)]
+		if (type === TOKEN_FUNCTION) this.parse_parameters(nodes)
+		return nodes
+	}
+
+	// Parse @apply prelude: <dashed-ident> | <dashed-function>
+	// Children: a single Identifier (`--a`) or Function (`--a(blue, 1px)`, arguments as Function children).
+	private parse_apply_prelude(): number[] {
+		this.skip_whitespace()
+		if (this.lexer.pos >= this.prelude_end) return []
+
+		const start = this.lexer.pos
+		const line = this.lexer.line
+		const column = this.lexer.column
+		const type = this.next_token()
+		if (this.source.charCodeAt(this.lexer.token_start) !== CHAR_MINUS_HYPHEN) return []
+		if (this.source.charCodeAt(this.lexer.token_start + 1) !== CHAR_MINUS_HYPHEN) return []
+
+		if (type === TOKEN_IDENT) {
+			return [this.create_node(IDENTIFIER, this.lexer.token_start, this.lexer.token_end)]
+		}
+		if (type === TOKEN_FUNCTION) {
+			this.scan_matching_paren()
+			const first = this.value_node_parser.parse_chain(start, this.paren_close_end, line, column)
+			return first === 0 ? [] : [first]
+		}
+		return []
+	}
+
+	// Parse `<function-parameter>#? ,? )` right after the opening function token and push a
+	// Parameter node for each one onto `nodes`. Returns true when the closing ')' was found.
+	// <function-parameter> = <custom-property-name> <css-type>? [ : <default-value> ]?
+	private parse_parameters(nodes: number[]): boolean {
+		while (true) {
+			// Find the end of this parameter: a ',' or the closing ')' at depth 0
+			const start = this.lexer.pos
+			const line = this.lexer.line
+			const column = this.lexer.column
+			let depth = 0
+			let end = start
+			let closed = false
+			let more = false
+			while (this.lexer.pos < this.prelude_end) {
+				end = this.lexer.pos
+				const type = this.next_token()
+				if (type === TOKEN_EOF) break
+				if (type === TOKEN_LEFT_PAREN || type === TOKEN_FUNCTION) {
+					depth++
+				} else if (type === TOKEN_RIGHT_PAREN) {
+					if (depth === 0) {
+						closed = true
+						break
+					}
+					depth--
+				} else if (type === TOKEN_COMMA && depth === 0) {
+					more = true
+					break
+				}
+			}
+			if (!closed && !more) end = this.lexer.pos
+
+			const range = trim_boundaries(this.source, start, end)
+			if (range) {
+				// parse_parameter moves the lexer; resume scanning from right after the terminator
+				const saved = this.lexer.save_position()
+				const param = this.parse_parameter(range[0], range[1], line, column)
+				this.lexer.restore_position(saved)
+				if (param !== 0) nodes.push(param)
+			}
+			if (!more) return closed
+		}
+	}
+
+	// Parse one parameter in [start, end): `--name`, `--name <type>`, `--name: default`, `--name <type>: default`
+	private parse_parameter(start: number, end: number, line: number, column: number): number {
+		this.lexer.seek(start, line, column)
+		if (this.next_token() !== TOKEN_IDENT) return 0
+		if (this.source.charCodeAt(start + 1) !== CHAR_MINUS_HYPHEN) return 0
+		if (this.source.charCodeAt(start) !== CHAR_MINUS_HYPHEN) return 0
+		const name_end = this.lexer.token_end
+		const colon = find_colon_at_depth_zero(this.source, name_end, end)
+
+		const children: number[] = []
+		const type_range = trim_boundaries(this.source, name_end, colon === -1 ? end : colon)
+		if (type_range) children.push(this.parse_css_type(type_range[0], type_range[1]))
+		if (colon !== -1) {
+			// `--a:` (colon, no value) still yields a zero-length Value so "has a default" stays detectable
+			const value_start = skip_whitespace_and_comments_forward(this.source, colon + 1, end)
+			children.push(
+				value_start < end
+					? this.value_parser.parse_value(value_start, end, line, column)
+					: this.arena.create_node(VALUE, value_start, 0, line, column),
+			)
+		}
+
+		const param = this.arena.create_node(PARAMETER, start, end - start, line, column)
+		this.arena.set_content_start_delta(param, 0)
+		this.arena.set_content_length(param, name_end - start)
+		this.arena.append_children(param, children)
+		return param
+	}
+
+	// A <css-type> in [start, end): `type(<syntax>)` becomes a Function node, anything else
+	// (`<length>`, `<length>+`, `<length> | <percentage>`, `*`) a single Identifier spanning the text.
+	private parse_css_type(start: number, end: number): number {
+		const line = this.lexer.token_line
+		const column = this.lexer.token_column
+		this.lexer.seek(start, line, column)
+		if (this.next_token() === TOKEN_FUNCTION) {
+			this.scan_matching_paren()
+			const first = this.value_node_parser.parse_chain(start, this.paren_close_end, line, column)
+			if (first !== 0) return first
+		}
+		return this.arena.create_node(IDENTIFIER, start, end - start, line, column)
 	}
 
 	// Parse @property prelude: --a, --b, --c [<type> | type(<syntax>)]? [: <initial-value>]?
